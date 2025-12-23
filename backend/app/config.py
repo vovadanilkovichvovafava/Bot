@@ -2,49 +2,59 @@
 Configuration settings for the backend
 """
 from pydantic_settings import BaseSettings
-from typing import List
-import os
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
-    """Application settings"""
+    """Application settings loaded from environment variables"""
 
     # App
     APP_NAME: str = "AI Betting Bot API"
-    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    DEBUG: bool = False
 
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:password@localhost:5432/betting_bot"
-    )
+    # Database - Railway provides DATABASE_URL
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/betting_bot"
 
     # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
+    SECRET_KEY: str = "your-super-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # External APIs (from bot)
-    FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
+    # External APIs
+    FOOTBALL_API_KEY: str = ""
     FOOTBALL_API_URL: str = "https://api.football-data.org/v4"
-    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
-    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY", "")
+    CLAUDE_API_KEY: str = ""
+    ODDS_API_KEY: str = ""
 
     # Limits
-    FREE_DAILY_LIMIT: int = int(os.getenv("FREE_DAILY_LIMIT", "3"))
+    FREE_DAILY_LIMIT: int = 3
     HTTP_TIMEOUT: int = 15
 
-    # CORS
+    # CORS - allow all for mobile app
     CORS_ORIGINS: List[str] = ["*"]
 
     # ML
-    ML_MODELS_DIR: str = os.getenv("ML_MODELS_DIR", "ml_models")
+    ML_MODELS_DIR: str = "ml_models"
     ML_MIN_SAMPLES: int = 50
+
+    # Port (Railway sets this)
+    PORT: int = 8000
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra env vars from Railway
+
+    def get_database_url(self) -> str:
+        """Convert DATABASE_URL for asyncpg if needed"""
+        url = self.DATABASE_URL
+        # Railway uses postgres://, asyncpg needs postgresql+asyncpg://
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
 
 settings = Settings()
