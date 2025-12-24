@@ -1,6 +1,6 @@
 /// API Configuration
 class ApiConstants {
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'https://appbot-production-152e.up.railway.app/api/v1';
 
   // Endpoints
   static const String auth = '/auth';
