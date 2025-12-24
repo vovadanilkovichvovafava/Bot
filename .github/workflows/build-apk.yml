@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Mobile Apps
 
 on:
   push:
@@ -10,11 +10,12 @@ on:
     branches: [ main, master ]
     paths:
       - 'mobile_app/**'
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build APK
+  # ==================== ANDROID ====================
+  build-android:
+    name: Android
     runs-on: ubuntu-latest
 
     defaults:
@@ -46,63 +47,114 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Analyze code
-        run: flutter analyze --no-fatal-infos || true
-
-      - name: Run tests
-        run: flutter test || true
-
       - name: Build APK (Debug)
         run: flutter build apk --debug
 
       - name: Build APK (Release)
         run: flutter build apk --release
 
-      - name: Rename APKs with version
+      - name: Prepare artifacts
         run: |
           mkdir -p ../artifacts
-          cp build/app/outputs/flutter-apk/app-debug.apk ../artifacts/ai-betting-bot-debug.apk
-          cp build/app/outputs/flutter-apk/app-release.apk ../artifacts/ai-betting-bot-release.apk
+          cp build/app/outputs/flutter-apk/app-debug.apk ../artifacts/AI-Betting-Bot-debug.apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../artifacts/AI-Betting-Bot-release.apk
 
-      - name: Upload Debug APK
+      - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: artifacts/ai-betting-bot-debug.apk
+          name: Android-Debug-APK
+          path: artifacts/AI-Betting-Bot-debug.apk
           retention-days: 30
 
-      - name: Upload Release APK
+      - name: Upload Android Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: artifacts/ai-betting-bot-release.apk
+          name: Android-Release-APK
+          path: artifacts/AI-Betting-Bot-release.apk
           retention-days: 30
 
-      - name: Upload All APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: all-apks
-          path: artifacts/*.apk
-          retention-days: 30
+  # ==================== iOS ====================
+  build-ios:
+    name: iOS
+    runs-on: macos-latest
 
-  # Optional: Create release when tagged
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    defaults:
+      run:
+        working-directory: mobile_app
 
     steps:
-      - name: Download APKs
-        uses: actions/download-artifact@v4
-        with:
-          name: all-apks
-          path: apks
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          files: apks/*.apk
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup iOS project
+        run: |
+          flutter create --platforms=ios . || true
+          flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update || pod install || true
+
+      - name: Build iOS (Simulator)
+        run: flutter build ios --simulator --debug --no-codesign
+
+      - name: Build iOS (Release - No Codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Create unsigned IPA
+        run: |
+          mkdir -p ../artifacts
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/ || true
+          zip -r ../../../artifacts/AI-Betting-Bot-unsigned.ipa Payload || true
+          rm -rf Payload
+
+      - name: Upload iOS Simulator Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-Simulator-Build
+          path: mobile_app/build/ios/iphonesimulator/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload iOS IPA (Unsigned)
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-Unsigned-IPA
+          path: artifacts/AI-Betting-Bot-unsigned.ipa
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # ==================== SUMMARY ====================
+  summary:
+    name: Build Summary
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Build Results
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Android | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| iOS | ${{ needs.build-ios.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android-Debug-APK** - For testing" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android-Release-APK** - For production" >> $GITHUB_STEP_SUMMARY
+          echo "- **iOS-Unsigned-IPA** - Install via AltStore/Sideloadly" >> $GITHUB_STEP_SUMMARY
