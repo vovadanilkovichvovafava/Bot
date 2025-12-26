@@ -7,7 +7,6 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/matches_screen.dart';
-import '../screens/match_detail_screen.dart';
 import '../screens/stats_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
@@ -77,13 +76,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
         ],
-      ),
-      GoRoute(
-        path: '/match/:id',
-        builder: (context, state) {
-          final matchId = int.parse(state.pathParameters['id']!);
-          return MatchDetailScreen(matchId: matchId);
-        },
       ),
       GoRoute(
         path: '/premium',
