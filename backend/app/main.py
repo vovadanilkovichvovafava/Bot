@@ -65,3 +65,38 @@ async def health_check():
         "version": "1.0.0",
         "database": db_status
     }
+
+
+@app.get("/debug/football-api")
+async def debug_football_api():
+    """Debug endpoint to test Football API connection"""
+    import os
+    import httpx
+
+    api_key = os.getenv("FOOTBALL_API_KEY", "")
+
+    if not api_key:
+        return {"error": "FOOTBALL_API_KEY not set", "key_exists": False}
+
+    # Test API call - get Premier League matches for next 7 days
+    try:
+        headers = {"X-Auth-Token": api_key}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.football-data.org/v4/competitions/PL/matches",
+                headers=headers,
+                params={"status": "SCHEDULED"},
+                timeout=10.0
+            )
+
+            return {
+                "key_exists": True,
+                "key_preview": f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "***",
+                "status_code": response.status_code,
+                "response": response.json() if response.status_code == 200 else response.text
+            }
+    except Exception as e:
+        return {
+            "key_exists": True,
+            "error": str(e)
+        }
