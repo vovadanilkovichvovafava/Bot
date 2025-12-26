@@ -62,48 +62,53 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
     try:
         headers = {"X-Auth-Token": FOOTBALL_API_KEY}
 
-        # Build URL
+        # Build URL and params
+        params = {"status": "SCHEDULED,LIVE,IN_PLAY,PAUSED,FINISHED"}
+
         if league and league in LEAGUE_IDS:
             url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[league]}/matches"
         else:
             url = f"{FOOTBALL_DATA_BASE_URL}/matches"
 
-        params = {}
         if date_from:
             params["dateFrom"] = date_from
         if date_to:
             params["dateTo"] = date_to
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, params=params, timeout=10.0)
+            response = await client.get(url, headers=headers, params=params, timeout=15.0)
             response.raise_for_status()
             data = response.json()
 
         matches = []
         for match in data.get("matches", []):
-            matches.append({
-                "id": match["id"],
-                "home_team": {
-                    "name": match["homeTeam"]["name"],
-                    "logo": match["homeTeam"].get("crest")
-                },
-                "away_team": {
-                    "name": match["awayTeam"]["name"],
-                    "logo": match["awayTeam"].get("crest")
-                },
-                "league": match["competition"]["name"],
-                "league_code": match["competition"]["code"],
-                "match_date": match["utcDate"],
-                "status": match["status"].lower(),
-                "home_score": match["score"]["fullTime"]["home"],
-                "away_score": match["score"]["fullTime"]["away"],
-            })
+            try:
+                matches.append({
+                    "id": match["id"],
+                    "home_team": {
+                        "name": match["homeTeam"]["name"],
+                        "logo": match["homeTeam"].get("crest")
+                    },
+                    "away_team": {
+                        "name": match["awayTeam"]["name"],
+                        "logo": match["awayTeam"].get("crest")
+                    },
+                    "league": match["competition"]["name"],
+                    "league_code": match["competition"].get("code", ""),
+                    "match_date": match["utcDate"],
+                    "status": match["status"].lower(),
+                    "home_score": match["score"]["fullTime"]["home"],
+                    "away_score": match["score"]["fullTime"]["away"],
+                })
+            except (KeyError, TypeError) as e:
+                logger.warning(f"Skipping match due to error: {e}")
+                continue
 
         _set_cache(cache_key, matches)
         return matches
 
     except Exception as e:
-        logger.error(f"Error fetching matches: {e}")
+        logger.error(f"Error fetching matches: {type(e).__name__}: {e}")
         return []
 
 
