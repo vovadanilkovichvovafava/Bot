@@ -65,3 +65,59 @@ async def health_check():
         "version": "1.0.0",
         "database": db_status
     }
+
+
+@app.get("/debug/football-api")
+async def debug_football_api():
+    """Debug endpoint to test Football API connection"""
+    import os
+    import httpx
+    import traceback
+
+    api_key = os.getenv("FOOTBALL_API_KEY", "")
+
+    result = {
+        "key_exists": bool(api_key),
+        "key_length": len(api_key) if api_key else 0,
+    }
+
+    if not api_key:
+        result["error"] = "FOOTBALL_API_KEY not set"
+        return result
+
+    # Test API call
+    try:
+        headers = {"X-Auth-Token": api_key}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.football-data.org/v4/competitions/PL/matches",
+                headers=headers,
+                params={"status": "SCHEDULED"},
+                timeout=15.0
+            )
+
+            result["status_code"] = response.status_code
+            result["headers"] = dict(response.headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                result["matches_count"] = len(data.get("matches", []))
+                result["competition"] = data.get("competition", {}).get("name")
+                # Show first 3 matches
+                matches = data.get("matches", [])[:3]
+                result["sample_matches"] = [
+                    {
+                        "home": m.get("homeTeam", {}).get("name"),
+                        "away": m.get("awayTeam", {}).get("name"),
+                        "date": m.get("utcDate")
+                    }
+                    for m in matches
+                ]
+            else:
+                result["response_text"] = response.text[:500]
+
+    except Exception as e:
+        result["error"] = f"{type(e).__name__}: {str(e)}"
+        result["traceback"] = traceback.format_exc()[-500:]
+
+    return result
