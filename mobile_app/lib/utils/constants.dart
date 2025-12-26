@@ -15,7 +15,7 @@ class ApiConstants {
 /// App Constants
 class AppConstants {
   static const String appName = 'AI Betting Bot';
-  static const String version = '1.0.0';
+  static const String version = '1.1.0'; // Updated with real Football API
 
   // Cache durations
   static const Duration matchesCacheDuration = Duration(minutes: 2);
