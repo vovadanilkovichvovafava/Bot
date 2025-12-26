@@ -59,57 +59,66 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
     if cached:
         return cached
 
-    try:
-        headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+    all_matches = []
 
-        # Build URL and params
-        params = {"status": "SCHEDULED,LIVE,IN_PLAY,PAUSED,FINISHED"}
+    # Determine which leagues to fetch
+    if league and league in LEAGUE_IDS:
+        leagues_to_fetch = [league]
+    else:
+        # Free tier: fetch from top leagues individually
+        leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1"]
 
-        if league and league in LEAGUE_IDS:
-            url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[league]}/matches"
-        else:
-            url = f"{FOOTBALL_DATA_BASE_URL}/matches"
-
-        if date_from:
-            params["dateFrom"] = date_from
-        if date_to:
-            params["dateTo"] = date_to
-
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, params=params, timeout=15.0)
-            response.raise_for_status()
-            data = response.json()
-
-        matches = []
-        for match in data.get("matches", []):
+    async with httpx.AsyncClient() as client:
+        for lg_code in leagues_to_fetch:
             try:
-                matches.append({
-                    "id": match["id"],
-                    "home_team": {
-                        "name": match["homeTeam"]["name"],
-                        "logo": match["homeTeam"].get("crest")
-                    },
-                    "away_team": {
-                        "name": match["awayTeam"]["name"],
-                        "logo": match["awayTeam"].get("crest")
-                    },
-                    "league": match["competition"]["name"],
-                    "league_code": match["competition"].get("code", ""),
-                    "match_date": match["utcDate"],
-                    "status": match["status"].lower(),
-                    "home_score": match["score"]["fullTime"]["home"],
-                    "away_score": match["score"]["fullTime"]["away"],
-                })
-            except (KeyError, TypeError) as e:
-                logger.warning(f"Skipping match due to error: {e}")
+                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+                params = {}
+
+                if date_from:
+                    params["dateFrom"] = date_from
+                if date_to:
+                    params["dateTo"] = date_to
+
+                response = await client.get(url, headers=headers, params=params, timeout=15.0)
+
+                if response.status_code != 200:
+                    logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
+                    continue
+
+                data = response.json()
+
+                for match in data.get("matches", []):
+                    try:
+                        all_matches.append({
+                            "id": match["id"],
+                            "home_team": {
+                                "name": match["homeTeam"]["name"],
+                                "logo": match["homeTeam"].get("crest")
+                            },
+                            "away_team": {
+                                "name": match["awayTeam"]["name"],
+                                "logo": match["awayTeam"].get("crest")
+                            },
+                            "league": match["competition"]["name"],
+                            "league_code": match["competition"].get("code", lg_code),
+                            "match_date": match["utcDate"],
+                            "status": match["status"].lower(),
+                            "home_score": match["score"]["fullTime"]["home"],
+                            "away_score": match["score"]["fullTime"]["away"],
+                        })
+                    except (KeyError, TypeError) as e:
+                        continue
+
+            except Exception as e:
+                logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
                 continue
 
-        _set_cache(cache_key, matches)
-        return matches
+    # Sort by match date
+    all_matches.sort(key=lambda x: x["match_date"])
 
-    except Exception as e:
-        logger.error(f"Error fetching matches: {type(e).__name__}: {e}")
-        return []
+    _set_cache(cache_key, all_matches)
+    return all_matches
 
 
 async def fetch_match_details(match_id: int) -> Optional[Dict]:
