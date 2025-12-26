@@ -5,9 +5,6 @@ import '../services/api_service.dart';
 import '../models/user.dart';
 import '../utils/error_handler.dart';
 
-// Demo mode flag
-const bool kDemoMode = true;
-
 // Auth state
 class AuthState {
   final bool isAuthenticated;

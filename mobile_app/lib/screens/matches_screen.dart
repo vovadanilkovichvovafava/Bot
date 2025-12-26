@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
-import '../widgets/match_card.dart';
+import '../providers/matches_provider.dart';
+import '../models/match.dart';
 
 class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({super.key});
@@ -18,6 +20,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Load matches when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(matchesProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -43,8 +49,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _MatchesList(title: 'Today'),
-          _MatchesList(title: 'Tomorrow'),
+          _TodayMatchesList(),
+          _TomorrowMatchesList(),
           _LeaguesList(),
         ],
       ),
@@ -52,42 +58,271 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
   }
 }
 
-class _MatchesList extends StatelessWidget {
-  final String title;
+class _TodayMatchesList extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchesState = ref.watch(matchesProvider);
+    final matches = matchesState.todayMatches;
+    final isLoading = matchesState.isLoading;
+    final error = matchesState.error;
 
-  const _MatchesList({required this.title});
+    if (isLoading && matches.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error != null && matches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Error: $error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (matches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No matches today'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
+              child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: matches.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _MatchCard(match: matches[index]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TomorrowMatchesList extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchesState = ref.watch(matchesProvider);
+    final matches = matchesState.tomorrowMatches;
+    final isLoading = matchesState.isLoading;
+    final error = matchesState.error;
+
+    if (isLoading && matches.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error != null && matches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Error: $error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (matches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No matches tomorrow'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
+              child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: matches.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _MatchCard(match: matches[index]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  final Match match;
+
+  const _MatchCard({required this.match});
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Fetch from API
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        MatchCard(
-          homeTeam: 'Manchester City',
-          awayTeam: 'Arsenal',
-          competition: 'Premier League',
-          time: '17:30',
-          confidence: 72,
+    final timeFormat = DateFormat('HH:mm');
+    final matchTime = timeFormat.format(match.matchDate.toLocal());
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  match.league,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  matchTime,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        match.homeTeam.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        match.awayTeam.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (match.homeScore != null && match.awayScore != null)
+                  Column(
+                    children: [
+                      Text(
+                        '${match.homeScore}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${match.awayScore}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(match.status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _getStatusColor(match.status),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getStatusText(match.status),
+                      style: TextStyle(
+                        color: _getStatusColor(match.status),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
-        SizedBox(height: 8),
-        MatchCard(
-          homeTeam: 'Real Madrid',
-          awayTeam: 'Barcelona',
-          competition: 'La Liga',
-          time: '21:00',
-          confidence: 68,
-        ),
-        SizedBox(height: 8),
-        MatchCard(
-          homeTeam: 'Bayern Munich',
-          awayTeam: 'Dortmund',
-          competition: 'Bundesliga',
-          time: '18:30',
-          confidence: 75,
-        ),
-      ],
+      ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'live':
+      case 'in_play':
+        return Colors.red;
+      case 'finished':
+        return Colors.green;
+      case 'scheduled':
+      case 'timed':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'live':
+      case 'in_play':
+        return 'LIVE';
+      case 'finished':
+        return 'FT';
+      case 'scheduled':
+      case 'timed':
+        return 'Soon';
+      default:
+        return status.toUpperCase();
+    }
   }
 }
 
