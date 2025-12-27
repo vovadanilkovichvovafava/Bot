@@ -25,12 +25,12 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _matchesLoaded = false;
 
   static const _defaultQuickQuestions = [
-    "🔥 Best bets today",
-    "⚽ Premier League tips",
-    "🇪🇸 La Liga predictions",
-    "🇩🇪 Bundesliga analysis",
-    "📊 Over/Under tips",
-    "🎯 BTTS predictions",
+    "📅 Матчи сегодня",
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League",
+    "🇪🇸 La Liga",
+    "🇩🇪 Bundesliga",
+    "🇮🇹 Serie A",
+    "🇫🇷 Ligue 1",
   ];
 
   List<String> _quickQuestions = List.from(_defaultQuickQuestions);
@@ -113,18 +113,20 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   void _addWelcomeMessage() {
     _messages.add(ChatMessage(
-      text: '''Hello! I'm your AI betting assistant.
+      text: '''Привет! 👋
 
-I can analyze any football match for you. Just tell me:
-- Team names (e.g. "Manchester United vs Liverpool")
-- Or ask about today's matches
-- Or request predictions for specific leagues
+Я помогу найти информацию о футбольных матчах.
 
-Example questions:
-• "Analyze Real Madrid vs Barcelona"
-• "Who will win Arsenal vs Chelsea?"
-• "Best bets for Premier League today"
-• "Over/under prediction for Bayern vs Dortmund"''',
+**Что я могу:**
+• Показать матчи на сегодня/завтра
+• Найти матчи по лиге
+• Показать информацию о конкретном матче
+
+**Примеры запросов:**
+• "Bundesliga"
+• "Premier League"
+• "Матчи на сегодня"
+• "Bayern Munich"''',
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -246,56 +248,24 @@ Example questions:
   }
 
   String _generateSingleMatchAnalysis(Match match) {
-    final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-    final homeWin = 30 + (hash % 30);
-    final awayWin = 25 + ((hash ~/ 3) % 25);
-    final draw = 100 - homeWin - awayWin;
-    final confidence = 60 + (hash % 25);
-    final xg = 2.2 + (hash % 18) / 10.0;
-
-    String prediction;
-    String betType;
-    double odds;
-
-    if (homeWin > awayWin && homeWin > draw) {
-      prediction = match.homeTeam.name;
-      betType = "1";
-      odds = 1.4 + (100 - homeWin) / 80.0;
-    } else if (awayWin > homeWin && awayWin > draw) {
-      prediction = match.awayTeam.name;
-      betType = "2";
-      odds = 1.6 + (100 - awayWin) / 70.0;
-    } else {
-      prediction = "Draw";
-      betType = "X";
-      odds = 2.8 + (hash % 80) / 100.0;
-    }
-
     return '''⚽ **${match.homeTeam.name} vs ${match.awayTeam.name}**
-🏆 ${match.league}
+
+🏆 **${match.league}**
+📅 ${_formatMatchDate(match.date)}
 
 ---
 
-**📊 Win Probabilities:**
-• ${match.homeTeam.name}: **$homeWin%**
-• Draw: **$draw%**
-• ${match.awayTeam.name}: **$awayWin%**
+**Информация о матче:**
 
-**🎯 Main Prediction:**
-**$prediction** ($betType) @ ${odds.toStringAsFixed(2)}
-Confidence: **$confidence%**
+🏠 **${match.homeTeam.name}** (Дома)
 
-**📈 Goals Analysis:**
-• Expected Goals (xG): ${xg.toStringAsFixed(1)}
-• Over 2.5: ${xg > 2.5 ? "✅ Recommended" : "⚠️ Risky"} @ ${(1.7 + (hash % 40) / 100.0).toStringAsFixed(2)}
-• BTTS: ${hash % 2 == 0 ? "✅ Yes" : "❌ No"} @ ${(1.65 + (hash % 35) / 100.0).toStringAsFixed(2)}
+🚌 **${match.awayTeam.name}** (В гостях)
 
-**💰 Best Bets:**
-1. **$betType** @ ${odds.toStringAsFixed(2)} (Primary)
-2. **${xg > 2.5 ? "Over 2.5" : "Under 2.5"}** @ ${(1.75 + (hash % 30) / 100.0).toStringAsFixed(2)}
-3. **${match.homeTeam.name} or Draw (1X)** @ ${(1.25 + (hash % 20) / 100.0).toStringAsFixed(2)}
+---
 
-⚠️ *Bet responsibly. Past performance doesn't guarantee results.*''';
+💡 *Для получения прогнозов и аналитики нужна интеграция с AI сервисом.*
+
+⚠️ *Делайте ставки ответственно.*''';
   }
 
   String _generateLeagueAnalysis(String leagueCode, String leagueName) {
@@ -304,12 +274,22 @@ Confidence: **$confidence%**
       m.leagueCode == leagueCode || m.league.toLowerCase().contains(leagueName.toLowerCase())
     ).toList();
 
+    if (!_matchesLoaded) {
+      return '''🏆 **$leagueName**
+
+⏳ Загрузка матчей...
+
+Сервер запускается, попробуйте через 30 секунд.''';
+    }
+
     if (leagueMatches.isEmpty) {
-      return '''🏆 **$leagueName Analysis**
+      return '''🏆 **$leagueName**
 
-No upcoming matches found for $leagueName in the next 2 days.
+❌ **Матчи не найдены**
 
-Try checking back later or ask about another league:
+В ближайшие дни нет запланированных матчей $leagueName.
+
+Попробуйте другую лигу:
 • Premier League
 • La Liga
 • Bundesliga
@@ -317,105 +297,90 @@ Try checking back later or ask about another league:
 • Ligue 1''';
     }
 
+    // Only show next matchday (max 5 matches)
+    final nextMatchday = leagueMatches.take(5).toList();
+
     final buffer = StringBuffer();
-    buffer.writeln('🏆 **$leagueName - Upcoming Matches Analysis**\n');
-    buffer.writeln('Found **${leagueMatches.length}** matches:\n');
+    buffer.writeln('🏆 **$leagueName - Ближайший тур**\n');
     buffer.writeln('---\n');
 
-    for (int i = 0; i < leagueMatches.length && i < 6; i++) {
-      final match = leagueMatches[i];
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final homeWin = 30 + (hash % 30);
-      final awayWin = 25 + ((hash ~/ 3) % 25);
-      final confidence = 60 + (hash % 25);
-      final xg = 2.2 + (hash % 18) / 10.0;
-
-      String bestBet;
-      String odds;
-      if (homeWin > awayWin) {
-        bestBet = "1 (${match.homeTeam.name})";
-        odds = (1.4 + (100 - homeWin) / 80.0).toStringAsFixed(2);
-      } else {
-        bestBet = "2 (${match.awayTeam.name})";
-        odds = (1.6 + (100 - awayWin) / 70.0).toStringAsFixed(2);
-      }
-
+    for (int i = 0; i < nextMatchday.length; i++) {
+      final match = nextMatchday[i];
       buffer.writeln('**${i + 1}. ${match.homeTeam.name} vs ${match.awayTeam.name}**');
-      buffer.writeln('• Prediction: **$bestBet** @ $odds');
-      buffer.writeln('• Confidence: $confidence%');
-      buffer.writeln('• Over 2.5: ${xg > 2.5 ? "✅" : "❌"} | BTTS: ${hash % 2 == 0 ? "✅" : "❌"}');
+      buffer.writeln('📅 ${_formatMatchDate(match.date)}');
       buffer.writeln('');
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('**🔥 Top Pick:** ${leagueMatches.first.homeTeam.name} vs ${leagueMatches.first.awayTeam.name}');
-    buffer.writeln('\nAsk me about any specific match for detailed analysis!');
+    buffer.writeln('💡 Напишите название команды для детального анализа');
 
     return buffer.toString();
   }
 
+  String _formatMatchDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final matchDay = DateTime(date.year, date.month, date.day);
+
+    if (matchDay == today) {
+      return 'Сегодня ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (matchDay == today.add(const Duration(days: 1))) {
+      return 'Завтра ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${date.day}.${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
   String _generateTodayOverview() {
+    if (!_matchesLoaded) {
+      return '''📅 **Матчи на сегодня**
+
+⏳ Загрузка матчей...
+
+Сервер запускается, попробуйте через 30 секунд.''';
+    }
+
     if (_todayMatches.isEmpty && _tomorrowMatches.isEmpty) {
-      return '''📅 **Today's Matches**
+      return '''📅 **Матчи на сегодня**
 
-⏳ Loading matches data...
+❌ **Матчи не найдены**
 
-If matches aren't loading, the server might be waking up. Try again in 30 seconds.
+Сегодня и завтра нет запланированных матчей.
 
-You can also ask about specific leagues:
-• "Bundesliga analysis"
-• "Premier League tips"
-• "La Liga predictions"''';
+Спросите о конкретной лиге:
+• "Bundesliga"
+• "Premier League"
+• "La Liga"''';
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('📅 **Today\'s Best Bets**\n');
 
     final matches = _todayMatches.isNotEmpty ? _todayMatches : _tomorrowMatches;
-    final dateLabel = _todayMatches.isNotEmpty ? "Today" : "Tomorrow";
+    final dateLabel = _todayMatches.isNotEmpty ? "Сегодня" : "Завтра";
 
-    buffer.writeln('Found **${matches.length}** matches for $dateLabel:\n');
+    buffer.writeln('📅 **Матчи на $dateLabel**\n');
     buffer.writeln('---\n');
 
-    // Group by league
+    // Group by league, limit to 3 matches per league
     final byLeague = <String, List<Match>>{};
     for (final match in matches) {
       byLeague.putIfAbsent(match.league, () => []).add(match);
     }
 
-    int pickNumber = 1;
     for (final entry in byLeague.entries) {
       final leagueIcon = _getLeagueIcon(entry.key);
       buffer.writeln('**$leagueIcon ${entry.key}:**');
 
+      // Only show first 3 matches per league
       for (final match in entry.value.take(3)) {
-        final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-        final homeWin = 30 + (hash % 30);
-        final awayWin = 25 + ((hash ~/ 3) % 25);
-        final confidence = 60 + (hash % 25);
-
-        String bet;
-        String odds;
-        if (homeWin > awayWin + 10) {
-          bet = "1";
-          odds = (1.4 + (100 - homeWin) / 80.0).toStringAsFixed(2);
-        } else if (awayWin > homeWin + 10) {
-          bet = "2";
-          odds = (1.6 + (100 - awayWin) / 70.0).toStringAsFixed(2);
-        } else {
-          bet = "X";
-          odds = (3.0 + (hash % 50) / 100.0).toStringAsFixed(2);
-        }
-
-        buffer.writeln('$pickNumber. ${match.homeTeam.name} vs ${match.awayTeam.name}');
-        buffer.writeln('   → **$bet** @ $odds ($confidence%)');
-        pickNumber++;
+        buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
+        buffer.writeln('  📅 ${_formatMatchDate(match.date)}');
       }
       buffer.writeln('');
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('💡 *Tap on any match for detailed analysis*');
+    buffer.writeln('💡 Напишите название команды для анализа');
 
     return buffer.toString();
   }
@@ -430,90 +395,73 @@ You can also ask about specific leagues:
   }
 
   String _generateTotalsAnalysis() {
+    if (!_matchesLoaded) {
+      return '''📊 **Тоталы (Over/Under)**
+
+⏳ Загрузка матчей...
+
+Сервер запускается, попробуйте через 30 секунд.''';
+    }
+
     final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
     if (allMatches.isEmpty) {
-      return '⏳ Loading matches... Try again in a moment.';
+      return '''📊 **Тоталы (Over/Under)**
+
+❌ **Матчи не найдены**
+
+Нет доступных матчей для анализа тоталов.''';
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('📊 **Over/Under Analysis**\n');
+    buffer.writeln('📊 **Тоталы - Ближайшие матчи**\n');
     buffer.writeln('---\n');
 
-    final overMatches = <Match>[];
-    final underMatches = <Match>[];
-
-    for (final match in allMatches.take(10)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final xg = 2.2 + (hash % 18) / 10.0;
-      if (xg > 2.6) {
-        overMatches.add(match);
-      } else if (xg < 2.3) {
-        underMatches.add(match);
-      }
-    }
-
-    buffer.writeln('**✅ Best Over 2.5 Picks:**');
-    for (final match in overMatches.take(4)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final xg = 2.2 + (hash % 18) / 10.0;
-      final odds = (1.7 + (hash % 40) / 100.0).toStringAsFixed(2);
+    // Just list matches, no fake predictions
+    for (final match in allMatches.take(5)) {
       buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
-      buffer.writeln('  xG: ${xg.toStringAsFixed(1)} | @ $odds');
+      buffer.writeln('  ${match.league} | ${_formatMatchDate(match.date)}');
+      buffer.writeln('');
     }
 
-    buffer.writeln('\n**❌ Best Under 2.5 Picks:**');
-    for (final match in underMatches.take(4)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final xg = 2.2 + (hash % 18) / 10.0;
-      final odds = (1.6 + (hash % 35) / 100.0).toStringAsFixed(2);
-      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
-      buffer.writeln('  xG: ${xg.toStringAsFixed(1)} | @ $odds');
-    }
+    buffer.writeln('---\n');
+    buffer.writeln('💡 Для анализа конкретного матча напишите названия команд');
 
     return buffer.toString();
   }
 
   String _generateBttsAnalysis() {
+    if (!_matchesLoaded) {
+      return '''🥅 **BTTS (Обе забьют)**
+
+⏳ Загрузка матчей...
+
+Сервер запускается, попробуйте через 30 секунд.''';
+    }
+
     final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
     if (allMatches.isEmpty) {
-      return '⏳ Loading matches... Try again in a moment.';
+      return '''🥅 **BTTS (Обе забьют)**
+
+❌ **Матчи не найдены**
+
+Нет доступных матчей для анализа BTTS.''';
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('🥅 **Both Teams To Score Analysis**\n');
+    buffer.writeln('🥅 **BTTS - Ближайшие матчи**\n');
     buffer.writeln('---\n');
 
-    final bttsYes = <Match>[];
-    final bttsNo = <Match>[];
-
-    for (final match in allMatches.take(10)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      if (hash % 3 != 0) {
-        bttsYes.add(match);
-      } else {
-        bttsNo.add(match);
-      }
-    }
-
-    buffer.writeln('**✅ BTTS Yes Picks:**');
-    for (final match in bttsYes.take(4)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final odds = (1.65 + (hash % 35) / 100.0).toStringAsFixed(2);
-      final confidence = 60 + (hash % 25);
+    // Just list matches, no fake predictions
+    for (final match in allMatches.take(5)) {
       buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
-      buffer.writeln('  @ $odds ($confidence%)');
+      buffer.writeln('  ${match.league} | ${_formatMatchDate(match.date)}');
+      buffer.writeln('');
     }
 
-    buffer.writeln('\n**❌ BTTS No Picks:**');
-    for (final match in bttsNo.take(3)) {
-      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
-      final odds = (1.85 + (hash % 40) / 100.0).toStringAsFixed(2);
-      final confidence = 55 + (hash % 20);
-      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
-      buffer.writeln('  @ $odds ($confidence%)');
-    }
+    buffer.writeln('---\n');
+    buffer.writeln('💡 Для анализа конкретного матча напишите названия команд');
 
     return buffer.toString();
   }
