@@ -7,6 +7,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/matches_screen.dart';
+import '../screens/ai_chat_screen.dart';
 import '../screens/stats_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
@@ -64,6 +65,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MatchesScreen(),
           ),
           GoRoute(
+            path: '/chat',
+            builder: (context, state) => const AiChatScreen(),
+          ),
+          GoRoute(
             path: '/stats',
             builder: (context, state) => const StatsScreen(),
           ),
@@ -109,14 +114,14 @@ class MainScaffold extends StatelessWidget {
             label: 'Matches',
           ),
           NavigationDestination(
+            icon: Icon(Icons.smart_toy_outlined),
+            selectedIcon: Icon(Icons.smart_toy),
+            label: 'AI Chat',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
             label: 'Stats',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star),
-            label: 'Favorites',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -132,8 +137,8 @@ class MainScaffold extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/matches')) return 1;
-    if (location.startsWith('/stats')) return 2;
-    if (location.startsWith('/favorites')) return 3;
+    if (location.startsWith('/chat')) return 2;
+    if (location.startsWith('/stats')) return 3;
     if (location.startsWith('/settings')) return 4;
     return 0;
   }
@@ -147,10 +152,10 @@ class MainScaffold extends StatelessWidget {
         context.go('/matches');
         break;
       case 2:
-        context.go('/stats');
+        context.go('/chat');
         break;
       case 3:
-        context.go('/favorites');
+        context.go('/stats');
         break;
       case 4:
         context.go('/settings');
