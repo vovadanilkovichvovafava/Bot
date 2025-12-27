@@ -139,12 +139,12 @@ class ApiService {
 
   // Leagues
   Future<List<Map<String, dynamic>>> getLeagues() async {
-    final response = await _dio.get('/leagues');
+    final response = await _dio.get('/matches/leagues');
     return List<Map<String, dynamic>>.from(response.data);
   }
 
   Future<List<Map<String, dynamic>>> getStandings(String leagueCode) async {
-    final response = await _dio.get('/leagues/$leagueCode/standings');
+    final response = await _dio.get('/matches/standings/$leagueCode');
     return List<Map<String, dynamic>>.from(response.data);
   }
 
