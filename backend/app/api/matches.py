@@ -72,25 +72,38 @@ class League(BaseModel):
 async def get_today_matches(league: Optional[str] = Query(None)):
     """Get today's matches"""
     today = datetime.utcnow().strftime("%Y-%m-%d")
+    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    matches = await fetch_matches(date_from=today, date_to=today, league=league)
+    # Fetch both days at once (uses single cache entry, avoids rate limiting)
+    all_matches = await fetch_matches(date_from=today, date_to=tomorrow, league=league)
 
-    if matches:
-        return [Match(**m) for m in matches]
+    if all_matches:
+        # Filter to today only
+        today_matches = [
+            m for m in all_matches
+            if m.get("match_date", "").startswith(today)
+        ]
+        return [Match(**m) for m in today_matches]
 
-    # No matches found - return empty list, not fake data
     return []
 
 
 @router.get("/tomorrow", response_model=List[Match])
 async def get_tomorrow_matches(league: Optional[str] = Query(None)):
     """Get tomorrow's matches"""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
     tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    matches = await fetch_matches(date_from=tomorrow, date_to=tomorrow, league=league)
+    # Fetch both days at once (uses single cache entry, avoids rate limiting)
+    all_matches = await fetch_matches(date_from=today, date_to=tomorrow, league=league)
 
-    if matches:
-        return [Match(**m) for m in matches]
+    if all_matches:
+        # Filter to tomorrow only
+        tomorrow_matches = [
+            m for m in all_matches
+            if m.get("match_date", "").startswith(tomorrow)
+        ]
+        return [Match(**m) for m in tomorrow_matches]
 
     return []
 
