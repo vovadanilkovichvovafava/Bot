@@ -13,6 +13,16 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _showSuggestions = true;
+
+  final List<String> _quickQuestions = [
+    "🔥 Best bets today",
+    "⚽ Premier League tips",
+    "🇪🇸 La Liga predictions",
+    "📊 Over/Under tips",
+    "🎯 BTTS predictions",
+    "🏆 Champions League",
+  ];
 
   @override
   void initState() {
@@ -58,6 +68,11 @@ Example questions:
     });
   }
 
+  void _sendQuickQuestion(String question) {
+    _messageController.text = question;
+    _sendMessage();
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -69,6 +84,7 @@ Example questions:
         timestamp: DateTime.now(),
       ));
       _isLoading = true;
+      _showSuggestions = false;
     });
     _messageController.clear();
     _scrollToBottom();
@@ -273,6 +289,7 @@ ${bttsYes ?
               setState(() {
                 _messages.clear();
                 _addWelcomeMessage();
+                _showSuggestions = true;
               });
             },
           ),
@@ -293,8 +310,31 @@ ${bttsYes ?
               },
             ),
           ),
+          if (_showSuggestions) _buildSuggestions(),
           _buildInputArea(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestions() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _quickQuestions.map((question) {
+          return ActionChip(
+            label: Text(
+              question,
+              style: const TextStyle(fontSize: 13),
+            ),
+            onPressed: _isLoading ? null : () => _sendQuickQuestion(question),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          );
+        }).toList(),
       ),
     );
   }
