@@ -56,11 +56,11 @@ class MatchesState {
 
   String? get offlineMessage {
     if (!isOffline || !hasData) return null;
-    if (lastUpdated == null) return 'Офлайн режим';
+    if (lastUpdated == null) return 'Offline mode';
     final ago = DateTime.now().difference(lastUpdated!);
-    if (ago.inMinutes < 1) return 'Офлайн (обновлено только что)';
-    if (ago.inMinutes < 60) return 'Офлайн (обновлено ${ago.inMinutes} мин назад)';
-    return 'Офлайн (обновлено ${ago.inHours} ч назад)';
+    if (ago.inMinutes < 1) return 'Offline (updated just now)';
+    if (ago.inMinutes < 60) return 'Offline (updated ${ago.inMinutes} min ago)';
+    return 'Offline (updated ${ago.inHours} hr ago)';
   }
 }
 

@@ -62,12 +62,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // User greeting
             if (user != null) ...[
               Text(
-                'Привет, ${user.username ?? 'User'}!',
+                'Hello, ${user.username ?? 'User'}!',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 4),
               Text(
-                'Осталось прогнозов: ${user.remainingPredictions}',
+                '${user.remainingPredictions} predictions left today',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -81,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             // Quick actions
             Text(
-              'Быстрые действия',
+              'Quick Actions',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -92,7 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.today,
-                    label: 'Сегодня',
+                    label: 'Today',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -100,7 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.event,
-                    label: 'Завтра',
+                    label: 'Tomorrow',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -108,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.emoji_events,
-                    label: 'Лиги',
+                    label: 'Leagues',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -121,14 +121,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Матчи сегодня',
+                  "Today's Matches",
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton(
                   onPressed: () => context.go('/matches'),
-                  child: const Text('Все'),
+                  child: const Text('See all'),
                 ),
               ],
             ),
@@ -148,11 +148,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
                       const SizedBox(height: 8),
-                      const Text('Нет матчей сегодня'),
+                      const Text('No matches today'),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
-                        child: const Text('Обновить'),
+                        child: const Text('Refresh'),
                       ),
                     ],
                   ),

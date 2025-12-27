@@ -39,13 +39,13 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Матчи'),
+        title: const Text('Matches'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Сегодня'),
-            Tab(text: 'Завтра'),
-            Tab(text: 'Лиги'),
+            Tab(text: 'Today'),
+            Tab(text: 'Tomorrow'),
+            Tab(text: 'Leagues'),
           ],
         ),
       ),
@@ -81,11 +81,11 @@ class _TodayMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Ошибка: $error'),
+            Text('Error: $error'),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
-              child: const Text('Повторить'),
+              child: const Text('Retry'),
             ),
           ],
         ),
@@ -99,11 +99,11 @@ class _TodayMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('Нет матчей сегодня'),
+            const Text('No matches today'),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
-              child: const Text('Обновить'),
+              child: const Text('Refresh'),
             ),
           ],
         ),
@@ -155,11 +155,11 @@ class _TomorrowMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Ошибка: $error'),
+            Text('Error: $error'),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
-              child: const Text('Повторить'),
+              child: const Text('Retry'),
             ),
           ],
         ),
@@ -173,11 +173,11 @@ class _TomorrowMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('Нет матчей завтра'),
+            const Text('No matches tomorrow'),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
-              child: const Text('Обновить'),
+              child: const Text('Refresh'),
             ),
           ],
         ),

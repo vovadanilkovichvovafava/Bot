@@ -48,7 +48,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() => _reminderSet = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Напоминание отменено')),
+          const SnackBar(content: Text('Reminder cancelled')),
         );
       }
     } else {
@@ -64,7 +64,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() => _reminderSet = true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Напоминание установлено за 30 минут до матча')),
+          const SnackBar(content: Text('Reminder set for 30 minutes before kick-off')),
         );
       }
     }
@@ -94,7 +94,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 
       // Request analysis for this specific match
       final result = await api.sendChatMessage(
-        message: 'Анализ матча ${widget.match.homeTeam.name} vs ${widget.match.awayTeam.name}',
+        message: 'Match analysis ${widget.match.homeTeam.name} vs ${widget.match.awayTeam.name}',
         history: [],
       );
 
@@ -128,13 +128,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 color: _reminderSet ? Colors.amber : null,
               ),
               onPressed: _toggleReminder,
-              tooltip: _reminderSet ? 'Отменить напоминание' : 'Напомнить о матче',
+              tooltip: _reminderSet ? 'Cancel reminder' : 'Set reminder',
             ),
           if (!match.isFinished && (_analysisError || _aiAnalysis != null))
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadAiAnalysis,
-              tooltip: 'Обновить анализ',
+              tooltip: 'Refresh analysis',
             ),
         ],
       ),
@@ -159,7 +159,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     if (match.matchday != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Тур ${match.matchday}',
+                        'Matchday ${match.matchday}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -188,7 +188,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Дома',
+                                'Home',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 12,
@@ -252,7 +252,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'В гостях',
+                                'Away',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 12,
@@ -283,7 +283,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Информация о матче',
+                      'Match Info',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -292,28 +292,28 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     const SizedBox(height: 16),
                     _InfoRow(
                       icon: Icons.emoji_events,
-                      label: 'Турнир',
+                      label: 'Competition',
                       value: match.league,
                     ),
                     if (match.matchday != null)
                       _InfoRow(
                         icon: Icons.format_list_numbered,
-                        label: 'Тур',
+                        label: 'Matchday',
                         value: '${match.matchday}',
                       ),
                     _InfoRow(
                       icon: Icons.calendar_today,
-                      label: 'Дата',
+                      label: 'Date',
                       value: dateFormat.format(match.matchDate.toLocal()),
                     ),
                     _InfoRow(
                       icon: Icons.access_time,
-                      label: 'Время',
+                      label: 'Time',
                       value: timeFormat.format(match.matchDate.toLocal()),
                     ),
                     _InfoRow(
                       icon: Icons.info_outline,
-                      label: 'Статус',
+                      label: 'Status',
                       value: _getStatusText(match.status),
                     ),
                   ],
@@ -361,7 +361,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Матч завершён',
+                    'Match Finished',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -371,7 +371,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Финальный счёт: ${match.homeScore} - ${match.awayScore}',
+                'Final Score: ${match.homeScore} - ${match.awayScore}',
                 style: const TextStyle(fontSize: 16),
               ),
             ],
@@ -394,7 +394,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Загрузка AI-анализа...',
+                'Loading AI analysis...',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 16,
@@ -402,7 +402,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Claude AI анализирует матч',
+                'Claude AI is analyzing the match',
                 style: TextStyle(
                   color: Colors.grey[500],
                   fontSize: 14,
@@ -429,7 +429,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'AI-анализ недоступен',
+                'AI Analysis Unavailable',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -437,7 +437,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Сервер просыпается. Нажмите кнопку обновления.',
+                'Server is waking up. Tap refresh to try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey[600],
@@ -447,7 +447,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               FilledButton.icon(
                 onPressed: _loadAiAnalysis,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Повторить'),
+                label: const Text('Retry'),
               ),
             ],
           ),
@@ -547,10 +547,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       case 'in_play':
         return 'LIVE';
       case 'finished':
-        return 'Завершён';
+        return 'Finished';
       case 'scheduled':
       case 'timed':
-        return 'Скоро';
+        return 'Upcoming';
       default:
         return status.toUpperCase();
     }
