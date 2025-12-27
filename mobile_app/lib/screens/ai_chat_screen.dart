@@ -39,22 +39,25 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   void initState() {
     super.initState();
-    _addWelcomeMessage();
     _loadQuickQuestions();
     _loadMatches();
-    _checkAiAvailability();
+    _initializeChat();
   }
 
-  Future<void> _checkAiAvailability() async {
+  Future<void> _initializeChat() async {
+    // Check AI availability first
     try {
       final api = ref.read(apiServiceProvider);
       final available = await api.isChatAvailable();
-      setState(() {
-        _aiAvailable = available;
-      });
+      _aiAvailable = available;
     } catch (e) {
-      // AI not available
+      _aiAvailable = false;
     }
+
+    // Then add welcome message with correct status
+    setState(() {
+      _addWelcomeMessage();
+    });
   }
 
   Future<void> _loadMatches() async {
@@ -126,22 +129,28 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   void _addWelcomeMessage() {
+    final statusText = _aiAvailable
+        ? '✅ AI-анализ **включён**'
+        : '⚠️ AI-анализ **выключен** (нужен OPENAI_API_KEY)';
+
     _messages.add(ChatMessage(
       text: '''Привет! 👋
 
 Я AI-ассистент для анализа футбольных матчей.
 
+$statusText
+
 **Что я могу:**
-• Показать матчи на сегодня/завтра
-• Найти матчи по лиге
-• Дать аналитику по конкретному матчу
-• Ответить на вопросы о командах
+• 📊 Анализ конкретных матчей с прогнозами
+• 🎯 Вероятности: П1/Х/П2, тоталы, BTTS
+• 📅 Обзор матчей на сегодня/завтра
+• 💡 Рекомендации по ставкам
 
 **Примеры запросов:**
 • "Анализ Bayern vs Dortmund"
-• "Premier League матчи"
-• "Шансы на победу Real Madrid"
-• "Какие матчи сегодня?"
+• "West Ham vs Fulham прогноз"
+• "Premier League сегодня"
+• "Лучшие ставки на сегодня"
 
 ⚠️ Делайте ставки ответственно''',
       isUser: false,
@@ -319,6 +328,36 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   String _generateSingleMatchAnalysis(Match match) {
+    // If AI is not available, show a helpful message about enabling it
+    if (!_aiAvailable) {
+      return '''⚽ **${match.homeTeam.name} vs ${match.awayTeam.name}**
+
+🏆 **${match.league}**
+📅 ${_formatMatchDate(match.date)}
+
+---
+
+**📊 Базовая информация:**
+
+🏠 **${match.homeTeam.name}** (Дома)
+🚌 **${match.awayTeam.name}** (В гостях)
+
+---
+
+⚠️ **AI-анализ недоступен**
+
+Для получения полного анализа с прогнозами нужно настроить OPENAI_API_KEY на сервере.
+
+**После настройки вы получите:**
+• Анализ формы команд
+• Прогноз вероятностей (П1/Х/П2)
+• Рекомендации по ставкам
+• Тоталы и BTTS прогнозы
+
+---
+⚠️ *Делайте ставки ответственно.*''';
+    }
+
     return '''⚽ **${match.homeTeam.name} vs ${match.awayTeam.name}**
 
 🏆 **${match.league}**
@@ -326,16 +365,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
 ---
 
-**Информация о матче:**
-
 🏠 **${match.homeTeam.name}** (Дома)
-
 🚌 **${match.awayTeam.name}** (В гостях)
 
 ---
-
-💡 *Для получения прогнозов и аналитики нужна интеграция с AI сервисом.*
-
 ⚠️ *Делайте ставки ответственно.*''';
   }
 
