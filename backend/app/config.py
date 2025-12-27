@@ -14,6 +14,11 @@ class Settings(BaseSettings):
 
     # External APIs (optional)
     FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+
+    # Firebase (for push notifications)
+    # Set GOOGLE_APPLICATION_CREDENTIALS env var to Firebase service account JSON path
+    FIREBASE_CREDENTIALS_PATH: str = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
     # CORS
     CORS_ORIGINS: List[str] = ["*"]

@@ -174,6 +174,40 @@ class ApiService {
   Future<void> removeFavoriteLeague(String leagueCode) async {
     await _dio.delete('/favorites/leagues/$leagueCode');
   }
+
+  // AI Chat
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String message,
+    List<Map<String, String>> history = const [],
+  }) async {
+    final response = await _dio.post('/chat/send', data: {
+      'message': message,
+      'history': history,
+    });
+    return response.data;
+  }
+
+  Future<bool> isChatAvailable() async {
+    try {
+      final response = await _dio.get('/chat/status');
+      return response.data['available'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Push Notifications
+  Future<void> registerFcmToken(String token) async {
+    await _dio.post('/notifications/register', data: {
+      'fcm_token': token,
+    });
+  }
+
+  Future<void> unregisterFcmToken(String token) async {
+    await _dio.delete('/notifications/unregister', data: {
+      'fcm_token': token,
+    });
+  }
 }
 
 // Provider

@@ -19,6 +19,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _showSuggestions = true;
+  bool _aiAvailable = false;
 
   List<Match> _todayMatches = [];
   List<Match> _tomorrowMatches = [];
@@ -41,6 +42,19 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _addWelcomeMessage();
     _loadQuickQuestions();
     _loadMatches();
+    _checkAiAvailability();
+  }
+
+  Future<void> _checkAiAvailability() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final available = await api.isChatAvailable();
+      setState(() {
+        _aiAvailable = available;
+      });
+    } catch (e) {
+      // AI not available
+    }
   }
 
   Future<void> _loadMatches() async {
@@ -115,18 +129,21 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _messages.add(ChatMessage(
       text: '''Привет! 👋
 
-Я помогу найти информацию о футбольных матчах.
+Я AI-ассистент для анализа футбольных матчей.
 
 **Что я могу:**
 • Показать матчи на сегодня/завтра
 • Найти матчи по лиге
-• Показать информацию о конкретном матче
+• Дать аналитику по конкретному матчу
+• Ответить на вопросы о командах
 
 **Примеры запросов:**
-• "Bundesliga"
-• "Premier League"
-• "Матчи на сегодня"
-• "Bayern Munich"''',
+• "Анализ Bayern vs Dortmund"
+• "Premier League матчи"
+• "Шансы на победу Real Madrid"
+• "Какие матчи сегодня?"
+
+⚠️ Делайте ставки ответственно''',
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -172,10 +189,36 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _messageController.clear();
     _scrollToBottom();
 
-    // Generate AI response
-    await Future.delayed(const Duration(milliseconds: 800));
+    String response;
 
-    final response = _generateAiResponse(text);
+    // Try real AI API first
+    if (_aiAvailable) {
+      try {
+        final api = ref.read(apiServiceProvider);
+
+        // Build chat history
+        final history = _messages
+            .where((m) => m != _messages.last)  // Exclude the message we just added
+            .map((m) => {
+              'role': m.isUser ? 'user' : 'assistant',
+              'content': m.text,
+            })
+            .toList();
+
+        final result = await api.sendChatMessage(
+          message: text,
+          history: history,
+        );
+
+        response = result['response'] as String;
+      } catch (e) {
+        // Fallback to local responses on error
+        response = _generateAiResponse(text);
+      }
+    } else {
+      // Use local fallback responses
+      response = _generateAiResponse(text);
+    }
 
     setState(() {
       _messages.add(ChatMessage(
