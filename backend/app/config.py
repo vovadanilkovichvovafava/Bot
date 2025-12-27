@@ -14,7 +14,8 @@ class Settings(BaseSettings):
 
     # External APIs (optional)
     FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY", "")
 
     # CORS
     CORS_ORIGINS: List[str] = ["*"]

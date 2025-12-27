@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.config import settings
 from app.core.security import get_current_user
 from app.services.football_api import fetch_matches
+from app.services.odds_api import get_odds_summary
 
 router = APIRouter()
 
@@ -66,7 +67,8 @@ SYSTEM_PROMPT = """Ты - профессиональный AI-аналитик �
 4. Основывай анализ на реальной статистике команд
 5. Если матч не найден в списке - используй свои знания о командах
 6. Всегда добавляй предупреждение об ответственной игре
-7. Указывай уровень уверенности в прогнозе"""
+7. Указывай уровень уверенности в прогнозе
+8. Если есть реальные коэффициенты букмекеров - используй их в рекомендациях"""
 
 
 async def get_matches_context() -> List[dict]:
@@ -121,23 +123,46 @@ def format_matches_for_context(matches: List[dict]) -> str:
     return context
 
 
+def extract_teams_from_query(query: str, matches: List[dict]) -> tuple:
+    """Try to extract team names from user query"""
+    query_lower = query.lower()
+
+    # Check if query mentions a specific match from our list
+    for m in matches:
+        home = m.get('home', '').lower()
+        away = m.get('away', '').lower()
+        league_code = m.get('league_code', 'PL')
+
+        if home and away:
+            if home in query_lower or away in query_lower:
+                return (m.get('home'), m.get('away'), league_code)
+
+    # Try to find "vs" pattern
+    if ' vs ' in query_lower:
+        parts = query_lower.split(' vs ')
+        if len(parts) == 2:
+            return (parts[0].strip(), parts[1].strip(), 'PL')
+
+    return (None, None, None)
+
+
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Send a message to AI chat"""
+    """Send a message to AI chat using Claude"""
 
-    if not settings.OPENAI_API_KEY:
+    if not settings.CLAUDE_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="AI service not configured. Please set OPENAI_API_KEY."
+            detail="AI service not configured. Please set CLAUDE_API_KEY."
         )
 
     try:
-        from openai import AsyncOpenAI
+        import anthropic
 
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
 
         # Get matches context
         matches_context = await get_matches_context()
@@ -145,27 +170,43 @@ async def send_message(
         # Build context with matches data
         matches_info = format_matches_for_context(matches_context)
 
-        # Build messages
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT + matches_info}
-        ]
+        # Try to get odds if user is asking about a specific match
+        odds_info = ""
+        home_team, away_team, league_code = extract_teams_from_query(
+            request.message, matches_context
+        )
+        if home_team and away_team and settings.ODDS_API_KEY:
+            try:
+                odds_info = await get_odds_summary(home_team, away_team, league_code)
+            except Exception:
+                pass  # Odds not critical
+
+        # Build messages for Claude
+        messages = []
 
         # Add history (last 10 messages)
         for msg in request.history[-10:]:
-            messages.append({"role": msg.role, "content": msg.content})
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
 
-        # Add current message
-        messages.append({"role": "user", "content": request.message})
+        # Add current message with odds context if available
+        user_message = request.message
+        if odds_info:
+            user_message += f"\n\n[Контекст - реальные коэффициенты букмекеров:{odds_info}]"
 
-        # Call OpenAI
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",  # Cost-effective model
-            messages=messages,
+        messages.append({"role": "user", "content": user_message})
+
+        # Call Claude API
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",  # Fast and cost-effective
             max_tokens=1500,
-            temperature=0.7,
+            system=SYSTEM_PROMPT + matches_info,
+            messages=messages,
         )
 
-        ai_response = response.choices[0].message.content
+        ai_response = response.content[0].text
 
         return ChatResponse(
             response=ai_response,
@@ -175,7 +216,7 @@ async def send_message(
     except ImportError:
         raise HTTPException(
             status_code=503,
-            detail="OpenAI library not installed. Run: pip install openai"
+            detail="Anthropic library not installed. Run: pip install anthropic"
         )
     except Exception as e:
         raise HTTPException(
@@ -188,6 +229,6 @@ async def send_message(
 async def chat_status():
     """Check if AI chat is available"""
     return {
-        "available": bool(settings.OPENAI_API_KEY),
-        "model": "gpt-4o-mini" if settings.OPENAI_API_KEY else None
+        "available": bool(settings.CLAUDE_API_KEY),
+        "model": "claude-3-haiku" if settings.CLAUDE_API_KEY else None
     }
