@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user.dart';
@@ -6,22 +8,98 @@ import '../models/match.dart';
 import '../models/prediction.dart';
 import '../utils/constants.dart';
 
+/// Interceptor for automatic retry with exponential backoff
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  final int maxRetries;
+  final List<Duration> retryDelays;
+
+  RetryInterceptor({
+    required this.dio,
+    this.maxRetries = 3,
+    this.retryDelays = const [
+      Duration(seconds: 2),
+      Duration(seconds: 4),
+      Duration(seconds: 8),
+    ],
+  });
+
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    final retryCount = err.requestOptions.extra['retryCount'] ?? 0;
+
+    // Only retry on connection errors, timeouts, or 5xx server errors
+    final shouldRetry = _shouldRetry(err) && retryCount < maxRetries;
+
+    if (shouldRetry) {
+      final delay = retryDelays[retryCount < retryDelays.length ? retryCount : retryDelays.length - 1];
+      debugPrint('Retry ${retryCount + 1}/$maxRetries after ${delay.inSeconds}s for ${err.requestOptions.path}');
+
+      await Future.delayed(delay);
+
+      // Clone request with updated retry count
+      final options = err.requestOptions;
+      options.extra['retryCount'] = retryCount + 1;
+
+      try {
+        final response = await dio.fetch(options);
+        return handler.resolve(response);
+      } catch (e) {
+        if (e is DioException) {
+          return handler.reject(e);
+        }
+        return handler.reject(DioException(
+          requestOptions: options,
+          error: e,
+          type: DioExceptionType.unknown,
+        ));
+      }
+    }
+
+    return handler.next(err);
+  }
+
+  bool _shouldRetry(DioException err) {
+    // Retry on connection errors
+    if (err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout) {
+      return true;
+    }
+
+    // Retry on 5xx server errors (Railway waking up often returns 502/503)
+    final statusCode = err.response?.statusCode;
+    if (statusCode != null && statusCode >= 500 && statusCode < 600) {
+      return true;
+    }
+
+    return false;
+  }
+}
+
 class ApiService {
   final Dio _dio;
   String? _token;
 
   ApiService() : _dio = Dio(BaseOptions(
     baseUrl: ApiConstants.baseUrl,
-    connectTimeout: const Duration(seconds: 60),
-    receiveTimeout: const Duration(seconds: 60),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
     headers: {
       'Content-Type': 'application/json',
     },
   )) {
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-    ));
+    // Add retry interceptor first
+    _dio.interceptors.add(RetryInterceptor(dio: _dio));
+
+    // Add logging in debug mode
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+      ));
+    }
   }
 
   void setToken(String token) {

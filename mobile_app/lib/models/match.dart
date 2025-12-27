@@ -10,6 +10,13 @@ class TeamInfo {
       logo: json['logo'] ?? json['crest'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'logo': logo,
+    };
+  }
 }
 
 class Match {
@@ -52,6 +59,21 @@ class Match {
       homeScore: json['home_score'],
       awayScore: json['away_score'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'home_team': homeTeam.toJson(),
+      'away_team': awayTeam.toJson(),
+      'league': league,
+      'league_code': leagueCode,
+      'match_date': matchDate.toIso8601String(),
+      'matchday': matchday,
+      'status': status,
+      'home_score': homeScore,
+      'away_score': awayScore,
+    };
   }
 
   bool get isFinished => status.toLowerCase() == 'finished';
@@ -107,5 +129,17 @@ class MatchDetail extends Match {
       awayForm: List<String>.from(json['away_form'] ?? []),
       headToHead: json['head_to_head'],
     );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      ...super.toJson(),
+      'venue': venue,
+      'referee': referee,
+      'home_form': homeForm,
+      'away_form': awayForm,
+      'head_to_head': headToHead,
+    };
   }
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/matches_provider.dart';
 import '../models/match.dart';
+import '../widgets/loading_shimmer.dart';
 import 'match_detail_screen.dart';
 import 'league_matches_screen.dart';
 
@@ -38,13 +39,13 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Matches'),
+        title: const Text('Матчи'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Today'),
-            Tab(text: 'Tomorrow'),
-            Tab(text: 'Leagues'),
+            Tab(text: 'Сегодня'),
+            Tab(text: 'Завтра'),
+            Tab(text: 'Лиги'),
           ],
         ),
       ),
@@ -69,7 +70,7 @@ class _TodayMatchesList extends ConsumerWidget {
     final error = matchesState.error;
 
     if (isLoading && matches.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const MatchListShimmer(count: 5);
     }
 
     if (error != null && matches.isEmpty) {
@@ -79,11 +80,11 @@ class _TodayMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error: $error'),
+            Text('Ошибка: $error'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
-              child: const Text('Retry'),
+              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
+              child: const Text('Повторить'),
             ),
           ],
         ),
@@ -97,11 +98,11 @@ class _TodayMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('No matches today'),
+            const Text('Нет матчей сегодня'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
-              child: const Text('Refresh'),
+              onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
+              child: const Text('Обновить'),
             ),
           ],
         ),
@@ -109,7 +110,7 @@ class _TodayMatchesList extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
+      onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: matches.length,
@@ -133,7 +134,7 @@ class _TomorrowMatchesList extends ConsumerWidget {
     final error = matchesState.error;
 
     if (isLoading && matches.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const MatchListShimmer(count: 5);
     }
 
     if (error != null && matches.isEmpty) {
@@ -143,11 +144,11 @@ class _TomorrowMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error: $error'),
+            Text('Ошибка: $error'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
-              child: const Text('Retry'),
+              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
+              child: const Text('Повторить'),
             ),
           ],
         ),
@@ -161,11 +162,11 @@ class _TomorrowMatchesList extends ConsumerWidget {
           children: [
             const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('No matches tomorrow'),
+            const Text('Нет матчей завтра'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
-              child: const Text('Refresh'),
+              onPressed: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
+              child: const Text('Обновить'),
             ),
           ],
         ),
@@ -173,7 +174,7 @@ class _TomorrowMatchesList extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(),
+      onRefresh: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: matches.length,

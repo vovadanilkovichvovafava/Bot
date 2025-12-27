@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
 import '../models/match.dart';
 import '../widgets/stats_card.dart';
+import '../widgets/loading_shimmer.dart';
 import 'match_detail_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -61,14 +62,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // User greeting
             if (user != null) ...[
               Text(
-                'Hello, ${user.username ?? 'User'}!',
+                'Привет, ${user.username ?? 'User'}!',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 4),
               Text(
-                user.isPremium
-                    ? '${user.remainingPredictions} predictions left today'
-                    : '${user.remainingPredictions} predictions left today',
+                'Осталось прогнозов: ${user.remainingPredictions}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -82,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             // Quick actions
             Text(
-              'Quick Actions',
+              'Быстрые действия',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -93,7 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.today,
-                    label: 'Today',
+                    label: 'Сегодня',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -101,7 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.event,
-                    label: 'Tomorrow',
+                    label: 'Завтра',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -109,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: _ActionButton(
                     icon: Icons.emoji_events,
-                    label: 'Leagues',
+                    label: 'Лиги',
                     onTap: () => context.go('/matches'),
                   ),
                 ),
@@ -122,14 +121,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Today's Matches",
+                  'Матчи сегодня',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton(
                   onPressed: () => context.go('/matches'),
-                  child: const Text('See all'),
+                  child: const Text('Все'),
                 ),
               ],
             ),
@@ -137,12 +136,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             // Real matches from API
             if (matchesState.isLoading && todayMatches.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              ...List.generate(3, (_) => const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: MatchCardShimmer(),
+              ))
             else if (todayMatches.isEmpty)
               Card(
                 child: Padding(
@@ -151,11 +148,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       const Icon(Icons.sports_soccer, size: 48, color: Colors.grey),
                       const SizedBox(height: 8),
-                      const Text('No matches today'),
+                      const Text('Нет матчей сегодня'),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(),
-                        child: const Text('Refresh'),
+                        onPressed: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
+                        child: const Text('Обновить'),
                       ),
                     ],
                   ),

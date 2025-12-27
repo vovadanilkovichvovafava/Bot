@@ -1,22 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 
 import '../models/match.dart';
+import '../services/api_service.dart';
 
-class MatchDetailScreen extends ConsumerWidget {
+class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
 
   const MatchDetailScreen({super.key, required this.match});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchDetailScreen> createState() => _MatchDetailScreenState();
+}
+
+class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
+  String? _aiAnalysis;
+  bool _isLoadingAnalysis = false;
+  bool _analysisError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAiAnalysis();
+  }
+
+  Future<void> _loadAiAnalysis() async {
+    // Don't load analysis for finished matches
+    if (widget.match.isFinished) return;
+
+    setState(() {
+      _isLoadingAnalysis = true;
+      _analysisError = false;
+    });
+
+    try {
+      final api = ref.read(apiServiceProvider);
+
+      // Check if AI is available first
+      final available = await api.isChatAvailable();
+      if (!available) {
+        setState(() {
+          _isLoadingAnalysis = false;
+          _analysisError = true;
+        });
+        return;
+      }
+
+      // Request analysis for this specific match
+      final result = await api.sendChatMessage(
+        message: 'Анализ матча ${widget.match.homeTeam.name} vs ${widget.match.awayTeam.name}',
+        history: [],
+      );
+
+      setState(() {
+        _aiAnalysis = result['response'] as String?;
+        _isLoadingAnalysis = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingAnalysis = false;
+        _analysisError = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final match = widget.match;
     final dateFormat = DateFormat('dd MMM yyyy');
     final timeFormat = DateFormat('HH:mm');
 
     return Scaffold(
       appBar: AppBar(
         title: Text(match.league),
+        actions: [
+          if (!match.isFinished && (_analysisError || _aiAnalysis != null))
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadAiAnalysis,
+              tooltip: 'Обновить анализ',
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -150,6 +216,11 @@ class MatchDetailScreen extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
+            // AI Analysis card
+            _buildAiAnalysisCard(context),
+
+            const SizedBox(height: 16),
+
             // Match info card
             Card(
               child: Padding(
@@ -198,47 +269,11 @@ class MatchDetailScreen extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // Coming soon card
-            Card(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.psychology,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'AI-аналитика',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Прогнозы и аналитика на основе AI будут доступны в следующих обновлениях',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
             // Disclaimer
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                '⚠️ Делайте ставки ответственно. Это приложение предоставляет информацию о матчах, а не гарантированные прогнозы.',
+                '⚠️ Делайте ставки ответственно. Прогнозы не гарантируют результат.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey[500],
@@ -250,6 +285,194 @@ class MatchDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildAiAnalysisCard(BuildContext context) {
+    final match = widget.match;
+
+    // For finished matches, show result
+    if (match.isFinished) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Colors.green[600],
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Матч завершён',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Финальный счёт: ${match.homeScore} - ${match.awayScore}',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Loading state
+    if (_isLoadingAnalysis) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Загрузка AI-анализа...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Claude AI анализирует матч',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Error state
+    if (_analysisError) {
+      return Card(
+        color: Colors.orange[50],
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.cloud_off,
+                size: 48,
+                color: Colors.orange[400],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'AI-анализ недоступен',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Сервер просыпается. Нажмите кнопку обновления.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _loadAiAnalysis,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Analysis loaded
+    if (_aiAnalysis != null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.psychology,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'AI-анализ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Claude AI',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              MarkdownBody(
+                data: _aiAnalysis!,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                  strong: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  em: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
+                  ),
+                  listBullet: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 15,
+                  ),
+                ),
+                shrinkWrap: true,
+                softLineBreak: true,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Default - should not happen
+    return const SizedBox.shrink();
   }
 
   Color _getStatusColor(String status) {
