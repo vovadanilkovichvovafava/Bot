@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../providers/predictions_provider.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -23,11 +24,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   bool _analysisError = false;
   bool _reminderSet = false;
 
+  bool _hasPrediction = false;
+
   @override
   void initState() {
     super.initState();
     _loadAiAnalysis();
     _checkReminderStatus();
+    _checkPredictionStatus();
+  }
+
+  void _checkPredictionStatus() {
+    final hasPrediction = ref.read(predictionsProvider.notifier).hasPrediction(widget.match.id);
+    setState(() => _hasPrediction = hasPrediction);
   }
 
   Future<void> _checkReminderStatus() async {
@@ -67,6 +76,178 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           const SnackBar(content: Text('Reminder set for 30 minutes before kick-off')),
         );
       }
+    }
+  }
+
+  Future<void> _showSavePredictionDialog() async {
+    final match = widget.match;
+
+    String? selectedBetType;
+    double confidence = 70;
+    double? odds;
+    final oddsController = TextEditingController();
+
+    final betTypes = [
+      'Home Win',
+      'Draw',
+      'Away Win',
+      'Over 2.5',
+      'Under 2.5',
+      'BTTS Yes',
+      'BTTS No',
+      'Home +1.5',
+      'Away +1.5',
+      'Other',
+    ];
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.bookmark_add),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Save Prediction',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${match.homeTeam.name} vs ${match.awayTeam.name}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                match.league,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 20),
+
+              // Bet type selection
+              const Text(
+                'Bet Type',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: betTypes.map((type) => ChoiceChip(
+                  label: Text(type),
+                  selected: selectedBetType == type,
+                  onSelected: (selected) {
+                    setModalState(() => selectedBetType = selected ? type : null);
+                  },
+                )).toList(),
+              ),
+              const SizedBox(height: 20),
+
+              // Confidence slider
+              Row(
+                children: [
+                  const Text(
+                    'Confidence',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${confidence.toStringAsFixed(0)}%',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Slider(
+                value: confidence,
+                min: 10,
+                max: 100,
+                divisions: 18,
+                onChanged: (value) => setModalState(() => confidence = value),
+              ),
+              const SizedBox(height: 12),
+
+              // Odds input
+              TextField(
+                controller: oddsController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Odds (optional)',
+                  hintText: 'e.g., 1.85',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixText: '@ ',
+                ),
+                onChanged: (value) {
+                  odds = double.tryParse(value);
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Save button
+              FilledButton.icon(
+                onPressed: selectedBetType == null
+                    ? null
+                    : () async {
+                        await ref.read(predictionsProvider.notifier).savePrediction(
+                          match: match,
+                          betType: selectedBetType!,
+                          confidence: confidence,
+                          odds: odds,
+                          analysis: _aiAnalysis,
+                        );
+                        setState(() => _hasPrediction = true);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Prediction saved!')),
+                          );
+                        }
+                      },
+                icon: const Icon(Icons.save),
+                label: const Text('Save Prediction'),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removePrediction() async {
+    await ref.read(predictionsProvider.notifier).removePrediction(widget.match.id);
+    setState(() => _hasPrediction = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Prediction removed')),
+      );
     }
   }
 
@@ -120,6 +301,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       appBar: AppBar(
         title: Text(match.league),
         actions: [
+          // Save prediction button (only for scheduled matches)
+          if (match.isScheduled)
+            IconButton(
+              icon: Icon(
+                _hasPrediction ? Icons.bookmark : Icons.bookmark_border,
+                color: _hasPrediction ? Theme.of(context).colorScheme.primary : null,
+              ),
+              onPressed: _hasPrediction ? _removePrediction : _showSavePredictionDialog,
+              tooltip: _hasPrediction ? 'Remove prediction' : 'Save prediction',
+            ),
           // Reminder button (only for scheduled matches)
           if (match.isScheduled)
             IconButton(
@@ -327,7 +518,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                '⚠️ Делайте ставки ответственно. Прогнозы не гарантируют результат.',
+                '⚠️ Please bet responsibly. Predictions do not guarantee results.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey[500],
@@ -472,7 +663,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'AI-анализ',
+                    'AI Analysis',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
