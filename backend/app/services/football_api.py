@@ -75,6 +75,7 @@ async def _fetch_league_matches(client: httpx.AsyncClient, lg_code: str, headers
                     "league": match["competition"]["name"],
                     "league_code": match["competition"].get("code", lg_code),
                     "match_date": match["utcDate"],
+                    "matchday": match.get("matchday"),
                     "status": match["status"].lower(),
                     "home_score": match["score"]["fullTime"]["home"],
                     "away_score": match["score"]["fullTime"]["away"],

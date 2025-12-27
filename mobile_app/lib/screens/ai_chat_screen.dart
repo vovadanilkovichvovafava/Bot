@@ -297,15 +297,20 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 • Ligue 1''';
     }
 
-    // Only show next matchday (max 5 matches)
-    final nextMatchday = leagueMatches.take(5).toList();
+    // Find the next matchday number
+    final nextMatchdayNum = leagueMatches.first.matchday;
+
+    // Get ALL matches from next matchday (entire round)
+    final nextMatchdayMatches = nextMatchdayNum != null
+        ? leagueMatches.where((m) => m.matchday == nextMatchdayNum).toList()
+        : leagueMatches;
 
     final buffer = StringBuffer();
-    buffer.writeln('🏆 **$leagueName - Ближайший тур**\n');
+    buffer.writeln('🏆 **$leagueName - Тур ${nextMatchdayNum ?? ""}**\n');
     buffer.writeln('---\n');
 
-    for (int i = 0; i < nextMatchday.length; i++) {
-      final match = nextMatchday[i];
+    for (int i = 0; i < nextMatchdayMatches.length; i++) {
+      final match = nextMatchdayMatches[i];
       buffer.writeln('**${i + 1}. ${match.homeTeam.name} vs ${match.awayTeam.name}**');
       buffer.writeln('📅 ${_formatMatchDate(match.date)}');
       buffer.writeln('');

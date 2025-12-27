@@ -19,6 +19,7 @@ class Match {
   final String league;
   final String leagueCode;
   final DateTime matchDate;
+  final int? matchday;
   final String status;
   final int? homeScore;
   final int? awayScore;
@@ -30,10 +31,13 @@ class Match {
     required this.league,
     required this.leagueCode,
     required this.matchDate,
+    this.matchday,
     required this.status,
     this.homeScore,
     this.awayScore,
   });
+
+  DateTime get date => matchDate;
 
   factory Match.fromJson(Map<String, dynamic> json) {
     return Match(
@@ -43,6 +47,7 @@ class Match {
       league: json['league'] ?? json['competition'] ?? 'Unknown',
       leagueCode: json['league_code'] ?? json['competition_code'] ?? '',
       matchDate: DateTime.parse(json['match_date'] ?? json['utc_date']),
+      matchday: json['matchday'],
       status: json['status'] ?? 'scheduled',
       homeScore: json['home_score'],
       awayScore: json['away_score'],
