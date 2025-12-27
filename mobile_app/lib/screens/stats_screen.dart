@@ -8,7 +8,7 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Статистика'),
+        title: const Text('Statistics'),
         centerTitle: true,
       ),
       body: Center(
@@ -31,14 +31,14 @@ class StatsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Статистика прогнозов',
+                'Prediction Statistics',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'История ваших прогнозов и статистика точности появятся здесь в ближайших обновлениях.',
+                'Your prediction history and accuracy statistics will appear here in upcoming updates.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey[600],
@@ -53,20 +53,20 @@ class StatsScreen extends ConsumerWidget {
                     children: [
                       _FeatureRow(
                         icon: Icons.track_changes,
-                        title: 'Отслеживание прогнозов',
-                        description: 'Сохраняйте прогнозы из AI чата',
+                        title: 'Prediction Tracking',
+                        description: 'Save predictions from AI chat',
                       ),
                       const Divider(height: 24),
                       _FeatureRow(
                         icon: Icons.analytics,
-                        title: 'Точность прогнозов',
-                        description: 'Смотрите процент успешных прогнозов',
+                        title: 'Prediction Accuracy',
+                        description: 'View your success rate',
                       ),
                       const Divider(height: 24),
                       _FeatureRow(
                         icon: Icons.trending_up,
-                        title: 'Анализ стратегии',
-                        description: 'Улучшайте свои ставки на основе данных',
+                        title: 'Strategy Analysis',
+                        description: 'Improve your bets based on data',
                       ),
                     ],
                   ),
@@ -80,7 +80,7 @@ class StatsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Скоро в обновлениях',
+                  'Coming soon',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w500,

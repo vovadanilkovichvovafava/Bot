@@ -26,7 +26,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _matchesLoaded = false;
 
   static const _defaultQuickQuestions = [
-    "📅 Матчи сегодня",
+    "📅 Today's matches",
     "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League",
     "🇪🇸 La Liga",
     "🇩🇪 Bundesliga",
@@ -130,29 +130,29 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   void _addWelcomeMessage() {
     final statusText = _aiAvailable
-        ? '✅ AI-анализ **включён** (Claude AI)'
-        : '⚠️ AI-анализ **выключен** (сервер недоступен)';
+        ? '✅ AI analysis **enabled** (Claude AI)'
+        : '⚠️ AI analysis **disabled** (server unavailable)';
 
     _messages.add(ChatMessage(
-      text: '''Привет! 👋
+      text: '''Hello! 👋
 
-Я AI-ассистент для анализа футбольных матчей.
+I'm your AI assistant for football match analysis.
 
 $statusText
 
-**Что я могу:**
-• 📊 Анализ конкретных матчей с прогнозами
-• 🎯 Вероятности: П1/Х/П2, тоталы, BTTS
-• 📅 Обзор матчей на сегодня/завтра
-• 💡 Рекомендации по ставкам
+**What I can do:**
+• 📊 Analyse specific matches with predictions
+• 🎯 Probabilities: Home/Draw/Away, totals, BTTS
+• 📅 Match overview for today/tomorrow
+• 💡 Betting recommendations
 
-**Примеры запросов:**
-• "Анализ Bayern vs Dortmund"
-• "West Ham vs Fulham прогноз"
-• "Premier League сегодня"
-• "Лучшие ставки на сегодня"
+**Example queries:**
+• "Analyse Bayern vs Dortmund"
+• "West Ham vs Fulham prediction"
+• "Premier League today"
+• "Best bets for today"
 
-⚠️ Делайте ставки ответственно''',
+⚠️ Please bet responsibly''',
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -301,17 +301,17 @@ $statusText
   }
 
   String _generateMatchNotFound(String query) {
-    return '''❌ **Матч не найден**
+    return '''❌ **Match not found**
 
-Не удалось найти матч по запросу: "$query"
+Could not find a match for: "$query"
 
-**Возможные причины:**
-• Матч не запланирован на ближайшие дни
-• Проверьте правильность названий команд
+**Possible reasons:**
+• Match is not scheduled for the next few days
+• Check the team names are correct
 
-**Попробуйте:**
-• Спросить о конкретной лиге: "Bundesliga", "Premier League"
-• Посмотреть матчи на сегодня: "Матчи сегодня"''';
+**Try:**
+• Ask about a specific league: "Bundesliga", "Premier League"
+• View today's matches: "Today's matches"''';
   }
 
   Match? _findMatchByQuery(String query) {
@@ -337,25 +337,25 @@ $statusText
 
 ---
 
-**📊 Базовая информация:**
+**📊 Basic information:**
 
-🏠 **${match.homeTeam.name}** (Дома)
-🚌 **${match.awayTeam.name}** (В гостях)
-
----
-
-⚠️ **AI-анализ недоступен**
-
-Сервер временно недоступен. Попробуйте через несколько секунд - сервер может "просыпаться".
-
-**Когда AI доступен, вы получите:**
-• Анализ формы команд
-• Прогноз вероятностей (П1/Х/П2)
-• Рекомендации по ставкам
-• Тоталы и BTTS прогнозы
+🏠 **${match.homeTeam.name}** (Home)
+🚌 **${match.awayTeam.name}** (Away)
 
 ---
-⚠️ *Делайте ставки ответственно.*''';
+
+⚠️ **AI analysis unavailable**
+
+Server is temporarily unavailable. Please try again in a few seconds - the server may be waking up.
+
+**When AI is available, you'll get:**
+• Team form analysis
+• Probability predictions (Home/Draw/Away)
+• Betting recommendations
+• Totals and BTTS predictions
+
+---
+⚠️ *Please bet responsibly.*''';
     }
 
     return '''⚽ **${match.homeTeam.name} vs ${match.awayTeam.name}**
@@ -365,11 +365,11 @@ $statusText
 
 ---
 
-🏠 **${match.homeTeam.name}** (Дома)
-🚌 **${match.awayTeam.name}** (В гостях)
+🏠 **${match.homeTeam.name}** (Home)
+🚌 **${match.awayTeam.name}** (Away)
 
 ---
-⚠️ *Делайте ставки ответственно.*''';
+⚠️ *Please bet responsibly.*''';
   }
 
   String _generateLeagueAnalysis(String leagueCode, String leagueName) {
@@ -381,19 +381,19 @@ $statusText
     if (!_matchesLoaded) {
       return '''🏆 **$leagueName**
 
-⏳ Загрузка матчей...
+⏳ Loading matches...
 
-Сервер запускается, попробуйте через 30 секунд.''';
+Server is starting, please try again in 30 seconds.''';
     }
 
     if (leagueMatches.isEmpty) {
       return '''🏆 **$leagueName**
 
-❌ **Матчи не найдены**
+❌ **No matches found**
 
-В ближайшие дни нет запланированных матчей $leagueName.
+No $leagueName matches scheduled for the next few days.
 
-Попробуйте другую лигу:
+Try another league:
 • Premier League
 • La Liga
 • Bundesliga
@@ -410,7 +410,7 @@ $statusText
         : leagueMatches;
 
     final buffer = StringBuffer();
-    buffer.writeln('🏆 **$leagueName - Тур ${nextMatchdayNum ?? ""}**\n');
+    buffer.writeln('🏆 **$leagueName - Matchday ${nextMatchdayNum ?? ""}**\n');
     buffer.writeln('---\n');
 
     for (int i = 0; i < nextMatchdayMatches.length; i++) {
@@ -421,7 +421,7 @@ $statusText
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('💡 Напишите название команды для детального анализа');
+    buffer.writeln('💡 Type a team name for detailed analysis');
 
     return buffer.toString();
   }
@@ -432,9 +432,9 @@ $statusText
     final matchDay = DateTime(date.year, date.month, date.day);
 
     if (matchDay == today) {
-      return 'Сегодня ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      return 'Today ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } else if (matchDay == today.add(const Duration(days: 1))) {
-      return 'Завтра ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      return 'Tomorrow ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } else {
       return '${date.day}.${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     }
@@ -442,21 +442,21 @@ $statusText
 
   String _generateTodayOverview() {
     if (!_matchesLoaded) {
-      return '''📅 **Матчи на сегодня**
+      return '''📅 **Today's matches**
 
-⏳ Загрузка матчей...
+⏳ Loading matches...
 
-Сервер запускается, попробуйте через 30 секунд.''';
+Server is starting, please try again in 30 seconds.''';
     }
 
     if (_todayMatches.isEmpty && _tomorrowMatches.isEmpty) {
-      return '''📅 **Матчи на сегодня**
+      return '''📅 **Today's matches**
 
-❌ **Матчи не найдены**
+❌ **No matches found**
 
-Сегодня и завтра нет запланированных матчей.
+No matches scheduled for today or tomorrow.
 
-Спросите о конкретной лиге:
+Ask about a specific league:
 • "Bundesliga"
 • "Premier League"
 • "La Liga"''';
@@ -465,9 +465,9 @@ $statusText
     final buffer = StringBuffer();
 
     final matches = _todayMatches.isNotEmpty ? _todayMatches : _tomorrowMatches;
-    final dateLabel = _todayMatches.isNotEmpty ? "Сегодня" : "Завтра";
+    final dateLabel = _todayMatches.isNotEmpty ? "Today" : "Tomorrow";
 
-    buffer.writeln('📅 **Матчи на $dateLabel**\n');
+    buffer.writeln('📅 **Matches for $dateLabel**\n');
     buffer.writeln('---\n');
 
     // Group by league, limit to 3 matches per league
@@ -489,7 +489,7 @@ $statusText
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('💡 Напишите название команды для анализа');
+    buffer.writeln('💡 Type a team name for analysis');
 
     return buffer.toString();
   }
@@ -505,25 +505,25 @@ $statusText
 
   String _generateTotalsAnalysis() {
     if (!_matchesLoaded) {
-      return '''📊 **Тоталы (Over/Under)**
+      return '''📊 **Totals (Over/Under)**
 
-⏳ Загрузка матчей...
+⏳ Loading matches...
 
-Сервер запускается, попробуйте через 30 секунд.''';
+Server is starting, please try again in 30 seconds.''';
     }
 
     final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
     if (allMatches.isEmpty) {
-      return '''📊 **Тоталы (Over/Under)**
+      return '''📊 **Totals (Over/Under)**
 
-❌ **Матчи не найдены**
+❌ **No matches found**
 
-Нет доступных матчей для анализа тоталов.''';
+No matches available for totals analysis.''';
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('📊 **Тоталы - Ближайшие матчи**\n');
+    buffer.writeln('📊 **Totals - Upcoming matches**\n');
     buffer.writeln('---\n');
 
     // Just list matches, no fake predictions
@@ -534,32 +534,32 @@ $statusText
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('💡 Для анализа конкретного матча напишите названия команд');
+    buffer.writeln('💡 Type team names to analyse a specific match');
 
     return buffer.toString();
   }
 
   String _generateBttsAnalysis() {
     if (!_matchesLoaded) {
-      return '''🥅 **BTTS (Обе забьют)**
+      return '''🥅 **BTTS (Both Teams To Score)**
 
-⏳ Загрузка матчей...
+⏳ Loading matches...
 
-Сервер запускается, попробуйте через 30 секунд.''';
+Server is starting, please try again in 30 seconds.''';
     }
 
     final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
     if (allMatches.isEmpty) {
-      return '''🥅 **BTTS (Обе забьют)**
+      return '''🥅 **BTTS (Both Teams To Score)**
 
-❌ **Матчи не найдены**
+❌ **No matches found**
 
-Нет доступных матчей для анализа BTTS.''';
+No matches available for BTTS analysis.''';
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('🥅 **BTTS - Ближайшие матчи**\n');
+    buffer.writeln('🥅 **BTTS - Upcoming matches**\n');
     buffer.writeln('---\n');
 
     // Just list matches, no fake predictions
@@ -570,7 +570,7 @@ $statusText
     }
 
     buffer.writeln('---\n');
-    buffer.writeln('💡 Для анализа конкретного матча напишите названия команд');
+    buffer.writeln('💡 Type team names to analyse a specific match');
 
     return buffer.toString();
   }

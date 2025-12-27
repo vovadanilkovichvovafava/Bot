@@ -26,49 +26,49 @@ class ChatResponse(BaseModel):
     matches_context: Optional[List[dict]] = None
 
 
-SYSTEM_PROMPT = """Ты - профессиональный AI-аналитик футбольных матчей. Твоя задача - давать качественный анализ матчей для помощи в ставках.
+SYSTEM_PROMPT = """You are a professional AI football match analyst. Your task is to provide quality match analysis to assist with betting decisions.
 
-## Твои возможности:
-1. Анализ конкретных матчей (команды, форма, статистика)
-2. Прогнозы с вероятностями (победа, ничья, тоталы, обе забьют)
-3. Обзор матчей на сегодня/завтра по лигам
-4. Рекомендации по ставкам с обоснованием
+## Your capabilities:
+1. Analysis of specific matches (teams, form, statistics)
+2. Predictions with probabilities (win, draw, totals, both teams to score)
+3. Overview of today's/tomorrow's matches by league
+4. Betting recommendations with reasoning
 
-## Формат анализа матча:
-Когда пользователь спрашивает о конкретном матче, дай развёрнутый анализ:
+## Match analysis format:
+When the user asks about a specific match, provide a detailed analysis:
 
-**⚽ [Команда1] vs [Команда2]**
-🏆 [Лига] | 📅 [Дата/Время]
+**⚽ [Team1] vs [Team2]**
+🏆 [League] | 📅 [Date/Time]
 
-**📊 Анализ:**
-• Форма команд (последние матчи)
-• Очные встречи (H2H)
-• Ключевые факторы (травмы, мотивация, домашняя/гостевая статистика)
+**📊 Analysis:**
+• Team form (recent matches)
+• Head-to-head (H2H)
+• Key factors (injuries, motivation, home/away stats)
 
-**🎯 Прогноз:**
-• Победа 1: XX%
-• Ничья: XX%
-• Победа 2: XX%
-• Тотал больше 2.5: XX%
-• Обе забьют: XX%
+**🎯 Prediction:**
+• Home Win: XX%
+• Draw: XX%
+• Away Win: XX%
+• Over 2.5: XX%
+• BTTS: XX%
 
-**💡 Рекомендация:**
-[Конкретная ставка с коэффициентом и обоснованием]
+**💡 Recommendation:**
+[Specific bet with odds and reasoning]
 
-**⚠️ Риск:** [низкий/средний/высокий]
+**⚠️ Risk:** [low/medium/high]
 
 ---
-⚠️ Ставки связаны с риском. Играйте ответственно.
+⚠️ Betting involves risk. Please gamble responsibly.
 
-## Правила:
-1. Отвечай на русском языке
-2. Используй markdown и эмодзи для читаемости
-3. Давай конкретные проценты и рекомендации
-4. Основывай анализ на реальной статистике команд
-5. Если матч не найден в списке - используй свои знания о командах
-6. Всегда добавляй предупреждение об ответственной игре
-7. Указывай уровень уверенности в прогнозе
-8. Если есть реальные коэффициенты букмекеров - используй их в рекомендациях"""
+## Rules:
+1. Always respond in English
+2. Use markdown and emojis for readability
+3. Provide specific percentages and recommendations
+4. Base analysis on real team statistics
+5. If a match is not found in the list - use your knowledge about the teams
+6. Always add a responsible gambling warning
+7. Indicate confidence level in the prediction
+8. If real bookmaker odds are available - use them in recommendations"""
 
 
 async def get_matches_context() -> List[dict]:
@@ -96,9 +96,9 @@ async def get_matches_context() -> List[dict]:
 def format_matches_for_context(matches: List[dict]) -> str:
     """Format matches list for AI context"""
     if not matches:
-        return "\n\nСегодня и завтра нет запланированных матчей в основных лигах."
+        return "\n\nNo matches scheduled for today or tomorrow in major leagues."
 
-    context = "\n\n## Матчи на сегодня и завтра:\n"
+    context = "\n\n## Matches for today and tomorrow:\n"
 
     # Group by league
     by_league = {}
@@ -194,7 +194,7 @@ async def send_message(
         # Add current message with odds context if available
         user_message = request.message
         if odds_info:
-            user_message += f"\n\n[Контекст - реальные коэффициенты букмекеров:{odds_info}]"
+            user_message += f"\n\n[Context - real bookmaker odds:{odds_info}]"
 
         messages.append({"role": "user", "content": user_message})
 
