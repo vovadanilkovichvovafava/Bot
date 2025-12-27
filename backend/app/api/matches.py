@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
-import random
 
 from app.core.security import get_current_user
 from app.services.football_api import fetch_matches, fetch_match_details, fetch_standings, fetch_leagues
@@ -22,6 +21,7 @@ class Match(BaseModel):
     league: str
     league_code: str
     match_date: datetime
+    matchday: Optional[int] = None
     status: str = "scheduled"
     home_score: Optional[int] = None
     away_score: Optional[int] = None
@@ -68,16 +68,6 @@ class League(BaseModel):
     icon: Optional[str] = None
 
 
-# Demo matches data (fallback)
-DEMO_MATCHES = [
-    {"home": "Manchester City", "away": "Arsenal", "league": "Premier League", "code": "PL"},
-    {"home": "Real Madrid", "away": "Barcelona", "league": "La Liga", "code": "PD"},
-    {"home": "Bayern Munich", "away": "Dortmund", "league": "Bundesliga", "code": "BL1"},
-    {"home": "PSG", "away": "Marseille", "league": "Ligue 1", "code": "FL1"},
-    {"home": "Juventus", "away": "Inter Milan", "league": "Serie A", "code": "SA"},
-]
-
-
 @router.get("/today", response_model=List[Match])
 async def get_today_matches(league: Optional[str] = Query(None)):
     """Get today's matches"""
@@ -88,8 +78,8 @@ async def get_today_matches(league: Optional[str] = Query(None)):
     if matches:
         return [Match(**m) for m in matches]
 
-    # Fallback to demo data
-    return _generate_demo_matches(0)
+    # No matches found - return empty list, not fake data
+    return []
 
 
 @router.get("/tomorrow", response_model=List[Match])
@@ -102,7 +92,7 @@ async def get_tomorrow_matches(league: Optional[str] = Query(None)):
     if matches:
         return [Match(**m) for m in matches]
 
-    return _generate_demo_matches(1)
+    return []
 
 
 @router.get("/upcoming", response_model=List[Match])
@@ -119,7 +109,7 @@ async def get_upcoming_matches(
     if matches:
         return [Match(**m) for m in matches]
 
-    return _generate_demo_matches(0) + _generate_demo_matches(1)
+    return []
 
 
 @router.get("/leagues", response_model=List[League])
@@ -137,7 +127,7 @@ async def get_league_standings(league_code: str):
     if standings:
         return [Standing(**s) for s in standings]
 
-    return _get_demo_standings()
+    return []
 
 
 @router.get("/{match_id}", response_model=MatchDetail)
@@ -148,72 +138,4 @@ async def get_match_detail(match_id: int, current_user: dict = Depends(get_curre
     if details:
         return MatchDetail(**details)
 
-    return _get_demo_match_detail(match_id)
-
-
-# Demo data generators
-def _generate_demo_matches(day_offset: int) -> List[Match]:
-    """Generate demo matches for fallback"""
-    base_date = datetime.utcnow() + timedelta(days=day_offset)
-    matches = []
-
-    for i, m in enumerate(DEMO_MATCHES):
-        match_time = base_date.replace(
-            hour=random.choice([15, 17, 19, 21]),
-            minute=random.choice([0, 30]),
-            second=0,
-            microsecond=0
-        )
-        matches.append(Match(
-            id=1000 + i + (day_offset * 100),
-            home_team=Team(name=m["home"]),
-            away_team=Team(name=m["away"]),
-            league=m["league"],
-            league_code=m["code"],
-            match_date=match_time,
-        ))
-
-    return matches
-
-
-def _get_demo_match_detail(match_id: int) -> MatchDetail:
-    """Generate demo match detail"""
-    return MatchDetail(
-        id=match_id,
-        home_team=Team(name="Manchester City"),
-        away_team=Team(name="Arsenal"),
-        league="Premier League",
-        league_code="PL",
-        match_date=datetime.utcnow(),
-        head_to_head=HeadToHead(
-            total_matches=10,
-            home_wins=4,
-            away_wins=3,
-            draws=3
-        )
-    )
-
-
-def _get_demo_standings() -> List[Standing]:
-    """Generate demo standings"""
-    teams = [
-        "Manchester City", "Arsenal", "Liverpool", "Aston Villa",
-        "Tottenham", "Manchester United", "Newcastle", "Brighton"
-    ]
-
-    standings = []
-    for i, team in enumerate(teams):
-        standings.append(Standing(
-            position=i + 1,
-            team=team,
-            played=20,
-            won=15 - i,
-            drawn=3,
-            lost=2 + i,
-            goals_for=50 - i * 3,
-            goals_against=20 + i * 2,
-            goal_difference=30 - i * 5,
-            points=48 - i * 3
-        ))
-
-    return standings
+    raise HTTPException(status_code=404, detail="Match not found")

@@ -230,8 +230,36 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       return _generateSingleMatchAnalysis(matchResult);
     }
 
+    // Check if query looks like a match search (contains "vs" or team names)
+    if (queryLower.contains('vs') || queryLower.contains(' - ') ||
+        _looksLikeTeamSearch(queryLower)) {
+      return _generateMatchNotFound(query);
+    }
+
     // Default to today overview
     return _generateTodayOverview();
+  }
+
+  bool _looksLikeTeamSearch(String query) {
+    // Common football team keywords
+    final teamKeywords = ['fc', 'united', 'city', 'real', 'milan', 'inter',
+      'bayern', 'chelsea', 'arsenal', 'liverpool', 'barcelona', 'juventus',
+      'psg', 'dortmund', 'tottenham', 'villa', 'madrid'];
+    return teamKeywords.any((keyword) => query.contains(keyword));
+  }
+
+  String _generateMatchNotFound(String query) {
+    return '''❌ **Матч не найден**
+
+Не удалось найти матч по запросу: "$query"
+
+**Возможные причины:**
+• Матч не запланирован на ближайшие дни
+• Проверьте правильность названий команд
+
+**Попробуйте:**
+• Спросить о конкретной лиге: "Bundesliga", "Premier League"
+• Посмотреть матчи на сегодня: "Матчи сегодня"''';
   }
 
   Match? _findMatchByQuery(String query) {
