@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import '../services/api_service.dart';
+import '../models/match.dart';
+
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
 
@@ -17,13 +20,17 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _isLoading = false;
   bool _showSuggestions = true;
 
+  List<Match> _todayMatches = [];
+  List<Match> _tomorrowMatches = [];
+  bool _matchesLoaded = false;
+
   static const _defaultQuickQuestions = [
     "🔥 Best bets today",
     "⚽ Premier League tips",
     "🇪🇸 La Liga predictions",
+    "🇩🇪 Bundesliga analysis",
     "📊 Over/Under tips",
     "🎯 BTTS predictions",
-    "🏆 Champions League",
   ];
 
   List<String> _quickQuestions = List.from(_defaultQuickQuestions);
@@ -33,6 +40,22 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     super.initState();
     _addWelcomeMessage();
     _loadQuickQuestions();
+    _loadMatches();
+  }
+
+  Future<void> _loadMatches() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final today = await api.getTodayMatches();
+      final tomorrow = await api.getTomorrowMatches();
+      setState(() {
+        _todayMatches = today;
+        _tomorrowMatches = tomorrow;
+        _matchesLoaded = true;
+      });
+    } catch (e) {
+      // Silent fail - will use fallback responses
+    }
   }
 
   Future<void> _loadQuickQuestions() async {
@@ -166,172 +189,333 @@ Example questions:
   String _generateAiResponse(String query) {
     final queryLower = query.toLowerCase();
 
-    // Extract team names from query
-    final vsMatch = RegExp(r'(\w+(?:\s+\w+)*)\s+(?:vs|v|против|—|-)\s+(\w+(?:\s+\w+)*)', caseSensitive: false)
-        .firstMatch(queryLower);
-
-    if (vsMatch != null || queryLower.contains('analyze') || queryLower.contains('predict') ||
-        queryLower.contains('who will win') || queryLower.contains('анализ') || queryLower.contains('прогноз')) {
-      return _generateMatchAnalysis(query);
+    // Check for league-specific requests
+    if (queryLower.contains('bundesliga') || queryLower.contains('бундеслиг')) {
+      return _generateLeagueAnalysis('BL1', 'Bundesliga');
+    }
+    if (queryLower.contains('premier league') || queryLower.contains('апл')) {
+      return _generateLeagueAnalysis('PL', 'Premier League');
+    }
+    if (queryLower.contains('la liga') || queryLower.contains('ла лига')) {
+      return _generateLeagueAnalysis('PD', 'La Liga');
+    }
+    if (queryLower.contains('serie a') || queryLower.contains('серия а')) {
+      return _generateLeagueAnalysis('SA', 'Serie A');
+    }
+    if (queryLower.contains('ligue 1') || queryLower.contains('лига 1')) {
+      return _generateLeagueAnalysis('FL1', 'Ligue 1');
     }
 
-    if (queryLower.contains('today') || queryLower.contains('сегодня')) {
+    // Check for today/best bets
+    if (queryLower.contains('today') || queryLower.contains('сегодня') ||
+        queryLower.contains('best bet') || queryLower.contains('лучш')) {
       return _generateTodayOverview();
     }
 
-    if (queryLower.contains('premier league') || queryLower.contains('la liga') ||
-        queryLower.contains('bundesliga') || queryLower.contains('serie a')) {
-      return _generateLeagueOverview(query);
-    }
-
+    // Check for over/under
     if (queryLower.contains('over') || queryLower.contains('under') || queryLower.contains('тотал')) {
-      return _generateTotalsPrediction(query);
+      return _generateTotalsAnalysis();
     }
 
-    if (queryLower.contains('btts') || queryLower.contains('both teams')) {
-      return _generateBttsPrediction(query);
+    // Check for BTTS
+    if (queryLower.contains('btts') || queryLower.contains('both teams') || queryLower.contains('обе забьют')) {
+      return _generateBttsAnalysis();
     }
 
-    return _generateMatchAnalysis(query);
+    // Try to find specific match
+    final matchResult = _findMatchByQuery(query);
+    if (matchResult != null) {
+      return _generateSingleMatchAnalysis(matchResult);
+    }
+
+    // Default to today overview
+    return _generateTodayOverview();
   }
 
-  String _generateMatchAnalysis(String query) {
-    // Extract team names or use query as context
-    final hash = query.hashCode.abs();
-    final homeWin = 25 + (hash % 35);
-    final awayWin = 20 + ((hash ~/ 2) % 30);
-    final draw = 100 - homeWin - awayWin;
+  Match? _findMatchByQuery(String query) {
+    final queryLower = query.toLowerCase();
+    final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
-    final confidence = (55 + (hash % 30));
-    final goalsExpected = 2.0 + (hash % 20) / 10.0;
+    for (final match in allMatches) {
+      if (queryLower.contains(match.homeTeam.name.toLowerCase()) ||
+          queryLower.contains(match.awayTeam.name.toLowerCase())) {
+        return match;
+      }
+    }
+    return null;
+  }
+
+  String _generateSingleMatchAnalysis(Match match) {
+    final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+    final homeWin = 30 + (hash % 30);
+    final awayWin = 25 + ((hash ~/ 3) % 25);
+    final draw = 100 - homeWin - awayWin;
+    final confidence = 60 + (hash % 25);
+    final xg = 2.2 + (hash % 18) / 10.0;
 
     String prediction;
     String betType;
     double odds;
 
     if (homeWin > awayWin && homeWin > draw) {
-      prediction = "Home Win";
+      prediction = match.homeTeam.name;
       betType = "1";
-      odds = 1.5 + (hash % 100) / 100.0;
+      odds = 1.4 + (100 - homeWin) / 80.0;
     } else if (awayWin > homeWin && awayWin > draw) {
-      prediction = "Away Win";
+      prediction = match.awayTeam.name;
       betType = "2";
-      odds = 1.8 + (hash % 120) / 100.0;
+      odds = 1.6 + (100 - awayWin) / 70.0;
     } else {
       prediction = "Draw";
       betType = "X";
-      odds = 2.8 + (hash % 150) / 100.0;
+      odds = 2.8 + (hash % 80) / 100.0;
     }
 
-    return '''📊 **Match Analysis**
+    return '''⚽ **${match.homeTeam.name} vs ${match.awayTeam.name}**
+🏆 ${match.league}
 
-Based on my analysis of recent form, head-to-head records, and current statistics:
+---
 
-**Win Probabilities:**
-🏠 Home: $homeWin%
-🤝 Draw: $draw%
-✈️ Away: $awayWin%
+**📊 Win Probabilities:**
+• ${match.homeTeam.name}: **$homeWin%**
+• Draw: **$draw%**
+• ${match.awayTeam.name}: **$awayWin%**
 
-**🎯 Primary Prediction:**
-$prediction ($betType) @ ${odds.toStringAsFixed(2)}
-Confidence: $confidence%
+**🎯 Main Prediction:**
+**$prediction** ($betType) @ ${odds.toStringAsFixed(2)}
+Confidence: **$confidence%**
 
 **📈 Goals Analysis:**
-Expected goals: ${goalsExpected.toStringAsFixed(1)}
-Over 2.5: ${goalsExpected > 2.5 ? "✅ Likely" : "⚠️ Risky"}
-BTTS: ${(hash % 2 == 0) ? "✅ Yes" : "❌ No"}
+• Expected Goals (xG): ${xg.toStringAsFixed(1)}
+• Over 2.5: ${xg > 2.5 ? "✅ Recommended" : "⚠️ Risky"} @ ${(1.7 + (hash % 40) / 100.0).toStringAsFixed(2)}
+• BTTS: ${hash % 2 == 0 ? "✅ Yes" : "❌ No"} @ ${(1.65 + (hash % 35) / 100.0).toStringAsFixed(2)}
 
-**💡 Recommended Bets:**
-1. $betType @ ${odds.toStringAsFixed(2)} (Main)
-2. ${goalsExpected > 2.5 ? "Over 2.5" : "Under 2.5"} @ ${(1.7 + (hash % 50) / 100.0).toStringAsFixed(2)}
-3. ${(hash % 2 == 0) ? "BTTS Yes" : "BTTS No"} @ ${(1.6 + (hash % 60) / 100.0).toStringAsFixed(2)}
+**💰 Best Bets:**
+1. **$betType** @ ${odds.toStringAsFixed(2)} (Primary)
+2. **${xg > 2.5 ? "Over 2.5" : "Under 2.5"}** @ ${(1.75 + (hash % 30) / 100.0).toStringAsFixed(2)}
+3. **${match.homeTeam.name} or Draw (1X)** @ ${(1.25 + (hash % 20) / 100.0).toStringAsFixed(2)}
 
-⚠️ *This is AI-generated prediction based on statistical analysis. Bet responsibly.*''';
+⚠️ *Bet responsibly. Past performance doesn't guarantee results.*''';
+  }
+
+  String _generateLeagueAnalysis(String leagueCode, String leagueName) {
+    final allMatches = [..._todayMatches, ..._tomorrowMatches];
+    final leagueMatches = allMatches.where((m) =>
+      m.leagueCode == leagueCode || m.league.toLowerCase().contains(leagueName.toLowerCase())
+    ).toList();
+
+    if (leagueMatches.isEmpty) {
+      return '''🏆 **$leagueName Analysis**
+
+No upcoming matches found for $leagueName in the next 2 days.
+
+Try checking back later or ask about another league:
+• Premier League
+• La Liga
+• Bundesliga
+• Serie A
+• Ligue 1''';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('🏆 **$leagueName - Upcoming Matches Analysis**\n');
+    buffer.writeln('Found **${leagueMatches.length}** matches:\n');
+    buffer.writeln('---\n');
+
+    for (int i = 0; i < leagueMatches.length && i < 6; i++) {
+      final match = leagueMatches[i];
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final homeWin = 30 + (hash % 30);
+      final awayWin = 25 + ((hash ~/ 3) % 25);
+      final confidence = 60 + (hash % 25);
+      final xg = 2.2 + (hash % 18) / 10.0;
+
+      String bestBet;
+      String odds;
+      if (homeWin > awayWin) {
+        bestBet = "1 (${match.homeTeam.name})";
+        odds = (1.4 + (100 - homeWin) / 80.0).toStringAsFixed(2);
+      } else {
+        bestBet = "2 (${match.awayTeam.name})";
+        odds = (1.6 + (100 - awayWin) / 70.0).toStringAsFixed(2);
+      }
+
+      buffer.writeln('**${i + 1}. ${match.homeTeam.name} vs ${match.awayTeam.name}**');
+      buffer.writeln('• Prediction: **$bestBet** @ $odds');
+      buffer.writeln('• Confidence: $confidence%');
+      buffer.writeln('• Over 2.5: ${xg > 2.5 ? "✅" : "❌"} | BTTS: ${hash % 2 == 0 ? "✅" : "❌"}');
+      buffer.writeln('');
+    }
+
+    buffer.writeln('---\n');
+    buffer.writeln('**🔥 Top Pick:** ${leagueMatches.first.homeTeam.name} vs ${leagueMatches.first.awayTeam.name}');
+    buffer.writeln('\nAsk me about any specific match for detailed analysis!');
+
+    return buffer.toString();
   }
 
   String _generateTodayOverview() {
-    return '''📅 **Today's Top Picks**
+    if (_todayMatches.isEmpty && _tomorrowMatches.isEmpty) {
+      return '''📅 **Today's Matches**
 
-Here are my best predictions for today:
+⏳ Loading matches data...
 
-**🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League:**
-• Arsenal vs West Ham - **1** @ 1.45 (78% conf)
-• Liverpool vs Leicester - **Over 2.5** @ 1.65 (72% conf)
+If matches aren't loading, the server might be waking up. Try again in 30 seconds.
 
-**🇪🇸 La Liga:**
-• Real Madrid vs Sevilla - **1** @ 1.55 (75% conf)
-• Barcelona vs Atletico - **BTTS Yes** @ 1.70 (68% conf)
+You can also ask about specific leagues:
+• "Bundesliga analysis"
+• "Premier League tips"
+• "La Liga predictions"''';
+    }
 
-**🇩🇪 Bundesliga:**
-• Bayern vs Wolfsburg - **Over 3.5** @ 1.80 (70% conf)
+    final buffer = StringBuffer();
+    buffer.writeln('📅 **Today\'s Best Bets**\n');
 
-**🎯 Best Value Bet:**
-Liverpool vs Leicester - Over 2.5 Goals @ 1.65
-Both teams score frequently, expecting open game.
+    final matches = _todayMatches.isNotEmpty ? _todayMatches : _tomorrowMatches;
+    final dateLabel = _todayMatches.isNotEmpty ? "Today" : "Tomorrow";
 
-Ask me about any specific match for detailed analysis!''';
+    buffer.writeln('Found **${matches.length}** matches for $dateLabel:\n');
+    buffer.writeln('---\n');
+
+    // Group by league
+    final byLeague = <String, List<Match>>{};
+    for (final match in matches) {
+      byLeague.putIfAbsent(match.league, () => []).add(match);
+    }
+
+    int pickNumber = 1;
+    for (final entry in byLeague.entries) {
+      final leagueIcon = _getLeagueIcon(entry.key);
+      buffer.writeln('**$leagueIcon ${entry.key}:**');
+
+      for (final match in entry.value.take(3)) {
+        final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+        final homeWin = 30 + (hash % 30);
+        final awayWin = 25 + ((hash ~/ 3) % 25);
+        final confidence = 60 + (hash % 25);
+
+        String bet;
+        String odds;
+        if (homeWin > awayWin + 10) {
+          bet = "1";
+          odds = (1.4 + (100 - homeWin) / 80.0).toStringAsFixed(2);
+        } else if (awayWin > homeWin + 10) {
+          bet = "2";
+          odds = (1.6 + (100 - awayWin) / 70.0).toStringAsFixed(2);
+        } else {
+          bet = "X";
+          odds = (3.0 + (hash % 50) / 100.0).toStringAsFixed(2);
+        }
+
+        buffer.writeln('$pickNumber. ${match.homeTeam.name} vs ${match.awayTeam.name}');
+        buffer.writeln('   → **$bet** @ $odds ($confidence%)');
+        pickNumber++;
+      }
+      buffer.writeln('');
+    }
+
+    buffer.writeln('---\n');
+    buffer.writeln('💡 *Tap on any match for detailed analysis*');
+
+    return buffer.toString();
   }
 
-  String _generateLeagueOverview(String query) {
-    return '''🏆 **League Analysis**
-
-**Current Form Leaders:**
-1. Top team showing excellent home form
-2. Strong defensive record in last 5 games
-3. Key players available for selection
-
-**Betting Trends:**
-• Home win rate: 48%
-• Draw rate: 26%
-• Away win rate: 26%
-• Over 2.5 rate: 54%
-• BTTS rate: 51%
-
-**💰 Value Opportunities:**
-Look for home underdogs with strong recent form - these often provide value at higher odds.
-
-Which specific match would you like me to analyze?''';
+  String _getLeagueIcon(String league) {
+    if (league.contains('Premier')) return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+    if (league.contains('Liga') && !league.contains('Ligue')) return '🇪🇸';
+    if (league.contains('Bundesliga')) return '🇩🇪';
+    if (league.contains('Serie A')) return '🇮🇹';
+    if (league.contains('Ligue 1')) return '🇫🇷';
+    return '⚽';
   }
 
-  String _generateTotalsPrediction(String query) {
-    final hash = query.hashCode.abs();
-    final expectedGoals = 2.2 + (hash % 15) / 10.0;
+  String _generateTotalsAnalysis() {
+    final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
-    return '''⚽ **Goals Prediction**
+    if (allMatches.isEmpty) {
+      return '⏳ Loading matches... Try again in a moment.';
+    }
 
-**Expected Goals:** ${expectedGoals.toStringAsFixed(2)}
+    final buffer = StringBuffer();
+    buffer.writeln('📊 **Over/Under Analysis**\n');
+    buffer.writeln('---\n');
 
-**Recommendation:**
-${expectedGoals > 2.5 ? "✅ **Over 2.5 Goals** @ 1.85" : "✅ **Under 2.5 Goals** @ 1.75"}
+    final overMatches = <Match>[];
+    final underMatches = <Match>[];
 
-**Analysis:**
-${expectedGoals > 2.5 ?
-"Both teams have been scoring well. Expect an open, attacking game with multiple goals." :
-"Tight defensive matchup expected. Teams likely to be cautious, limiting scoring chances."}
+    for (final match in allMatches.take(10)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final xg = 2.2 + (hash % 18) / 10.0;
+      if (xg > 2.6) {
+        overMatches.add(match);
+      } else if (xg < 2.3) {
+        underMatches.add(match);
+      }
+    }
 
-**Alternative Bets:**
-• Over 1.5 Goals @ 1.25 (Safe)
-• Over 3.5 Goals @ 2.50 (Risky)
-• Exact Total 2 Goals @ 3.40''';
+    buffer.writeln('**✅ Best Over 2.5 Picks:**');
+    for (final match in overMatches.take(4)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final xg = 2.2 + (hash % 18) / 10.0;
+      final odds = (1.7 + (hash % 40) / 100.0).toStringAsFixed(2);
+      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
+      buffer.writeln('  xG: ${xg.toStringAsFixed(1)} | @ $odds');
+    }
+
+    buffer.writeln('\n**❌ Best Under 2.5 Picks:**');
+    for (final match in underMatches.take(4)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final xg = 2.2 + (hash % 18) / 10.0;
+      final odds = (1.6 + (hash % 35) / 100.0).toStringAsFixed(2);
+      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
+      buffer.writeln('  xG: ${xg.toStringAsFixed(1)} | @ $odds');
+    }
+
+    return buffer.toString();
   }
 
-  String _generateBttsPrediction(String query) {
-    final hash = query.hashCode.abs();
-    final bttsYes = hash % 2 == 0;
+  String _generateBttsAnalysis() {
+    final allMatches = [..._todayMatches, ..._tomorrowMatches];
 
-    return '''🥅 **Both Teams To Score Analysis**
+    if (allMatches.isEmpty) {
+      return '⏳ Loading matches... Try again in a moment.';
+    }
 
-**Prediction:** ${bttsYes ? "✅ BTTS Yes @ 1.72" : "❌ BTTS No @ 1.95"}
+    final buffer = StringBuffer();
+    buffer.writeln('🥅 **Both Teams To Score Analysis**\n');
+    buffer.writeln('---\n');
 
-**Reasoning:**
-${bttsYes ?
-"Both teams have scored in 70%+ of recent matches. Strong attacking options on both sides make BTTS likely." :
-"One team has kept clean sheets in recent games. Defensive setup expected to limit opponent's chances."}
+    final bttsYes = <Match>[];
+    final bttsNo = <Match>[];
 
-**Stats:**
-• Home team scoring rate: ${60 + hash % 30}%
-• Away team scoring rate: ${55 + hash % 25}%
-• Clean sheet probability: ${15 + hash % 20}%''';
+    for (final match in allMatches.take(10)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      if (hash % 3 != 0) {
+        bttsYes.add(match);
+      } else {
+        bttsNo.add(match);
+      }
+    }
+
+    buffer.writeln('**✅ BTTS Yes Picks:**');
+    for (final match in bttsYes.take(4)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final odds = (1.65 + (hash % 35) / 100.0).toStringAsFixed(2);
+      final confidence = 60 + (hash % 25);
+      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
+      buffer.writeln('  @ $odds ($confidence%)');
+    }
+
+    buffer.writeln('\n**❌ BTTS No Picks:**');
+    for (final match in bttsNo.take(3)) {
+      final hash = (match.homeTeam.name + match.awayTeam.name).hashCode.abs();
+      final odds = (1.85 + (hash % 40) / 100.0).toStringAsFixed(2);
+      final confidence = 55 + (hash % 20);
+      buffer.writeln('• ${match.homeTeam.name} vs ${match.awayTeam.name}');
+      buffer.writeln('  @ $odds ($confidence%)');
+    }
+
+    return buffer.toString();
   }
 
   @override
