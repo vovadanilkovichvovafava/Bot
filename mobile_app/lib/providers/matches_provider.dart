@@ -18,6 +18,7 @@ class MatchesState {
   final List<Match> tomorrowMatches;
   final bool isLoading;
   final bool isFromCache;
+  final bool isOffline;
   final String? error;
   final DateTime? lastUpdated;
 
@@ -26,6 +27,7 @@ class MatchesState {
     this.tomorrowMatches = const [],
     this.isLoading = false,
     this.isFromCache = false,
+    this.isOffline = false,
     this.error,
     this.lastUpdated,
   });
@@ -35,6 +37,7 @@ class MatchesState {
     List<Match>? tomorrowMatches,
     bool? isLoading,
     bool? isFromCache,
+    bool? isOffline,
     String? error,
     DateTime? lastUpdated,
   }) {
@@ -43,12 +46,22 @@ class MatchesState {
       tomorrowMatches: tomorrowMatches ?? this.tomorrowMatches,
       isLoading: isLoading ?? this.isLoading,
       isFromCache: isFromCache ?? this.isFromCache,
+      isOffline: isOffline ?? this.isOffline,
       error: error,
       lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 
   bool get hasData => todayMatches.isNotEmpty || tomorrowMatches.isNotEmpty;
+
+  String? get offlineMessage {
+    if (!isOffline || !hasData) return null;
+    if (lastUpdated == null) return 'Офлайн режим';
+    final ago = DateTime.now().difference(lastUpdated!);
+    if (ago.inMinutes < 1) return 'Офлайн (обновлено только что)';
+    if (ago.inMinutes < 60) return 'Офлайн (обновлено ${ago.inMinutes} мин назад)';
+    return 'Офлайн (обновлено ${ago.inHours} ч назад)';
+  }
 }
 
 // Matches notifier with caching
@@ -132,7 +145,7 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, isOffline: false);
 
     try {
       final matches = await _api.getTodayMatches();
@@ -140,13 +153,16 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
         todayMatches: matches,
         isLoading: false,
         isFromCache: false,
+        isOffline: false,
         lastUpdated: DateTime.now(),
       );
       await _saveToCache(matches, state.tomorrowMatches);
     } catch (e) {
+      // If we have cached data, switch to offline mode instead of showing error
       state = state.copyWith(
         isLoading: false,
-        error: state.hasData ? null : e.toString(), // Don't show error if we have cached data
+        isOffline: state.hasData,
+        error: state.hasData ? null : e.toString(),
       );
     }
   }
@@ -157,12 +173,14 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       state = state.copyWith(
         todayMatches: matches,
         isFromCache: false,
+        isOffline: false,
         lastUpdated: DateTime.now(),
       );
       await _saveToCache(matches, state.tomorrowMatches);
     } catch (e) {
-      // Silent fail in background
-      debugPrint('Background fetch failed: $e');
+      // Set offline mode on background failure
+      state = state.copyWith(isOffline: true);
+      debugPrint('Background fetch failed, switching to offline: $e');
     }
   }
 
@@ -174,7 +192,7 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, isOffline: false);
 
     try {
       final matches = await _api.getTomorrowMatches();
@@ -182,12 +200,14 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
         tomorrowMatches: matches,
         isLoading: false,
         isFromCache: false,
+        isOffline: false,
         lastUpdated: DateTime.now(),
       );
       await _saveToCache(state.todayMatches, matches);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
+        isOffline: state.hasData,
         error: state.hasData ? null : e.toString(),
       );
     }
@@ -199,17 +219,19 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       state = state.copyWith(
         tomorrowMatches: matches,
         isFromCache: false,
+        isOffline: false,
         lastUpdated: DateTime.now(),
       );
       await _saveToCache(state.todayMatches, matches);
     } catch (e) {
-      debugPrint('Background fetch failed: $e');
+      state = state.copyWith(isOffline: true);
+      debugPrint('Background fetch failed, switching to offline: $e');
     }
   }
 
   /// Force refresh from network
   Future<void> refresh() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, isOffline: false);
 
     try {
       final results = await Future.wait([
@@ -222,12 +244,14 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
         tomorrowMatches: results[1],
         isLoading: false,
         isFromCache: false,
+        isOffline: false,
         lastUpdated: DateTime.now(),
       );
       await _saveToCache(results[0], results[1]);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
+        isOffline: state.hasData,
         error: state.hasData ? null : e.toString(),
       );
     }

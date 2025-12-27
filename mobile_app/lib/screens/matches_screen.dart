@@ -68,6 +68,7 @@ class _TodayMatchesList extends ConsumerWidget {
     final matches = matchesState.todayMatches;
     final isLoading = matchesState.isLoading;
     final error = matchesState.error;
+    final offlineMessage = matchesState.offlineMessage;
 
     if (isLoading && matches.isEmpty) {
       return const MatchListShimmer(count: 5);
@@ -111,15 +112,24 @@ class _TodayMatchesList extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: matches.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _MatchCard(match: matches[index]),
-          );
-        },
+      child: Column(
+        children: [
+          // Offline banner
+          if (offlineMessage != null)
+            _OfflineBanner(message: offlineMessage),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: matches.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _MatchCard(match: matches[index]),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -132,6 +142,7 @@ class _TomorrowMatchesList extends ConsumerWidget {
     final matches = matchesState.tomorrowMatches;
     final isLoading = matchesState.isLoading;
     final error = matchesState.error;
+    final offlineMessage = matchesState.offlineMessage;
 
     if (isLoading && matches.isEmpty) {
       return const MatchListShimmer(count: 5);
@@ -175,15 +186,54 @@ class _TomorrowMatchesList extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(matchesProvider.notifier).loadTomorrowMatches(forceRefresh: true),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: matches.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _MatchCard(match: matches[index]),
-          );
-        },
+      child: Column(
+        children: [
+          if (offlineMessage != null)
+            _OfflineBanner(message: offlineMessage),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: matches.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _MatchCard(match: matches[index]),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Offline mode banner
+class _OfflineBanner extends StatelessWidget {
+  final String message;
+
+  const _OfflineBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: Colors.orange.shade100,
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off, size: 18, color: Colors.orange.shade800),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Colors.orange.shade800,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

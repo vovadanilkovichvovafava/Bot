@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/match.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -19,11 +21,53 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   String? _aiAnalysis;
   bool _isLoadingAnalysis = false;
   bool _analysisError = false;
+  bool _reminderSet = false;
 
   @override
   void initState() {
     super.initState();
     _loadAiAnalysis();
+    _checkReminderStatus();
+  }
+
+  Future<void> _checkReminderStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isSet = prefs.getBool('reminder_${widget.match.id}') ?? false;
+    setState(() => _reminderSet = isSet);
+  }
+
+  Future<void> _toggleReminder() async {
+    final notificationService = ref.read(notificationServiceProvider);
+    final prefs = await SharedPreferences.getInstance();
+    final match = widget.match;
+
+    if (_reminderSet) {
+      // Cancel reminder
+      await notificationService.cancelReminder(match.id);
+      await prefs.remove('reminder_${match.id}');
+      setState(() => _reminderSet = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Напоминание отменено')),
+        );
+      }
+    } else {
+      // Set reminder
+      await notificationService.initialize();
+      await notificationService.scheduleMatchReminder(
+        matchId: match.id,
+        homeTeam: match.homeTeam.name,
+        awayTeam: match.awayTeam.name,
+        matchTime: match.matchDate,
+      );
+      await prefs.setBool('reminder_${match.id}', true);
+      setState(() => _reminderSet = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Напоминание установлено за 30 минут до матча')),
+        );
+      }
+    }
   }
 
   Future<void> _loadAiAnalysis() async {
@@ -76,6 +120,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       appBar: AppBar(
         title: Text(match.league),
         actions: [
+          // Reminder button (only for scheduled matches)
+          if (match.isScheduled)
+            IconButton(
+              icon: Icon(
+                _reminderSet ? Icons.notifications_active : Icons.notifications_none,
+                color: _reminderSet ? Colors.amber : null,
+              ),
+              onPressed: _toggleReminder,
+              tooltip: _reminderSet ? 'Отменить напоминание' : 'Напомнить о матче',
+            ),
           if (!match.isFinished && (_analysisError || _aiAnalysis != null))
             IconButton(
               icon: const Icon(Icons.refresh),
