@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/matches_provider.dart';
 import '../models/match.dart';
 import 'match_detail_screen.dart';
+import 'league_matches_screen.dart';
 
 class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({super.key});
@@ -432,13 +433,13 @@ class _LeaguesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final leagues = [
-      ('PL', 'Premier League', Icons.sports_soccer),
-      ('PD', 'La Liga', Icons.sports_soccer),
-      ('BL1', 'Bundesliga', Icons.sports_soccer),
-      ('SA', 'Serie A', Icons.sports_soccer),
-      ('FL1', 'Ligue 1', Icons.sports_soccer),
-      ('CL', 'Champions League', Icons.emoji_events),
-      ('EL', 'Europa League', Icons.emoji_events),
+      ('PL', 'Premier League', Icons.sports_soccer, '🏴󠁧󠁢󠁥󠁮󠁧󠁿'),
+      ('PD', 'La Liga', Icons.sports_soccer, '🇪🇸'),
+      ('BL1', 'Bundesliga', Icons.sports_soccer, '🇩🇪'),
+      ('SA', 'Serie A', Icons.sports_soccer, '🇮🇹'),
+      ('FL1', 'Ligue 1', Icons.sports_soccer, '🇫🇷'),
+      ('CL', 'Champions League', Icons.emoji_events, '🏆'),
+      ('EL', 'Europa League', Icons.emoji_events, '🥈'),
     ];
 
     return ListView.builder(
@@ -449,12 +450,20 @@ class _LeaguesList extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
-            leading: Icon(league.$3),
-            title: Text(league.$2),
-            subtitle: Text(league.$1),
+            leading: Text(league.$4, style: const TextStyle(fontSize: 28)),
+            title: Text(league.$2, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(league.$1, style: TextStyle(color: Colors.grey[600])),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              // TODO: Navigate to league matches
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LeagueMatchesScreen(
+                    leagueCode: league.$1,
+                    leagueName: league.$2,
+                  ),
+                ),
+              );
             },
           ),
         );
