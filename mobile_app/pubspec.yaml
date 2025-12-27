@@ -49,10 +49,9 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_vector_icons: ^2.0.0
 
-  # Firebase
-  firebase_core: ^2.24.2
-  firebase_messaging: ^14.7.10
+  # Local Notifications (for match reminders)
   flutter_local_notifications: ^16.3.0
+  timezone: ^0.9.2
 
 dev_dependencies:
   flutter_test:

@@ -195,19 +195,6 @@ class ApiService {
       return false;
     }
   }
-
-  // Push Notifications
-  Future<void> registerFcmToken(String token) async {
-    await _dio.post('/notifications/register', data: {
-      'fcm_token': token,
-    });
-  }
-
-  Future<void> unregisterFcmToken(String token) async {
-    await _dio.delete('/notifications/unregister', data: {
-      'fcm_token': token,
-    });
-  }
 }
 
 // Provider

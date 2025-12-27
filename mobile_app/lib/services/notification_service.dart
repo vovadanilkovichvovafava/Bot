@@ -1,109 +1,30 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
-import 'api_service.dart';
-
-/// Background message handler - must be top-level function
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  debugPrint('Background message: ${message.messageId}');
-}
-
+/// Local notification service for match reminders and app notifications
 class NotificationService {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  final ApiService _apiService;
-  String? _fcmToken;
+  bool _initialized = false;
 
-  NotificationService(this._apiService);
-
-  String? get fcmToken => _fcmToken;
-
-  /// Initialize notification service
+  /// Initialize local notifications
   Future<void> initialize() async {
-    // Request permission
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    if (_initialized) return;
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      debugPrint('Push notifications authorized');
+    // Initialize timezone
+    tz_data.initializeTimeZones();
 
-      // Get FCM token
-      await _getToken();
-
-      // Listen to token refresh
-      _messaging.onTokenRefresh.listen(_onTokenRefresh);
-
-      // Initialize local notifications
-      await _initLocalNotifications();
-
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-      // Handle notification tap when app was terminated
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
-      }
-
-      // Handle notification tap when app was in background
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-    } else {
-      debugPrint('Push notifications denied');
-    }
-  }
-
-  /// Get FCM token
-  Future<void> _getToken() async {
-    try {
-      _fcmToken = await _messaging.getToken();
-      debugPrint('FCM Token: $_fcmToken');
-
-      if (_fcmToken != null) {
-        await _registerTokenWithBackend(_fcmToken!);
-      }
-    } catch (e) {
-      debugPrint('Error getting FCM token: $e');
-    }
-  }
-
-  /// Handle token refresh
-  void _onTokenRefresh(String token) {
-    _fcmToken = token;
-    _registerTokenWithBackend(token);
-  }
-
-  /// Register FCM token with backend
-  Future<void> _registerTokenWithBackend(String token) async {
-    try {
-      await _apiService.registerFcmToken(token);
-      debugPrint('FCM token registered with backend');
-    } catch (e) {
-      debugPrint('Error registering FCM token: $e');
-    }
-  }
-
-  /// Initialize local notifications for foreground display
-  Future<void> _initLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
     );
 
     const settings = InitializationSettings(
@@ -119,9 +40,9 @@ class NotificationService {
     // Create notification channel for Android
     if (Platform.isAndroid) {
       const channel = AndroidNotificationChannel(
-        'match_notifications',
-        'Match Notifications',
-        description: 'Notifications about upcoming matches',
+        'match_reminders',
+        'Match Reminders',
+        description: 'Reminders about upcoming matches',
         importance: Importance.high,
       );
 
@@ -130,90 +51,107 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     }
+
+    _initialized = true;
+    debugPrint('Local notifications initialized');
   }
 
-  /// Handle foreground messages
-  void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('Foreground message: ${message.notification?.title}');
-
-    final notification = message.notification;
-    final android = message.notification?.android;
-
-    if (notification != null) {
-      _localNotifications.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'match_notifications',
-            'Match Notifications',
-            channelDescription: 'Notifications about upcoming matches',
-            icon: android?.smallIcon ?? '@mipmap/ic_launcher',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
+  /// Show a notification immediately
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await _localNotifications.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'match_reminders',
+          'Match Reminders',
+          channelDescription: 'Reminders about upcoming matches',
+          importance: Importance.high,
+          priority: Priority.high,
         ),
-        payload: jsonEncode(message.data),
-      );
-    }
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: payload,
+    );
   }
 
-  /// Handle notification tap from local notifications
+  /// Schedule a notification for a specific time
+  Future<void> scheduleMatchReminder({
+    required int matchId,
+    required String homeTeam,
+    required String awayTeam,
+    required DateTime matchTime,
+    Duration reminderBefore = const Duration(minutes: 30),
+  }) async {
+    final reminderTime = matchTime.subtract(reminderBefore);
+
+    // Don't schedule if reminder time is in the past
+    if (reminderTime.isBefore(DateTime.now())) {
+      return;
+    }
+
+    await _localNotifications.zonedSchedule(
+      matchId,
+      'Match starting soon!',
+      '$homeTeam vs $awayTeam starts in ${reminderBefore.inMinutes} minutes',
+      _convertToTZDateTime(reminderTime),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'match_reminders',
+          'Match Reminders',
+          channelDescription: 'Reminders about upcoming matches',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: 'match_$matchId',
+    );
+
+    debugPrint('Scheduled reminder for match $matchId at $reminderTime');
+  }
+
+  /// Cancel a scheduled notification
+  Future<void> cancelReminder(int matchId) async {
+    await _localNotifications.cancel(matchId);
+  }
+
+  /// Cancel all notifications
+  Future<void> cancelAll() async {
+    await _localNotifications.cancelAll();
+  }
+
+  /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
-    if (response.payload != null) {
-      try {
-        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-        _navigateFromNotification(data);
-      } catch (e) {
-        debugPrint('Error parsing notification payload: $e');
-      }
-    }
+    debugPrint('Notification tapped: ${response.payload}');
+    // Navigation can be handled here or via a stream
   }
 
-  /// Handle notification tap from FCM
-  void _handleNotificationTap(RemoteMessage message) {
-    _navigateFromNotification(message.data);
-  }
-
-  /// Navigate based on notification data
-  void _navigateFromNotification(Map<String, dynamic> data) {
-    final type = data['type'] as String?;
-    final matchId = data['match_id'] as String?;
-
-    debugPrint('Notification tap - type: $type, matchId: $matchId');
-
-    // Navigation will be handled by the app's navigation system
-    // The app can listen to a stream or callback for navigation
-  }
-
-  /// Subscribe to a topic (e.g., specific league)
-  Future<void> subscribeToTopic(String topic) async {
-    await _messaging.subscribeToTopic(topic);
-    debugPrint('Subscribed to topic: $topic');
-  }
-
-  /// Unsubscribe from a topic
-  Future<void> unsubscribeFromTopic(String topic) async {
-    await _messaging.unsubscribeFromTopic(topic);
-    debugPrint('Unsubscribed from topic: $topic');
-  }
-
-  /// Subscribe to favorite leagues
-  Future<void> subscribeToLeagues(List<String> leagueCodes) async {
-    for (final code in leagueCodes) {
-      await subscribeToTopic('league_$code');
-    }
+  /// Convert DateTime to TZDateTime for scheduling
+  tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
+    // Use local timezone
+    return tz.TZDateTime.from(dateTime, tz.local);
   }
 }
 
 // Provider
 final notificationServiceProvider = Provider<NotificationService>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  return NotificationService(apiService);
+  return NotificationService();
 });
