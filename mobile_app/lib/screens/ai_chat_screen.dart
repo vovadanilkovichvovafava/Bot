@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -15,7 +16,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _isLoading = false;
   bool _showSuggestions = true;
 
-  final List<String> _quickQuestions = [
+  static const _defaultQuickQuestions = [
     "🔥 Best bets today",
     "⚽ Premier League tips",
     "🇪🇸 La Liga predictions",
@@ -24,10 +25,66 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     "🏆 Champions League",
   ];
 
+  List<String> _quickQuestions = List.from(_defaultQuickQuestions);
+
   @override
   void initState() {
     super.initState();
     _addWelcomeMessage();
+    _loadQuickQuestions();
+  }
+
+  Future<void> _loadQuickQuestions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('quick_questions');
+    if (saved != null && saved.isNotEmpty) {
+      setState(() {
+        _quickQuestions = saved;
+      });
+    }
+  }
+
+  Future<void> _saveQuickQuestions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('quick_questions', _quickQuestions);
+  }
+
+  void _addQuickQuestion(String question) {
+    if (question.trim().isEmpty) return;
+    setState(() {
+      _quickQuestions.add(question.trim());
+    });
+    _saveQuickQuestions();
+  }
+
+  void _removeQuickQuestion(int index) {
+    setState(() {
+      _quickQuestions.removeAt(index);
+    });
+    _saveQuickQuestions();
+  }
+
+  void _resetQuickQuestions() {
+    setState(() {
+      _quickQuestions = List.from(_defaultQuickQuestions);
+    });
+    _saveQuickQuestions();
+  }
+
+  void _showEditQuickQuestionsDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _EditQuickQuestionsSheet(
+        questions: _quickQuestions,
+        onAdd: _addQuickQuestion,
+        onRemove: _removeQuickQuestion,
+        onReset: _resetQuickQuestions,
+      ),
+    );
   }
 
   void _addWelcomeMessage() {
@@ -320,21 +377,60 @@ ${bttsYes ?
   Widget _buildSuggestions() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _quickQuestions.map((question) {
-          return ActionChip(
-            label: Text(
-              question,
-              style: const TextStyle(fontSize: 13),
-            ),
-            onPressed: _isLoading ? null : () => _sendQuickQuestion(question),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            side: BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          );
-        }).toList(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Quick questions',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _showEditQuickQuestionsDialog,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.edit,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _quickQuestions.map((question) {
+              return ActionChip(
+                label: Text(
+                  question,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onPressed: _isLoading ? null : () => _sendQuickQuestion(question),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                side: BorderSide.none,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -514,6 +610,155 @@ class _TypingIndicatorState extends State<_TypingIndicator>
           },
         ),
       ),
+    );
+  }
+}
+
+class _EditQuickQuestionsSheet extends StatefulWidget {
+  final List<String> questions;
+  final Function(String) onAdd;
+  final Function(int) onRemove;
+  final VoidCallback onReset;
+
+  const _EditQuickQuestionsSheet({
+    required this.questions,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onReset,
+  });
+
+  @override
+  State<_EditQuickQuestionsSheet> createState() => _EditQuickQuestionsSheetState();
+}
+
+class _EditQuickQuestionsSheetState extends State<_EditQuickQuestionsSheet> {
+  final TextEditingController _addController = TextEditingController();
+
+  @override
+  void dispose() {
+    _addController.dispose();
+    super.dispose();
+  }
+
+  void _addQuestion() {
+    if (_addController.text.trim().isNotEmpty) {
+      widget.onAdd(_addController.text);
+      _addController.clear();
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Edit Quick Questions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        widget.onReset();
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.restart_alt, size: 18),
+                      label: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _addController,
+                        decoration: InputDecoration(
+                          hintText: 'Add new question...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onSubmitted: (_) => _addQuestion(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton.filled(
+                      onPressed: _addQuestion,
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: widget.questions.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(widget.questions[index]),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () {
+                            widget.onRemove(index);
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
