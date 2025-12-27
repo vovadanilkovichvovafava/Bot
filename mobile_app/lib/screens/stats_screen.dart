@@ -8,7 +8,7 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistics'),
+        title: const Text('Статистика'),
         centerTitle: true,
       ),
       body: Center(
@@ -31,14 +31,14 @@ class StatsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Prediction Statistics',
+                'Статистика прогнозов',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Your prediction history and accuracy stats will appear here after you start tracking your bets.',
+                'История ваших прогнозов и статистика точности появятся здесь в ближайших обновлениях.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey[600],
@@ -53,31 +53,38 @@ class StatsScreen extends ConsumerWidget {
                     children: [
                       _FeatureRow(
                         icon: Icons.track_changes,
-                        title: 'Track Predictions',
-                        description: 'Save predictions from AI Chat',
+                        title: 'Отслеживание прогнозов',
+                        description: 'Сохраняйте прогнозы из AI чата',
                       ),
                       const Divider(height: 24),
                       _FeatureRow(
                         icon: Icons.analytics,
-                        title: 'View Accuracy',
-                        description: 'See your win rate over time',
+                        title: 'Точность прогнозов',
+                        description: 'Смотрите процент успешных прогнозов',
                       ),
                       const Divider(height: 24),
                       _FeatureRow(
                         icon: Icons.trending_up,
-                        title: 'Improve Strategy',
-                        description: 'Learn from your betting patterns',
+                        title: 'Анализ стратегии',
+                        description: 'Улучшайте свои ставки на основе данных',
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                '💡 Coming soon: Save predictions and track results!',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w500,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Скоро в обновлениях',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

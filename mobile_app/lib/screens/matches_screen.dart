@@ -197,7 +197,6 @@ class _MatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('HH:mm');
     final matchTime = timeFormat.format(match.matchDate.toLocal());
-    final prediction = _generateQuickPrediction(match);
 
     return Card(
       child: InkWell(
@@ -231,27 +230,16 @@ class _MatchCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _getConfidenceColor(prediction.confidence).withOpacity(0.1),
+                          color: _getStatusColor(match.status).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.psychology,
-                              size: 12,
-                              color: _getConfidenceColor(prediction.confidence),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${prediction.confidence}%',
-                              style: TextStyle(
-                                color: _getConfidenceColor(prediction.confidence),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          _getStatusText(match.status),
+                          style: TextStyle(
+                            color: _getStatusColor(match.status),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -296,66 +284,17 @@ class _MatchCard extends StatelessWidget {
                       children: [
                         Text(
                           '${match.homeScore}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${match.awayScore}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                       ],
                     )
                   else
-                    Row(
-                      children: [
-                        Text(
-                          prediction.betType,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(match.status).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _getStatusColor(match.status),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            _getStatusText(match.status),
-                            style: TextStyle(
-                              color: _getStatusColor(match.status),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                  Text(
-                    'Tap for AI prediction details',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 11,
-                    ),
-                  ),
+                    Icon(Icons.chevron_right, color: Colors.grey[400]),
                 ],
               ),
             ],
@@ -363,39 +302,6 @@ class _MatchCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  _QuickPrediction _generateQuickPrediction(Match match) {
-    final homeHash = match.homeTeam.name.hashCode.abs();
-    final awayHash = match.awayTeam.name.hashCode.abs();
-
-    final homeWinProb = 30 + (homeHash % 30);
-    final awayWinProb = 25 + (awayHash % 25);
-    final drawProb = 100 - homeWinProb - awayWinProb;
-
-    String betType;
-    int confidence;
-
-    if (homeWinProb > awayWinProb && homeWinProb > drawProb) {
-      betType = '1';
-      confidence = homeWinProb;
-    } else if (awayWinProb > homeWinProb && awayWinProb > drawProb) {
-      betType = '2';
-      confidence = awayWinProb;
-    } else {
-      betType = 'X';
-      confidence = drawProb;
-    }
-
-    confidence = (confidence * 1.3).clamp(50, 85).toInt();
-
-    return _QuickPrediction(betType: betType, confidence: confidence);
-  }
-
-  Color _getConfidenceColor(int confidence) {
-    if (confidence >= 70) return Colors.green;
-    if (confidence >= 55) return Colors.orange;
-    return Colors.red;
   }
 
   Color _getStatusColor(String status) {
@@ -472,9 +378,3 @@ class _LeaguesList extends StatelessWidget {
   }
 }
 
-class _QuickPrediction {
-  final String betType;
-  final int confidence;
-
-  _QuickPrediction({required this.betType, required this.confidence});
-}
