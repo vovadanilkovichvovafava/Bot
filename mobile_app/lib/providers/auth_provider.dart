@@ -62,11 +62,50 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       } else if (token != null) {
         _api.setToken(token);
-        final user = await _api.getCurrentUser();
-        state = AuthState(
-          isAuthenticated: true,
-          user: user,
-        );
+        try {
+          final user = await _api.getCurrentUser();
+          state = AuthState(
+            isAuthenticated: true,
+            user: user,
+          );
+        } catch (e) {
+          // Check if it's an authentication error (401)
+          final isAuthError = e.toString().contains('401') ||
+                              e.toString().contains('Unauthorized') ||
+                              e.toString().contains('Token');
+
+          if (isAuthError) {
+            // Token is invalid, clear it
+            await _storage.delete(key: 'access_token');
+            await _storage.delete(key: 'refresh_token');
+            _api.clearToken();
+            state = const AuthState();
+          } else {
+            // Network error - keep user logged in with cached token
+            // Create a placeholder user until we can refresh
+            state = AuthState(
+              isAuthenticated: true,
+              user: User(
+                id: -1,
+                email: '',
+                username: 'User',
+                language: 'en',
+                timezone: 'UTC',
+                isPremium: false,
+                dailyRequests: 0,
+                dailyLimit: 10,
+                bonusPredictions: 0,
+                minOdds: 1.5,
+                maxOdds: 3.0,
+                riskLevel: 'medium',
+                totalPredictions: 0,
+                correctPredictions: 0,
+                accuracy: 0,
+                createdAt: DateTime.now(),
+              ),
+            );
+          }
+        }
       } else {
         state = const AuthState();
       }

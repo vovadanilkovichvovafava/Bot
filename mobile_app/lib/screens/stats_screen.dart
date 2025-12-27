@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../utils/theme.dart';
-
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
@@ -11,273 +9,123 @@ class StatsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistics'),
+        centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Overall accuracy
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    'Overall Accuracy',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 120,
-                    width: 120,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          height: 120,
-                          width: 120,
-                          child: CircularProgressIndicator(
-                            value: 0.72,
-                            strokeWidth: 12,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppTheme.highConfidence,
-                            ),
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '72%',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '36/50',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.bar_chart_rounded,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Prediction Statistics',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your prediction history and accuracy stats will appear here after you start tracking your bets.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     children: [
-                      _StatItem(label: 'Wins', value: '36', color: Colors.green),
-                      _StatItem(label: 'Losses', value: '14', color: Colors.red),
-                      _StatItem(label: 'Pending', value: '3', color: Colors.orange),
+                      _FeatureRow(
+                        icon: Icons.track_changes,
+                        title: 'Track Predictions',
+                        description: 'Save predictions from AI Chat',
+                      ),
+                      const Divider(height: 24),
+                      _FeatureRow(
+                        icon: Icons.analytics,
+                        title: 'View Accuracy',
+                        description: 'See your win rate over time',
+                      ),
+                      const Divider(height: 24),
+                      _FeatureRow(
+                        icon: Icons.trending_up,
+                        title: 'Improve Strategy',
+                        description: 'Learn from your betting patterns',
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ROI by category
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Accuracy by Bet Type',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _CategoryRow(
-                    category: 'Home Wins',
-                    accuracy: 75,
-                    total: 20,
-                  ),
-                  const SizedBox(height: 8),
-                  _CategoryRow(
-                    category: 'Away Wins',
-                    accuracy: 68,
-                    total: 15,
-                  ),
-                  const SizedBox(height: 8),
-                  _CategoryRow(
-                    category: 'Over 2.5',
-                    accuracy: 78,
-                    total: 18,
-                  ),
-                  const SizedBox(height: 8),
-                  _CategoryRow(
-                    category: 'BTTS',
-                    accuracy: 71,
-                    total: 12,
-                  ),
-                  const SizedBox(height: 8),
-                  _CategoryRow(
-                    category: 'Double Chance',
-                    accuracy: 82,
-                    total: 10,
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Text(
+                '💡 Coming soon: Save predictions and track results!',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 16),
-
-          // Recent predictions
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Recent Predictions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _PredictionRow(
-                    match: 'Man City vs Arsenal',
-                    bet: 'П1',
-                    result: true,
-                  ),
-                  const Divider(),
-                  _PredictionRow(
-                    match: 'Real Madrid vs Barcelona',
-                    bet: 'ТБ2.5',
-                    result: true,
-                  ),
-                  const Divider(),
-                  _PredictionRow(
-                    match: 'Bayern vs Dortmund',
-                    bet: 'П1',
-                    result: false,
-                  ),
-                  const Divider(),
-                  _PredictionRow(
-                    match: 'Inter vs Milan',
-                    bet: 'BTTS',
-                    result: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
 
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryRow extends StatelessWidget {
-  final String category;
-  final int accuracy;
-  final int total;
-
-  const _CategoryRow({
-    required this.category,
-    required this.accuracy,
-    required this.total,
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.description,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          flex: 2,
-          child: Text(category),
-        ),
-        Expanded(
-          flex: 3,
-          child: LinearProgressIndicator(
-            value: accuracy / 100,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              AppTheme.getConfidenceColor(accuracy.toDouble()),
-            ),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
           ),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
         ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 50,
-          child: Text(
-            '$accuracy%',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getConfidenceColor(accuracy.toDouble()),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PredictionRow extends StatelessWidget {
-  final String match;
-  final String bet;
-  final bool result;
-
-  const _PredictionRow({
-    required this.match,
-    required this.bet,
-    required this.result,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          result ? Icons.check_circle : Icons.cancel,
-          color: result ? Colors.green : Colors.red,
-        ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(match),
               Text(
-                bet,
-                style: Theme.of(context).textTheme.bodySmall,
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                description,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                ),
               ),
             ],
           ),

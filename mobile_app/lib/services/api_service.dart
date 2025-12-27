@@ -90,10 +90,10 @@ class ApiService {
   // Matches
   Future<List<Match>> getMatches({String? date, String? league}) async {
     final params = <String, dynamic>{};
-    if (date != null) params['date'] = date;
     if (league != null) params['league'] = league;
+    params['days'] = 14; // Get matches for next 14 days
 
-    final response = await _dio.get('/matches', queryParameters: params);
+    final response = await _dio.get('/matches/upcoming', queryParameters: params);
     return (response.data as List).map((m) => Match.fromJson(m)).toList();
   }
 
