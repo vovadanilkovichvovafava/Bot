@@ -397,7 +397,7 @@ class _TeamLogo extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surfaceVariant,
       ),
       child: const Icon(Icons.sports_soccer, size: 24),
     );
