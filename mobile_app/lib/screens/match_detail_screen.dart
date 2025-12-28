@@ -85,6 +85,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     String? selectedBetType;
     double confidence = 70;
     double? odds;
+    String? oddsError;
     final oddsController = TextEditingController();
 
     final betTypes = [
@@ -93,12 +94,24 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       'Away Win',
       'Over 2.5',
       'Under 2.5',
+      'Over 1.5',
+      'Under 3.5',
       'BTTS Yes',
       'BTTS No',
       'Home +1.5',
       'Away +1.5',
+      'Double Chance',
       'Other',
     ];
+
+    String? validateOdds(String? value) {
+      if (value == null || value.isEmpty) return null; // Optional field
+      final parsed = double.tryParse(value);
+      if (parsed == null) return 'Enter a valid number';
+      if (parsed < 1.01) return 'Minimum odds: 1.01';
+      if (parsed > 1000) return 'Maximum odds: 1000';
+      return null;
+    }
 
     await showModalBottomSheet(
       context: context,
@@ -192,27 +205,37 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Odds input
+              // Odds input with validation
               TextField(
                 controller: oddsController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Odds (optional)',
                   hintText: 'e.g., 1.85',
+                  helperText: 'Valid range: 1.01 - 1000',
+                  errorText: oddsError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   prefixText: '@ ',
                 ),
                 onChanged: (value) {
-                  odds = double.tryParse(value);
+                  final error = validateOdds(value);
+                  setModalState(() {
+                    oddsError = error;
+                    if (error == null && value.isNotEmpty) {
+                      odds = double.tryParse(value);
+                    } else {
+                      odds = null;
+                    }
+                  });
                 },
               ),
               const SizedBox(height: 24),
 
               // Save button
               FilledButton.icon(
-                onPressed: selectedBetType == null
+                onPressed: selectedBetType == null || oddsError != null
                     ? null
                     : () async {
                         await ref.read(predictionsProvider.notifier).savePrediction(

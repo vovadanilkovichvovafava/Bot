@@ -12,6 +12,8 @@ import '../screens/stats_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/premium_screen.dart';
+import '../screens/calculators_screen.dart';
+import '../screens/bankroll_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -85,6 +87,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/calculators',
+        builder: (context, state) => const CalculatorsScreen(),
+      ),
+      GoRoute(
+        path: '/bankroll',
+        builder: (context, state) => const BankrollScreen(),
       ),
     ],
   );

@@ -114,11 +114,11 @@ class FavoritesScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Избранное'),
+          title: const Text('Favourites'),
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Команды'),
-              Tab(text: 'Лиги'),
+              Tab(text: 'Teams'),
+              Tab(text: 'Leagues'),
             ],
           ),
         ),
@@ -156,12 +156,12 @@ class _FavoriteTeamsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Нет избранных команд',
+              'No favourite teams',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'Добавьте команды для быстрого доступа',
+              'Add teams for quick access',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -170,7 +170,7 @@ class _FavoriteTeamsTab extends ConsumerWidget {
             ElevatedButton.icon(
               onPressed: () => _showAddTeamDialog(context, ref),
               icon: const Icon(Icons.add),
-              label: const Text('Добавить команду'),
+              label: const Text('Add team'),
             ),
           ],
         ),
@@ -189,7 +189,7 @@ class _FavoriteTeamsTab extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _showAddTeamDialog(context, ref),
                 icon: const Icon(Icons.add),
-                label: const Text('Добавить команду'),
+                label: const Text('Add team'),
               ),
             );
           }
@@ -220,11 +220,11 @@ class _FavoriteTeamsTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Добавить команду'),
+        title: const Text('Add team'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            hintText: 'Название команды',
+            hintText: 'Team name',
             border: OutlineInputBorder(),
           ),
           autofocus: true,
@@ -232,7 +232,7 @@ class _FavoriteTeamsTab extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () {
@@ -241,7 +241,7 @@ class _FavoriteTeamsTab extends ConsumerWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Добавить'),
+            child: const Text('Add'),
           ),
         ],
       ),

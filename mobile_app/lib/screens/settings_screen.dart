@@ -140,14 +140,16 @@ class SettingsScreen extends ConsumerWidget {
     switch (code) {
       case 'en':
         return 'English';
-      case 'ru':
-        return 'Русский';
-      case 'pt':
-        return 'Português';
       case 'es':
         return 'Español';
+      case 'de':
+        return 'Deutsch';
+      case 'fr':
+        return 'Français';
+      case 'it':
+        return 'Italiano';
       default:
-        return code;
+        return 'English';
     }
   }
 
@@ -169,30 +171,37 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Select Language'),
         children: [
           _DialogOption(
-            label: 'English',
+            label: '🇬🇧 English',
             onTap: () {
               ref.read(settingsProvider.notifier).setLanguage('en');
               Navigator.pop(context);
             },
           ),
           _DialogOption(
-            label: 'Русский',
-            onTap: () {
-              ref.read(settingsProvider.notifier).setLanguage('ru');
-              Navigator.pop(context);
-            },
-          ),
-          _DialogOption(
-            label: 'Português',
-            onTap: () {
-              ref.read(settingsProvider.notifier).setLanguage('pt');
-              Navigator.pop(context);
-            },
-          ),
-          _DialogOption(
-            label: 'Español',
+            label: '🇪🇸 Español',
             onTap: () {
               ref.read(settingsProvider.notifier).setLanguage('es');
+              Navigator.pop(context);
+            },
+          ),
+          _DialogOption(
+            label: '🇩🇪 Deutsch',
+            onTap: () {
+              ref.read(settingsProvider.notifier).setLanguage('de');
+              Navigator.pop(context);
+            },
+          ),
+          _DialogOption(
+            label: '🇫🇷 Français',
+            onTap: () {
+              ref.read(settingsProvider.notifier).setLanguage('fr');
+              Navigator.pop(context);
+            },
+          ),
+          _DialogOption(
+            label: '🇮🇹 Italiano',
+            onTap: () {
+              ref.read(settingsProvider.notifier).setLanguage('it');
               Navigator.pop(context);
             },
           ),
