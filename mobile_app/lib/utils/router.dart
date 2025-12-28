@@ -16,6 +16,7 @@ import '../screens/calculators_screen.dart';
 import '../screens/bankroll_screen.dart';
 import '../screens/live_matches_screen.dart';
 import '../screens/social_screen.dart';
+import '../screens/onboarding_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -29,8 +30,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
 
-      // Allow splash screen
-      if (isSplash) return null;
+      // Allow splash screen and onboarding
+      if (isSplash || state.matchedLocation == '/onboarding') return null;
 
       // If not logged in and not on auth route, redirect to login
       if (!isLoggedIn && !isAuthRoute) {
@@ -48,6 +49,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/login',
