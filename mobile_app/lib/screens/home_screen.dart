@@ -160,6 +160,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _ToolCard(
+                    icon: Icons.people,
+                    title: 'Community',
+                    subtitle: 'Leaderboards & tips',
+                    color: Colors.purple,
+                    onTap: () => context.push('/social'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ToolCard(
+                    icon: Icons.star_border,
+                    title: 'Favourites',
+                    subtitle: 'Saved teams',
+                    color: Colors.orange,
+                    onTap: () => context.go('/favorites'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
 
             // Today's top matches

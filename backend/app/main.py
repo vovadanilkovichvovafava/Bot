@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, chat
+from app.api import auth, matches, predictions, users, chat, social
 from app.core.database import init_db
 
 
@@ -37,6 +37,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(matches.router, prefix="/api/v1/matches", tags=["matches"])
 app.include_router(predictions.router, prefix="/api/v1/predictions", tags=["predictions"])
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
+app.include_router(social.router, prefix="/api/v1/social", tags=["social"])
 
 
 @app.get("/")

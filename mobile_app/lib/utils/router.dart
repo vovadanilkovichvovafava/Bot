@@ -15,6 +15,7 @@ import '../screens/premium_screen.dart';
 import '../screens/calculators_screen.dart';
 import '../screens/bankroll_screen.dart';
 import '../screens/live_matches_screen.dart';
+import '../screens/social_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -100,6 +101,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/live',
         builder: (context, state) => const LiveMatchesScreen(),
+      ),
+      GoRoute(
+        path: '/social',
+        builder: (context, state) => const SocialScreen(),
       ),
     ],
   );
