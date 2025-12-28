@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -50,15 +51,12 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _showThemeDialog(context, ref),
           ),
 
-          // Notifications
-          SwitchListTile(
-            secondary: const Icon(Icons.notifications),
+          // Notifications header
+          ListTile(
+            leading: const Icon(Icons.notifications),
             title: const Text('Notifications'),
-            subtitle: const Text('Receive match alerts'),
-            value: settings.notificationsEnabled,
-            onChanged: (value) {
-              ref.read(settingsProvider.notifier).setNotificationsEnabled(value);
-            },
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showNotificationSettings(context, ref),
           ),
 
           const Divider(),
@@ -293,6 +291,189 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showNotificationSettings(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const _NotificationSettingsSheet(),
+    );
+  }
+}
+
+class _NotificationSettingsSheet extends ConsumerWidget {
+  const _NotificationSettingsSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifPrefs = ref.watch(notificationPreferencesProvider);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(16),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Notification Settings',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose which notifications you want to receive',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Match Results
+              SwitchListTile(
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.check_circle, color: Colors.green),
+                ),
+                title: const Text('Match Results'),
+                subtitle: const Text('Get notified when your predictions settle'),
+                value: notifPrefs.matchResults,
+                onChanged: (value) {
+                  ref.read(notificationPreferencesProvider.notifier).setMatchResults(value);
+                },
+              ),
+
+              const Divider(),
+
+              // Hot Bets
+              SwitchListTile(
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.local_fire_department, color: Colors.orange),
+                ),
+                title: const Text('Hot Bets'),
+                subtitle: const Text('High-confidence betting opportunities'),
+                value: notifPrefs.hotBets,
+                onChanged: (value) {
+                  ref.read(notificationPreferencesProvider.notifier).setHotBets(value);
+                },
+              ),
+
+              const Divider(),
+
+              // Match Reminders
+              SwitchListTile(
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.alarm, color: Colors.blue),
+                ),
+                title: const Text('Match Reminders'),
+                subtitle: Text('Remind me ${notifPrefs.reminderMinutes} min before kick-off'),
+                value: notifPrefs.matchReminders,
+                onChanged: (value) {
+                  ref.read(notificationPreferencesProvider.notifier).setMatchReminders(value);
+                },
+              ),
+
+              if (notifPrefs.matchReminders) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Text('Reminder time: '),
+                      const Spacer(),
+                      DropdownButton<int>(
+                        value: notifPrefs.reminderMinutes,
+                        items: [5, 10, 15, 30, 60].map((mins) {
+                          return DropdownMenuItem(
+                            value: mins,
+                            child: Text('$mins min'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            ref.read(notificationPreferencesProvider.notifier).setReminderMinutes(value);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const Divider(),
+
+              // Live Updates
+              SwitchListTile(
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.sports_soccer, color: Colors.red),
+                ),
+                title: const Text('Live Updates'),
+                subtitle: const Text('Goals and match events (may be frequent)'),
+                value: notifPrefs.liveUpdates,
+                onChanged: (value) {
+                  ref.read(notificationPreferencesProvider.notifier).setLiveUpdates(value);
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Test notification button
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final notifService = ref.read(notificationServiceProvider);
+                  await notifService.showNotification(
+                    id: 99999,
+                    title: 'Test Notification',
+                    body: 'Notifications are working correctly!',
+                  );
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('Send Test Notification'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
