@@ -185,6 +185,11 @@ class ApiService {
     return (response.data as List).map((m) => Match.fromJson(m)).toList();
   }
 
+  Future<List<Match>> getLiveMatches() async {
+    final response = await _dio.get('/matches/live');
+    return (response.data as List).map((m) => Match.fromJson(m)).toList();
+  }
+
   Future<MatchDetail> getMatchDetail(int matchId) async {
     final response = await _dio.get('/matches/$matchId');
     return MatchDetail.fromJson(response.data);
@@ -251,6 +256,16 @@ class ApiService {
 
   Future<void> removeFavoriteLeague(String leagueCode) async {
     await _dio.delete('/favorites/leagues/$leagueCode');
+  }
+
+  // Match Results (for auto-results feature)
+  Future<List<Map<String, dynamic>>> getMatchResults(List<int> matchIds) async {
+    if (matchIds.isEmpty) return [];
+
+    final response = await _dio.post('/matches/results', data: {
+      'match_ids': matchIds,
+    });
+    return List<Map<String, dynamic>>.from(response.data);
   }
 
   // AI Chat

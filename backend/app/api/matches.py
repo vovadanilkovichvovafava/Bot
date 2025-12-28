@@ -68,6 +68,28 @@ class League(BaseModel):
     icon: Optional[str] = None
 
 
+@router.get("/live", response_model=List[Match])
+async def get_live_matches():
+    """Get currently live matches"""
+    from datetime import timedelta
+
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Fetch today's matches
+    all_matches = await fetch_matches(date_from=today, date_to=tomorrow)
+
+    if all_matches:
+        # Filter to live matches only
+        live_matches = [
+            m for m in all_matches
+            if m.get("status", "").lower() in ("in_play", "live", "paused", "halftime")
+        ]
+        return [Match(**m) for m in live_matches]
+
+    return []
+
+
 @router.get("/today", response_model=List[Match])
 async def get_today_matches(league: Optional[str] = Query(None)):
     """Get today's matches"""
@@ -141,6 +163,38 @@ async def get_league_standings(league_code: str):
         return [Standing(**s) for s in standings]
 
     return []
+
+
+class MatchResult(BaseModel):
+    id: int
+    status: str
+    home_score: Optional[int] = None
+    away_score: Optional[int] = None
+
+
+class MatchResultsRequest(BaseModel):
+    match_ids: List[int]
+
+
+@router.post("/results", response_model=List[MatchResult])
+async def get_match_results(request: MatchResultsRequest):
+    """Get results for multiple matches by their IDs"""
+    results = []
+
+    for match_id in request.match_ids[:20]:  # Limit to 20 matches per request
+        try:
+            details = await fetch_match_details(match_id)
+            if details:
+                results.append(MatchResult(
+                    id=details["id"],
+                    status=details["status"],
+                    home_score=details.get("home_score"),
+                    away_score=details.get("away_score"),
+                ))
+        except Exception:
+            continue
+
+    return results
 
 
 @router.get("/{match_id}", response_model=MatchDetail)

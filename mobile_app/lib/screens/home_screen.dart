@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
+import '../providers/live_matches_provider.dart';
 import '../models/match.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/loading_shimmer.dart';
@@ -24,6 +25,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Load matches when home screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(matchesProvider.notifier).loadTodayMatches();
+      ref.read(liveMatchesProvider.notifier).startLiveUpdates();
     });
   }
 
@@ -33,6 +35,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = authState.user;
     final matchesState = ref.watch(matchesProvider);
     final todayMatches = matchesState.todayMatches;
+    final liveMatchesState = ref.watch(liveMatchesProvider);
+    final liveMatches = liveMatchesState.matches;
 
     return Scaffold(
       appBar: AppBar(
@@ -73,6 +77,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+            ],
+
+            // Live matches banner
+            if (liveMatches.isNotEmpty) ...[
+              _LiveMatchesBanner(
+                liveCount: liveMatches.length,
+                onTap: () => context.push('/live'),
+              ),
+              const SizedBox(height: 16),
             ],
 
             // Quick stats
@@ -439,6 +452,111 @@ class _ToolCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LiveMatchesBanner extends StatefulWidget {
+  final int liveCount;
+  final VoidCallback onTap;
+
+  const _LiveMatchesBanner({
+    required this.liveCount,
+    required this.onTap,
+  });
+
+  @override
+  State<_LiveMatchesBanner> createState() => _LiveMatchesBannerState();
+}
+
+class _LiveMatchesBannerState extends State<_LiveMatchesBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 0.4).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Card(
+          color: Colors.red.shade50,
+          elevation: 2,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(_pulseAnimation.value),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.4 * _pulseAnimation.value),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Live Now',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '${widget.liveCount} ${widget.liveCount == 1 ? 'match' : 'matches'} in progress',
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.red.shade400,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
