@@ -137,49 +137,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // Tools in a 3-column grid
             Row(
               children: [
                 Expanded(
-                  child: _ToolCard(
+                  child: _CompactToolCard(
                     icon: Icons.calculate,
-                    title: 'Value Bet',
-                    subtitle: 'Find value bets',
+                    label: 'Value Bet',
                     color: Colors.green,
                     onTap: () => context.push('/calculators'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: _ToolCard(
+                  child: _CompactToolCard(
                     icon: Icons.account_balance_wallet,
-                    title: 'Bankroll',
-                    subtitle: 'Track stakes',
+                    label: 'Bankroll',
                     color: Colors.blue,
                     onTap: () => context.push('/bankroll'),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
+                const SizedBox(width: 8),
                 Expanded(
-                  child: _ToolCard(
+                  child: _CompactToolCard(
                     icon: Icons.people,
-                    title: 'Community',
-                    subtitle: 'Leaderboards & tips',
+                    label: 'Community',
                     color: Colors.purple,
                     onTap: () => context.push('/social'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ToolCard(
-                    icon: Icons.star_border,
-                    title: 'Favourites',
-                    subtitle: 'Saved teams',
-                    color: Colors.orange,
-                    onTap: () => context.go('/favorites'),
                   ),
                 ),
               ],
@@ -419,17 +404,15 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _ToolCard extends StatelessWidget {
+class _CompactToolCard extends StatelessWidget {
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _ToolCard({
+  const _CompactToolCard({
     required this.icon,
-    required this.title,
-    required this.subtitle,
+    required this.label,
     required this.color,
     required this.onTap,
   });
@@ -441,8 +424,9 @@ class _ToolCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
@@ -450,28 +434,19 @@ class _ToolCard extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              Icon(Icons.chevron_right, color: Colors.grey[400]),
             ],
           ),
         ),
