@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -250,7 +251,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         if (mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Prediction saved!')),
+                            SnackBar(
+                              content: const Text('Prediction saved!'),
+                              action: SnackBarAction(
+                                label: 'View All',
+                                onPressed: () => context.go('/stats'),
+                              ),
+                              duration: const Duration(seconds: 4),
+                            ),
                           );
                         }
                       },

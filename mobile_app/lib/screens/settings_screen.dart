@@ -64,18 +64,86 @@ class SettingsScreen extends ConsumerWidget {
           // Betting preferences
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(
-              'Betting Preferences',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI Betting Preferences',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'These settings personalize AI recommendations for you',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // Preview card showing current profile
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.psychology,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Your AI Profile',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '📊 Odds range: ${settings.minOdds} - ${settings.maxOdds}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_getRiskEmoji(settings.riskLevel)} Risk: ${settings.riskLevel.toUpperCase()} (${_getRiskStake(settings.riskLevel)})',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _getRiskDescription(settings.riskLevel),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
 
           ListTile(
             leading: const Icon(Icons.trending_down),
             title: const Text('Minimum Odds'),
-            subtitle: Text('${settings.minOdds}'),
+            subtitle: Text('AI won\'t recommend below ${settings.minOdds}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showOddsDialog(context, ref, isMin: true),
           ),
@@ -83,15 +151,18 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.trending_up),
             title: const Text('Maximum Odds'),
-            subtitle: Text('${settings.maxOdds}'),
+            subtitle: Text('AI won\'t recommend above ${settings.maxOdds}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showOddsDialog(context, ref, isMin: false),
           ),
 
           ListTile(
-            leading: const Icon(Icons.warning_amber),
+            leading: Icon(
+              _getRiskIcon(settings.riskLevel),
+              color: _getRiskColor(settings.riskLevel),
+            ),
             title: const Text('Risk Level'),
-            subtitle: Text(settings.riskLevel.toUpperCase()),
+            subtitle: Text('${settings.riskLevel.toUpperCase()} - ${_getRiskStake(settings.riskLevel)}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showRiskDialog(context, ref),
           ),
@@ -159,6 +230,46 @@ class SettingsScreen extends ConsumerWidget {
         return 'Dark';
       case ThemeMode.system:
         return 'System';
+    }
+  }
+
+  String _getRiskEmoji(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'low': return '🛡️';
+      case 'high': return '🚀';
+      default: return '⚖️';
+    }
+  }
+
+  String _getRiskStake(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'low': return '1-2% stakes';
+      case 'high': return '5-10% stakes';
+      default: return '2-5% stakes';
+    }
+  }
+
+  String _getRiskDescription(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'low': return 'AI focuses on safer bets like double chance, under goals';
+      case 'high': return 'AI may suggest accumulators, correct scores, higher odds';
+      default: return 'AI suggests balanced mix of 1X2, over/under, BTTS';
+    }
+  }
+
+  IconData _getRiskIcon(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'low': return Icons.shield;
+      case 'high': return Icons.trending_up;
+      default: return Icons.balance;
+    }
+  }
+
+  Color _getRiskColor(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'low': return Colors.green;
+      case 'high': return Colors.red;
+      default: return Colors.orange;
     }
   }
 
@@ -265,31 +376,53 @@ class SettingsScreen extends ConsumerWidget {
   void _showRiskDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => SimpleDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Risk Level'),
-        children: [
-          _DialogOption(
-            label: 'Low (safer bets)',
-            onTap: () {
-              ref.read(settingsProvider.notifier).setRiskLevel('low');
-              Navigator.pop(context);
-            },
-          ),
-          _DialogOption(
-            label: 'Medium (balanced)',
-            onTap: () {
-              ref.read(settingsProvider.notifier).setRiskLevel('medium');
-              Navigator.pop(context);
-            },
-          ),
-          _DialogOption(
-            label: 'High (higher odds)',
-            onTap: () {
-              ref.read(settingsProvider.notifier).setRiskLevel('high');
-              Navigator.pop(context);
-            },
-          ),
-        ],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose how aggressive AI recommendations should be:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            _RiskOption(
+              icon: Icons.shield,
+              color: Colors.green,
+              title: 'LOW',
+              subtitle: 'Safer bets • 1-2% stakes',
+              description: 'Double chance, under goals, low odds favorites',
+              onTap: () {
+                ref.read(settingsProvider.notifier).setRiskLevel('low');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 8),
+            _RiskOption(
+              icon: Icons.balance,
+              color: Colors.orange,
+              title: 'MEDIUM',
+              subtitle: 'Balanced • 2-5% stakes',
+              description: '1X2, over/under, BTTS, moderate odds',
+              onTap: () {
+                ref.read(settingsProvider.notifier).setRiskLevel('medium');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 8),
+            _RiskOption(
+              icon: Icons.trending_up,
+              color: Colors.red,
+              title: 'HIGH',
+              subtitle: 'Aggressive • 5-10% stakes',
+              description: 'Accumulators, correct scores, value picks',
+              onTap: () {
+                ref.read(settingsProvider.notifier).setRiskLevel('high');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -489,6 +622,86 @@ class _DialogOption extends StatelessWidget {
     return SimpleDialogOption(
       onPressed: onTap,
       child: Text(label),
+    );
+  }
+}
+
+class _RiskOption extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final String description;
+  final VoidCallback onTap;
+
+  const _RiskOption({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
