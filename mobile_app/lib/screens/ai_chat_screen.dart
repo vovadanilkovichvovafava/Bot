@@ -244,35 +244,35 @@ $statusText
     final queryLower = query.toLowerCase();
 
     // Check for league-specific requests
-    if (queryLower.contains('bundesliga') || queryLower.contains('бундеслиг')) {
+    if (queryLower.contains('bundesliga') || queryLower.contains('german')) {
       return _generateLeagueAnalysis('BL1', 'Bundesliga');
     }
-    if (queryLower.contains('premier league') || queryLower.contains('апл')) {
+    if (queryLower.contains('premier league') || queryLower.contains('epl')) {
       return _generateLeagueAnalysis('PL', 'Premier League');
     }
-    if (queryLower.contains('la liga') || queryLower.contains('ла лига')) {
+    if (queryLower.contains('la liga') || queryLower.contains('spanish')) {
       return _generateLeagueAnalysis('PD', 'La Liga');
     }
-    if (queryLower.contains('serie a') || queryLower.contains('серия а')) {
+    if (queryLower.contains('serie a') || queryLower.contains('italian')) {
       return _generateLeagueAnalysis('SA', 'Serie A');
     }
-    if (queryLower.contains('ligue 1') || queryLower.contains('лига 1')) {
+    if (queryLower.contains('ligue 1') || queryLower.contains('french')) {
       return _generateLeagueAnalysis('FL1', 'Ligue 1');
     }
 
     // Check for today/best bets
-    if (queryLower.contains('today') || queryLower.contains('сегодня') ||
-        queryLower.contains('best bet') || queryLower.contains('лучш')) {
+    if (queryLower.contains('today') || queryLower.contains('best bet') ||
+        queryLower.contains('pick') || queryLower.contains('tip')) {
       return _generateTodayOverview();
     }
 
     // Check for over/under
-    if (queryLower.contains('over') || queryLower.contains('under') || queryLower.contains('тотал')) {
+    if (queryLower.contains('over') || queryLower.contains('under') || queryLower.contains('goals')) {
       return _generateTotalsAnalysis();
     }
 
     // Check for BTTS
-    if (queryLower.contains('btts') || queryLower.contains('both teams') || queryLower.contains('обе забьют')) {
+    if (queryLower.contains('btts') || queryLower.contains('both teams to score')) {
       return _generateBttsAnalysis();
     }
 

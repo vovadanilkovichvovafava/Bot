@@ -28,11 +28,11 @@ class AppConstants {
 /// Bet Types
 class BetTypes {
   static const Map<String, String> names = {
-    'П1': 'Home Win',
-    'П2': 'Away Win',
-    'Х': 'Draw',
-    'ТБ2.5': 'Over 2.5',
-    'ТМ2.5': 'Under 2.5',
+    '1': 'Home Win',
+    '2': 'Away Win',
+    'X': 'Draw',
+    'OVER': 'Over 2.5',
+    'UNDER': 'Under 2.5',
     'BTTS': 'Both Teams Score',
     '1X': 'Home or Draw',
     'X2': 'Away or Draw',

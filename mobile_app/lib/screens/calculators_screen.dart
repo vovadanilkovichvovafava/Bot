@@ -265,7 +265,7 @@ class _ValueBetCalculatorState extends State<ValueBetCalculator> {
                       const SizedBox(height: 8),
                       Text(
                         'Stake ${_kellyStake!.toStringAsFixed(1)}% of your bankroll.\n'
-                        'For a £100 bankroll: £${(_kellyStake! * 1).toStringAsFixed(2)}',
+                        'For a £100 bankroll: £${_kellyStake!.toStringAsFixed(2)}',
                         style: TextStyle(color: Colors.blue[700]),
                       ),
                       const SizedBox(height: 8),
