@@ -16,9 +16,16 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class UserPreferences(BaseModel):
+    min_odds: float = 1.5
+    max_odds: float = 3.0
+    risk_level: str = "medium"  # low, medium, high
+
+
 class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
+    preferences: Optional[UserPreferences] = None
 
 
 class ChatResponse(BaseModel):
@@ -26,7 +33,7 @@ class ChatResponse(BaseModel):
     matches_context: Optional[List[dict]] = None
 
 
-SYSTEM_PROMPT = """You are a professional AI football match analyst. Your task is to provide quality match analysis to assist with betting decisions.
+SYSTEM_PROMPT_BASE = """You are a professional AI football match analyst. Your task is to provide quality match analysis to assist with betting decisions.
 
 ## Your capabilities:
 1. Analysis of specific matches (teams, form, statistics)
@@ -55,6 +62,8 @@ When the user asks about a specific match, provide a detailed analysis:
 **💡 Recommendation:**
 [Specific bet with odds and reasoning]
 
+**💰 Suggested Stake:** [Based on user's risk profile]
+
 **⚠️ Risk:** [low/medium/high]
 
 ---
@@ -68,7 +77,38 @@ When the user asks about a specific match, provide a detailed analysis:
 5. If a match is not found in the list - use your knowledge about the teams
 6. Always add a responsible gambling warning
 7. Indicate confidence level in the prediction
-8. If real bookmaker odds are available - use them in recommendations"""
+8. If real bookmaker odds are available - use them in recommendations
+9. IMPORTANT: Follow user's betting preferences for recommendations"""
+
+
+def build_system_prompt(preferences: Optional[UserPreferences] = None) -> str:
+    """Build system prompt with user preferences"""
+    prompt = SYSTEM_PROMPT_BASE
+
+    if preferences:
+        risk_stakes = {
+            "low": "1-2% of bankroll (conservative)",
+            "medium": "2-5% of bankroll (balanced)",
+            "high": "5-10% of bankroll (aggressive)"
+        }
+        stake_suggestion = risk_stakes.get(preferences.risk_level, risk_stakes["medium"])
+
+        prompt += f"""
+
+## User's Betting Preferences:
+- **Preferred odds range:** {preferences.min_odds} - {preferences.max_odds}
+- **Risk profile:** {preferences.risk_level.upper()}
+- **Suggested stake per bet:** {stake_suggestion}
+
+When making recommendations:
+- Only recommend bets with odds between {preferences.min_odds} and {preferences.max_odds}
+- If the best bet has odds outside this range, mention it but suggest alternatives within range
+- Adjust stake suggestions based on the {preferences.risk_level} risk profile
+- For LOW risk: focus on safer bets like double chance, under goals
+- For MEDIUM risk: balanced approach with 1X2, over/under
+- For HIGH risk: can include accumulators, correct score, high-odds picks"""
+
+    return prompt
 
 
 async def get_matches_context() -> List[dict]:
@@ -198,11 +238,14 @@ async def send_message(
 
         messages.append({"role": "user", "content": user_message})
 
+        # Build system prompt with user preferences
+        system_prompt = build_system_prompt(request.preferences) + matches_info
+
         # Call Claude API
         response = client.messages.create(
             model="claude-3-haiku-20240307",  # Fast and cost-effective
             max_tokens=1500,
-            system=SYSTEM_PROMPT + matches_info,
+            system=system_prompt,
             messages=messages,
         )
 

@@ -8,6 +8,7 @@ import '../models/match.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../providers/predictions_provider.dart';
+import '../providers/settings_provider.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -296,10 +297,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         return;
       }
 
-      // Request analysis for this specific match
+      // Get user settings for personalized analysis
+      final settings = ref.read(settingsProvider);
+
+      // Request analysis for this specific match with user preferences
       final result = await api.sendChatMessage(
         message: 'Match analysis ${widget.match.homeTeam.name} vs ${widget.match.awayTeam.name}',
         history: [],
+        minOdds: settings.minOdds,
+        maxOdds: settings.maxOdds,
+        riskLevel: settings.riskLevel,
       );
 
       setState(() {

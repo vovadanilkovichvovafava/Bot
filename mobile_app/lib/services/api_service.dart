@@ -272,11 +272,25 @@ class ApiService {
   Future<Map<String, dynamic>> sendChatMessage({
     required String message,
     List<Map<String, String>> history = const [],
+    double? minOdds,
+    double? maxOdds,
+    String? riskLevel,
   }) async {
-    final response = await _dio.post('/chat/send', data: {
+    final data = <String, dynamic>{
       'message': message,
       'history': history,
-    });
+    };
+
+    // Add user preferences if provided
+    if (minOdds != null || maxOdds != null || riskLevel != null) {
+      data['preferences'] = {
+        'min_odds': minOdds ?? 1.5,
+        'max_odds': maxOdds ?? 3.0,
+        'risk_level': riskLevel ?? 'medium',
+      };
+    }
+
+    final response = await _dio.post('/chat/send', data: data);
     return response.data;
   }
 

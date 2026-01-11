@@ -5,6 +5,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../services/api_service.dart';
 import '../models/match.dart';
+import '../providers/settings_provider.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -204,6 +205,7 @@ $statusText
     if (_aiAvailable) {
       try {
         final api = ref.read(apiServiceProvider);
+        final settings = ref.read(settingsProvider);
 
         // Build chat history
         final history = _messages
@@ -217,6 +219,9 @@ $statusText
         final result = await api.sendChatMessage(
           message: text,
           history: history,
+          minOdds: settings.minOdds,
+          maxOdds: settings.maxOdds,
+          riskLevel: settings.riskLevel,
         );
 
         response = result['response'] as String;
