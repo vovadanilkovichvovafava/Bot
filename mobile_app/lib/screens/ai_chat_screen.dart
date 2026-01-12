@@ -19,7 +19,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-  bool _showSuggestions = true;
+  bool _suggestionsExpanded = true;  // Panel expanded state
   bool _aiAvailable = false;
 
   List<Match> _todayMatches = [];
@@ -194,7 +194,10 @@ $statusText
         timestamp: DateTime.now(),
       ));
       _isLoading = true;
-      _showSuggestions = false;
+      // Keep suggestions panel available, just collapse it after first message
+      if (_messages.length == 2) {  // Welcome message + first user message
+        _suggestionsExpanded = false;
+      }
     });
     _messageController.clear();
     _scrollToBottom();
@@ -593,7 +596,7 @@ No matches available for BTTS analysis.''';
               setState(() {
                 _messages.clear();
                 _addWelcomeMessage();
-                _showSuggestions = true;
+                _suggestionsExpanded = true;  // Expand suggestions when chat cleared
               });
             },
           ),
@@ -614,7 +617,8 @@ No matches available for BTTS analysis.''';
               },
             ),
           ),
-          if (_showSuggestions) _buildSuggestions(),
+          // Always show suggestions panel (collapsible)
+          _buildSuggestions(),
           _buildInputArea(),
         ],
       ),
@@ -623,59 +627,104 @@ No matches available for BTTS analysis.''';
 
   Widget _buildSuggestions() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
+          ),
+        ),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Text(
-                'Quick questions',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: _showEditQuickQuestionsDialog,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.edit,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary,
+          // Toggle header - always visible
+          GestureDetector(
+            onTap: () => setState(() => _suggestionsExpanded = !_suggestionsExpanded),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Quick questions',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Edit',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const Spacer(),
+                  if (_suggestionsExpanded)
+                    GestureDetector(
+                      onTap: _showEditQuickQuestionsDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Edit',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _suggestionsExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _quickQuestions.map((question) {
-              return ActionChip(
-                label: Text(
-                  question,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onPressed: _isLoading ? null : () => _sendQuickQuestion(question),
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                side: BorderSide.none,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              );
-            }).toList(),
+          // Collapsible content
+          AnimatedCrossFade(
+            firstChild: Container(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _quickQuestions.map((question) {
+                  return ActionChip(
+                    label: Text(
+                      question,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    onPressed: _isLoading ? null : () => _sendQuickQuestion(question),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  );
+                }).toList(),
+              ),
+            ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _suggestionsExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 200),
           ),
         ],
       ),
