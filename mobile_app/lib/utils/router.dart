@@ -8,7 +8,6 @@ import '../screens/auth/register_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/matches_screen.dart';
 import '../screens/ai_chat_screen.dart';
-import '../screens/stats_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/premium_screen.dart';
@@ -78,8 +77,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AiChatScreen(),
           ),
           GoRoute(
-            path: '/stats',
-            builder: (context, state) => const StatsScreen(),
+            path: '/live',
+            builder: (context, state) => const LiveMatchesScreen(),
           ),
           GoRoute(
             path: '/favorites',
@@ -102,10 +101,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/bankroll',
         builder: (context, state) => const BankrollScreen(),
-      ),
-      GoRoute(
-        path: '/live',
-        builder: (context, state) => const LiveMatchesScreen(),
       ),
       GoRoute(
         path: '/social',
@@ -144,9 +139,9 @@ class MainScaffold extends StatelessWidget {
             label: 'AI Chat',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
+            icon: Icon(Icons.play_circle_outlined),
+            selectedIcon: Icon(Icons.play_circle),
+            label: 'Live',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -163,7 +158,7 @@ class MainScaffold extends StatelessWidget {
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/matches')) return 1;
     if (location.startsWith('/chat')) return 2;
-    if (location.startsWith('/stats')) return 3;
+    if (location.startsWith('/live')) return 3;
     if (location.startsWith('/settings')) return 4;
     return 0;
   }
@@ -180,7 +175,7 @@ class MainScaffold extends StatelessWidget {
         context.go('/chat');
         break;
       case 3:
-        context.go('/stats');
+        context.go('/live');
         break;
       case 4:
         context.go('/settings');

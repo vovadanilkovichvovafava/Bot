@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../models/match.dart';
 import '../providers/live_matches_provider.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 import 'match_detail_screen.dart';
 
 class LiveMatchesScreen extends ConsumerStatefulWidget {
@@ -144,13 +146,13 @@ class _LiveMatchesScreenState extends ConsumerState<LiveMatchesScreen> {
   }
 }
 
-class _LiveMatchCard extends StatelessWidget {
+class _LiveMatchCard extends ConsumerWidget {
   final Match match;
 
   const _LiveMatchCard({required this.match});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 2,
       child: InkWell(
@@ -255,9 +257,299 @@ class _LiveMatchCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 16),
+
+              // Ask AI button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showAskAIDialog(context, ref),
+                  icon: const Icon(Icons.smart_toy, size: 18),
+                  label: const Text('Ask AI'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showAskAIDialog(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _AskAIBottomSheet(match: match),
+    );
+  }
+}
+
+// Bottom sheet for AI queries about live match
+class _AskAIBottomSheet extends ConsumerStatefulWidget {
+  final Match match;
+
+  const _AskAIBottomSheet({required this.match});
+
+  @override
+  ConsumerState<_AskAIBottomSheet> createState() => _AskAIBottomSheetState();
+}
+
+class _AskAIBottomSheetState extends ConsumerState<_AskAIBottomSheet> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+  String? _response;
+  String? _error;
+
+  final List<String> _quickQuestions = [
+    'What\'s the best bet right now?',
+    'Will there be more goals?',
+    'Who will win?',
+    'Should I bet on over/under?',
+  ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _askAI(String question) async {
+    final authState = ref.read(authStateProvider);
+    final user = authState.user;
+
+    if (user == null) {
+      setState(() => _error = 'Please log in to use AI');
+      return;
+    }
+
+    // Check limits for non-premium users
+    if (!user.isPremium && user.remainingPredictions <= 0) {
+      setState(() => _error = 'Daily limit reached. Upgrade to Premium for unlimited access.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _response = null;
+    });
+
+    try {
+      final api = ref.read(apiServiceProvider);
+      final match = widget.match;
+      final score = '${match.homeScore ?? 0}:${match.awayScore ?? 0}';
+
+      final prompt = '''
+Live match: ${match.homeTeam.name} vs ${match.awayTeam.name}
+Current score: $score
+League: ${match.league}
+Status: ${match.status}
+
+User question: $question
+
+Please provide a brief analysis and recommendation.
+''';
+
+      final response = await api.sendChatMessage(prompt);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _response = response;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final match = widget.match;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Match info header
+                Row(
+                  children: [
+                    const Icon(Icons.smart_toy, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ask AI about ${match.homeTeam.name} vs ${match.awayTeam.name}',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Score: ${match.homeScore ?? 0}:${match.awayScore ?? 0}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+                const SizedBox(height: 20),
+
+                // Quick questions
+                Text(
+                  'Quick questions:',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _quickQuestions.map((q) {
+                    return ActionChip(
+                      label: Text(q, style: const TextStyle(fontSize: 12)),
+                      onPressed: _isLoading ? null : () => _askAI(q),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // Custom question input
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    hintText: 'Or ask your own question...',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                      onPressed: _isLoading || _controller.text.isEmpty
+                          ? null
+                          : () => _askAI(_controller.text),
+                    ),
+                  ),
+                  onSubmitted: _isLoading ? null : (text) {
+                    if (text.isNotEmpty) _askAI(text);
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Response or error
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 12),
+                          Text('AI is analyzing...'),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (_error != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: TextStyle(color: Colors.red.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                if (_response != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.smart_toy,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'AI Response',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(_response!),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
