@@ -309,8 +309,17 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       final settings = ref.read(settingsProvider);
 
       // Request analysis for this specific match with user preferences
+      // Include full match details so AI doesn't hallucinate date/league
+      final match = widget.match;
+      final matchDate = match.matchDate;
+      final formattedDate = '${matchDate.day.toString().padLeft(2, '0')}.${matchDate.month.toString().padLeft(2, '0')}.${matchDate.year} at ${matchDate.hour.toString().padLeft(2, '0')}:${matchDate.minute.toString().padLeft(2, '0')}';
+      final matchdayInfo = match.matchday != null ? ', Matchday ${match.matchday}' : '';
+
       final result = await api.sendChatMessage(
-        message: 'Match analysis ${widget.match.homeTeam.name} vs ${widget.match.awayTeam.name}',
+        message: 'Analyze this match:\n'
+            '⚽ ${match.homeTeam.name} vs ${match.awayTeam.name}\n'
+            '🏆 ${match.league}$matchdayInfo\n'
+            '📅 $formattedDate',
         history: [],
         minOdds: settings.minOdds,
         maxOdds: settings.maxOdds,
