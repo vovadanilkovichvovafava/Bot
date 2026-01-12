@@ -24,6 +24,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _suggestionsExpanded = true;  // Panel expanded state
   bool _aiAvailable = false;
 
+  // Local user state to avoid ref.watch rebuilds during async operations
+  bool _isPremium = false;
+  int _remainingPredictions = 0;
+
   List<Match> _todayMatches = [];
   List<Match> _tomorrowMatches = [];
   bool _matchesLoaded = false;
@@ -42,9 +46,19 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _loadQuickQuestions();
     _loadMatches();
     _initializeChat();
+  }
+
+  void _loadUserData() {
+    final authState = ref.read(authStateProvider);
+    final user = authState.user;
+    if (user != null) {
+      _isPremium = user.isPremium;
+      _remainingPredictions = user.remainingPredictions;
+    }
   }
 
   Future<void> _initializeChat() async {
@@ -115,28 +129,25 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _saveQuickQuestions();
   }
 
-  void _showPredictionsInfo(BuildContext context, dynamic user) {
-    final isPremium = user.isPremium;
-    final remaining = user.remainingPredictions;
-
+  void _showPredictionsInfoLocal() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Row(
           children: [
             Icon(
-              isPremium ? Icons.star : Icons.auto_awesome,
-              color: isPremium ? Colors.amber : Colors.blue,
+              _isPremium ? Icons.star : Icons.auto_awesome,
+              color: _isPremium ? Colors.amber : Colors.blue,
             ),
             const SizedBox(width: 8),
-            Text(isPremium ? 'Premium Active' : 'Daily Predictions'),
+            Text(_isPremium ? 'Premium Active' : 'Daily Predictions'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isPremium) ...[
+            if (_isPremium) ...[
               const Text(
                 'You have unlimited AI predictions!',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -145,7 +156,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               const Text('Enjoy unlimited match analysis with your Premium subscription.'),
             ] else ...[
               Text(
-                'You have $remaining predictions left today',
+                'You have $_remainingPredictions predictions left today',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -164,13 +175,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Got it'),
           ),
-          if (!isPremium)
+          if (!_isPremium)
             FilledButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(ctx);
                 context.push('/premium');
               },
               child: const Text('Get Premium'),
@@ -359,13 +370,9 @@ $statusText
     if (text.isEmpty || _isLoading) return;
 
     // Check if user can make predictions (only for real AI calls)
-    if (_aiAvailable) {
-      final authState = ref.read(authStateProvider);
-      final user = authState.user;
-      if (user != null && !user.canMakePrediction) {
-        _showLimitReachedDialog();
-        return;
-      }
+    if (_aiAvailable && !_isPremium && _remainingPredictions <= 0) {
+      _showLimitReachedDialog();
+      return;
     }
 
     setState(() {
@@ -441,17 +448,12 @@ $statusText
         timestamp: DateTime.now(),
       ));
       _isLoading = false;
+      // Decrement local counter after successful AI response
+      if (_aiAvailable && !_isPremium && _remainingPredictions > 0) {
+        _remainingPredictions--;
+      }
     });
     _scrollToBottom();
-
-    // Refresh user data after UI update to get new prediction count
-    if (_aiAvailable) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(authStateProvider.notifier).refreshUser();
-        }
-      });
-    }
   }
 
   String _generateAiResponse(String query) {
@@ -791,66 +793,60 @@ No matches available for BTTS analysis.''';
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
-    final user = authState.user;
-    final isPremium = user?.isPremium ?? false;
-    final remaining = user?.remainingPredictions ?? 0;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Assistant'),
         centerTitle: true,
         actions: [
-          // Predictions counter
-          if (user != null)
-            GestureDetector(
-              onTap: () => _showPredictionsInfo(context, user),
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isPremium
-                      ? Colors.amber.withOpacity(0.2)
-                      : remaining > 3
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : remaining > 0
-                              ? Colors.orange.withOpacity(0.2)
-                              : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPremium ? Icons.all_inclusive : Icons.auto_awesome,
-                      size: 16,
-                      color: isPremium
+          // Predictions counter - uses local state to avoid rebuild issues
+          GestureDetector(
+            onTap: _showPredictionsInfoLocal,
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _isPremium
+                    ? Colors.amber.withOpacity(0.2)
+                    : _remainingPredictions > 3
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : _remainingPredictions > 0
+                            ? Colors.orange.withOpacity(0.2)
+                            : Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isPremium ? Icons.all_inclusive : Icons.auto_awesome,
+                    size: 16,
+                    color: _isPremium
+                        ? Colors.amber
+                        : _remainingPredictions > 3
+                            ? Theme.of(context).colorScheme.primary
+                            : _remainingPredictions > 0
+                                ? Colors.orange
+                                : Colors.red,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isPremium ? 'PRO' : '$_remainingPredictions',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _isPremium
                           ? Colors.amber
-                          : remaining > 3
+                          : _remainingPredictions > 3
                               ? Theme.of(context).colorScheme.primary
-                              : remaining > 0
+                              : _remainingPredictions > 0
                                   ? Colors.orange
                                   : Colors.red,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isPremium ? 'PRO' : '$remaining',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isPremium
-                            ? Colors.amber
-                            : remaining > 3
-                                ? Theme.of(context).colorScheme.primary
-                                : remaining > 0
-                                    ? Colors.orange
-                                    : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
