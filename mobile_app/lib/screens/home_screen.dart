@@ -578,20 +578,21 @@ class _HeroHeader extends StatelessWidget {
                                   Row(
                                     children: [
                                       Text(
-                                        '${user.remainingPredictions}',
+                                        user.isPremium ? '∞' : '${user.remainingPredictions}',
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 28,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const Text(
-                                        ' / 10',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 18,
+                                      if (!user.isPremium)
+                                        Text(
+                                          ' / ${user.dailyLimit}',
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 18,
+                                          ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ],

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 
 import '../services/api_service.dart';
 import '../models/match.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -113,6 +115,174 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _saveQuickQuestions();
   }
 
+  void _showPredictionsInfo(BuildContext context, dynamic user) {
+    final isPremium = user.isPremium;
+    final remaining = user.remainingPredictions;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              isPremium ? Icons.star : Icons.auto_awesome,
+              color: isPremium ? Colors.amber : Colors.blue,
+            ),
+            const SizedBox(width: 8),
+            Text(isPremium ? 'Premium Active' : 'Daily Predictions'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isPremium) ...[
+              const Text(
+                'You have unlimited AI predictions!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text('Enjoy unlimited match analysis with your Premium subscription.'),
+            ] else ...[
+              Text(
+                'You have $remaining predictions left today',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text('• Each AI analysis uses 1 prediction'),
+              const SizedBox(height: 4),
+              const Text('• Predictions reset at midnight'),
+              const SizedBox(height: 4),
+              const Text('• Match browsing is unlimited'),
+              const SizedBox(height: 12),
+              const Text(
+                'Upgrade to Premium for unlimited predictions!',
+                style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+          if (!isPremium)
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/premium');
+              },
+              child: const Text('Get Premium'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showLimitReachedDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.hourglass_empty,
+                size: 48,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Daily Limit Reached',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "You've used all your free predictions for today.\nUpgrade to Premium for unlimited AI analysis!",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                children: [
+                  _PremiumBenefitRow(icon: Icons.all_inclusive, text: 'Unlimited AI Predictions'),
+                  SizedBox(height: 10),
+                  _PremiumBenefitRow(icon: Icons.auto_awesome, text: 'Pro Analysis Tools'),
+                  SizedBox(height: 10),
+                  _PremiumBenefitRow(icon: Icons.speed, text: 'Priority Support'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/premium');
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text(
+                  'Unlock Premium',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Maybe Later'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditQuickQuestionsDialog() {
     showModalBottomSheet(
       context: context,
@@ -187,6 +357,16 @@ $statusText
     final text = _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
 
+    // Check if user can make predictions (only for real AI calls)
+    if (_aiAvailable) {
+      final authState = ref.read(authStateProvider);
+      final user = authState.user;
+      if (user != null && !user.canMakePrediction) {
+        _showLimitReachedDialog();
+        return;
+      }
+    }
+
     setState(() {
       _messages.add(ChatMessage(
         text: text,
@@ -228,8 +408,21 @@ $statusText
         );
 
         response = result['response'] as String;
+
+        // Refresh user data to update prediction counter
+        ref.read(authStateProvider.notifier).refreshUser();
       } catch (e) {
-        // Fallback to local responses on error
+        // Check if it's a rate limit error (429)
+        if (e.toString().contains('429') || e.toString().contains('limit')) {
+          _showLimitReachedDialog();
+          setState(() => _isLoading = false);
+          // Remove the user message we added
+          if (_messages.isNotEmpty && _messages.last.isUser) {
+            _messages.removeLast();
+          }
+          return;
+        }
+        // Fallback to local responses on other errors
         response = _generateAiResponse(text);
       }
     } else {
@@ -585,11 +778,66 @@ No matches available for BTTS analysis.''';
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final user = authState.user;
+    final isPremium = user?.isPremium ?? false;
+    final remaining = user?.remainingPredictions ?? 0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Assistant'),
         centerTitle: true,
         actions: [
+          // Predictions counter
+          if (user != null)
+            GestureDetector(
+              onTap: () => _showPredictionsInfo(context, user),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isPremium
+                      ? Colors.amber.withOpacity(0.2)
+                      : remaining > 3
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : remaining > 0
+                              ? Colors.orange.withOpacity(0.2)
+                              : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPremium ? Icons.all_inclusive : Icons.auto_awesome,
+                      size: 16,
+                      color: isPremium
+                          ? Colors.amber
+                          : remaining > 3
+                              ? Theme.of(context).colorScheme.primary
+                              : remaining > 0
+                                  ? Colors.orange
+                                  : Colors.red,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isPremium ? 'PRO' : '$remaining',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isPremium
+                            ? Colors.amber
+                            : remaining > 3
+                                ? Theme.of(context).colorScheme.primary
+                                : remaining > 0
+                                    ? Colors.orange
+                                    : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
@@ -1089,6 +1337,30 @@ class _EditQuickQuestionsSheetState extends State<_EditQuickQuestionsSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+class _PremiumBenefitRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _PremiumBenefitRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.amber),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+        const Icon(Icons.check, size: 18, color: Colors.green),
+      ],
     );
   }
 }

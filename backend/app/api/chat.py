@@ -2,9 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.config import settings
 from app.core.security import get_current_user
+from app.core.database import get_db
+from app.models.user import User
 from app.services.football_api import fetch_matches
 from app.services.odds_api import get_odds_summary
 
@@ -195,7 +199,8 @@ def extract_teams_from_query(query: str, matches: List[dict]) -> tuple:
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Send a message to AI chat using Claude"""
 
@@ -204,6 +209,23 @@ async def send_message(
             status_code=503,
             detail="AI service not configured. Please set CLAUDE_API_KEY."
         )
+
+    # Get user from database to check limits
+    user_id = current_user.get("user_id")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if user can make predictions
+    if not user.is_premium:
+        remaining = (user.daily_limit - user.daily_requests) + user.bonus_predictions
+        if remaining <= 0:
+            raise HTTPException(
+                status_code=429,
+                detail="Daily prediction limit reached. Upgrade to Premium for unlimited predictions."
+            )
 
     try:
         import anthropic
@@ -256,6 +278,15 @@ async def send_message(
         )
 
         ai_response = response.content[0].text
+
+        # Track usage for non-premium users
+        if not user.is_premium:
+            # Use bonus predictions first, then daily limit
+            if user.bonus_predictions > 0:
+                user.bonus_predictions -= 1
+            else:
+                user.daily_requests += 1
+            await db.commit()
 
         return ChatResponse(
             response=ai_response,
