@@ -34,314 +34,639 @@ class CalculatorsScreen extends ConsumerWidget {
 }
 
 // ============================================
-// VALUE BET CALCULATOR
+// VALUE BET CALCULATOR (Simplified)
+// AI estimates probability, user only enters bookmaker odds
 // ============================================
 
-class ValueBetCalculator extends StatefulWidget {
+class ValueBetCalculator extends ConsumerStatefulWidget {
   const ValueBetCalculator({super.key});
 
   @override
-  State<ValueBetCalculator> createState() => _ValueBetCalculatorState();
+  ConsumerState<ValueBetCalculator> createState() => _ValueBetCalculatorState();
 }
 
-class _ValueBetCalculatorState extends State<ValueBetCalculator> {
+class _ValueBetCalculatorState extends ConsumerState<ValueBetCalculator> {
   final _oddsController = TextEditingController();
-  final _probabilityController = TextEditingController();
+  Match? _selectedMatch;
+  String? _selectedBetType;
+  bool _showResult = false;
 
-  double? _value;
-  double? _expectedValue;
-  double? _kellyStake;
-  bool _isValueBet = false;
+  // AI-estimated probabilities for different bet types (based on typical market analysis)
+  static const _aiProbabilities = {
+    'Home Win': 45.0,
+    'Draw': 26.0,
+    'Away Win': 29.0,
+    '1X': 71.0,
+    'X2': 55.0,
+    '12': 74.0,
+    'Over 1.5': 72.0,
+    'Over 2.5': 52.0,
+    'Over 3.5': 28.0,
+    'Under 1.5': 28.0,
+    'Under 2.5': 48.0,
+    'Under 3.5': 72.0,
+    'BTTS Yes': 55.0,
+    'BTTS No': 45.0,
+  };
+
+  static const _betTypes = [
+    _ValueBetType('Home Win', '1', Icons.home, Colors.blue),
+    _ValueBetType('Draw', 'X', Icons.balance, Colors.grey),
+    _ValueBetType('Away Win', '2', Icons.flight_takeoff, Colors.orange),
+    _ValueBetType('1X', '1X', Icons.looks_two, Colors.indigo),
+    _ValueBetType('X2', 'X2', Icons.looks_two, Colors.teal),
+    _ValueBetType('Over 1.5', 'O1.5', Icons.arrow_upward, Colors.green),
+    _ValueBetType('Over 2.5', 'O2.5', Icons.arrow_upward, Colors.green),
+    _ValueBetType('Under 2.5', 'U2.5', Icons.arrow_downward, Colors.red),
+    _ValueBetType('BTTS Yes', 'GG', Icons.sports_soccer, Colors.amber),
+    _ValueBetType('BTTS No', 'NG', Icons.block, Colors.brown),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(matchesProvider.notifier).loadTodayMatches();
+    });
+  }
+
+  double? get _aiProbability {
+    if (_selectedBetType == null) return null;
+    return _aiProbabilities[_selectedBetType];
+  }
+
+  double? get _bookmakerOdds => double.tryParse(_oddsController.text);
+
+  bool get _isValueBet {
+    final prob = _aiProbability;
+    final odds = _bookmakerOdds;
+    if (prob == null || odds == null || odds < 1.01) return false;
+    // Value = (Probability * Odds) - 1 > 0
+    return ((prob / 100) * odds) - 1 > 0;
+  }
+
+  double get _valuePercent {
+    final prob = _aiProbability;
+    final odds = _bookmakerOdds;
+    if (prob == null || odds == null) return 0;
+    return (((prob / 100) * odds) - 1) * 100;
+  }
+
+  double get _impliedProbability {
+    final odds = _bookmakerOdds;
+    if (odds == null || odds < 1.01) return 0;
+    return 100 / odds;
+  }
 
   void _calculate() {
-    final odds = double.tryParse(_oddsController.text);
-    final probability = double.tryParse(_probabilityController.text);
-
-    if (odds == null || probability == null || odds < 1.01 || probability <= 0 || probability > 100) {
-      setState(() {
-        _value = null;
-        _expectedValue = null;
-        _kellyStake = null;
-        _isValueBet = false;
-      });
-      return;
+    if (_selectedMatch != null && _selectedBetType != null && _bookmakerOdds != null) {
+      setState(() => _showResult = true);
     }
-
-    final probDecimal = probability / 100;
-    final impliedProb = 1 / odds;
-
-    // Value = (Probability * Odds) - 1
-    final value = (probDecimal * odds) - 1;
-
-    // Expected Value per £1 bet
-    final ev = (probDecimal * (odds - 1)) - (1 - probDecimal);
-
-    // Kelly Criterion: (bp - q) / b where b = odds-1, p = prob, q = 1-prob
-    final b = odds - 1;
-    final kelly = ((b * probDecimal) - (1 - probDecimal)) / b;
-
-    setState(() {
-      _value = value * 100; // As percentage
-      _expectedValue = ev * 100; // As percentage of stake
-      _kellyStake = kelly > 0 ? kelly * 100 : 0; // As percentage of bankroll
-      _isValueBet = value > 0;
-    });
   }
 
   @override
   void dispose() {
     _oddsController.dispose();
-    _probabilityController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final matchesState = ref.watch(matchesProvider);
+    final matches = matchesState.todayMatches;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Info card
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'A value bet exists when the probability of an outcome is higher than what the odds suggest.',
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
-                  ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.purple.withOpacity(0.1),
+                  Colors.blue.withOpacity(0.1),
                 ],
               ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.purple.withOpacity(0.2)),
             ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Input: Odds
-          TextField(
-            controller: _oddsController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Bookmaker Odds',
-              hintText: 'e.g., 2.50',
-              prefixIcon: const Icon(Icons.monetization_on),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              helperText: 'Enter the decimal odds offered by bookmaker',
-            ),
-            onChanged: (_) => _calculate(),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Input: Your Probability
-          TextField(
-            controller: _probabilityController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Your Estimated Probability (%)',
-              hintText: 'e.g., 45',
-              prefixIcon: const Icon(Icons.percent),
-              suffixText: '%',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              helperText: 'Your assessment of the outcome probability',
-            ),
-            onChanged: (_) => _calculate(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Results
-          if (_value != null) ...[
-            // Value indicator
-            Card(
-              color: _isValueBet ? Colors.green[50] : Colors.red[50],
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Icon(
-                      _isValueBet ? Icons.thumb_up : Icons.thumb_down,
-                      size: 48,
-                      color: _isValueBet ? Colors.green : Colors.red,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _isValueBet ? 'VALUE BET!' : 'NO VALUE',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: _isValueBet ? Colors.green[800] : Colors.red[800],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Value: ${_value!.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: _isValueBet ? Colors.green[700] : Colors.red[700],
-                      ),
-                    ),
-                  ],
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: Colors.purple),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Detailed results
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Analysis',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(height: 24),
-
-                    _ResultRow(
-                      label: 'Implied Probability',
-                      value: '${(100 / double.parse(_oddsController.text)).toStringAsFixed(1)}%',
-                      description: 'What odds suggest',
-                    ),
-                    _ResultRow(
-                      label: 'Your Probability',
-                      value: '${_probabilityController.text}%',
-                      description: 'Your estimation',
-                    ),
-                    _ResultRow(
-                      label: 'Expected Value',
-                      value: '${_expectedValue!.toStringAsFixed(2)}%',
-                      description: 'EV per £1 staked',
-                      isPositive: _expectedValue! > 0,
-                    ),
-                    _ResultRow(
-                      label: 'Kelly Stake',
-                      value: '${_kellyStake!.toStringAsFixed(1)}%',
-                      description: '% of bankroll to bet',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Kelly recommendation
-            if (_kellyStake! > 0)
-              Card(
-                color: Colors.blue[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.lightbulb, color: Colors.blue[700]),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Kelly Criterion Suggestion',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[800],
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'AI Value Finder',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
-                        'Stake ${_kellyStake!.toStringAsFixed(1)}% of your bankroll.\n'
-                        'For a £100 bankroll: £${_kellyStake!.toStringAsFixed(2)}',
-                        style: TextStyle(color: Colors.blue[700]),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '* Consider using ½ or ¼ Kelly for more conservative approach',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.blue[600],
-                        ),
+                        'AI estimates the real probability. You just enter your bookmaker\'s odds.',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Step 1: Select Match
+          _buildStepHeader('1', 'Select Match', Icons.sports_soccer),
+          const SizedBox(height: 12),
+
+          if (matches.isEmpty)
+            _buildNoMatchesCard()
+          else
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: matches.length,
+                itemBuilder: (context, index) {
+                  final match = matches[index];
+                  final isSelected = _selectedMatch?.id == match.id;
+                  return _ValueMatchTile(
+                    match: match,
+                    isSelected: isSelected,
+                    onTap: () => setState(() {
+                      _selectedMatch = match;
+                      _showResult = false;
+                    }),
+                  );
+                },
+              ),
+            ),
+
+          const SizedBox(height: 24),
+
+          // Step 2: Select Bet Type
+          _buildStepHeader('2', 'Bet Type', Icons.category),
+          const SizedBox(height: 12),
+
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _betTypes.map((bt) {
+              final isSelected = _selectedBetType == bt.name;
+              final prob = _aiProbabilities[bt.name];
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedBetType = bt.name;
+                  _showResult = false;
+                }),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? bt.color.withOpacity(0.2)
+                        : isDark ? Colors.grey[850] : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? bt.color : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(bt.icon, size: 16, color: isSelected ? bt.color : Colors.grey),
+                          const SizedBox(width: 6),
+                          Text(
+                            bt.name,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? bt.color : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (prob != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.auto_awesome, size: 10, color: Colors.purple),
+                            const SizedBox(width: 4),
+                            Text(
+                              '~${prob.toInt()}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.purple[400],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Step 3: Enter Bookmaker Odds
+          _buildStepHeader('3', 'Your Bookmaker\'s Odds', Icons.monetization_on),
+          const SizedBox(height: 12),
+
+          TextField(
+            controller: _oddsController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              hintText: 'e.g., 2.50',
+              prefixIcon: const Icon(Icons.attach_money),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: isDark ? Colors.grey[900] : Colors.grey[50],
+            ),
+            onChanged: (_) {
+              setState(() => _showResult = false);
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          // Calculate button
+          SizedBox(
+            height: 56,
+            child: FilledButton.icon(
+              onPressed: (_selectedMatch != null && _selectedBetType != null && _bookmakerOdds != null && _bookmakerOdds! >= 1.01)
+                  ? _calculate
+                  : null,
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Check Value', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Result
+          if (_showResult) ...[
+            _buildResultCard(),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepHeader(String number, String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoMatchesCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.warning_amber, color: Colors.orange, size: 32),
+          const SizedBox(height: 8),
+          const Text(
+            'No matches loaded',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Go to Matches tab to load today\'s matches',
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    final isValue = _isValueBet;
+    final valuePercent = _valuePercent;
+    final aiProb = _aiProbability ?? 0;
+    final impliedProb = _impliedProbability;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isValue
+              ? [Colors.green.withOpacity(0.15), Colors.green.withOpacity(0.05)]
+              : [Colors.red.withOpacity(0.15), Colors.red.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isValue ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Big result icon
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isValue ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isValue ? Icons.check : Icons.close,
+              size: 48,
+              color: Colors.white,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Big result text
+          Text(
+            isValue ? 'BET!' : 'DON\'T BET',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: isValue ? Colors.green[700] : Colors.red[700],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Match info
+          Text(
+            '${_selectedMatch!.homeTeam.name} vs ${_selectedMatch!.awayTeam.name}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            '$_selectedBetType @ ${_bookmakerOdds!.toStringAsFixed(2)}',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // Explanation
+          Row(
+            children: [
+              Expanded(
+                child: _InfoTile(
+                  icon: Icons.auto_awesome,
+                  iconColor: Colors.purple,
+                  label: 'AI Probability',
+                  value: '${aiProb.toInt()}%',
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Icon(
+                  aiProb > impliedProb ? Icons.arrow_forward : Icons.arrow_back,
+                  color: isValue ? Colors.green : Colors.red,
+                ),
+              ),
+              Expanded(
+                child: _InfoTile(
+                  icon: Icons.casino,
+                  iconColor: Colors.orange,
+                  label: 'Bookmaker',
+                  value: '${impliedProb.toInt()}%',
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Value percentage
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isValue ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  size: 18,
+                  color: isValue ? Colors.green[700] : Colors.red[700],
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Value: ${valuePercent >= 0 ? '+' : ''}${valuePercent.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isValue ? Colors.green[700] : Colors.red[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Simple explanation
+          Text(
+            isValue
+                ? 'AI thinks this outcome is more likely than the bookmaker suggests. Good value!'
+                : 'The bookmaker\'s odds are already fair or too low. No value here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _ResultRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final String description;
-  final bool? isPositive;
+class _ValueBetType {
+  final String name;
+  final String shortName;
+  final IconData icon;
+  final Color color;
 
-  const _ResultRow({
-    required this.label,
-    required this.value,
-    required this.description,
-    this.isPositive,
+  const _ValueBetType(this.name, this.shortName, this.icon, this.color);
+}
+
+class _ValueMatchTile extends StatelessWidget {
+  final Match match;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ValueMatchTile({
+    required this.match,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+              : isDark ? Colors.grey[850] : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                child: Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
                 ),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${match.homeTeam.name} vs ${match.awayTeam.name}',
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    match.league,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isPositive == null
-                  ? null
-                  : isPositive!
-                      ? Colors.green
-                      : Colors.red,
+            Text(
+              '${match.matchDate.hour.toString().padLeft(2, '0')}:${match.matchDate.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  const _InfoTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: iconColor, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
