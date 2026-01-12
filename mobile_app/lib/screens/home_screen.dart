@@ -73,10 +73,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SizedBox(height: 4),
             Text('• Predictions reset at midnight (your timezone)'),
             SizedBox(height: 4),
-            Text('• Match browsing and calculators are unlimited'),
+            Text('• Match browsing is unlimited'),
             SizedBox(height: 12),
             Text(
-              '⭐ Upgrade to Premium for unlimited predictions!',
+              '⭐ Upgrade to Premium for unlimited predictions + Pro Tools!',
               style: TextStyle(color: Colors.amber),
             ),
           ],
@@ -94,6 +94,144 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Text('See Premium'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPremiumGate(BuildContext context, String featureName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Lock icon with gradient
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.amber.withOpacity(0.2),
+                    Colors.orange.withOpacity(0.2),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock,
+                size: 48,
+                color: Colors.amber,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              '$featureName is a Pro Feature',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Description
+            Text(
+              'Unlock $featureName and all other Pro tools with Premium subscription.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Features list
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  _PremiumFeatureRow(icon: Icons.auto_awesome, text: 'AI Value Finder'),
+                  const SizedBox(height: 10),
+                  _PremiumFeatureRow(icon: Icons.receipt_long, text: 'Bet Slip Builder'),
+                  const SizedBox(height: 10),
+                  _PremiumFeatureRow(icon: Icons.account_balance_wallet, text: 'Bankroll Tracker'),
+                  const SizedBox(height: 10),
+                  _PremiumFeatureRow(icon: Icons.all_inclusive, text: 'Unlimited AI Predictions'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // CTA buttons
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/premium');
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.star),
+                    SizedBox(width: 8),
+                    Text(
+                      'Unlock Premium',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Maybe later'),
+            ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
       ),
     );
   }
@@ -158,7 +296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 24),
 
                       // Quick Actions with icons
-                      _buildSectionHeader(context, 'Quick Actions'),
+                      _buildSectionHeader(context, 'Pro Tools'),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -173,10 +311,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _QuickActionCard(
-                              icon: Icons.calculate,
-                              label: 'Calculator',
+                              icon: Icons.auto_awesome,
+                              label: 'Value Finder',
                               color: Colors.orange,
-                              onTap: () => context.push('/calculators'),
+                              isLocked: user == null || !user.isPremium,
+                              onTap: () {
+                                if (user != null && user.isPremium) {
+                                  context.push('/calculators');
+                                } else {
+                                  _showPremiumGate(context, 'Value Finder');
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -185,7 +330,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               icon: Icons.account_balance_wallet,
                               label: 'Bankroll',
                               color: Colors.purple,
-                              onTap: () => context.push('/bankroll'),
+                              isLocked: user == null || !user.isPremium,
+                              onTap: () {
+                                if (user != null && user.isPremium) {
+                                  context.push('/bankroll');
+                                } else {
+                                  _showPremiumGate(context, 'Bankroll Tracker');
+                                }
+                              },
                             ),
                           ),
                         ],
@@ -651,12 +803,14 @@ class _QuickActionCard extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool isLocked;
 
   const _QuickActionCard({
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
+    this.isLocked = false,
   });
 
   @override
@@ -671,7 +825,9 @@ class _QuickActionCard extends StatelessWidget {
           color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+            color: isLocked
+                ? Colors.amber.withOpacity(0.5)
+                : isDark ? Colors.grey[800]! : Colors.grey[200]!,
           ),
           boxShadow: [
             if (!isDark)
@@ -682,25 +838,86 @@ class _QuickActionCard extends StatelessWidget {
               ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+            // PRO badge
+            if (isLocked)
+              Positioned(
+                top: -8,
+                right: 0,
+                left: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'PRO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
+            // Content
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isLocked
+                            ? Colors.grey.withOpacity(0.1)
+                            : color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: isLocked ? Colors.grey : color,
+                        size: 24,
+                      ),
+                    ),
+                    if (isLocked)
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: isLocked
+                        ? Colors.grey
+                        : isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -779,6 +996,30 @@ class _EmptyMatchesCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Premium feature row for gate dialog
+class _PremiumFeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _PremiumFeatureRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.amber[700]),
+        const SizedBox(width: 12),
+        Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        const Spacer(),
+        Icon(Icons.check_circle, size: 18, color: Colors.green[600]),
+      ],
     );
   }
 }
