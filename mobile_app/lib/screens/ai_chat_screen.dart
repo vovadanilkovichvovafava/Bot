@@ -409,9 +409,6 @@ $statusText
         );
 
         response = result['response'] as String;
-
-        // Refresh user data to update prediction counter
-        ref.read(authStateProvider.notifier).refreshUser();
       } catch (e) {
         // Check if it's a rate limit error (429)
         if (e.toString().contains('429') || e.toString().contains('limit')) {
@@ -446,6 +443,15 @@ $statusText
       _isLoading = false;
     });
     _scrollToBottom();
+
+    // Refresh user data after UI update to get new prediction count
+    if (_aiAvailable) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(authStateProvider.notifier).refreshUser();
+        }
+      });
+    }
   }
 
   String _generateAiResponse(String query) {
