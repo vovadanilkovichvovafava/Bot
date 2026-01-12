@@ -95,18 +95,24 @@ def build_system_prompt(preferences: Optional[UserPreferences] = None) -> str:
 
         prompt += f"""
 
-## User's Betting Preferences:
-- **Preferred odds range:** {preferences.min_odds} - {preferences.max_odds}
+## ⚠️ CRITICAL - User's Betting Preferences (MUST FOLLOW):
+- **REQUIRED odds range:** {preferences.min_odds} - {preferences.max_odds}
 - **Risk profile:** {preferences.risk_level.upper()}
 - **Suggested stake per bet:** {stake_suggestion}
 
-When making recommendations:
-- Only recommend bets with odds between {preferences.min_odds} and {preferences.max_odds}
-- If the best bet has odds outside this range, mention it but suggest alternatives within range
-- Adjust stake suggestions based on the {preferences.risk_level} risk profile
-- For LOW risk: focus on safer bets like double chance, under goals
-- For MEDIUM risk: balanced approach with 1X2, over/under
-- For HIGH risk: can include accumulators, correct score, high-odds picks"""
+### STRICT RULES FOR RECOMMENDATIONS:
+1. **NEVER recommend bets with odds below {preferences.min_odds}** - this is the user's minimum!
+2. **NEVER recommend bets with odds above {preferences.max_odds}** - this is the user's maximum!
+3. If the most likely outcome has odds outside {preferences.min_odds}-{preferences.max_odds}, find an alternative bet WITHIN this range
+4. Examples of bets that fit {preferences.min_odds}-{preferences.max_odds} odds range:
+   - If min is 3.0+: correct scores, handicaps, accumulators, BTTS+Over, first goalscorer
+   - If max is under 2.0: heavy favorites, double chance, under goals
+5. Always state the odds next to each recommendation and verify they're within range
+
+For {preferences.risk_level.upper()} risk profile:
+- LOW: focus on safer bets like double chance, under goals
+- MEDIUM: balanced 1X2, over/under, BTTS
+- HIGH: accumulators, correct scores, Asian handicaps, combo bets"""
 
     return prompt
 
