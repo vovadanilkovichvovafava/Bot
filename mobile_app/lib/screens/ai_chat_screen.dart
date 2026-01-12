@@ -181,6 +181,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   void _showLimitReachedDialog() {
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -414,11 +415,15 @@ $statusText
       } catch (e) {
         // Check if it's a rate limit error (429)
         if (e.toString().contains('429') || e.toString().contains('limit')) {
-          _showLimitReachedDialog();
-          setState(() => _isLoading = false);
-          // Remove the user message we added
-          if (_messages.isNotEmpty && _messages.last.isUser) {
-            _messages.removeLast();
+          setState(() {
+            _isLoading = false;
+            // Remove the user message we added
+            if (_messages.isNotEmpty && _messages.last.isUser) {
+              _messages.removeLast();
+            }
+          });
+          if (mounted) {
+            _showLimitReachedDialog();
           }
           return;
         }
@@ -429,6 +434,8 @@ $statusText
       // Use local fallback responses
       response = _generateAiResponse(text);
     }
+
+    if (!mounted) return;
 
     setState(() {
       _messages.add(ChatMessage(
