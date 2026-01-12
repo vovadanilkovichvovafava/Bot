@@ -279,14 +279,18 @@ async def send_message(
 
         ai_response = response.content[0].text
 
-        # Track usage for non-premium users
+        # Track total predictions for ALL users (for stats)
+        user.total_predictions += 1
+
+        # Track daily usage for non-premium users (for rate limiting)
         if not user.is_premium:
             # Use bonus predictions first, then daily limit
             if user.bonus_predictions > 0:
                 user.bonus_predictions -= 1
             else:
                 user.daily_requests += 1
-            await db.commit()
+
+        await db.commit()
 
         return ChatResponse(
             response=ai_response,
