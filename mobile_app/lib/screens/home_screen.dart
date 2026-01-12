@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -108,27 +109,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('AI Betting Assistant'),
-        actions: [
-          if (user != null && user.isPremium)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.star, color: Colors.amber, size: 16),
-                  SizedBox(width: 4),
-                  Text('PRO', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
-                ],
-              ),
-            ),
-        ],
-      ),
       body: Stack(
         children: [
           RefreshIndicator(
@@ -136,193 +116,122 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               await ref.read(authStateProvider.notifier).refreshUser();
               await ref.read(matchesProvider.notifier).loadTodayMatches();
             },
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // User greeting with predictions info
-                if (user != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hello, ${user.username ?? 'User'}!',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 4),
-                            // Predictions left with tooltip
-                            GestureDetector(
-                              onTap: () => _showPredictionsInfo(context),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.psychology,
-                                      size: 16,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '${user.remainingPredictions} predictions left',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.help_outline,
-                                      size: 14,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+            child: CustomScrollView(
+              slivers: [
+                // Gradient Hero Header
+                SliverToBoxAdapter(
+                  child: _HeroHeader(
+                    user: user,
+                    settings: settings,
+                    onPredictionsInfoTap: () => _showPredictionsInfo(context),
+                    onSettingsTap: () => context.go('/settings'),
+                    onPremiumTap: () => context.push('/premium'),
+                  ),
+                ),
+
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const SizedBox(height: 20),
+
+                      // AI Quick Action - Premium Gradient Style
+                      _AskAICard(
+                        onTap: () => context.go('/chat'),
                       ),
-                      // Settings indicator
+                      const SizedBox(height: 16),
+
+                      // Live matches banner
+                      if (liveMatches.isNotEmpty) ...[
+                        _LiveMatchesBanner(
+                          liveCount: liveMatches.length,
+                          onTap: () => context.push('/live'),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Quick stats with link to full stats
                       GestureDetector(
-                        onTap: () => context.go('/settings'),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                _getRiskIcon(settings.riskLevel),
-                                size: 20,
-                                color: _getRiskColor(settings.riskLevel),
-                              ),
-                              Text(
-                                settings.riskLevel.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getRiskColor(settings.riskLevel),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
-
-                // AI Quick Action - Prominent
-                _AskAICard(
-                  onTap: () => context.go('/chat'),
-                ),
-                const SizedBox(height: 16),
-
-                // Live matches banner
-                if (liveMatches.isNotEmpty) ...[
-                  _LiveMatchesBanner(
-                    liveCount: liveMatches.length,
-                    onTap: () => context.push('/live'),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Quick stats with link to full stats
-                GestureDetector(
-                  onTap: () => context.go('/stats'),
-                  child: const StatsCard(),
-                ),
-                const SizedBox(height: 20),
-
-                // Smart Shortcuts
-                Text(
-                  'Quick Start',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _SmartChip(
-                        icon: Icons.today,
-                        label: "Today's Matches",
-                        onTap: () => context.go('/matches'),
-                      ),
-                      const SizedBox(width: 8),
-                      _SmartChip(
-                        icon: Icons.bookmark,
-                        label: 'My Predictions',
                         onTap: () => context.go('/stats'),
+                        child: const StatsCard(),
                       ),
-                      const SizedBox(width: 8),
-                      _SmartChip(
-                        icon: Icons.calculate,
-                        label: 'Value Bet Calc',
-                        onTap: () => context.push('/calculators'),
+                      const SizedBox(height: 24),
+
+                      // Quick Actions with icons
+                      _buildSectionHeader(context, 'Quick Actions'),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.sports_soccer,
+                              label: 'Matches',
+                              color: Colors.green,
+                              onTap: () => context.go('/matches'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.calculate,
+                              label: 'Calculator',
+                              color: Colors.orange,
+                              onTap: () => context.push('/calculators'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _QuickActionCard(
+                              icon: Icons.account_balance_wallet,
+                              label: 'Bankroll',
+                              color: Colors.purple,
+                              onTap: () => context.push('/bankroll'),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      _SmartChip(
-                        icon: Icons.account_balance_wallet,
-                        label: 'Bankroll',
-                        onTap: () => context.push('/bankroll'),
+                      const SizedBox(height: 24),
+
+                      // Today's top matches
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildSectionHeader(context, "Today's Matches"),
+                          TextButton(
+                            onPressed: () => context.go('/matches'),
+                            child: const Row(
+                              children: [
+                                Text('See All'),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_ios, size: 14),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                      const SizedBox(height: 8),
+
+                      // Real matches from API
+                      if (matchesState.isLoading && todayMatches.isEmpty)
+                        ...List.generate(3, (_) => const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: MatchCardShimmer(),
+                        ))
+                      else if (todayMatches.isEmpty)
+                        _EmptyMatchesCard(
+                          onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
+                          onViewTomorrow: () => context.go('/matches'),
+                        )
+                      else
+                        ...todayMatches.take(3).map((match) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _PremiumMatchCard(match: match),
+                        )),
+
+                      const SizedBox(height: 100), // Space for welcome guide
+                    ]),
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // Today's top matches
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Today's Top Matches",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => context.go('/matches'),
-                      icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: const Text('All'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Real matches from API
-                if (matchesState.isLoading && todayMatches.isEmpty)
-                  ...List.generate(3, (_) => const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: MatchCardShimmer(),
-                  ))
-                else if (todayMatches.isEmpty)
-                  _EmptyMatchesCard(
-                    onRefresh: () => ref.read(matchesProvider.notifier).loadTodayMatches(forceRefresh: true),
-                    onViewTomorrow: () => context.go('/matches'),
-                  )
-                else
-                  ...todayMatches.take(3).map((match) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _HomeMatchCard(match: match),
-                  )),
-
-                const SizedBox(height: 80), // Space for welcome guide
               ],
             ),
           ),
@@ -331,6 +240,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (_showWelcomeGuide)
             _WelcomeGuide(onDismiss: _dismissGuide),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        letterSpacing: -0.5,
       ),
     );
   }
@@ -352,67 +271,438 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// Ask AI Card - Main action
-class _AskAICard extends StatelessWidget {
+// Hero Header with gradient
+class _HeroHeader extends StatelessWidget {
+  final dynamic user;
+  final dynamic settings;
+  final VoidCallback onPredictionsInfoTap;
+  final VoidCallback onSettingsTap;
+  final VoidCallback onPremiumTap;
+
+  const _HeroHeader({
+    required this.user,
+    required this.settings,
+    required this.onPredictionsInfoTap,
+    required this.onSettingsTap,
+    required this.onPremiumTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF1A237E), const Color(0xFF0D47A1)]
+              : [const Color(0xFF1565C0), const Color(0xFF0D47A1)],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: greeting and settings
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getGreeting(),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.username ?? 'Welcome!',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      if (user != null && user.isPremium)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'PRO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      _GlassButton(
+                        icon: Icons.settings,
+                        onTap: onSettingsTap,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Predictions counter - glass style
+              if (user != null)
+                GestureDetector(
+                  onTap: onPredictionsInfoTap,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'AI Predictions Left Today',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${user.remainingPredictions}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Text(
+                                        ' / 10',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!user.isPremium)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: GestureDetector(
+                                  onTap: onPremiumTap,
+                                  child: const Text(
+                                    'Get Unlimited',
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+}
+
+// Glass Button for header
+class _GlassButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _GlassButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Ask AI Card - Premium gradient style
+class _AskAICard extends StatefulWidget {
   final VoidCallback onTap;
 
   const _AskAICard({required this.onTap});
 
   @override
+  State<_AskAICard> createState() => _AskAICardState();
+}
+
+class _AskAICardState extends State<_AskAICard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _shimmerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _shimmerAnimation = Tween<double>(begin: -1, end: 2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      elevation: 0,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.psychology,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 28,
-                ),
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF667eea),
+                const Color(0xFF764ba2),
+                const Color(0xFF6B8DD6),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF667eea).withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    Text(
-                      'Ask AI Assistant',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 28,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Get predictions, tips & match analysis',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ask AI Assistant',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Get predictions, tips & match analysis',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Theme.of(context).colorScheme.primary,
-                size: 18,
-              ),
-            ],
+            ),
           ),
+        );
+      },
+    );
+  }
+}
+
+// Quick Action Card - Modern tile style
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -613,6 +903,317 @@ class _GuideStep extends StatelessWidget {
             style: const TextStyle(color: Colors.white, fontSize: 14),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Premium Match Card with modern design
+class _PremiumMatchCard extends StatelessWidget {
+  final Match match;
+
+  const _PremiumMatchCard({required this.match});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeFormat = DateFormat('HH:mm');
+    final dateFormat = DateFormat('dd MMM');
+    final matchTime = timeFormat.format(match.matchDate.toLocal());
+    final matchDate = dateFormat.format(match.matchDate.toLocal());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLive = match.status.toLowerCase() == 'live' || match.status.toLowerCase() == 'in_play';
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: isLive
+                ? Colors.red.withOpacity(0.2)
+                : Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: isLive ? 20 : 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: isLive
+            ? Border.all(color: Colors.red.withOpacity(0.5), width: 1.5)
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MatchDetailScreen(match: match),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Header row: League + Status + Time
+                Row(
+                  children: [
+                    // League badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        match.league,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Status badge
+                    if (isLive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(
+                        '$matchDate • $matchTime',
+                        style: TextStyle(
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Teams row
+                Row(
+                  children: [
+                    // Home team
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _TeamLogo(logo: match.homeTeam.logo, size: 48),
+                          const SizedBox(height: 8),
+                          Text(
+                            match.homeTeam.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Score or VS
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: match.homeScore != null && match.awayScore != null
+                          ? Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isLive
+                                        ? Colors.red.withOpacity(0.1)
+                                        : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${match.homeScore} - ${match.awayScore}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                      color: isLive
+                                          ? Colors.red
+                                          : Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'VS',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                    ),
+
+                    // Away team
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _TeamLogo(logo: match.awayTeam.logo, size: 48),
+                          const SizedBox(height: 8),
+                          Text(
+                            match.awayTeam.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // AI Analysis hint
+                if (!match.isFinished)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF667eea).withOpacity(0.1),
+                          const Color(0xFF764ba2).withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: isDark ? const Color(0xFF667eea) : const Color(0xFF764ba2),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Tap for AI Analysis',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF667eea) : const Color(0xFF764ba2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Team Logo Widget
+class _TeamLogo extends StatelessWidget {
+  final String? logo;
+  final double size;
+
+  const _TeamLogo({this.logo, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (logo != null && logo!.isNotEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[800] : Colors.grey[100],
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            logo!,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _DefaultTeamIcon(size: size),
+          ),
+        ),
+      );
+    }
+    return _DefaultTeamIcon(size: size);
+  }
+}
+
+class _DefaultTeamIcon extends StatelessWidget {
+  final double size;
+
+  const _DefaultTeamIcon({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.grey[200],
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.sports_soccer,
+        size: size * 0.5,
+        color: isDark ? Colors.grey[600] : Colors.grey[400],
       ),
     );
   }
