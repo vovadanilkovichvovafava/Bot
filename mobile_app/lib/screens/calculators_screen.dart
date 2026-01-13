@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 
 import '../providers/matches_provider.dart';
+import '../providers/bet_slip_provider.dart';
 import '../models/match.dart';
 
 class CalculatorsScreen extends ConsumerWidget {
@@ -683,9 +684,7 @@ class BetSlipBuilder extends ConsumerStatefulWidget {
 }
 
 class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
-  final List<BetSlipItem> _selections = [];
-  final _stakeController = TextEditingController(text: '10');
-  double _stake = 10;
+  late TextEditingController _stakeController;
 
   @override
   void initState() {
@@ -693,7 +692,13 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
     // Load matches when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(matchesProvider.notifier).loadTodayMatches();
+      // Initialize stake controller with saved value
+      final betSlipState = ref.read(betSlipProvider);
+      _stakeController = TextEditingController(
+        text: betSlipState.stake.toStringAsFixed(0),
+      );
     });
+    _stakeController = TextEditingController(text: '10');
   }
 
   void _addSelection() {
@@ -707,7 +712,7 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
       builder: (context) => _AddSelectionSheet(
         matches: matches,
         onAdd: (item) {
-          setState(() => _selections.add(item));
+          ref.read(betSlipProvider.notifier).addSelection(item);
           Navigator.pop(context);
         },
       ),
@@ -715,16 +720,8 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
   }
 
   void _removeSelection(int index) {
-    setState(() => _selections.removeAt(index));
+    ref.read(betSlipProvider.notifier).removeSelection(index);
   }
-
-  double get _totalOdds {
-    if (_selections.isEmpty) return 0;
-    return _selections.fold(1.0, (prev, item) => prev * item.odds);
-  }
-
-  double get _potentialReturn => _stake * _totalOdds;
-  double get _potentialProfit => _potentialReturn - _stake;
 
   @override
   void dispose() {
@@ -734,16 +731,25 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
 
   @override
   Widget build(BuildContext context) {
+    final betSlipState = ref.watch(betSlipProvider);
+    final selections = betSlipState.selections;
+    final stake = betSlipState.stake;
+
+    // Show loading indicator while loading from storage
+    if (betSlipState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       children: [
         Expanded(
-          child: _selections.isEmpty
+          child: selections.isEmpty
               ? _buildEmptyState()
-              : _buildSelectionsList(),
+              : _buildSelectionsList(selections),
         ),
 
         // Bottom summary
-        if (_selections.isNotEmpty)
+        if (selections.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -779,9 +785,8 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
                             ),
                           ),
                           onChanged: (value) {
-                            setState(() {
-                              _stake = double.tryParse(value) ?? 0;
-                            });
+                            final newStake = double.tryParse(value) ?? 0;
+                            ref.read(betSlipProvider.notifier).updateStake(newStake);
                           },
                         ),
                       ),
@@ -792,7 +797,7 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
                         child: InkWell(
                           onTap: () {
                             _stakeController.text = v;
-                            setState(() => _stake = double.parse(v));
+                            ref.read(betSlipProvider.notifier).updateStake(double.parse(v));
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -817,12 +822,12 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${_selections.length} selection${_selections.length > 1 ? 's' : ''}',
+                            '${selections.length} selection${selections.length > 1 ? 's' : ''}',
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Total Odds: ${_totalOdds.toStringAsFixed(2)}',
+                            'Total Odds: ${betSlipState.totalOdds.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -836,7 +841,7 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '£${_potentialReturn.toStringAsFixed(2)}',
+                            '£${betSlipState.potentialReturn.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -850,21 +855,25 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
 
                   const SizedBox(height: 12),
 
-                  // Place bet button (simulated)
+                  // Save bet slip button
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Bet slip saved! Potential profit: £${_potentialProfit.toStringAsFixed(2)}',
+                      onPressed: () async {
+                        await ref.read(betSlipProvider.notifier).saveBetSlip();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Bet slip saved! Potential profit: £${betSlipState.potentialProfit.toStringAsFixed(2)}',
+                              ),
+                              backgroundColor: Colors.green,
                             ),
-                          ),
-                        );
+                          );
+                        }
                       },
-                      icon: const Icon(Icons.check),
-                      label: Text('Save Bet Slip (£${_stake.toStringAsFixed(2)})'),
+                      icon: const Icon(Icons.save),
+                      label: Text('Save Bet Slip (£${stake.toStringAsFixed(2)})'),
                     ),
                   ),
                 ],
@@ -902,7 +911,7 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
     );
   }
 
-  Widget _buildSelectionsList() {
+  Widget _buildSelectionsList(List<BetSlipItem> selections) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -916,8 +925,8 @@ class _BetSlipBuilderState extends ConsumerState<BetSlipBuilder> {
         const SizedBox(height: 16),
 
         // Selections
-        ...List.generate(_selections.length, (index) {
-          final item = _selections[index];
+        ...List.generate(selections.length, (index) {
+          final item = selections[index];
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
@@ -1538,16 +1547,4 @@ class _MatchSelectTile extends StatelessWidget {
   }
 }
 
-class BetSlipItem {
-  final String match;
-  final String selection;
-  final double odds;
-  final String league;
-
-  BetSlipItem({
-    required this.match,
-    required this.selection,
-    required this.odds,
-    required this.league,
-  });
-}
+// BetSlipItem is now defined in bet_slip_provider.dart
