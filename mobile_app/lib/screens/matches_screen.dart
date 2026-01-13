@@ -25,7 +25,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     // Load matches when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(matchesProvider.notifier).refresh();
@@ -47,9 +47,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.play_circle, size: 18), text: 'Live'),
             Tab(text: 'Today'),
-            Tab(text: 'Tomorrow'),
+            Tab(icon: Icon(Icons.play_circle, size: 18), text: 'Live'),
             Tab(text: 'Leagues'),
           ],
         ),
@@ -57,9 +56,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _LiveMatchesList(),
           _TodayMatchesList(),
-          _TomorrowMatchesList(),
+          _LiveMatchesList(),
           _LeaguesList(),
         ],
       ),

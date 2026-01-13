@@ -16,6 +16,7 @@ import '../screens/bankroll_screen.dart';
 import '../screens/pro_tools_screen.dart';
 import '../screens/social_screen.dart';
 import '../screens/onboarding_screen.dart';
+import '../screens/stats_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -105,6 +106,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/social',
         builder: (context, state) => const SocialScreen(),
+      ),
+      GoRoute(
+        path: '/stats',
+        builder: (context, state) => const StatsScreen(),
       ),
     ],
   );
