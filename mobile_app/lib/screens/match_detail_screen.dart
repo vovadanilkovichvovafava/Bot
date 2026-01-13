@@ -25,15 +25,37 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   bool _isLoadingAnalysis = false;
   bool _analysisError = false;
   bool _reminderSet = false;
-
   bool _hasPrediction = false;
+
+  // AI limits state
+  int _remainingRequests = 0;
+  bool _isPremium = false;
+  bool _limitsLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadAiAnalysis();
+    // Don't auto-load AI analysis - wait for button click
+    _loadAiLimits();
     _checkReminderStatus();
     _checkPredictionStatus();
+  }
+
+  Future<void> _loadAiLimits() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final limits = await api.getAiLimits();
+      setState(() {
+        _remainingRequests = limits['remaining'] as int? ?? 0;
+        _isPremium = limits['is_premium'] as bool? ?? false;
+        _limitsLoaded = true;
+      });
+    } catch (e) {
+      // If can't load limits, assume 0 to be safe
+      setState(() {
+        _limitsLoaded = true;
+      });
+    }
   }
 
   void _checkPredictionStatus() {
@@ -329,6 +351,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _aiAnalysis = result['response'] as String?;
         _isLoadingAnalysis = false;
+        // Decrease remaining count after successful request
+        if (!_isPremium && _remainingRequests > 0) {
+          _remainingRequests--;
+        }
       });
     } catch (e) {
       setState(() {
@@ -687,6 +713,115 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Initial state - show button to request analysis
+    if (_aiAnalysis == null && !_isLoadingAnalysis) {
+      final bool canRequest = _isPremium || _remainingRequests > 0;
+
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.psychology,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'AI Match Analysis',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Get detailed analysis from Claude AI including predictions, team form, and betting recommendations.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Limit warning
+              if (!_isPremium && _limitsLoaded)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _remainingRequests > 3
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _remainingRequests > 3
+                          ? Colors.blue.withOpacity(0.3)
+                          : Colors.orange.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: _remainingRequests > 3 ? Colors.blue : Colors.orange,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _remainingRequests > 0
+                            ? 'This uses 1 of your $_remainingRequests daily AI requests'
+                            : 'No AI requests remaining today',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _remainingRequests > 3 ? Colors.blue[700] : Colors.orange[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_isPremium && _limitsLoaded)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star, size: 16, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text(
+                        'Premium: Unlimited AI requests',
+                        style: TextStyle(fontSize: 12, color: Colors.green),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: canRequest ? _loadAiAnalysis : null,
+                icon: const Icon(Icons.auto_awesome),
+                label: Text(canRequest ? 'Get AI Analysis' : 'Limit Reached'),
+              ),
+
+              if (!canRequest && !_isPremium) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => context.go('/premium'),
+                  child: const Text('Upgrade to Premium for unlimited'),
+                ),
+              ],
             ],
           ),
         ),

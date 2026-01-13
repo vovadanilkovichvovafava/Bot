@@ -302,6 +302,17 @@ class ApiService {
       return false;
     }
   }
+
+  /// Get AI request limits for current user
+  Future<Map<String, dynamic>> getAiLimits() async {
+    final response = await _dio.get('/users/me/ai-limits');
+    return response.data;
+  }
+
+  /// Reset own daily AI limit (for testing)
+  Future<void> resetAiLimit() async {
+    await _dio.post('/users/me/reset-limit');
+  }
 }
 
 // Provider
