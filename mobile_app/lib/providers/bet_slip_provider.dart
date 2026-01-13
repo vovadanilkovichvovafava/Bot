@@ -192,3 +192,57 @@ class BetSlipNotifier extends StateNotifier<BetSlipState> {
 final betSlipProvider = StateNotifierProvider<BetSlipNotifier, BetSlipState>((ref) {
   return BetSlipNotifier();
 });
+
+// Saved bet slip model
+class SavedBetSlip {
+  final List<BetSlipItem> selections;
+  final double stake;
+  final double totalOdds;
+  final double potentialReturn;
+  final DateTime savedAt;
+
+  SavedBetSlip({
+    required this.selections,
+    required this.stake,
+    required this.totalOdds,
+    required this.potentialReturn,
+    required this.savedAt,
+  });
+
+  factory SavedBetSlip.fromJson(Map<String, dynamic> json) {
+    return SavedBetSlip(
+      selections: (json['selections'] as List)
+          .map((s) => BetSlipItem.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      stake: (json['stake'] as num).toDouble(),
+      totalOdds: (json['totalOdds'] as num).toDouble(),
+      potentialReturn: (json['potentialReturn'] as num).toDouble(),
+      savedAt: DateTime.parse(json['savedAt'] as String),
+    );
+  }
+}
+
+// Bet slip history provider
+final betSlipHistoryProvider = FutureProvider<List<SavedBetSlip>>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final historyJson = prefs.getString('bet_slip_history');
+
+  if (historyJson == null) return [];
+
+  try {
+    final List<dynamic> decoded = jsonDecode(historyJson);
+    return decoded
+        .map((item) => SavedBetSlip.fromJson(item as Map<String, dynamic>))
+        .toList()
+        .reversed  // Most recent first
+        .toList();
+  } catch (e) {
+    return [];
+  }
+});
+
+// Clear history function
+Future<void> clearBetSlipHistory() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('bet_slip_history');
+}

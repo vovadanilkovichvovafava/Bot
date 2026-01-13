@@ -48,7 +48,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Today'),
-            Tab(icon: Icon(Icons.play_circle, size: 18), text: 'Live'),
+            Tab(text: 'Live'),
             Tab(text: 'Leagues'),
           ],
         ),

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/prediction.dart';
 import '../providers/predictions_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/bet_slip_provider.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -83,6 +84,11 @@ class StatsScreen extends ConsumerWidget {
             ] else ...[
               _buildEmptyLocalCard(context),
             ],
+
+            const SizedBox(height: 16),
+
+            // Saved bet slips
+            _BetSlipHistoryCard(),
           ],
         ),
       ),
@@ -386,11 +392,13 @@ class _MiniStat extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
+  final String? customValue;
 
   const _MiniStat({
     required this.label,
     required this.value,
     required this.color,
+    this.customValue,
   });
 
   @override
@@ -398,7 +406,7 @@ class _MiniStat extends StatelessWidget {
     return Column(
       children: [
         Text(
-          value.toString(),
+          customValue ?? value.toString(),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -715,5 +723,282 @@ class _PredictionTile extends StatelessWidget {
     if (prediction.isLoss) return Colors.red;
     if (prediction.isVoid) return Colors.grey;
     return Colors.orange;
+  }
+}
+
+class _BetSlipHistoryCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(betSlipHistoryProvider);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.receipt_long,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Saved Bet Slips',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                historyAsync.when(
+                  data: (history) => history.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Clear Bet Slip History'),
+                                content: const Text('Delete all saved bet slips?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await clearBetSlipHistory();
+                              ref.invalidate(betSlipHistoryProvider);
+                            }
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            historyAsync.when(
+              data: (history) {
+                if (history.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No saved bet slips',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Save bet slips from Betting Tools\nto track your accumulators',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    // Summary
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _MiniStat(
+                          label: 'Total Slips',
+                          value: history.length,
+                          color: Colors.blue,
+                        ),
+                        _MiniStat(
+                          label: 'Avg Odds',
+                          value: 0,
+                          customValue: (history.fold<double>(0, (sum, s) => sum + s.totalOdds) / history.length).toStringAsFixed(2),
+                          color: Colors.orange,
+                        ),
+                        _MiniStat(
+                          label: 'Total Stake',
+                          value: 0,
+                          customValue: '£${history.fold<double>(0, (sum, s) => sum + s.stake).toStringAsFixed(0)}',
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+
+                    // Recent slips
+                    ...history.take(3).map((slip) => _SavedBetSlipTile(slip: slip)),
+
+                    if (history.length > 3)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '+ ${history.length - 3} more slips',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (e, _) => Text('Error: $e'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedBetSlipTile extends StatelessWidget {
+  final SavedBetSlip slip;
+
+  const _SavedBetSlipTile({required this.slip});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('dd MMM HH:mm');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${slip.selections.length} picks',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                dateFormat.format(slip.savedAt),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '@${slip.totalOdds.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Show first 2 selections
+          ...slip.selections.take(2).map((s) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.sports_soccer, size: 14, color: Colors.grey),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${s.match} - ${s.selection}',
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '@${s.odds.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          )),
+          if (slip.selections.length > 2)
+            Text(
+              '+${slip.selections.length - 2} more',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Stake: £${slip.stake.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                'Return: £${slip.potentialReturn.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
