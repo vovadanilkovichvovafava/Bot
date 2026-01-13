@@ -17,8 +17,9 @@ from app.models import (  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-# Background training task handle
+# Background task handles
 _training_task = None
+_verification_task = None
 
 
 async def ml_training_loop():
@@ -51,26 +52,56 @@ async def ml_training_loop():
         await asyncio.sleep(6 * 60 * 60)
 
 
+async def result_verification_loop():
+    """Background task to periodically verify prediction results"""
+    from app.core.database import async_session_maker
+    from app.ml import MLDataCollector
+
+    # Wait for initial startup (2 minutes after training task)
+    await asyncio.sleep(120)
+
+    while True:
+        try:
+            async with async_session_maker() as db:
+                collector = MLDataCollector(db)
+                verified_count = await collector.check_pending_results()
+
+                if verified_count > 0:
+                    logger.info(f"Verified {verified_count} prediction results")
+
+        except Exception as e:
+            logger.error(f"Result verification loop error: {e}")
+
+        # Check every 2 hours
+        await asyncio.sleep(2 * 60 * 60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _training_task
+    global _training_task, _verification_task
 
     # Startup: Initialize database tables
     await init_db()
+    logger.info("Database tables initialized")
 
     # Start background ML training task
     _training_task = asyncio.create_task(ml_training_loop())
     logger.info("ML background training task started")
 
+    # Start background result verification task
+    _verification_task = asyncio.create_task(result_verification_loop())
+    logger.info("ML result verification task started")
+
     yield
 
-    # Shutdown: cancel background task
-    if _training_task:
-        _training_task.cancel()
-        try:
-            await _training_task
-        except asyncio.CancelledError:
-            pass
+    # Shutdown: cancel background tasks
+    for task in [_training_task, _verification_task]:
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(
