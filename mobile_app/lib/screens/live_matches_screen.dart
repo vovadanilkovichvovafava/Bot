@@ -355,12 +355,15 @@ User question: $question
 Please provide a brief analysis and recommendation.
 ''';
 
-      final response = await api.sendChatMessage(prompt);
+      final result = await api.sendChatMessage(
+        message: prompt,
+        history: [],
+      );
 
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _response = response;
+          _response = result['response'] as String;
         });
       }
     } catch (e) {
