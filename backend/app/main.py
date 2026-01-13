@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import asyncio
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,13 +8,69 @@ from app.config import settings
 from app.api import auth, matches, predictions, users, chat, social, ml
 from app.core.database import init_db
 
+# Import all models to register them with SQLAlchemy metadata
+from app.models import (  # noqa: F401
+    User, MLTrainingData, MLModel, EnsembleModel,
+    ConfidenceCalibration, ROIAnalytics, LearningPattern,
+    FeatureErrorPattern, LeagueLearning, LearningLog, Prediction
+)
+
+logger = logging.getLogger(__name__)
+
+# Background training task handle
+_training_task = None
+
+
+async def ml_training_loop():
+    """Background task to periodically check and retrain ML models"""
+    from app.core.database import async_session_maker
+    from app.ml import MLTrainingService, BET_CATEGORIES
+
+    # Wait for initial startup
+    await asyncio.sleep(60)
+
+    while True:
+        try:
+            async with async_session_maker() as db:
+                service = MLTrainingService(db)
+
+                # Check each category for retraining
+                for category in BET_CATEGORIES:
+                    try:
+                        if await service.should_retrain(category):
+                            logger.info(f"Retraining ML model for {category}")
+                            result = await service.train_ensemble(category)
+                            logger.info(f"Training result for {category}: {result}")
+                    except Exception as e:
+                        logger.error(f"Error checking/training {category}: {e}")
+
+        except Exception as e:
+            logger.error(f"ML training loop error: {e}")
+
+        # Check every 6 hours
+        await asyncio.sleep(6 * 60 * 60)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _training_task
+
     # Startup: Initialize database tables
     await init_db()
+
+    # Start background ML training task
+    _training_task = asyncio.create_task(ml_training_loop())
+    logger.info("ML background training task started")
+
     yield
-    # Shutdown: cleanup if needed
+
+    # Shutdown: cancel background task
+    if _training_task:
+        _training_task.cancel()
+        try:
+            await _training_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

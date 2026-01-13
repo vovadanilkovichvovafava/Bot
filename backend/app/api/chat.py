@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timedelta
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -9,10 +10,11 @@ from app.config import settings
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.services.football_api import fetch_matches
+from app.services.football_api import fetch_matches, fetch_team_form, fetch_standings
 from app.services.odds_api import get_odds_summary
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ChatMessage(BaseModel):
@@ -131,6 +133,7 @@ async def get_matches_context() -> List[dict]:
     # Simplify for context
     return [
         {
+            "id": m.get("id"),
             "home": m.get("home_team", {}).get("name"),
             "away": m.get("away_team", {}).get("name"),
             "league": m.get("league"),
@@ -182,18 +185,124 @@ def extract_teams_from_query(query: str, matches: List[dict]) -> tuple:
         home = m.get('home', '').lower()
         away = m.get('away', '').lower()
         league_code = m.get('league_code', 'PL')
+        match_id = m.get('id')
 
         if home and away:
             if home in query_lower or away in query_lower:
-                return (m.get('home'), m.get('away'), league_code)
+                return (m.get('home'), m.get('away'), league_code, match_id, m.get('date'))
 
     # Try to find "vs" pattern
     if ' vs ' in query_lower:
         parts = query_lower.split(' vs ')
         if len(parts) == 2:
-            return (parts[0].strip(), parts[1].strip(), 'PL')
+            return (parts[0].strip(), parts[1].strip(), 'PL', None, None)
 
-    return (None, None, None)
+    return (None, None, None, None, None)
+
+
+async def get_ml_prediction(
+    db: AsyncSession,
+    home_team: str,
+    away_team: str,
+    league_code: str,
+    odds: Dict = None,
+) -> Optional[Dict]:
+    """Get ML prediction for a match"""
+    try:
+        from app.ml import MLPredictorService, FeatureExtractor, BET_CATEGORIES
+
+        extractor = FeatureExtractor()
+        predictor = MLPredictorService(db)
+
+        # Fetch team form data
+        home_form = await fetch_team_form(home_team, league_code)
+        away_form = await fetch_team_form(away_team, league_code)
+
+        # Fetch standings
+        standings_list = await fetch_standings(league_code)
+        standings = {s["team"]: {"position": s["position"]} for s in standings_list}
+
+        # Extract features
+        features = extractor.extract(
+            home_form=home_form,
+            away_form=away_form,
+            standings=standings,
+            odds=odds,
+            home_team=home_team,
+            away_team=away_team,
+        )
+
+        # Get predictions for all categories
+        predictions = {}
+        for category in BET_CATEGORIES:
+            try:
+                result = await predictor.get_calibrated_prediction(features, category)
+                if result.get("available"):
+                    predictions[category] = {
+                        "confidence": round(result["confidence"], 1),
+                        "prediction": result["prediction"],
+                        "agreement": round(result["agreement"] * 100, 1),
+                        "ev": result.get("ev"),
+                        "stake": result.get("stake_percent"),
+                    }
+            except Exception as e:
+                logger.warning(f"ML prediction error for {category}: {e}")
+
+        if predictions:
+            return {
+                "predictions": predictions,
+                "features_summary": {
+                    "home_form": f"{home_form.get('wins', 0)}W-{home_form.get('draws', 0)}D-{home_form.get('losses', 0)}L" if home_form else "N/A",
+                    "away_form": f"{away_form.get('wins', 0)}W-{away_form.get('draws', 0)}D-{away_form.get('losses', 0)}L" if away_form else "N/A",
+                    "home_position": standings.get(home_team, {}).get("position", "N/A"),
+                    "away_position": standings.get(away_team, {}).get("position", "N/A"),
+                },
+                "features": features,
+            }
+
+    except ImportError:
+        logger.warning("ML libraries not available")
+    except Exception as e:
+        logger.error(f"ML prediction error: {e}")
+
+    return None
+
+
+def format_ml_context(ml_data: Dict) -> str:
+    """Format ML predictions for Claude context"""
+    if not ml_data:
+        return ""
+
+    context = "\n\n[ML MODEL PREDICTIONS - use these as guidance:]"
+
+    predictions = ml_data.get("predictions", {})
+
+    if "outcomes_home" in predictions:
+        p = predictions["outcomes_home"]
+        context += f"\n• Home Win: {p['confidence']}% confidence (agreement: {p['agreement']}%)"
+
+    if "outcomes_away" in predictions:
+        p = predictions["outcomes_away"]
+        context += f"\n• Away Win: {p['confidence']}% confidence (agreement: {p['agreement']}%)"
+
+    if "outcomes_draw" in predictions:
+        p = predictions["outcomes_draw"]
+        context += f"\n• Draw: {p['confidence']}% confidence (agreement: {p['agreement']}%)"
+
+    if "totals_over" in predictions:
+        p = predictions["totals_over"]
+        context += f"\n• Over 2.5: {p['confidence']}% confidence"
+
+    if "btts" in predictions:
+        p = predictions["btts"]
+        context += f"\n• BTTS: {p['confidence']}% confidence"
+
+    summary = ml_data.get("features_summary", {})
+    if summary:
+        context += f"\n[Form: Home {summary.get('home_form', 'N/A')}, Away {summary.get('away_form', 'N/A')}]"
+        context += f"\n[Positions: Home #{summary.get('home_position', 'N/A')}, Away #{summary.get('away_position', 'N/A')}]"
+
+    return context
 
 
 @router.post("/send", response_model=ChatResponse)
@@ -202,7 +311,7 @@ async def send_message(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Send a message to AI chat using Claude"""
+    """Send a message to AI chat using Claude with ML predictions"""
 
     if not settings.CLAUDE_API_KEY:
         raise HTTPException(
@@ -238,16 +347,49 @@ async def send_message(
         # Build context with matches data
         matches_info = format_matches_for_context(matches_context)
 
-        # Try to get odds if user is asking about a specific match
+        # Try to get odds and ML predictions if user is asking about a specific match
         odds_info = ""
-        home_team, away_team, league_code = extract_teams_from_query(
+        ml_context = ""
+        home_team, away_team, league_code, match_id, match_date = extract_teams_from_query(
             request.message, matches_context
         )
-        if home_team and away_team and settings.ODDS_API_KEY:
+
+        odds_data = None
+        ml_data = None
+
+        if home_team and away_team:
+            # Get odds
+            if settings.ODDS_API_KEY:
+                try:
+                    odds_info = await get_odds_summary(home_team, away_team, league_code)
+                    # Parse odds for ML
+                    if odds_info:
+                        # Simple parsing - could be improved
+                        odds_data = {"home": 2.5, "draw": 3.5, "away": 3.0}
+                except Exception:
+                    pass
+
+            # Get ML predictions
             try:
-                odds_info = await get_odds_summary(home_team, away_team, league_code)
-            except Exception:
-                pass  # Odds not critical
+                ml_data = await get_ml_prediction(
+                    db, home_team, away_team, league_code, odds_data
+                )
+                if ml_data:
+                    ml_context = format_ml_context(ml_data)
+
+                    # Save predictions for ML training
+                    await save_ml_predictions(
+                        db=db,
+                        user_id=user_id,
+                        match_id=str(match_id) if match_id else f"{home_team}_{away_team}",
+                        home_team=home_team,
+                        away_team=away_team,
+                        league_code=league_code,
+                        ml_data=ml_data,
+                        match_date=match_date,
+                    )
+            except Exception as e:
+                logger.warning(f"ML prediction failed: {e}")
 
         # Build messages for Claude
         messages = []
@@ -259,10 +401,12 @@ async def send_message(
                 "content": msg.content
             })
 
-        # Add current message with odds context if available
+        # Add current message with context
         user_message = request.message
         if odds_info:
             user_message += f"\n\n[Context - real bookmaker odds:{odds_info}]"
+        if ml_context:
+            user_message += ml_context
 
         messages.append({"role": "user", "content": user_message})
 
@@ -307,6 +451,64 @@ async def send_message(
             status_code=500,
             detail=f"AI service error: {str(e)}"
         )
+
+
+async def save_ml_predictions(
+    db: AsyncSession,
+    user_id: int,
+    match_id: str,
+    home_team: str,
+    away_team: str,
+    league_code: str,
+    ml_data: Dict,
+    match_date: str = None,
+):
+    """Save ML predictions for training data collection"""
+    try:
+        from app.ml import MLDataCollector
+        from datetime import datetime
+
+        collector = MLDataCollector(db)
+        features = ml_data.get("features", {})
+
+        # Parse match date
+        match_time = None
+        if match_date:
+            try:
+                match_time = datetime.fromisoformat(match_date.replace('Z', '+00:00'))
+            except:
+                pass
+
+        # Save prediction for each category
+        for category, pred in ml_data.get("predictions", {}).items():
+            bet_type_map = {
+                "outcomes_home": "P1",
+                "outcomes_away": "P2",
+                "outcomes_draw": "X",
+                "totals_over": "Over 2.5",
+                "totals_under": "Under 2.5",
+                "btts": "BTTS",
+            }
+
+            await collector.save_prediction(
+                user_id=user_id,
+                match_id=match_id,
+                home_team=home_team,
+                away_team=away_team,
+                league_code=league_code,
+                bet_type=bet_type_map.get(category, category),
+                bet_category=category,
+                confidence=pred["confidence"],
+                odds=features.get("odds_home") if "home" in category else features.get("odds_away"),
+                features=features,
+                bet_rank=1,
+                match_time=match_time,
+                expected_value=pred.get("ev"),
+                stake_percent=pred.get("stake"),
+            )
+
+    except Exception as e:
+        logger.error(f"Error saving ML predictions: {e}")
 
 
 @router.get("/status")

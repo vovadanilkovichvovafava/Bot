@@ -252,3 +252,106 @@ async def get_categories():
             "btts": "Both Teams to Score (ОЗ)",
         }
     }
+
+
+@router.post("/verify-results")
+async def verify_pending_results(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Check and verify pending predictions against actual results.
+    This updates training data targets for ML learning.
+    Admin only.
+    """
+    if not current_user.get("is_admin", False):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    from app.ml import MLDataCollector
+
+    collector = MLDataCollector(db)
+    verified_count = await collector.check_pending_results()
+
+    return {
+        "verified": verified_count,
+        "message": f"Verified {verified_count} predictions"
+    }
+
+
+@router.get("/training-data-stats")
+async def get_training_data_stats(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get statistics about collected training data"""
+    from app.ml import MLDataCollector
+
+    collector = MLDataCollector(db)
+    stats = await collector.get_training_stats()
+
+    return stats
+
+
+@router.get("/status")
+async def ml_system_status(db: AsyncSession = Depends(get_db)):
+    """Get ML system status and health"""
+    from sqlalchemy import text
+
+    status = {
+        "ml_available": False,
+        "models_loaded": {},
+        "training_data": {},
+        "last_training": None,
+    }
+
+    # Check if ML libraries available
+    try:
+        import sklearn
+        import joblib
+        status["ml_available"] = True
+        status["sklearn_version"] = sklearn.__version__
+    except ImportError:
+        status["ml_available"] = False
+        status["error"] = "scikit-learn not installed"
+        return status
+
+    # Check training data counts
+    try:
+        query = text("""
+            SELECT bet_category, COUNT(*) as total,
+                   SUM(CASE WHEN target IS NOT NULL THEN 1 ELSE 0 END) as verified
+            FROM ml_training_data
+            GROUP BY bet_category
+        """)
+        result = await db.execute(query)
+        for row in result.fetchall():
+            status["training_data"][row[0]] = {
+                "total": row[1],
+                "verified": row[2],
+            }
+    except Exception as e:
+        status["training_data_error"] = str(e)
+
+    # Check trained models
+    try:
+        query = text("""
+            SELECT bet_category, model_name, accuracy, trained_at
+            FROM ensemble_models
+            ORDER BY trained_at DESC
+        """)
+        result = await db.execute(query)
+        for row in result.fetchall():
+            category = row[0]
+            if category not in status["models_loaded"]:
+                status["models_loaded"][category] = []
+            status["models_loaded"][category].append({
+                "model": row[1],
+                "accuracy": row[2],
+                "trained": row[3].isoformat() if row[3] else None,
+            })
+            if not status["last_training"] or (row[3] and row[3].isoformat() > status["last_training"]):
+                status["last_training"] = row[3].isoformat() if row[3] else None
+    except Exception as e:
+        status["models_error"] = str(e)
+
+    return status

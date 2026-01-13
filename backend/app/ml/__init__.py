@@ -15,6 +15,7 @@ from app.ml.features import (
 from app.ml.training import MLTrainingService
 from app.ml.predictor import MLPredictorService, clear_model_cache
 from app.ml.extractor import FeatureExtractor
+from app.ml.data_collector import MLDataCollector
 
 __all__ = [
     "ML_FEATURE_COLUMNS",
@@ -30,4 +31,5 @@ __all__ = [
     "MLPredictorService",
     "clear_model_cache",
     "FeatureExtractor",
+    "MLDataCollector",
 ]
