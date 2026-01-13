@@ -186,6 +186,49 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: const Text('Version 1.0.0'),
           ),
 
+          const Divider(),
+
+          // Developer Section (for testing)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Developer Options',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Colors.orange,
+              ),
+            ),
+          ),
+
+          if (user != null && user.isPremium)
+            ListTile(
+              leading: const Icon(Icons.remove_circle, color: Colors.red),
+              title: const Text('Deactivate Premium (Test)'),
+              subtitle: const Text('Remove premium for testing'),
+              onTap: () {
+                ref.read(authStateProvider.notifier).deactivatePremiumForTesting();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Premium deactivated (local only)')),
+                );
+              },
+            )
+          else if (user != null)
+            ListTile(
+              leading: const Icon(Icons.workspace_premium, color: Colors.amber),
+              title: const Text('Activate Premium (Test)'),
+              subtitle: const Text('Get free premium for testing'),
+              onTap: () {
+                ref.read(authStateProvider.notifier).activatePremiumForTesting();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Premium activated! (local only)'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+
+          const Divider(),
+
           // Logout
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),

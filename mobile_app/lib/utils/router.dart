@@ -13,7 +13,7 @@ import '../screens/favorites_screen.dart';
 import '../screens/premium_screen.dart';
 import '../screens/calculators_screen.dart';
 import '../screens/bankroll_screen.dart';
-import '../screens/live_matches_screen.dart';
+import '../screens/pro_tools_screen.dart';
 import '../screens/social_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../providers/auth_provider.dart';
@@ -77,8 +77,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AiChatScreen(),
           ),
           GoRoute(
-            path: '/live',
-            builder: (context, state) => const LiveMatchesScreen(),
+            path: '/pro-tools',
+            builder: (context, state) => const ProToolsScreen(),
           ),
           GoRoute(
             path: '/favorites',
@@ -139,9 +139,9 @@ class MainScaffold extends StatelessWidget {
             label: 'AI Chat',
           ),
           NavigationDestination(
-            icon: Icon(Icons.play_circle_outlined),
-            selectedIcon: Icon(Icons.play_circle),
-            label: 'Live',
+            icon: Icon(Icons.workspace_premium_outlined),
+            selectedIcon: Icon(Icons.workspace_premium),
+            label: 'Pro Tools',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -158,7 +158,7 @@ class MainScaffold extends StatelessWidget {
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/matches')) return 1;
     if (location.startsWith('/chat')) return 2;
-    if (location.startsWith('/live')) return 3;
+    if (location.startsWith('/pro-tools')) return 3;
     if (location.startsWith('/settings')) return 4;
     return 0;
   }
@@ -175,7 +175,7 @@ class MainScaffold extends StatelessWidget {
         context.go('/chat');
         break;
       case 3:
-        context.go('/live');
+        context.go('/pro-tools');
         break;
       case 4:
         context.go('/settings');

@@ -231,6 +231,60 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  // For testing purposes - activate premium locally
+  void activatePremiumForTesting() {
+    if (state.user == null) return;
+
+    final premiumUser = User(
+      id: state.user!.id,
+      email: state.user!.email,
+      username: state.user!.username,
+      language: state.user!.language,
+      timezone: state.user!.timezone,
+      isPremium: true,
+      premiumUntil: DateTime.now().add(const Duration(days: 30)),
+      dailyRequests: state.user!.dailyRequests,
+      dailyLimit: 999,
+      bonusPredictions: 999,
+      minOdds: state.user!.minOdds,
+      maxOdds: state.user!.maxOdds,
+      riskLevel: state.user!.riskLevel,
+      totalPredictions: state.user!.totalPredictions,
+      correctPredictions: state.user!.correctPredictions,
+      accuracy: state.user!.accuracy,
+      createdAt: state.user!.createdAt,
+    );
+
+    state = state.copyWith(user: premiumUser);
+  }
+
+  // For testing purposes - deactivate premium locally
+  void deactivatePremiumForTesting() {
+    if (state.user == null) return;
+
+    final freeUser = User(
+      id: state.user!.id,
+      email: state.user!.email,
+      username: state.user!.username,
+      language: state.user!.language,
+      timezone: state.user!.timezone,
+      isPremium: false,
+      premiumUntil: null,
+      dailyRequests: state.user!.dailyRequests,
+      dailyLimit: 3,
+      bonusPredictions: 0,
+      minOdds: state.user!.minOdds,
+      maxOdds: state.user!.maxOdds,
+      riskLevel: state.user!.riskLevel,
+      totalPredictions: state.user!.totalPredictions,
+      correctPredictions: state.user!.correctPredictions,
+      accuracy: state.user!.accuracy,
+      createdAt: state.user!.createdAt,
+    );
+
+    state = state.copyWith(user: freeUser);
+  }
 }
 
 // Providers
