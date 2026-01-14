@@ -7,6 +7,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/matches_screen.dart';
+import '../screens/live_matches_screen.dart';
 import '../screens/ai_chat_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
@@ -110,6 +111,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/stats',
         builder: (context, state) => const StatsScreen(),
+      ),
+      GoRoute(
+        path: '/live',
+        builder: (context, state) => const LiveMatchesScreen(),
       ),
     ],
   );

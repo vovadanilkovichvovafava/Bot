@@ -20,6 +20,49 @@ logger = logging.getLogger(__name__)
 # Background task handles
 _training_task = None
 _verification_task = None
+_daily_reset_task = None
+
+
+async def daily_limit_reset_loop():
+    """Background task to reset daily AI limits at midnight"""
+    from app.core.database import async_session_maker
+    from sqlalchemy import update
+    from datetime import datetime, date
+    import pytz
+
+    # Calculate time until next midnight (UTC)
+    async def get_seconds_until_midnight():
+        now = datetime.utcnow()
+        tomorrow = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        return (tomorrow - now).total_seconds()
+
+    from datetime import timedelta
+
+    while True:
+        try:
+            # Wait until midnight UTC
+            wait_seconds = await get_seconds_until_midnight()
+            logger.info(f"Daily reset scheduled in {wait_seconds/3600:.1f} hours")
+            await asyncio.sleep(wait_seconds)
+
+            # Reset all users' daily limits
+            async with async_session_maker() as db:
+                today = date.today()
+                result = await db.execute(
+                    update(User)
+                    .where(User.last_request_date != today)
+                    .values(daily_requests=0, last_request_date=today)
+                )
+                await db.commit()
+                logger.info(f"Daily AI limits reset for {result.rowcount} users")
+
+            # Wait a bit before next check to avoid double execution
+            await asyncio.sleep(60)
+
+        except Exception as e:
+            logger.error(f"Daily limit reset error: {e}")
+            # Wait 1 hour before retrying on error
+            await asyncio.sleep(3600)
 
 
 async def ml_training_loop():
@@ -78,7 +121,7 @@ async def result_verification_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _training_task, _verification_task
+    global _training_task, _verification_task, _daily_reset_task
 
     # Startup: Initialize database tables
     await init_db()
@@ -92,10 +135,14 @@ async def lifespan(app: FastAPI):
     _verification_task = asyncio.create_task(result_verification_loop())
     logger.info("ML result verification task started")
 
+    # Start daily limit reset task
+    _daily_reset_task = asyncio.create_task(daily_limit_reset_loop())
+    logger.info("Daily AI limit reset task started")
+
     yield
 
     # Shutdown: cancel background tasks
-    for task in [_training_task, _verification_task]:
+    for task in [_training_task, _verification_task, _daily_reset_task]:
         if task:
             task.cancel()
             try:

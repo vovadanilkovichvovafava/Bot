@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,9 @@ import '../services/api_service.dart';
 import '../models/match.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
+
+// Chat history expiration time (30 minutes)
+const _chatHistoryExpiration = Duration(minutes: 30);
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -49,7 +53,83 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     _loadUserData();
     _loadQuickQuestions();
     _loadMatches();
+    _loadChatHistory();  // Load saved chat first
     _initializeChat();
+  }
+
+  /// Load chat history from SharedPreferences (if not expired)
+  Future<void> _loadChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedTime = prefs.getInt('chat_history_time');
+      final savedMessages = prefs.getString('chat_history');
+
+      if (savedTime != null && savedMessages != null) {
+        final savedDateTime = DateTime.fromMillisecondsSinceEpoch(savedTime);
+        final now = DateTime.now();
+
+        // Check if history is still valid (within 30 minutes)
+        if (now.difference(savedDateTime) < _chatHistoryExpiration) {
+          final List<dynamic> messagesJson = jsonDecode(savedMessages);
+          final loadedMessages = messagesJson.map((m) => ChatMessage(
+            text: m['text'] as String,
+            isUser: m['isUser'] as bool,
+            timestamp: DateTime.fromMillisecondsSinceEpoch(m['timestamp'] as int),
+          )).toList();
+
+          if (loadedMessages.isNotEmpty) {
+            setState(() {
+              _messages.clear();
+              _messages.addAll(loadedMessages);
+              _suggestionsExpanded = false;  // Collapse suggestions if we have history
+            });
+            return;
+          }
+        } else {
+          // Clear expired history
+          await prefs.remove('chat_history');
+          await prefs.remove('chat_history_time');
+        }
+      }
+    } catch (e) {
+      // Silent fail, will show welcome message
+    }
+  }
+
+  /// Save chat history to SharedPreferences
+  Future<void> _saveChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Only save user messages and AI responses (skip welcome message if it's the only one)
+      final messagesToSave = _messages.where((m) =>
+        m.isUser || _messages.any((other) => other.isUser)
+      ).toList();
+
+      if (messagesToSave.isEmpty) return;
+
+      final messagesJson = messagesToSave.map((m) => {
+        'text': m.text,
+        'isUser': m.isUser,
+        'timestamp': m.timestamp.millisecondsSinceEpoch,
+      }).toList();
+
+      await prefs.setString('chat_history', jsonEncode(messagesJson));
+      await prefs.setInt('chat_history_time', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Clear chat history from SharedPreferences
+  Future<void> _clearChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('chat_history');
+      await prefs.remove('chat_history_time');
+    } catch (e) {
+      // Silent fail
+    }
   }
 
   void _loadUserData() {
@@ -71,10 +151,15 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       _aiAvailable = false;
     }
 
-    // Then add welcome message with correct status
-    setState(() {
-      _addWelcomeMessage();
-    });
+    // Only add welcome message if no saved history was loaded
+    if (_messages.isEmpty) {
+      setState(() {
+        _addWelcomeMessage();
+      });
+    } else {
+      // Just trigger rebuild to update AI status indicator
+      setState(() {});
+    }
   }
 
   Future<void> _loadMatches() async {
@@ -454,6 +539,9 @@ $statusText
       }
     });
     _scrollToBottom();
+
+    // Save chat history after each message
+    _saveChatHistory();
   }
 
   String _generateAiResponse(String query) {
@@ -855,6 +943,7 @@ No matches available for BTTS analysis.''';
                 _addWelcomeMessage();
                 _suggestionsExpanded = true;  // Expand suggestions when chat cleared
               });
+              _clearChatHistory();  // Clear saved history
             },
           ),
         ],

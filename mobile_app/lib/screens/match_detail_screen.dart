@@ -45,11 +45,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     try {
       final api = ref.read(apiServiceProvider);
       final limits = await api.getAiLimits();
+      final isPremium = limits['is_premium'] as bool? ?? false;
+      final remaining = limits['remaining'] as int? ?? 0;
+
       setState(() {
-        _remainingRequests = limits['remaining'] as int? ?? 0;
-        _isPremium = limits['is_premium'] as bool? ?? false;
+        _remainingRequests = remaining;
+        _isPremium = isPremium;
         _limitsLoaded = true;
       });
+
+      // Auto-load AI analysis for Premium users (match not finished)
+      if (isPremium && !widget.match.isFinished) {
+        _loadAiAnalysis();
+      }
     } catch (e) {
       // If can't load limits, assume 0 to be safe
       setState(() {
