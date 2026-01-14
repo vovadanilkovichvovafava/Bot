@@ -397,7 +397,7 @@ async def send_message(
                 except Exception:
                     pass
 
-            # Get ML predictions
+            # Get ML predictions and ALWAYS collect training data
             try:
                 ml_data = await get_ml_prediction(
                     db, home_team, away_team, league_code, odds_data
@@ -405,19 +405,20 @@ async def send_message(
                 if ml_data:
                     ml_context = format_ml_context(ml_data)
 
-                    # Save predictions for ML training
-                    await save_ml_predictions(
-                        db=db,
-                        user_id=user_id,
-                        match_id=str(match_id) if match_id else f"{home_team}_{away_team}",
-                        home_team=home_team,
-                        away_team=away_team,
-                        league_code=league_code,
-                        ml_data=ml_data,
-                        match_date=match_date,
-                    )
+                # ALWAYS save training data (even without ML models)
+                # This is needed to bootstrap the ML system
+                await save_ml_training_data(
+                    db=db,
+                    user_id=user_id,
+                    match_id=str(match_id) if match_id else f"{home_team}_{away_team}",
+                    home_team=home_team,
+                    away_team=away_team,
+                    league_code=league_code,
+                    match_date=match_date,
+                )
+                logger.info(f"ML training data saved for {home_team} vs {away_team}")
             except Exception as e:
-                logger.warning(f"ML prediction failed: {e}")
+                logger.warning(f"ML prediction/save failed: {e}")
 
         # Build messages for Claude
         messages = []
@@ -537,6 +538,82 @@ async def save_ml_predictions(
 
     except Exception as e:
         logger.error(f"Error saving ML predictions: {e}")
+
+
+async def save_ml_training_data(
+    db: AsyncSession,
+    user_id: int,
+    match_id: str,
+    home_team: str,
+    away_team: str,
+    league_code: str,
+    match_date: str = None,
+):
+    """
+    Save training data for ML bootstrap.
+    This works even without trained ML models.
+    """
+    try:
+        from app.ml import MLDataCollector, FeatureExtractor, BET_CATEGORIES
+        from datetime import datetime
+
+        # Extract features
+        extractor = FeatureExtractor()
+
+        home_form = await fetch_team_form(home_team, league_code)
+        away_form = await fetch_team_form(away_team, league_code)
+        standings_list = await fetch_standings(league_code)
+        standings = {s["team"]: {"position": s["position"]} for s in standings_list}
+
+        features = extractor.extract(
+            home_form=home_form,
+            away_form=away_form,
+            standings=standings,
+            home_team=home_team,
+            away_team=away_team,
+        )
+
+        # Parse match date
+        match_time = None
+        if match_date:
+            try:
+                match_time = datetime.fromisoformat(match_date.replace('Z', '+00:00'))
+            except:
+                pass
+
+        collector = MLDataCollector(db)
+
+        # Save for each bet category (main categories only for bootstrap)
+        main_categories = ["outcomes_home", "outcomes_away", "totals_over", "btts"]
+
+        for category in main_categories:
+            bet_type_map = {
+                "outcomes_home": "P1",
+                "outcomes_away": "P2",
+                "totals_over": "Over 2.5",
+                "btts": "BTTS",
+            }
+
+            await collector.save_prediction(
+                user_id=user_id,
+                match_id=match_id,
+                home_team=home_team,
+                away_team=away_team,
+                league_code=league_code or "PL",
+                bet_type=bet_type_map.get(category, category),
+                bet_category=category,
+                confidence=50.0,  # Neutral confidence for bootstrap data
+                odds=None,
+                features=features,
+                bet_rank=1,
+                match_time=match_time,
+            )
+
+        logger.info(f"Saved {len(main_categories)} training records for {home_team} vs {away_team}")
+
+    except Exception as e:
+        logger.error(f"Error saving ML training data: {e}")
+        raise  # Re-raise to see the error in logs
 
 
 @router.get("/status")
