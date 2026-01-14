@@ -793,12 +793,14 @@ class _BetSlipHistoryCard extends ConsumerWidget {
               data: (history) {
                 if (history.isEmpty) {
                   return Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.receipt_long,
