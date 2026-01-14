@@ -119,6 +119,27 @@ async def result_verification_loop():
         await asyncio.sleep(2 * 60 * 60)
 
 
+async def reset_stale_daily_limits():
+    """Reset daily limits for users whose last_request_date is not today (on server startup)"""
+    from app.core.database import async_session_maker
+    from sqlalchemy import update
+    from datetime import date
+
+    try:
+        async with async_session_maker() as db:
+            today = date.today()
+            result = await db.execute(
+                update(User)
+                .where((User.last_request_date != today) | (User.last_request_date == None))
+                .values(daily_requests=0, last_request_date=today)
+            )
+            await db.commit()
+            if result.rowcount > 0:
+                logger.info(f"Reset daily AI limits for {result.rowcount} users on startup")
+    except Exception as e:
+        logger.error(f"Failed to reset stale daily limits: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _training_task, _verification_task, _daily_reset_task
@@ -126,6 +147,9 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize database tables
     await init_db()
     logger.info("Database tables initialized")
+
+    # Reset daily limits for users who haven't been reset today
+    await reset_stale_daily_limits()
 
     # Start background ML training task
     _training_task = asyncio.create_task(ml_training_loop())
