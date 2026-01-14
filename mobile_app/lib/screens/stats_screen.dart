@@ -561,42 +561,50 @@ class _PredictionTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  prediction.betType,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      prediction.betType,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${prediction.confidence.toStringAsFixed(0)}% confidence',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-              if (prediction.odds != null) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '@${prediction.odds!.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 8),
+                  Text(
+                    '${prediction.confidence.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-              ],
-              const Spacer(),
+                  if (prediction.odds != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '@${prediction.odds!.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               if (prediction.isPending)
                 PopupMenuButton<String>(
                   onSelected: (value) {
@@ -616,7 +624,7 @@ class _PredictionTile extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Mark result',
+                          'Mark',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.orange[800],

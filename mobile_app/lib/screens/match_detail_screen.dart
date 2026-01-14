@@ -111,10 +111,87 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     }
   }
 
+  /// Extract bet type recommendation from AI analysis text
+  String? _extractBetTypeFromAnalysis(String? analysis) {
+    if (analysis == null || analysis.isEmpty) return null;
+
+    final lowerAnalysis = analysis.toLowerCase();
+
+    // Map of patterns to bet types
+    final betTypePatterns = {
+      'Home Win': [
+        'home win', 'home team win', 'recommend home', 'backing home',
+        'home to win', 'pick: home', '1x2: 1', 'home victory',
+      ],
+      'Away Win': [
+        'away win', 'away team win', 'recommend away', 'backing away',
+        'away to win', 'pick: away', '1x2: 2', 'away victory',
+      ],
+      'Draw': [
+        'draw', 'ends in a draw', 'stalemate', '1x2: x',
+      ],
+      'Over 2.5': [
+        'over 2.5', 'over 2.5 goals', 'o2.5', 'more than 2.5',
+      ],
+      'Under 2.5': [
+        'under 2.5', 'under 2.5 goals', 'u2.5', 'fewer than 2.5',
+      ],
+      'Over 1.5': [
+        'over 1.5', 'over 1.5 goals', 'o1.5', 'more than 1.5',
+      ],
+      'Under 3.5': [
+        'under 3.5', 'under 3.5 goals', 'u3.5', 'fewer than 3.5',
+      ],
+      'BTTS Yes': [
+        'btts yes', 'both teams to score: yes', 'btts - yes', 'both teams score',
+        'both to score',
+      ],
+      'BTTS No': [
+        'btts no', 'both teams to score: no', 'btts - no', 'clean sheet',
+      ],
+      'Double Chance': [
+        'double chance', '1x', 'x2', '12',
+      ],
+    };
+
+    // Check for primary recommendation patterns
+    final primaryPatterns = [
+      RegExp(r'(?:primary|main|recommended|top)\s*(?:bet|pick|prediction)[:\s]+([^\n]+)', caseSensitive: false),
+      RegExp(r'(?:bet|prediction|pick):\s*([^\n]+)', caseSensitive: false),
+      RegExp(r'🎯\s*([^\n]+)', caseSensitive: false),
+    ];
+
+    for (final pattern in primaryPatterns) {
+      final match = pattern.firstMatch(analysis);
+      if (match != null) {
+        final recommendation = match.group(1)?.toLowerCase() ?? '';
+        for (final entry in betTypePatterns.entries) {
+          for (final keyword in entry.value) {
+            if (recommendation.contains(keyword)) {
+              return entry.key;
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback: search entire analysis for bet type mentions
+    for (final entry in betTypePatterns.entries) {
+      for (final keyword in entry.value) {
+        if (lowerAnalysis.contains(keyword)) {
+          return entry.key;
+        }
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _showSavePredictionDialog() async {
     final match = widget.match;
 
-    String? selectedBetType;
+    // Try to extract bet type from AI analysis
+    String? selectedBetType = _extractBetTypeFromAnalysis(_aiAnalysis);
     double confidence = 70;
     double? odds;
     String? oddsError;
