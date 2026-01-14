@@ -170,9 +170,9 @@ class Prediction(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    match_id = Column(String(50), nullable=False)
-    home_team = Column(String(100), nullable=False)
-    away_team = Column(String(100), nullable=False)
+    match_id = Column(String(100), nullable=False)
+    home_team = Column(String(150), nullable=False)
+    away_team = Column(String(150), nullable=False)
     league_code = Column(String(20))
     bet_type = Column(String(50), nullable=False)  # "П1", "ТБ2.5", etc.
     bet_category = Column(String(50))  # ML category

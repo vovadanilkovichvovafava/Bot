@@ -46,6 +46,21 @@ async def run_migrations(conn):
             END IF;
         END $$;
         """,
+        # Increase column sizes in predictions table to prevent truncation errors
+        """
+        DO $$
+        BEGIN
+            -- Increase match_id from VARCHAR(50) to VARCHAR(100)
+            ALTER TABLE predictions ALTER COLUMN match_id TYPE VARCHAR(100);
+            -- Increase home_team from VARCHAR(100) to VARCHAR(150)
+            ALTER TABLE predictions ALTER COLUMN home_team TYPE VARCHAR(150);
+            -- Increase away_team from VARCHAR(100) to VARCHAR(150)
+            ALTER TABLE predictions ALTER COLUMN away_team TYPE VARCHAR(150);
+        EXCEPTION WHEN OTHERS THEN
+            -- Ignore errors if columns don't exist yet or already modified
+            NULL;
+        END $$;
+        """,
     ]
 
     for migration in migrations:

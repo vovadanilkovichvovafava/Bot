@@ -369,7 +369,7 @@ async def send_message(
         ml_context = ""
 
         # Use explicit match_info if provided (from match detail page)
-        if request.match_info:
+        if request.match_info and request.match_info.home_team and request.match_info.away_team:
             home_team = request.match_info.home_team
             away_team = request.match_info.away_team
             league_code = request.match_info.league_code or "PL"
@@ -377,10 +377,16 @@ async def send_message(
             match_date = request.match_info.match_date
             logger.info(f"Using explicit match info: {home_team} vs {away_team}")
         else:
-            # Try to extract from message
+            # Try to extract from message (fallback)
+            logger.info(f"No match_info provided, trying to extract from message")
             home_team, away_team, league_code, match_id, match_date = extract_teams_from_query(
                 request.message, matches_context
             )
+            # Skip ML data collection if we couldn't get clean team names
+            if home_team and (len(home_team) > 80 or '\n' in home_team):
+                logger.warning(f"Extracted team names look invalid, skipping ML collection")
+                home_team = None
+                away_team = None
 
         odds_data = None
         ml_data = None
