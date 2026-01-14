@@ -92,40 +92,55 @@ async def get_live_matches():
 
 @router.get("/today", response_model=List[Match])
 async def get_today_matches(league: Optional[str] = Query(None)):
-    """Get today's matches"""
+    """Get today's matches (or upcoming if none today)"""
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+    # Fetch 7 days ahead to find matches even during breaks
+    week_ahead = (datetime.utcnow() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-    # Fetch both days at once (uses single cache entry, avoids rate limiting)
-    all_matches = await fetch_matches(date_from=today, date_to=tomorrow, league=league)
+    all_matches = await fetch_matches(date_from=today, date_to=week_ahead, league=league)
 
     if all_matches:
-        # Filter to today only
+        # First try to get today's matches
         today_matches = [
             m for m in all_matches
             if m.get("match_date", "").startswith(today)
         ]
-        return [Match(**m) for m in today_matches]
+        if today_matches:
+            return [Match(**m) for m in today_matches]
+
+        # If no matches today, return next upcoming matches (up to 10)
+        # Sort by date and return earliest
+        sorted_matches = sorted(all_matches, key=lambda m: m.get("match_date", ""))
+        return [Match(**m) for m in sorted_matches[:10]]
 
     return []
 
 
 @router.get("/tomorrow", response_model=List[Match])
 async def get_tomorrow_matches(league: Optional[str] = Query(None)):
-    """Get tomorrow's matches"""
+    """Get tomorrow's matches (or upcoming after today's)"""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+    week_ahead = (datetime.utcnow() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-    # Fetch both days at once (uses single cache entry, avoids rate limiting)
-    all_matches = await fetch_matches(date_from=today, date_to=tomorrow, league=league)
+    all_matches = await fetch_matches(date_from=today, date_to=week_ahead, league=league)
 
     if all_matches:
-        # Filter to tomorrow only
+        # First try tomorrow's matches
         tomorrow_matches = [
             m for m in all_matches
             if m.get("match_date", "").startswith(tomorrow)
         ]
-        return [Match(**m) for m in tomorrow_matches]
+        if tomorrow_matches:
+            return [Match(**m) for m in tomorrow_matches]
+
+        # If no matches tomorrow, return matches after today (excluding today)
+        future_matches = [
+            m for m in all_matches
+            if not m.get("match_date", "").startswith(today)
+        ]
+        sorted_matches = sorted(future_matches, key=lambda m: m.get("match_date", ""))
+        return [Match(**m) for m in sorted_matches[:10]]
 
     return []
 
