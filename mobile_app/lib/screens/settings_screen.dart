@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
+import '../services/api_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -226,6 +227,36 @@ class SettingsScreen extends ConsumerWidget {
                 );
               },
             ),
+
+          // Reset AI Limit button
+          ListTile(
+            leading: const Icon(Icons.refresh, color: Colors.blue),
+            title: const Text('Reset AI Limit'),
+            subtitle: const Text('Restore 10 daily AI requests'),
+            onTap: () async {
+              try {
+                final api = ref.read(apiServiceProvider);
+                await api.resetAiLimit();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('AI limit reset! You now have 10 requests.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to reset: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+          ),
 
           const Divider(),
 
