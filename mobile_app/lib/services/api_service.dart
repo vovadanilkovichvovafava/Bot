@@ -275,6 +275,12 @@ class ApiService {
     double? minOdds,
     double? maxOdds,
     String? riskLevel,
+    // Match info for ML data collection
+    String? matchId,
+    String? homeTeam,
+    String? awayTeam,
+    String? leagueCode,
+    String? matchDate,
   }) async {
     final data = <String, dynamic>{
       'message': message,
@@ -287,6 +293,17 @@ class ApiService {
         'min_odds': minOdds ?? 1.5,
         'max_odds': maxOdds ?? 3.0,
         'risk_level': riskLevel ?? 'medium',
+      };
+    }
+
+    // Add match info for ML data collection (from match detail page)
+    if (homeTeam != null && awayTeam != null) {
+      data['match_info'] = {
+        'match_id': matchId,
+        'home_team': homeTeam,
+        'away_team': awayTeam,
+        'league_code': leagueCode,
+        'match_date': matchDate,
       };
     }
 

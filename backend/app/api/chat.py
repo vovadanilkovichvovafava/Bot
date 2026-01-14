@@ -28,10 +28,20 @@ class UserPreferences(BaseModel):
     risk_level: str = "medium"  # low, medium, high
 
 
+class MatchInfo(BaseModel):
+    """Explicit match info for ML data collection"""
+    match_id: Optional[str] = None
+    home_team: str
+    away_team: str
+    league_code: Optional[str] = None
+    match_date: Optional[str] = None  # ISO format
+
+
 class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
     preferences: Optional[UserPreferences] = None
+    match_info: Optional[MatchInfo] = None  # For explicit ML data collection
 
 
 class ChatResponse(BaseModel):
@@ -357,9 +367,20 @@ async def send_message(
         # Try to get odds and ML predictions if user is asking about a specific match
         odds_info = ""
         ml_context = ""
-        home_team, away_team, league_code, match_id, match_date = extract_teams_from_query(
-            request.message, matches_context
-        )
+
+        # Use explicit match_info if provided (from match detail page)
+        if request.match_info:
+            home_team = request.match_info.home_team
+            away_team = request.match_info.away_team
+            league_code = request.match_info.league_code or "PL"
+            match_id = request.match_info.match_id
+            match_date = request.match_info.match_date
+            logger.info(f"Using explicit match info: {home_team} vs {away_team}")
+        else:
+            # Try to extract from message
+            home_team, away_team, league_code, match_id, match_date = extract_teams_from_query(
+                request.message, matches_context
+            )
 
         odds_data = None
         ml_data = None

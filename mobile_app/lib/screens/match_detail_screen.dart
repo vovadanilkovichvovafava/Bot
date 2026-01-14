@@ -431,6 +431,12 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         minOdds: settings.minOdds,
         maxOdds: settings.maxOdds,
         riskLevel: settings.riskLevel,
+        // Pass match info for ML data collection
+        matchId: match.id.toString(),
+        homeTeam: match.homeTeam.name,
+        awayTeam: match.awayTeam.name,
+        leagueCode: match.leagueCode,
+        matchDate: match.matchDate.toIso8601String(),
       );
 
       setState(() {
