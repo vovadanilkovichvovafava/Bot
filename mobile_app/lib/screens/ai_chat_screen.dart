@@ -536,6 +536,8 @@ $statusText
       // Decrement local counter after successful AI response
       if (_aiAvailable && !_isPremium && _remainingPredictions > 0) {
         _remainingPredictions--;
+        // Update home screen token count (no API call, just local state)
+        ref.read(authStateProvider.notifier).decrementToken();
       }
     });
     _scrollToBottom();

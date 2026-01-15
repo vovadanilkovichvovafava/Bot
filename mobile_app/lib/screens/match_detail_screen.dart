@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../providers/predictions_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -447,6 +448,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           _remainingRequests--;
         }
       });
+
+      // Update home screen token count (no API call, just local state)
+      if (!_isPremium) {
+        ref.read(authStateProvider.notifier).decrementToken();
+      }
     } catch (e) {
       setState(() {
         _isLoadingAnalysis = false;
