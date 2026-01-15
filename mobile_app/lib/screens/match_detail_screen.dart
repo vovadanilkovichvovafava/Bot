@@ -364,6 +364,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     }
   }
 
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
+
   Future<void> _loadAiAnalysis() async {
     // Don't load analysis for finished matches
     if (widget.match.isFinished) return;
@@ -391,12 +394,36 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       _analysisError = false;
     });
 
+    await _tryLoadAnalysis();
+  }
+
+  Future<void> _tryLoadAnalysis() async {
     try {
       final api = ref.read(apiServiceProvider);
 
       // Check if AI is available first
       final available = await api.isChatAvailable();
       if (!available) {
+        // Retry with exponential backoff
+        if (_retryCount < _maxRetries) {
+          _retryCount++;
+          final delay = Duration(seconds: _retryCount * 2); // 2s, 4s, 6s
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Server busy, retrying in ${delay.inSeconds}s... (${_retryCount}/$_maxRetries)'),
+                duration: delay,
+              ),
+            );
+          }
+          await Future.delayed(delay);
+          if (mounted) {
+            await _tryLoadAnalysis();
+          }
+          return;
+        }
+
+        _retryCount = 0;
         setState(() {
           _isLoadingAnalysis = false;
           _analysisError = true;
@@ -430,11 +457,32 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         matchDate: match.matchDate.toIso8601String(),
       );
 
+      _retryCount = 0;
       setState(() {
         _aiAnalysis = result['response'] as String?;
         _isLoadingAnalysis = false;
       });
     } catch (e) {
+      // Retry on error with exponential backoff
+      if (_retryCount < _maxRetries) {
+        _retryCount++;
+        final delay = Duration(seconds: _retryCount * 2);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Request failed, retrying in ${delay.inSeconds}s... (${_retryCount}/$_maxRetries)'),
+              duration: delay,
+            ),
+          );
+        }
+        await Future.delayed(delay);
+        if (mounted) {
+          await _tryLoadAnalysis();
+        }
+        return;
+      }
+
+      _retryCount = 0;
       setState(() {
         _isLoadingAnalysis = false;
         _analysisError = true;

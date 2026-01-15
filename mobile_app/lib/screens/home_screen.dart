@@ -269,6 +269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     user: user,
                     settings: settings,
                     localTokens: tokenState.tokens,
+                    timeUntilReset: tokenState.formattedTimeUntilReset,
                     onPredictionsInfoTap: () => _showPredictionsInfo(context),
                     onSettingsTap: () => context.go('/settings'),
                     onPremiumTap: () => context.push('/premium'),
@@ -436,6 +437,7 @@ class _HeroHeader extends StatelessWidget {
   final dynamic user;
   final dynamic settings;
   final int localTokens;
+  final String? timeUntilReset;
   final VoidCallback onPredictionsInfoTap;
   final VoidCallback onSettingsTap;
   final VoidCallback onPremiumTap;
@@ -444,6 +446,7 @@ class _HeroHeader extends StatelessWidget {
     required this.user,
     required this.settings,
     required this.localTokens,
+    required this.timeUntilReset,
     required this.onPredictionsInfoTap,
     required this.onSettingsTap,
     required this.onPremiumTap,
@@ -609,26 +612,62 @@ class _HeroHeader extends StatelessWidget {
                               ),
                             ),
                             if (!user.isPremium)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: GestureDetector(
-                                  onTap: onPremiumTap,
-                                  child: const Text(
-                                    'Get Unlimited',
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  // Timer showing time until reset
+                                  if (timeUntilReset != null)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.timer_outlined,
+                                            color: Colors.white70,
+                                            size: 12,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Resets in $timeUntilReset',
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  GestureDetector(
+                                    onTap: onPremiumTap,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Text(
+                                        'Get Unlimited',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                           ],
                         ),

@@ -1,16 +1,119 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
-/// Local token management - no server calls, purely local
-/// Tokens reset 24 hours after first use of the day
+/// Local token management with internet time verification
+/// Prevents bypass by changing device date
 class LocalTokenService extends StateNotifier<LocalTokenState> {
   static const String _tokensKey = 'local_tokens_count';
   static const String _firstUseKey = 'local_first_use_timestamp';
+  static const String _timeOffsetKey = 'time_offset_seconds';
   static const int maxTokens = 10;
   static const Duration resetDuration = Duration(hours: 24);
 
+  // Cached time offset (difference between real time and device time)
+  int _timeOffsetSeconds = 0;
+
   LocalTokenService() : super(LocalTokenState.initial()) {
-    _loadFromStorage();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _syncTimeFromInternet();
+    await _loadFromStorage();
+  }
+
+  /// Get real current time (corrected for device time manipulation)
+  DateTime _getRealNow() {
+    return DateTime.now().add(Duration(seconds: _timeOffsetSeconds));
+  }
+
+  /// Sync time from internet to detect device time manipulation
+  Future<void> _syncTimeFromInternet() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load cached offset first
+    _timeOffsetSeconds = prefs.getInt(_timeOffsetKey) ?? 0;
+
+    try {
+      // Try multiple time APIs for reliability
+      DateTime? serverTime = await _fetchTimeFromWorldTimeApi();
+      serverTime ??= await _fetchTimeFromTimeApi();
+      serverTime ??= await _fetchTimeFromOurBackend();
+
+      if (serverTime != null) {
+        final deviceTime = DateTime.now();
+        _timeOffsetSeconds = serverTime.difference(deviceTime).inSeconds;
+
+        // Save offset for offline use
+        await prefs.setInt(_timeOffsetKey, _timeOffsetSeconds);
+      }
+    } catch (e) {
+      // If all APIs fail, use cached offset (or 0 if never synced)
+      // This is acceptable - user would need internet eventually
+    }
+  }
+
+  Future<DateTime?> _fetchTimeFromWorldTimeApi() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://worldtimeapi.org/api/ip'),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final dateTimeStr = data['datetime'] as String;
+        // Format: "2024-01-15T12:30:45.123456+00:00"
+        return DateTime.parse(dateTimeStr);
+      }
+    } catch (e) {
+      // Silent fail, try next API
+    }
+    return null;
+  }
+
+  Future<DateTime?> _fetchTimeFromTimeApi() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://timeapi.io/api/Time/current/zone?timeZone=UTC'),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return DateTime.utc(
+          data['year'],
+          data['month'],
+          data['day'],
+          data['hour'],
+          data['minute'],
+          data['seconds'],
+        );
+      }
+    } catch (e) {
+      // Silent fail
+    }
+    return null;
+  }
+
+  Future<DateTime?> _fetchTimeFromOurBackend() async {
+    try {
+      // Fallback: get time from our own backend
+      final response = await http.get(
+        Uri.parse('https://api.football-data.org/v4/matches'),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        // Use response date header
+        final dateHeader = response.headers['date'];
+        if (dateHeader != null) {
+          return http.parseHttpDate(dateHeader);
+        }
+      }
+    } catch (e) {
+      // Silent fail
+    }
+    return null;
   }
 
   Future<void> _loadFromStorage() async {
@@ -24,29 +127,35 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
       state = LocalTokenState(
         tokens: maxTokens,
         firstUseTimestamp: null,
+        timeUntilReset: null,
         isLoaded: true,
       );
       return;
     }
 
     final firstUse = DateTime.fromMillisecondsSinceEpoch(firstUseMs);
-    final now = DateTime.now();
+    final now = _getRealNow(); // Use real time!
     final elapsed = now.difference(firstUse);
 
-    if (elapsed >= resetDuration) {
-      // 24 hours passed - reset tokens
+    if (elapsed >= resetDuration || elapsed.isNegative) {
+      // 24 hours passed OR time went backwards (manipulation detected) - reset tokens
       await prefs.remove(_firstUseKey);
       await prefs.setInt(_tokensKey, maxTokens);
       state = LocalTokenState(
         tokens: maxTokens,
         firstUseTimestamp: null,
+        timeUntilReset: null,
         isLoaded: true,
       );
     } else {
       // Still within 24 hours - use stored tokens
+      final resetTime = firstUse.add(resetDuration);
+      final timeUntilReset = resetTime.difference(now);
+
       state = LocalTokenState(
         tokens: storedTokens ?? maxTokens,
         firstUseTimestamp: firstUse,
+        timeUntilReset: timeUntilReset,
         isLoaded: true,
       );
     }
@@ -54,10 +163,16 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
 
   /// Use one token. Returns true if successful, false if no tokens left.
   Future<bool> useToken() async {
+    // Re-sync time before using token (prevents mid-session manipulation)
+    await _syncTimeFromInternet();
+
+    // Re-check if reset is needed after time sync
+    await _loadFromStorage();
+
     if (state.tokens <= 0) return false;
 
     final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
+    final now = _getRealNow();
 
     // If this is the first use, start the 24h timer
     DateTime? firstUse = state.firstUseTimestamp;
@@ -70,9 +185,13 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
     final newTokens = state.tokens - 1;
     await prefs.setInt(_tokensKey, newTokens);
 
+    final resetTime = firstUse.add(resetDuration);
+    final timeUntilReset = resetTime.difference(now);
+
     state = LocalTokenState(
       tokens: newTokens,
       firstUseTimestamp: firstUse,
+      timeUntilReset: timeUntilReset,
       isLoaded: true,
     );
 
@@ -85,32 +204,28 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
   /// Get remaining tokens
   int get remainingTokens => state.tokens;
 
-  /// Get time until reset (null if timer not started)
-  Duration? get timeUntilReset {
-    if (state.firstUseTimestamp == null) return null;
-
-    final resetTime = state.firstUseTimestamp!.add(resetDuration);
-    final now = DateTime.now();
-
-    if (now.isAfter(resetTime)) {
-      return Duration.zero;
-    }
-
-    return resetTime.difference(now);
-  }
-
   /// Force check if 24h passed and reset if needed
   Future<void> checkAndReset() async {
+    await _syncTimeFromInternet();
+    await _loadFromStorage();
+  }
+
+  /// Refresh time until reset (for UI timer updates)
+  void refreshTimeUntilReset() {
     if (state.firstUseTimestamp == null) return;
 
-    final elapsed = DateTime.now().difference(state.firstUseTimestamp!);
-    if (elapsed >= resetDuration) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_firstUseKey);
-      await prefs.setInt(_tokensKey, maxTokens);
+    final now = _getRealNow();
+    final resetTime = state.firstUseTimestamp!.add(resetDuration);
+    final timeUntilReset = resetTime.difference(now);
+
+    if (timeUntilReset.isNegative) {
+      // Reset needed
+      checkAndReset();
+    } else {
       state = LocalTokenState(
-        tokens: maxTokens,
-        firstUseTimestamp: null,
+        tokens: state.tokens,
+        firstUseTimestamp: state.firstUseTimestamp,
+        timeUntilReset: timeUntilReset,
         isLoaded: true,
       );
     }
@@ -120,19 +235,38 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
 class LocalTokenState {
   final int tokens;
   final DateTime? firstUseTimestamp;
+  final Duration? timeUntilReset;
   final bool isLoaded;
 
   LocalTokenState({
     required this.tokens,
     required this.firstUseTimestamp,
+    required this.timeUntilReset,
     required this.isLoaded,
   });
 
   factory LocalTokenState.initial() => LocalTokenState(
     tokens: 10,
     firstUseTimestamp: null,
+    timeUntilReset: null,
     isLoaded: false,
   );
+
+  /// Format time until reset as string (e.g., "23h 45m")
+  String? get formattedTimeUntilReset {
+    if (timeUntilReset == null) return null;
+
+    final hours = timeUntilReset!.inHours;
+    final minutes = timeUntilReset!.inMinutes % 60;
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m';
+    } else {
+      return 'Soon';
+    }
+  }
 }
 
 /// Provider for local token service
