@@ -10,7 +10,6 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../providers/predictions_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/auth_provider.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -64,26 +63,6 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _limitsLoaded = true;
       });
-    }
-  }
-
-  /// Refresh token count from server after using AI analysis
-  Future<void> _refreshTokenCount() async {
-    try {
-      final api = ref.read(apiServiceProvider);
-      final limits = await api.getAiLimits();
-      final remaining = limits['remaining'] as int? ?? 0;
-
-      if (mounted) {
-        setState(() {
-          _remainingRequests = remaining;
-        });
-
-        // Refresh the auth state to update home screen token display
-        await ref.read(authStateProvider.notifier).refreshUser();
-      }
-    } catch (e) {
-      // Silently fail - we already have local count
     }
   }
 
@@ -463,12 +442,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _aiAnalysis = result['response'] as String?;
         _isLoadingAnalysis = false;
+        // Decrement token count locally (like in chat)
+        if (!_isPremium && _remainingRequests > 0) {
+          _remainingRequests--;
+        }
       });
-
-      // Refresh token count from server to ensure accuracy
-      if (!_isPremium) {
-        await _refreshTokenCount();
-      }
     } catch (e) {
       setState(() {
         _isLoadingAnalysis = false;
