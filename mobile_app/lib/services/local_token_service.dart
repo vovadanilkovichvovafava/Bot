@@ -104,14 +104,41 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
       ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        // Use response date header
+        // Use response date header (format: "Wed, 15 Jan 2025 12:30:45 GMT")
         final dateHeader = response.headers['date'];
         if (dateHeader != null) {
-          return http.parseHttpDate(dateHeader);
+          return _parseHttpDate(dateHeader);
         }
       }
     } catch (e) {
       // Silent fail
+    }
+    return null;
+  }
+
+  /// Parse HTTP date format (e.g., "Wed, 15 Jan 2025 12:30:45 GMT")
+  DateTime? _parseHttpDate(String dateStr) {
+    try {
+      // HTTP date format: "Wed, 15 Jan 2025 12:30:45 GMT"
+      final months = {
+        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+        'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
+      };
+
+      final parts = dateStr.split(' ');
+      if (parts.length >= 5) {
+        final day = int.parse(parts[1]);
+        final month = months[parts[2]] ?? 1;
+        final year = int.parse(parts[3]);
+        final timeParts = parts[4].split(':');
+        final hour = int.parse(timeParts[0]);
+        final minute = int.parse(timeParts[1]);
+        final second = int.parse(timeParts[2]);
+
+        return DateTime.utc(year, month, day, hour, minute, second);
+      }
+    } catch (e) {
+      // Parse failed
     }
     return null;
   }
