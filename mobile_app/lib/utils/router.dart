@@ -130,7 +130,7 @@ class MainScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvoked: (didPop) {
         if (didPop) return;
 
         final location = GoRouterState.of(context).matchedLocation;
