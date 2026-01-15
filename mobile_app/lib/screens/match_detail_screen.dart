@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/local_token_service.dart';
 import '../providers/predictions_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
@@ -28,43 +29,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   bool _reminderSet = false;
   bool _hasPrediction = false;
 
-  // AI limits state
-  int _remainingRequests = 0;
-  bool _isPremium = false;
-  bool _limitsLoaded = false;
-
   @override
   void initState() {
     super.initState();
-    // Don't auto-load AI analysis - wait for button click
-    _loadAiLimits();
     _checkReminderStatus();
     _checkPredictionStatus();
-  }
-
-  Future<void> _loadAiLimits() async {
-    try {
-      final api = ref.read(apiServiceProvider);
-      final limits = await api.getAiLimits();
-      final isPremium = limits['is_premium'] as bool? ?? false;
-      final remaining = limits['remaining'] as int? ?? 0;
-
-      setState(() {
-        _remainingRequests = remaining;
-        _isPremium = isPremium;
-        _limitsLoaded = true;
-      });
-
-      // Auto-load AI analysis for Premium users (match not finished)
-      if (isPremium && !widget.match.isFinished) {
-        _loadAiAnalysis();
-      }
-    } catch (e) {
-      // If can't load limits, assume 0 to be safe
-      setState(() {
-        _limitsLoaded = true;
-      });
-    }
+    // Check if tokens need reset (24h passed)
+    Future.microtask(() {
+      ref.read(localTokenProvider.notifier).checkAndReset();
+    });
   }
 
   void _checkPredictionStatus() {
@@ -395,6 +368,24 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     // Don't load analysis for finished matches
     if (widget.match.isFinished) return;
 
+    // Check premium status from auth
+    final authState = ref.read(authStateProvider);
+    final isPremium = authState.user?.isPremium ?? false;
+
+    // For non-premium users, use a token (local only)
+    if (!isPremium) {
+      final canUse = await ref.read(localTokenProvider.notifier).useToken();
+      if (!canUse) {
+        // No tokens left
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No AI requests remaining. Resets in 24 hours.')),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() {
       _isLoadingAnalysis = true;
       _analysisError = false;
@@ -417,7 +408,6 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       final settings = ref.read(settingsProvider);
 
       // Request analysis for this specific match with user preferences
-      // Include full match details so AI doesn't hallucinate date/league
       final match = widget.match;
       final matchDate = match.matchDate;
       final formattedDate = '${matchDate.day.toString().padLeft(2, '0')}.${matchDate.month.toString().padLeft(2, '0')}.${matchDate.year} at ${matchDate.hour.toString().padLeft(2, '0')}:${matchDate.minute.toString().padLeft(2, '0')}';
@@ -443,16 +433,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _aiAnalysis = result['response'] as String?;
         _isLoadingAnalysis = false;
-        // Decrement token count locally (like in chat)
-        if (!_isPremium && _remainingRequests > 0) {
-          _remainingRequests--;
-        }
       });
-
-      // Update home screen token count (no API call, just local state)
-      if (!_isPremium) {
-        ref.read(authStateProvider.notifier).decrementToken();
-      }
     } catch (e) {
       setState(() {
         _isLoadingAnalysis = false;
@@ -818,7 +799,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 
     // Initial state - show button to request analysis
     if (_aiAnalysis == null && !_isLoadingAnalysis) {
-      final bool canRequest = _isPremium || _remainingRequests > 0;
+      // Get local token state and premium status
+      final tokenState = ref.watch(localTokenProvider);
+      final authState = ref.watch(authStateProvider);
+      final isPremium = authState.user?.isPremium ?? false;
+      final remainingTokens = tokenState.tokens;
+      final tokensLoaded = tokenState.isLoaded;
+      final bool canRequest = isPremium || remainingTokens > 0;
 
       return Card(
         child: Padding(
@@ -849,17 +836,17 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Limit warning
-              if (!_isPremium && _limitsLoaded)
+              // Limit warning (local tokens)
+              if (!isPremium && tokensLoaded)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _remainingRequests > 3
+                    color: remainingTokens > 3
                         ? Colors.blue.withOpacity(0.1)
                         : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _remainingRequests > 3
+                      color: remainingTokens > 3
                           ? Colors.blue.withOpacity(0.3)
                           : Colors.orange.withOpacity(0.3),
                     ),
@@ -870,22 +857,22 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: _remainingRequests > 3 ? Colors.blue : Colors.orange,
+                        color: remainingTokens > 3 ? Colors.blue : Colors.orange,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _remainingRequests > 0
-                            ? 'This uses 1 of your $_remainingRequests daily AI requests'
-                            : 'No AI requests remaining today',
+                        remainingTokens > 0
+                            ? 'This uses 1 of your $remainingTokens daily AI requests'
+                            : 'No AI requests remaining (resets in 24h)',
                         style: TextStyle(
                           fontSize: 12,
-                          color: _remainingRequests > 3 ? Colors.blue[700] : Colors.orange[700],
+                          color: remainingTokens > 3 ? Colors.blue[700] : Colors.orange[700],
                         ),
                       ),
                     ],
                   ),
                 ),
-              if (_isPremium && _limitsLoaded)
+              if (isPremium && tokensLoaded)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
@@ -912,7 +899,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 label: Text(canRequest ? 'Get AI Analysis' : 'Limit Reached'),
               ),
 
-              if (!canRequest && !_isPremium) ...[
+              if (!canRequest && !isPremium) ...[
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => context.push('/premium'),

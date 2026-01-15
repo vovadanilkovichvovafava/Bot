@@ -228,60 +228,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Decrement token count locally without API call
-  /// This updates the UI immediately without reloading the app
-  void decrementToken() {
-    if (state.user == null || state.user!.isPremium) return;
-
-    final user = state.user!;
-    User updatedUser;
-
-    // Use bonus predictions first, then daily limit (same logic as backend)
-    if (user.bonusPredictions > 0) {
-      updatedUser = User(
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        language: user.language,
-        timezone: user.timezone,
-        isPremium: user.isPremium,
-        premiumUntil: user.premiumUntil,
-        dailyRequests: user.dailyRequests,
-        dailyLimit: user.dailyLimit,
-        bonusPredictions: user.bonusPredictions - 1,
-        minOdds: user.minOdds,
-        maxOdds: user.maxOdds,
-        riskLevel: user.riskLevel,
-        totalPredictions: user.totalPredictions,
-        correctPredictions: user.correctPredictions,
-        accuracy: user.accuracy,
-        createdAt: user.createdAt,
-      );
-    } else {
-      updatedUser = User(
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        language: user.language,
-        timezone: user.timezone,
-        isPremium: user.isPremium,
-        premiumUntil: user.premiumUntil,
-        dailyRequests: user.dailyRequests + 1,
-        dailyLimit: user.dailyLimit,
-        bonusPredictions: user.bonusPredictions,
-        minOdds: user.minOdds,
-        maxOdds: user.maxOdds,
-        riskLevel: user.riskLevel,
-        totalPredictions: user.totalPredictions,
-        correctPredictions: user.correctPredictions,
-        accuracy: user.accuracy,
-        createdAt: user.createdAt,
-      );
-    }
-
-    state = state.copyWith(user: updatedUser);
-  }
-
   void clearError() {
     state = state.copyWith(error: null);
   }

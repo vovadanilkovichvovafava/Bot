@@ -6,6 +6,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/api_service.dart';
+import '../services/local_token_service.dart';
 import '../models/match.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
@@ -28,9 +29,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   bool _suggestionsExpanded = true;  // Panel expanded state
   bool _aiAvailable = false;
 
-  // Local user state to avoid ref.watch rebuilds during async operations
+  // Premium status from auth
   bool _isPremium = false;
-  int _remainingPredictions = 0;
 
   List<Match> _todayMatches = [];
   List<Match> _tomorrowMatches = [];
@@ -137,8 +137,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     final user = authState.user;
     if (user != null) {
       _isPremium = user.isPremium;
-      _remainingPredictions = user.remainingPredictions;
     }
+    // Check if tokens need reset (24h passed)
+    ref.read(localTokenProvider.notifier).checkAndReset();
   }
 
   Future<void> _initializeChat() async {
@@ -215,6 +216,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   void _showPredictionsInfoLocal() {
+    final tokenState = ref.read(localTokenProvider);
+    final remainingTokens = tokenState.tokens;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -241,13 +245,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               const Text('Enjoy unlimited match analysis with your Premium subscription.'),
             ] else ...[
               Text(
-                'You have $_remainingPredictions predictions left today',
+                'You have $remainingTokens predictions left',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               const Text('• Each AI analysis uses 1 prediction'),
               const SizedBox(height: 4),
-              const Text('• Predictions reset at midnight'),
+              const Text('• Predictions reset 24h after first use'),
               const SizedBox(height: 4),
               const Text('• Match browsing is unlimited'),
               const SizedBox(height: 12),
@@ -454,10 +458,13 @@ $statusText
     final text = _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
 
-    // Check if user can make predictions (only for real AI calls)
-    if (_aiAvailable && !_isPremium && _remainingPredictions <= 0) {
-      _showLimitReachedDialog();
-      return;
+    // For non-premium users with AI available, use a local token
+    if (_aiAvailable && !_isPremium) {
+      final canUse = await ref.read(localTokenProvider.notifier).useToken();
+      if (!canUse) {
+        _showLimitReachedDialog();
+        return;
+      }
     }
 
     setState(() {
@@ -533,12 +540,7 @@ $statusText
         timestamp: DateTime.now(),
       ));
       _isLoading = false;
-      // Decrement local counter after successful AI response
-      if (_aiAvailable && !_isPremium && _remainingPredictions > 0) {
-        _remainingPredictions--;
-        // Update home screen token count (no API call, just local state)
-        ref.read(authStateProvider.notifier).decrementToken();
-      }
+      // Token was already deducted before sending the message
     });
     _scrollToBottom();
 
@@ -883,12 +885,16 @@ No matches available for BTTS analysis.''';
 
   @override
   Widget build(BuildContext context) {
+    // Watch local token state for UI updates
+    final tokenState = ref.watch(localTokenProvider);
+    final remainingTokens = tokenState.tokens;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Assistant'),
         centerTitle: true,
         actions: [
-          // Predictions counter - uses local state to avoid rebuild issues
+          // Predictions counter - uses local tokens
           GestureDetector(
             onTap: _showPredictionsInfoLocal,
             child: Container(
@@ -897,9 +903,9 @@ No matches available for BTTS analysis.''';
               decoration: BoxDecoration(
                 color: _isPremium
                     ? Colors.amber.withOpacity(0.2)
-                    : _remainingPredictions > 3
+                    : remainingTokens > 3
                         ? Theme.of(context).colorScheme.primaryContainer
-                        : _remainingPredictions > 0
+                        : remainingTokens > 0
                             ? Colors.orange.withOpacity(0.2)
                             : Colors.red.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
@@ -912,23 +918,23 @@ No matches available for BTTS analysis.''';
                     size: 16,
                     color: _isPremium
                         ? Colors.amber
-                        : _remainingPredictions > 3
+                        : remainingTokens > 3
                             ? Theme.of(context).colorScheme.primary
-                            : _remainingPredictions > 0
+                            : remainingTokens > 0
                                 ? Colors.orange
                                 : Colors.red,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _isPremium ? 'PRO' : '$_remainingPredictions',
+                    _isPremium ? 'PRO' : '$remainingTokens',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: _isPremium
                           ? Colors.amber
-                          : _remainingPredictions > 3
+                          : remainingTokens > 3
                               ? Theme.of(context).colorScheme.primary
-                              : _remainingPredictions > 0
+                              : remainingTokens > 0
                                   ? Colors.orange
                                   : Colors.red,
                     ),

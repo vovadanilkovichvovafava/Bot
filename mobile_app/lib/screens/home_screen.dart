@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../providers/matches_provider.dart';
 import '../providers/live_matches_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/local_token_service.dart';
 import '../models/match.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/loading_shimmer.dart';
@@ -50,6 +51,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showPredictionsInfo(BuildContext context) {
+    final tokenState = ref.read(localTokenProvider);
+    final remainingTokens = tokenState.tokens;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,22 +64,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text('Daily Predictions'),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'You get 10 free AI predictions every day!',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              'You have $remainingTokens predictions left!',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 12),
-            Text('• Each AI analysis for a match uses 1 prediction'),
-            SizedBox(height: 4),
-            Text('• Predictions reset at midnight (your timezone)'),
-            SizedBox(height: 4),
-            Text('• Match browsing is unlimited'),
-            SizedBox(height: 12),
-            Text(
+            const SizedBox(height: 12),
+            const Text('• Each AI analysis for a match uses 1 prediction'),
+            const SizedBox(height: 4),
+            const Text('• Predictions reset 24 hours after first use'),
+            const SizedBox(height: 4),
+            const Text('• Match browsing is unlimited'),
+            const SizedBox(height: 12),
+            const Text(
               '⭐ Upgrade to Premium for unlimited predictions + Pro Tools!',
               style: TextStyle(color: Colors.amber),
             ),
@@ -245,14 +249,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final liveMatchesState = ref.watch(liveMatchesProvider);
     final liveMatches = liveMatchesState.matches;
     final settings = ref.watch(settingsProvider);
+    // Watch local tokens for UI updates
+    final tokenState = ref.watch(localTokenProvider);
 
     return Scaffold(
       body: Stack(
         children: [
           RefreshIndicator(
             onRefresh: () async {
-              await ref.read(authStateProvider.notifier).refreshUser();
               await ref.read(matchesProvider.notifier).loadTodayMatches();
+              // Check if tokens need reset
+              ref.read(localTokenProvider.notifier).checkAndReset();
             },
             child: CustomScrollView(
               slivers: [
@@ -261,6 +268,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: _HeroHeader(
                     user: user,
                     settings: settings,
+                    localTokens: tokenState.tokens,
                     onPredictionsInfoTap: () => _showPredictionsInfo(context),
                     onSettingsTap: () => context.go('/settings'),
                     onPremiumTap: () => context.push('/premium'),
@@ -427,6 +435,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 class _HeroHeader extends StatelessWidget {
   final dynamic user;
   final dynamic settings;
+  final int localTokens;
   final VoidCallback onPredictionsInfoTap;
   final VoidCallback onSettingsTap;
   final VoidCallback onPremiumTap;
@@ -434,6 +443,7 @@ class _HeroHeader extends StatelessWidget {
   const _HeroHeader({
     required this.user,
     required this.settings,
+    required this.localTokens,
     required this.onPredictionsInfoTap,
     required this.onSettingsTap,
     required this.onPremiumTap,
@@ -578,7 +588,7 @@ class _HeroHeader extends StatelessWidget {
                                   Row(
                                     children: [
                                       Text(
-                                        user.isPremium ? '∞' : '${user.remainingPredictions}',
+                                        user.isPremium ? '∞' : '$localTokens',
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 28,
@@ -586,9 +596,9 @@ class _HeroHeader extends StatelessWidget {
                                         ),
                                       ),
                                       if (!user.isPremium)
-                                        Text(
-                                          ' / ${user.dailyLimit}',
-                                          style: const TextStyle(
+                                        const Text(
+                                          ' / 10',
+                                          style: TextStyle(
                                             color: Colors.white54,
                                             fontSize: 18,
                                           ),
