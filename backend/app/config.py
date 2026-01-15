@@ -17,8 +17,9 @@ class Settings(BaseSettings):
     CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
     ODDS_API_KEY: str = os.getenv("ODDS_API_KEY", "")
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    # CORS - Use environment variable for production origins
+    # Set CORS_ORIGINS env var as comma-separated list (e.g., "https://app.example.com,http://localhost:3000")
+    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
 
     class Config:
         env_file = ".env"

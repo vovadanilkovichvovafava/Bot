@@ -93,7 +93,7 @@ class NotificationService {
     }
 
     _initialized = true;
-    debugPrint('Local notifications initialized');
+    if (kDebugMode) debugPrint('Local notifications initialized');
   }
 
   /// Show a notification immediately
@@ -165,7 +165,7 @@ class NotificationService {
       payload: 'match_$matchId',
     );
 
-    debugPrint('Scheduled reminder for match $matchId at $reminderTime');
+    if (kDebugMode) debugPrint('Scheduled reminder for match $matchId at $reminderTime');
   }
 
   /// Cancel a scheduled notification
@@ -180,7 +180,7 @@ class NotificationService {
 
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('Notification tapped: ${response.payload}');
+    if (kDebugMode) debugPrint('Notification tapped: ${response.payload}');
     // Navigation can be handled here or via a stream
   }
 

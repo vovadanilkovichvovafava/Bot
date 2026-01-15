@@ -58,7 +58,7 @@ class LiveMatchesNotifier extends StateNotifier<LiveMatchesState> {
 
     // Schedule periodic updates
     _timer = Timer.periodic(_refreshInterval, (_) => _fetchLiveMatches());
-    debugPrint('LiveMatchesNotifier: Started live updates');
+    if (kDebugMode) debugPrint('LiveMatchesNotifier: Started live updates');
   }
 
   /// Stop live updates
@@ -66,7 +66,7 @@ class LiveMatchesNotifier extends StateNotifier<LiveMatchesState> {
     _timer?.cancel();
     _timer = null;
     _isActive = false;
-    debugPrint('LiveMatchesNotifier: Stopped live updates');
+    if (kDebugMode) debugPrint('LiveMatchesNotifier: Stopped live updates');
   }
 
   /// Fetch live matches from API
@@ -82,13 +82,13 @@ class LiveMatchesNotifier extends StateNotifier<LiveMatchesState> {
         lastUpdated: DateTime.now(),
       );
 
-      debugPrint('LiveMatchesNotifier: Fetched ${matches.length} live matches');
+      if (kDebugMode) debugPrint('LiveMatchesNotifier: Fetched ${matches.length} live matches');
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
       );
-      debugPrint('LiveMatchesNotifier: Error fetching live matches: $e');
+      if (kDebugMode) debugPrint('LiveMatchesNotifier: Error fetching live matches: $e');
     }
   }
 

@@ -33,7 +33,7 @@ class RetryInterceptor extends Interceptor {
 
     if (shouldRetry) {
       final delay = retryDelays[retryCount < retryDelays.length ? retryCount : retryDelays.length - 1];
-      debugPrint('Retry ${retryCount + 1}/$maxRetries after ${delay.inSeconds}s for ${err.requestOptions.path}');
+      if (kDebugMode) debugPrint('Retry ${retryCount + 1}/$maxRetries after ${delay.inSeconds}s for ${err.requestOptions.path}');
 
       await Future.delayed(delay);
 

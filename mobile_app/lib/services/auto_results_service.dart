@@ -27,7 +27,7 @@ class AutoResultsService {
 
     // Schedule periodic checks
     _timer = Timer.periodic(_checkInterval, (_) => _checkResults());
-    debugPrint('AutoResultsService started');
+    if (kDebugMode) debugPrint('AutoResultsService started');
   }
 
   /// Stop the auto-results checker
@@ -35,7 +35,7 @@ class AutoResultsService {
     _timer?.cancel();
     _timer = null;
     _isRunning = false;
-    debugPrint('AutoResultsService stopped');
+    if (kDebugMode) debugPrint('AutoResultsService stopped');
   }
 
   /// Check for finished matches and update predictions
@@ -48,11 +48,11 @@ class AutoResultsService {
           .toList();
 
       if (pendingPredictions.isEmpty) {
-        debugPrint('AutoResults: No pending predictions to check');
+        if (kDebugMode) debugPrint('AutoResults: No pending predictions to check');
         return;
       }
 
-      debugPrint('AutoResults: Checking ${pendingPredictions.length} pending predictions');
+      if (kDebugMode) debugPrint('AutoResults: Checking ${pendingPredictions.length} pending predictions');
 
       // Get match IDs
       final matchIds = pendingPredictions.map((p) => p.matchId).toList();
@@ -89,10 +89,10 @@ class AutoResultsService {
           awayScore: awayScore,
         );
 
-        debugPrint('AutoResults: Updated prediction for match $matchId - $resultString');
+        if (kDebugMode) debugPrint('AutoResults: Updated prediction for match $matchId - $resultString');
       }
     } catch (e) {
-      debugPrint('AutoResults: Error checking results: $e');
+      if (kDebugMode) debugPrint('AutoResults: Error checking results: $e');
     }
   }
 
@@ -216,7 +216,7 @@ class AutoResultsService {
     }
 
     // Default: Can't evaluate, mark as loss (conservative)
-    debugPrint('AutoResults: Unknown bet type "$betType", defaulting to loss');
+    if (kDebugMode) debugPrint('AutoResults: Unknown bet type "$betType", defaulting to loss');
     return false;
   }
 

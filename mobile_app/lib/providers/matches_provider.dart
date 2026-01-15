@@ -107,12 +107,12 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
               lastUpdated: cacheTime,
             );
 
-            debugPrint('Loaded ${todayMatches.length} today + ${tomorrowMatches.length} tomorrow matches from cache');
+            if (kDebugMode) debugPrint('Loaded ${todayMatches.length} today + ${tomorrowMatches.length} tomorrow matches from cache');
           }
         }
       }
     } catch (e) {
-      debugPrint('Error loading matches from cache: $e');
+      if (kDebugMode) debugPrint('Error loading matches from cache: $e');
     }
   }
 
@@ -128,9 +128,9 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       await _prefs!.setString(_tomorrowMatchesCacheKey, tomorrowJson);
       await _prefs!.setString(_cacheTimestampKey, DateTime.now().toIso8601String());
 
-      debugPrint('Saved ${todayMatches.length} today + ${tomorrowMatches.length} tomorrow matches to cache');
+      if (kDebugMode) debugPrint('Saved ${todayMatches.length} today + ${tomorrowMatches.length} tomorrow matches to cache');
     } catch (e) {
-      debugPrint('Error saving matches to cache: $e');
+      if (kDebugMode) debugPrint('Error saving matches to cache: $e');
     }
   }
 
@@ -180,7 +180,7 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
     } catch (e) {
       // Set offline mode on background failure
       state = state.copyWith(isOffline: true);
-      debugPrint('Background fetch failed, switching to offline: $e');
+      if (kDebugMode) debugPrint('Background fetch failed, switching to offline: $e');
     }
   }
 
@@ -225,7 +225,7 @@ class MatchesNotifier extends StateNotifier<MatchesState> {
       await _saveToCache(state.todayMatches, matches);
     } catch (e) {
       state = state.copyWith(isOffline: true);
-      debugPrint('Background fetch failed, switching to offline: $e');
+      if (kDebugMode) debugPrint('Background fetch failed, switching to offline: $e');
     }
   }
 
