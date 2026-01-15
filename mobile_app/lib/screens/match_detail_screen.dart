@@ -79,8 +79,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           _remainingRequests = remaining;
         });
 
-        // Also refresh the auth state to update home screen
-        ref.invalidate(authStateProvider);
+        // Refresh the auth state to update home screen token display
+        await ref.read(authStateProvider.notifier).refreshUser();
       }
     } catch (e) {
       // Silently fail - we already have local count
