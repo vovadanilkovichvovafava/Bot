@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, date
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -127,11 +127,11 @@ async def get_ai_limits(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check if new day - reset limit
-    today = date.today()
-    if user.last_request_date != today:
+    # Check if new day (UTC) - reset limit
+    today_utc = datetime.utcnow().date()
+    if user.last_request_date != today_utc:
         user.daily_requests = 0
-        user.last_request_date = today
+        user.last_request_date = today_utc
         await db.commit()
 
     if user.is_premium:
@@ -184,7 +184,7 @@ async def admin_reset_user_limit(
 
     # Reset limits
     user.daily_requests = 0
-    user.last_request_date = date.today()
+    user.last_request_date = datetime.utcnow().date()
     await db.commit()
 
     return {
@@ -210,7 +210,7 @@ async def reset_own_limit(
         raise HTTPException(status_code=404, detail="User not found")
 
     user.daily_requests = 0
-    user.last_request_date = date.today()
+    user.last_request_date = datetime.utcnow().date()
     await db.commit()
 
     return {

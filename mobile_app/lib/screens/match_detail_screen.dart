@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../providers/predictions_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
 
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final Match match;
@@ -63,6 +64,26 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _limitsLoaded = true;
       });
+    }
+  }
+
+  /// Refresh token count from server after using AI analysis
+  Future<void> _refreshTokenCount() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final limits = await api.getAiLimits();
+      final remaining = limits['remaining'] as int? ?? 0;
+
+      if (mounted) {
+        setState(() {
+          _remainingRequests = remaining;
+        });
+
+        // Also refresh the auth state to update home screen
+        ref.invalidate(authStateProvider);
+      }
+    } catch (e) {
+      // Silently fail - we already have local count
     }
   }
 
@@ -362,7 +383,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                               content: const Text('Prediction saved!'),
                               action: SnackBarAction(
                                 label: 'View All',
-                                onPressed: () => context.go('/stats'),
+                                onPressed: () => context.push('/stats'),
                               ),
                               duration: const Duration(seconds: 4),
                             ),
@@ -442,11 +463,12 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       setState(() {
         _aiAnalysis = result['response'] as String?;
         _isLoadingAnalysis = false;
-        // Decrease remaining count after successful request
-        if (!_isPremium && _remainingRequests > 0) {
-          _remainingRequests--;
-        }
       });
+
+      // Refresh token count from server to ensure accuracy
+      if (!_isPremium) {
+        await _refreshTokenCount();
+      }
     } catch (e) {
       setState(() {
         _isLoadingAnalysis = false;
@@ -909,7 +931,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               if (!canRequest && !_isPremium) ...[
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => context.go('/premium'),
+                  onPressed: () => context.push('/premium'),
                   child: const Text('Upgrade to Premium for unlimited'),
                 ),
               ],

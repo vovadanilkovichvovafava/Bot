@@ -290,7 +290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       // Quick stats with link to full stats
                       GestureDetector(
-                        onTap: () => context.go('/stats'),
+                        onTap: () => context.push('/stats'),
                         child: const StatsCard(),
                       ),
                       const SizedBox(height: 24),

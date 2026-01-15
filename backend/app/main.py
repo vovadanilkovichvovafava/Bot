@@ -24,37 +24,35 @@ _daily_reset_task = None
 
 
 async def daily_limit_reset_loop():
-    """Background task to reset daily AI limits at midnight"""
+    """Background task to reset daily AI limits at midnight UTC"""
     from app.core.database import async_session_maker
     from sqlalchemy import update
-    from datetime import datetime, date
-    import pytz
+    from datetime import datetime, timedelta
 
     # Calculate time until next midnight (UTC)
-    async def get_seconds_until_midnight():
+    def get_seconds_until_midnight_utc():
         now = datetime.utcnow()
-        tomorrow = datetime(now.year, now.month, now.day) + timedelta(days=1)
-        return (tomorrow - now).total_seconds()
-
-    from datetime import timedelta
+        # Next midnight UTC
+        tomorrow_midnight = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        return (tomorrow_midnight - now).total_seconds()
 
     while True:
         try:
             # Wait until midnight UTC
-            wait_seconds = await get_seconds_until_midnight()
-            logger.info(f"Daily reset scheduled in {wait_seconds/3600:.1f} hours")
+            wait_seconds = get_seconds_until_midnight_utc()
+            logger.info(f"Daily reset scheduled in {wait_seconds/3600:.1f} hours (at 00:00 UTC)")
             await asyncio.sleep(wait_seconds)
 
-            # Reset all users' daily limits
+            # Reset all users' daily limits using UTC date
             async with async_session_maker() as db:
-                today = date.today()
+                today_utc = datetime.utcnow().date()
                 result = await db.execute(
                     update(User)
-                    .where(User.last_request_date != today)
-                    .values(daily_requests=0, last_request_date=today)
+                    .where(User.last_request_date != today_utc)
+                    .values(daily_requests=0, last_request_date=today_utc)
                 )
                 await db.commit()
-                logger.info(f"Daily AI limits reset for {result.rowcount} users")
+                logger.info(f"Daily AI limits reset for {result.rowcount} users at {datetime.utcnow()} UTC")
 
             # Wait a bit before next check to avoid double execution
             await asyncio.sleep(60)
@@ -120,22 +118,22 @@ async def result_verification_loop():
 
 
 async def reset_stale_daily_limits():
-    """Reset daily limits for users whose last_request_date is not today (on server startup)"""
+    """Reset daily limits for users whose last_request_date is not today UTC (on server startup)"""
     from app.core.database import async_session_maker
     from sqlalchemy import update
-    from datetime import date
+    from datetime import datetime
 
     try:
         async with async_session_maker() as db:
-            today = date.today()
+            today_utc = datetime.utcnow().date()
             result = await db.execute(
                 update(User)
-                .where((User.last_request_date != today) | (User.last_request_date == None))
-                .values(daily_requests=0, last_request_date=today)
+                .where((User.last_request_date != today_utc) | (User.last_request_date == None))
+                .values(daily_requests=0, last_request_date=today_utc)
             )
             await db.commit()
             if result.rowcount > 0:
-                logger.info(f"Reset daily AI limits for {result.rowcount} users on startup")
+                logger.info(f"Reset daily AI limits for {result.rowcount} users on startup (UTC date: {today_utc})")
     except Exception as e:
         logger.error(f"Failed to reset stale daily limits: {e}")
 

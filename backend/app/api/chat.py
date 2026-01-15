@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -338,11 +338,11 @@ async def send_message(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check and reset daily limit if new day
-    today = date.today()
-    if user.last_request_date != today:
+    # Check and reset daily limit if new day (UTC)
+    today_utc = datetime.utcnow().date()
+    if user.last_request_date != today_utc:
         user.daily_requests = 0
-        user.last_request_date = today
+        user.last_request_date = today_utc
 
     # Check if user can make predictions
     if not user.is_premium:
