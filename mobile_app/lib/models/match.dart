@@ -30,6 +30,8 @@ class Match {
   final String status;
   final int? homeScore;
   final int? awayScore;
+  final int? minute;  // Current minute for live matches
+  final String? halfTimeScore;  // Score at half time
 
   Match({
     required this.id,
@@ -42,6 +44,8 @@ class Match {
     required this.status,
     this.homeScore,
     this.awayScore,
+    this.minute,
+    this.halfTimeScore,
   });
 
   DateTime get date => matchDate;
@@ -58,6 +62,8 @@ class Match {
       status: json['status'] ?? 'scheduled',
       homeScore: json['home_score'],
       awayScore: json['away_score'],
+      minute: json['minute'],
+      halfTimeScore: json['half_time_score'],
     );
   }
 
@@ -73,6 +79,8 @@ class Match {
       'status': status,
       'home_score': homeScore,
       'away_score': awayScore,
+      'minute': minute,
+      'half_time_score': halfTimeScore,
     };
   }
 

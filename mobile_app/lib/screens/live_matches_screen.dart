@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 
 import '../models/match.dart';
 import '../providers/live_matches_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/local_token_service.dart';
 import 'match_detail_screen.dart';
 
 class LiveMatchesScreen extends ConsumerStatefulWidget {
@@ -181,7 +183,7 @@ class _LiveMatchCard extends ConsumerWidget {
                       fontSize: 12,
                     ),
                   ),
-                  _LiveBadge(status: match.status),
+                  _LiveBadge(status: match.status, minute: match.minute),
                 ],
               ),
               const SizedBox(height: 16),
@@ -306,10 +308,11 @@ class _AskAIBottomSheetState extends ConsumerState<_AskAIBottomSheet> {
   String? _error;
 
   final List<String> _quickQuestions = [
-    'What\'s the best bet right now?',
+    'Best live bet right now?',
     'Will there be more goals?',
-    'Who will win?',
-    'Should I bet on over/under?',
+    'Next goal prediction?',
+    'Over/Under for remaining time?',
+    'Is current score likely to change?',
   ];
 
   @override
@@ -321,16 +324,20 @@ class _AskAIBottomSheetState extends ConsumerState<_AskAIBottomSheet> {
   Future<void> _askAI(String question) async {
     final authState = ref.read(authStateProvider);
     final user = authState.user;
+    final isPremium = user?.isPremium ?? false;
 
     if (user == null) {
       setState(() => _error = 'Please log in to use AI');
       return;
     }
 
-    // Check limits for non-premium users
-    if (!user.isPremium && user.remainingPredictions <= 0) {
-      setState(() => _error = 'Daily limit reached. Upgrade to Premium for unlimited access.');
-      return;
+    // Use local tokens for non-premium users
+    if (!isPremium) {
+      final canUse = await ref.read(localTokenProvider.notifier).useToken();
+      if (!canUse) {
+        setState(() => _error = 'No AI requests remaining. Watch an ad or wait 24h for reset.');
+        return;
+      }
     }
 
     setState(() {
@@ -343,21 +350,38 @@ class _AskAIBottomSheetState extends ConsumerState<_AskAIBottomSheet> {
       final api = ref.read(apiServiceProvider);
       final match = widget.match;
       final score = '${match.homeScore ?? 0}:${match.awayScore ?? 0}';
+      final minute = match.minute != null ? '${match.minute}\'' : match.status;
+      final htScore = match.halfTimeScore ?? 'N/A';
 
+      // Build detailed prompt for live match analysis
       final prompt = '''
-Live match: ${match.homeTeam.name} vs ${match.awayTeam.name}
-Current score: $score
-League: ${match.league}
-Status: ${match.status}
+🔴 LIVE MATCH ANALYSIS REQUEST
 
-User question: $question
+⚽ ${match.homeTeam.name} vs ${match.awayTeam.name}
+🏆 ${match.league}
+⏱️ Current time: $minute
+📊 Score: $score
+📋 Half-time: $htScore
 
-Please provide a brief analysis and recommendation.
+USER QUESTION: $question
+
+Please analyze:
+1. Current match situation based on the score and time
+2. Betting recommendations for live bets (considering the current state)
+3. Over/Under assessment based on current goals and remaining time
+4. Risk level for suggested bets
+
+Keep response focused and actionable for live betting.
 ''';
 
       final result = await api.sendChatMessage(
         message: prompt,
         history: [],
+        matchId: match.id.toString(),
+        homeTeam: match.homeTeam.name,
+        awayTeam: match.awayTeam.name,
+        leagueCode: match.leagueCode,
+        matchDate: match.matchDate.toIso8601String(),
       );
 
       if (mounted) {
@@ -370,7 +394,9 @@ Please provide a brief analysis and recommendation.
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e.toString().contains('429')
+              ? 'Daily limit reached. Upgrade to Premium for unlimited access.'
+              : 'Failed to get AI response. Please try again.';
         });
       }
     }
@@ -536,7 +562,7 @@ Please provide a brief analysis and recommendation.
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'AI Response',
+                              'AI Live Analysis',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
@@ -545,7 +571,12 @@ Please provide a brief analysis and recommendation.
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text(_response!),
+                        MarkdownBody(
+                          data: _response!,
+                          styleSheet: MarkdownStyleSheet(
+                            p: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -560,8 +591,9 @@ Please provide a brief analysis and recommendation.
 
 class _LiveBadge extends StatefulWidget {
   final String status;
+  final int? minute;
 
-  const _LiveBadge({required this.status});
+  const _LiveBadge({required this.status, this.minute});
 
   @override
   State<_LiveBadge> createState() => _LiveBadgeState();
@@ -596,6 +628,16 @@ class _LiveBadgeState extends State<_LiveBadge>
     final isHalftime = widget.status.toLowerCase() == 'halftime' ||
         widget.status.toLowerCase() == 'paused';
 
+    // Show minute if available
+    String displayText;
+    if (isHalftime) {
+      displayText = 'HT';
+    } else if (widget.minute != null) {
+      displayText = '${widget.minute}\'';
+    } else {
+      displayText = 'LIVE';
+    }
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -625,7 +667,7 @@ class _LiveBadgeState extends State<_LiveBadge>
                 ),
               if (!isHalftime) const SizedBox(width: 6),
               Text(
-                isHalftime ? 'HT' : 'LIVE',
+                displayText,
                 style: TextStyle(
                   color: isHalftime ? Colors.orange : Colors.red,
                   fontWeight: FontWeight.bold,

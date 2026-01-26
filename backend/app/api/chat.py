@@ -354,8 +354,12 @@ async def send_message(
                 detail="Daily prediction limit reached. Upgrade to Premium for unlimited predictions."
             )
 
+    # Check if this is a live match query
+    is_live_query = 'LIVE' in request.message.upper() or '🔴' in request.message
+
     # Check cache first if we have explicit match info
-    if request.match_info and request.match_info.match_id:
+    # For live matches, don't use pre-match cache (they need fresh analysis)
+    if request.match_info and request.match_info.match_id and not is_live_query:
         cached = await db.execute(
             select(CachedAIResponse).where(
                 CachedAIResponse.match_id == str(request.match_info.match_id)
@@ -489,8 +493,9 @@ async def send_message(
 
         ai_response = response.content[0].text
 
-        # Save to cache if this is a specific match analysis
-        if request.match_info and request.match_info.match_id:
+        # Save to cache if this is a specific match analysis (NOT for live matches)
+        # Live matches have changing scores so caching would give stale data
+        if request.match_info and request.match_info.match_id and not is_live_query:
             try:
                 # Parse match date for expiration
                 expires_at = None
@@ -503,21 +508,25 @@ async def send_message(
                         # Default: cache for 24 hours
                         expires_at = datetime.utcnow() + timedelta(hours=24)
 
-                # Save to cache
-                cached = CachedAIResponse(
-                    match_id=str(request.match_info.match_id),
-                    home_team=request.match_info.home_team,
-                    away_team=request.match_info.away_team,
-                    league_code=request.match_info.league_code,
-                    match_date=expires_at,
-                    response_text=ai_response,
-                    min_odds=request.preferences.min_odds if request.preferences else 1.5,
-                    max_odds=request.preferences.max_odds if request.preferences else 3.0,
-                    risk_level=request.preferences.risk_level if request.preferences else "medium",
-                    expires_at=expires_at,
-                )
-                db.add(cached)
-                logger.info(f"Cache SAVED for match {request.match_info.match_id}")
+                # Only cache if match hasn't started yet
+                if expires_at and datetime.utcnow() < expires_at:
+                    # Save to cache
+                    cached = CachedAIResponse(
+                        match_id=str(request.match_info.match_id),
+                        home_team=request.match_info.home_team,
+                        away_team=request.match_info.away_team,
+                        league_code=request.match_info.league_code,
+                        match_date=expires_at,
+                        response_text=ai_response,
+                        min_odds=request.preferences.min_odds if request.preferences else 1.5,
+                        max_odds=request.preferences.max_odds if request.preferences else 3.0,
+                        risk_level=request.preferences.risk_level if request.preferences else "medium",
+                        expires_at=expires_at,
+                    )
+                    db.add(cached)
+                    logger.info(f"Cache SAVED for match {request.match_info.match_id}")
+                else:
+                    logger.info(f"Skipping cache for match {request.match_info.match_id} (already started or live)")
             except Exception as e:
                 # Don't fail if cache save fails
                 logger.warning(f"Failed to save cache: {e}")
