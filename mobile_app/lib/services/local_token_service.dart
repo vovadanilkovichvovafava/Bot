@@ -9,7 +9,7 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
   static const String _tokensKey = 'local_tokens_count';
   static const String _firstUseKey = 'local_first_use_timestamp';
   static const String _timeOffsetKey = 'time_offset_seconds';
-  static const int maxTokens = 10;
+  static const int maxTokens = 3;
   static const Duration resetDuration = Duration(hours: 24);
 
   // Cached time offset (difference between real time and device time)
@@ -235,6 +235,27 @@ class LocalTokenService extends StateNotifier<LocalTokenState> {
   Future<void> checkAndReset() async {
     await _syncTimeFromInternet();
     await _loadFromStorage();
+  }
+
+  /// Add bonus tokens (e.g., from watching ads)
+  /// Returns true if tokens were added successfully
+  Future<bool> addBonusTokens(int count) async {
+    if (count <= 0) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // Add tokens (no maximum limit for bonus tokens)
+    final newTokens = state.tokens + count;
+    await prefs.setInt(_tokensKey, newTokens);
+
+    state = LocalTokenState(
+      tokens: newTokens,
+      firstUseTimestamp: state.firstUseTimestamp,
+      timeUntilReset: state.timeUntilReset,
+      isLoaded: true,
+    );
+
+    return true;
   }
 
   /// Refresh time until reset (for UI timer updates)

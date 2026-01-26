@@ -4,12 +4,13 @@ from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.config import settings
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
+from app.models.ml_models import CachedAIResponse
 from app.services.football_api import fetch_matches, fetch_team_form, fetch_standings
 from app.services.odds_api import get_odds_summary
 
@@ -353,6 +354,36 @@ async def send_message(
                 detail="Daily prediction limit reached. Upgrade to Premium for unlimited predictions."
             )
 
+    # Check cache first if we have explicit match info
+    if request.match_info and request.match_info.match_id:
+        cached = await db.execute(
+            select(CachedAIResponse).where(
+                CachedAIResponse.match_id == str(request.match_info.match_id)
+            )
+        )
+        cached_response = cached.scalar_one_or_none()
+
+        if cached_response:
+            # Check if cache is still valid (match hasn't started)
+            if cached_response.expires_at and datetime.utcnow() < cached_response.expires_at:
+                # Increment times served
+                await db.execute(
+                    update(CachedAIResponse)
+                    .where(CachedAIResponse.id == cached_response.id)
+                    .values(times_served=CachedAIResponse.times_served + 1)
+                )
+                await db.commit()
+
+                logger.info(f"Cache HIT for match {request.match_info.match_id} (served {cached_response.times_served + 1} times)")
+                return ChatResponse(
+                    response=cached_response.response_text,
+                    matches_context=None
+                )
+            else:
+                # Cache expired, delete it
+                await db.delete(cached_response)
+                await db.commit()
+
     try:
         import anthropic
 
@@ -457,6 +488,39 @@ async def send_message(
         )
 
         ai_response = response.content[0].text
+
+        # Save to cache if this is a specific match analysis
+        if request.match_info and request.match_info.match_id:
+            try:
+                # Parse match date for expiration
+                expires_at = None
+                if request.match_info.match_date:
+                    try:
+                        expires_at = datetime.fromisoformat(
+                            request.match_info.match_date.replace('Z', '+00:00')
+                        )
+                    except:
+                        # Default: cache for 24 hours
+                        expires_at = datetime.utcnow() + timedelta(hours=24)
+
+                # Save to cache
+                cached = CachedAIResponse(
+                    match_id=str(request.match_info.match_id),
+                    home_team=request.match_info.home_team,
+                    away_team=request.match_info.away_team,
+                    league_code=request.match_info.league_code,
+                    match_date=expires_at,
+                    response_text=ai_response,
+                    min_odds=request.preferences.min_odds if request.preferences else 1.5,
+                    max_odds=request.preferences.max_odds if request.preferences else 3.0,
+                    risk_level=request.preferences.risk_level if request.preferences else "medium",
+                    expires_at=expires_at,
+                )
+                db.add(cached)
+                logger.info(f"Cache SAVED for match {request.match_info.match_id}")
+            except Exception as e:
+                # Don't fail if cache save fails
+                logger.warning(f"Failed to save cache: {e}")
 
         # Track total predictions for ALL users (for stats)
         user.total_predictions += 1

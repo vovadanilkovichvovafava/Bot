@@ -600,7 +600,7 @@ class _HeroHeader extends StatelessWidget {
                                       ),
                                       if (!user.isPremium)
                                         const Text(
-                                          ' / 10',
+                                          ' / 3',
                                           style: TextStyle(
                                             color: Colors.white54,
                                             fontSize: 18,

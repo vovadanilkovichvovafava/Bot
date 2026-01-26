@@ -10,6 +10,7 @@ from app.models.ml_models import (
     LeagueLearning,
     LearningLog,
     Prediction,
+    CachedAIResponse,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "LeagueLearning",
     "LearningLog",
     "Prediction",
+    "CachedAIResponse",
 ]

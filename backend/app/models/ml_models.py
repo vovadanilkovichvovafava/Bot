@@ -193,3 +193,28 @@ class Prediction(Base):
     match_time = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
     checked_at = Column(DateTime)
+
+
+class CachedAIResponse(Base):
+    """Cache for AI-generated match analysis to save API costs"""
+    __tablename__ = "cached_ai_responses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    match_id = Column(String(100), nullable=False, unique=True, index=True)
+    home_team = Column(String(150), nullable=False)
+    away_team = Column(String(150), nullable=False)
+    league_code = Column(String(20))
+    match_date = Column(DateTime)
+
+    # Cached response
+    response_text = Column(Text, nullable=False)
+
+    # Settings used for generation (for cache invalidation if needed)
+    min_odds = Column(Float)
+    max_odds = Column(Float)
+    risk_level = Column(String(20))
+
+    # Stats
+    times_served = Column(Integer, default=1)  # How many times this cache was used
+    created_at = Column(DateTime, server_default=func.now())
+    expires_at = Column(DateTime)  # Cache expiration (match start time)
