@@ -188,6 +188,63 @@ def format_matches_for_context(matches: List[dict]) -> str:
     return context
 
 
+def _extract_live_cache_key(message: str, match_id: str) -> Optional[str]:
+    """
+    Extract cache key for live matches based on score and minute range.
+    Format: live_{match_id}_{home_score}_{away_score}_{minute_bucket}
+
+    This allows caching live responses for ~5 minutes (minute // 5 creates buckets).
+    If 10 users ask at score 2:1 at minute 62 → same cache key → 1 API call
+    """
+    import re
+
+    try:
+        # Extract score (format: "Score: X - Y" or "X:Y" or "X - Y")
+        score_patterns = [
+            r'Score:\s*(\d+)\s*[-:]\s*(\d+)',  # "Score: 2 - 1"
+            r'📊\s*Score:\s*(\d+)\s*[-:]\s*(\d+)',  # "📊 Score: 2 - 1"
+            r'\b(\d+)\s*[-:]\s*(\d+)\b',  # "2:1" or "2 - 1"
+        ]
+
+        home_score, away_score = None, None
+        for pattern in score_patterns:
+            match = re.search(pattern, message)
+            if match:
+                home_score = int(match.group(1))
+                away_score = int(match.group(2))
+                break
+
+        # Extract minute (format: "62'" or "minute: 62" or "⏱️ 62")
+        minute_patterns = [
+            r"(\d+)'",  # "62'"
+            r'⏱️\s*(?:Current time:)?\s*(\d+)',  # "⏱️ 62" or "⏱️ Current time: 62"
+            r'[Mm]inute:?\s*(\d+)',  # "Minute: 62" or "minute 62"
+        ]
+
+        minute = None
+        for pattern in minute_patterns:
+            match = re.search(pattern, message)
+            if match:
+                minute = int(match.group(1))
+                break
+
+        # Create cache key if we have enough info
+        if home_score is not None and away_score is not None:
+            # Bucket minutes into 5-minute ranges (0-4=0, 5-9=1, 10-14=2, etc.)
+            minute_bucket = (minute // 5) if minute else 0
+            return f"live_{match_id}_{home_score}_{away_score}_{minute_bucket}"
+
+        # If we can't extract score, use match_id + minute bucket only
+        if minute:
+            minute_bucket = minute // 5
+            return f"live_{match_id}_unknown_{minute_bucket}"
+
+    except Exception as e:
+        logger.warning(f"Failed to extract live cache key: {e}")
+
+    return None
+
+
 def extract_teams_from_query(query: str, matches: List[dict]) -> tuple:
     """Try to extract team names from user query"""
     query_lower = query.lower()
@@ -357,18 +414,24 @@ async def send_message(
     # Check if this is a live match query
     is_live_query = 'LIVE' in request.message.upper() or '🔴' in request.message
 
-    # Check cache first if we have explicit match info
-    # For live matches, don't use pre-match cache (they need fresh analysis)
-    if request.match_info and request.match_info.match_id and not is_live_query:
+    # Extract live match info for caching (score, minute)
+    live_cache_key = None
+    if is_live_query and request.match_info and request.match_info.match_id:
+        live_cache_key = _extract_live_cache_key(request.message, request.match_info.match_id)
+
+    # Check cache first
+    if request.match_info and request.match_info.match_id:
+        cache_id = live_cache_key if is_live_query else str(request.match_info.match_id)
+
         cached = await db.execute(
             select(CachedAIResponse).where(
-                CachedAIResponse.match_id == str(request.match_info.match_id)
+                CachedAIResponse.match_id == cache_id
             )
         )
         cached_response = cached.scalar_one_or_none()
 
         if cached_response:
-            # Check if cache is still valid (match hasn't started)
+            # Check if cache is still valid
             if cached_response.expires_at and datetime.utcnow() < cached_response.expires_at:
                 # Increment times served
                 await db.execute(
@@ -378,7 +441,8 @@ async def send_message(
                 )
                 await db.commit()
 
-                logger.info(f"Cache HIT for match {request.match_info.match_id} (served {cached_response.times_served + 1} times)")
+                cache_type = "LIVE" if is_live_query else "PRE-MATCH"
+                logger.info(f"Cache HIT [{cache_type}] for {cache_id} (served {cached_response.times_served + 1} times)")
                 return ChatResponse(
                     response=cached_response.response_text,
                     matches_context=None
@@ -493,30 +557,20 @@ async def send_message(
 
         ai_response = response.content[0].text
 
-        # Save to cache if this is a specific match analysis (NOT for live matches)
-        # Live matches have changing scores so caching would give stale data
-        if request.match_info and request.match_info.match_id and not is_live_query:
+        # Save to cache based on match type
+        if request.match_info and request.match_info.match_id:
             try:
-                # Parse match date for expiration
-                expires_at = None
-                if request.match_info.match_date:
-                    try:
-                        expires_at = datetime.fromisoformat(
-                            request.match_info.match_date.replace('Z', '+00:00')
-                        )
-                    except:
-                        # Default: cache for 24 hours
-                        expires_at = datetime.utcnow() + timedelta(hours=24)
+                if is_live_query and live_cache_key:
+                    # LIVE MATCH: Cache for 5 minutes with score-based key
+                    # This allows sharing analysis among users asking at same score/minute
+                    expires_at = datetime.utcnow() + timedelta(minutes=5)
 
-                # Only cache if match hasn't started yet
-                if expires_at and datetime.utcnow() < expires_at:
-                    # Save to cache
                     cached = CachedAIResponse(
-                        match_id=str(request.match_info.match_id),
+                        match_id=live_cache_key,  # e.g., "live_12345_2_1_12"
                         home_team=request.match_info.home_team,
                         away_team=request.match_info.away_team,
                         league_code=request.match_info.league_code,
-                        match_date=expires_at,
+                        match_date=datetime.utcnow(),
                         response_text=ai_response,
                         min_odds=request.preferences.min_odds if request.preferences else 1.5,
                         max_odds=request.preferences.max_odds if request.preferences else 3.0,
@@ -524,9 +578,38 @@ async def send_message(
                         expires_at=expires_at,
                     )
                     db.add(cached)
-                    logger.info(f"Cache SAVED for match {request.match_info.match_id}")
-                else:
-                    logger.info(f"Skipping cache for match {request.match_info.match_id} (already started or live)")
+                    logger.info(f"Cache SAVED [LIVE 5min] key={live_cache_key}")
+
+                elif not is_live_query:
+                    # PRE-MATCH: Cache until match starts
+                    expires_at = None
+                    if request.match_info.match_date:
+                        try:
+                            expires_at = datetime.fromisoformat(
+                                request.match_info.match_date.replace('Z', '+00:00')
+                            )
+                        except:
+                            # Default: cache for 24 hours
+                            expires_at = datetime.utcnow() + timedelta(hours=24)
+
+                    # Only cache if match hasn't started yet
+                    if expires_at and datetime.utcnow() < expires_at:
+                        cached = CachedAIResponse(
+                            match_id=str(request.match_info.match_id),
+                            home_team=request.match_info.home_team,
+                            away_team=request.match_info.away_team,
+                            league_code=request.match_info.league_code,
+                            match_date=expires_at,
+                            response_text=ai_response,
+                            min_odds=request.preferences.min_odds if request.preferences else 1.5,
+                            max_odds=request.preferences.max_odds if request.preferences else 3.0,
+                            risk_level=request.preferences.risk_level if request.preferences else "medium",
+                            expires_at=expires_at,
+                        )
+                        db.add(cached)
+                        logger.info(f"Cache SAVED [PRE-MATCH] for match {request.match_info.match_id}")
+                    else:
+                        logger.info(f"Skipping cache for match {request.match_info.match_id} (already started)")
             except Exception as e:
                 # Don't fail if cache save fails
                 logger.warning(f"Failed to save cache: {e}")
