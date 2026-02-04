@@ -19,12 +19,16 @@ import { cn } from '@/lib/utils';
 function formatAnalysisText(text: string): string {
   if (!text) return text;
 
-  // Replace inline bullet points with newline + bullet
-  // Pattern: space + bullet + space (but not at start of line)
-  let formatted = text.replace(/(?<!^)(?<!\n)\s*•\s*/g, '\n• ');
+  let formatted = text;
 
-  // Ensure sections start on new lines
-  formatted = formatted.replace(/([.!?])\s*(📊|🎯|💡|💰|⚠️|🏆|📅)/g, '$1\n\n$2');
+  // Replace " • " (space-bullet-space) with newline + bullet
+  formatted = formatted.replace(/ • /g, '\n• ');
+
+  // Add newline after "Analysis:" "Prediction:" etc. before first bullet
+  formatted = formatted.replace(/(Analysis:|Prediction:|Recommendation:)\s*•/g, '$1\n• ');
+
+  // Ensure emoji sections start on new lines
+  formatted = formatted.replace(/([.!?%])\s*(📊|🎯|💡|💰|⚠️)/g, '$1\n\n$2');
 
   return formatted;
 }
