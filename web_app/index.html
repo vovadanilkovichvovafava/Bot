@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FC26">
+  <meta name="description" content="FC26 AI-powered football predictions">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <title>FC26 AI Predictions</title>
+</head>
+<body>
+  <div id="app">
+    <div id="page-container">
+
+      <!-- ==================== HOME PAGE ==================== -->
+      <div id="page-home" class="page active">
+        <!-- Header -->
+        <div class="home-header">
+          <div class="logo-area">
+            <div class="logo-badge">26</div>
+            <div class="logo-text">
+              <div class="logo-title">FC26</div>
+              <div class="logo-subtitle">AI PREDICTIONS</div>
+            </div>
+          </div>
+          <div class="badge-gold">
+            <span class="material-symbols-outlined" style="font-size:14px">star</span>
+            PRO
+          </div>
+        </div>
+
+        <!-- Greeting -->
+        <div class="greeting">
+          <div class="greeting-label">Welcome back,</div>
+          <div class="greeting-name">Player</div>
+          <div class="predictions-badge">
+            <span class="material-symbols-outlined">bolt</span>
+            5 predictions left
+          </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="card-glow" style="margin-bottom:20px">
+          <div class="flex justify-between items-center">
+            <span style="font-size:16px;font-weight:700">Performance</span>
+            <div class="badge-success">
+              <span class="material-symbols-outlined" style="font-size:14px">trending_up</span>
+              +5.2%
+            </div>
+          </div>
+          <div class="stats-overview">
+            <div class="stat-item">
+              <div class="stat-value" style="color:var(--conf-high)">72%</div>
+              <div class="stat-label">Win Rate</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-value" style="color:var(--primary)">156</div>
+              <div class="stat-label">Total Bets</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-value" style="color:var(--gold)">112</div>
+              <div class="stat-label">Wins</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Access -->
+        <div class="section-label">QUICK ACCESS</div>
+        <div class="scroll-h" style="margin-bottom:24px">
+          <div class="quick-action" data-navigate="matches">
+            <div class="qa-icon" style="background:rgba(0,245,255,0.15);color:var(--primary)">
+              <span class="material-symbols-outlined">sports_soccer</span>
+            </div>
+            <div class="qa-label">Today's Matches</div>
+          </div>
+          <div class="quick-action" data-navigate="matches">
+            <div class="qa-icon" style="background:rgba(255,0,128,0.15);color:var(--neon-pink)">
+              <span class="material-symbols-outlined">trending_up</span>
+            </div>
+            <div class="qa-label">Hot Picks</div>
+          </div>
+          <div class="quick-action" data-navigate="matches">
+            <div class="qa-icon" style="background:rgba(255,215,0,0.15);color:var(--gold)">
+              <span class="material-symbols-outlined">emoji_events</span>
+            </div>
+            <div class="qa-label">Top Leagues</div>
+          </div>
+          <div class="quick-action" data-navigate="stats">
+            <div class="qa-icon" style="background:rgba(0,255,136,0.15);color:var(--neon-green)">
+              <span class="material-symbols-outlined">bar_chart</span>
+            </div>
+            <div class="qa-label">Statistics</div>
+          </div>
+        </div>
+
+        <!-- Top Predictions -->
+        <div class="section-header">
+          <span class="section-title">TOP PREDICTIONS</span>
+          <span class="section-link" data-navigate="matches">See all</span>
+        </div>
+
+        <div class="card" style="cursor:pointer">
+          <div class="match-card">
+            <div class="match-info">
+              <div class="match-league">
+                <span class="badge badge-primary">Premier League</span>
+                <span class="match-time">
+                  <span class="material-symbols-outlined">schedule</span> 17:30
+                </span>
+              </div>
+              <div class="match-home">Manchester City</div>
+              <div class="match-vs">
+                <span class="match-vs-label">vs</span>
+                <span class="match-away">Arsenal</span>
+              </div>
+            </div>
+            <div class="confidence-badge high">
+              <span class="conf-value">78%</span>
+              <span class="conf-label">Over 2.5</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="cursor:pointer">
+          <div class="match-card">
+            <div class="match-info">
+              <div class="match-league">
+                <span class="badge badge-primary">La Liga</span>
+                <span class="match-time">
+                  <span class="material-symbols-outlined">schedule</span> 21:00
+                </span>
+              </div>
+              <div class="match-home">Real Madrid</div>
+              <div class="match-vs">
+                <span class="match-vs-label">vs</span>
+                <span class="match-away">Barcelona</span>
+              </div>
+            </div>
+            <div class="confidence-badge medium">
+              <span class="conf-value">72%</span>
+              <span class="conf-label">BTTS Yes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="cursor:pointer">
+          <div class="match-card">
+            <div class="match-info">
+              <div class="match-league">
+                <span class="badge badge-primary">Bundesliga</span>
+                <span class="match-time">
+                  <span class="material-symbols-outlined">schedule</span> 18:30
+                </span>
+              </div>
+              <div class="match-home">Bayern Munich</div>
+              <div class="match-vs">
+                <span class="match-vs-label">vs</span>
+                <span class="match-away">Dortmund</span>
+              </div>
+            </div>
+            <div class="confidence-badge high">
+              <span class="conf-value">85%</span>
+              <span class="conf-label">Home Win</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== MATCHES PAGE ==================== -->
+      <div id="page-matches" class="page">
+        <div class="matches-header">
+          <h1 class="page-title" style="margin-bottom:0">Matches</h1>
+          <div class="icon-btn">
+            <span class="material-symbols-outlined">filter_list</span>
+          </div>
+        </div>
+
+        <div class="tab-bar" data-group="matches">
+          <div class="tab-item active" data-tab="today">Today</div>
+          <div class="tab-item" data-tab="tomorrow">Tomorrow</div>
+          <div class="tab-item" data-tab="leagues">Leagues</div>
+        </div>
+
+        <!-- Today Tab -->
+        <div class="tab-content" data-group="matches" data-tab="today" style="display:block">
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">Premier League</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 17:30</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Manchester City</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Arsenal</span>
+                </div>
+              </div>
+              <div class="confidence-badge high">
+                <span class="conf-value">78%</span>
+                <span class="conf-label">Over 2.5</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">La Liga</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 21:00</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Real Madrid</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Barcelona</span>
+                </div>
+              </div>
+              <div class="confidence-badge medium">
+                <span class="conf-value">72%</span>
+                <span class="conf-label">BTTS Yes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">Bundesliga</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 18:30</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Bayern Munich</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Dortmund</span>
+                </div>
+              </div>
+              <div class="confidence-badge high">
+                <span class="conf-value">85%</span>
+                <span class="conf-label">Home Win</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">Serie A</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 20:45</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Inter Milan</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">AC Milan</span>
+                </div>
+              </div>
+              <div class="confidence-badge medium">
+                <span class="conf-value">68%</span>
+                <span class="conf-label">Under 3.5</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">Ligue 1</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 21:00</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">PSG</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Lyon</span>
+                </div>
+              </div>
+              <div class="confidence-badge high">
+                <span class="conf-value">82%</span>
+                <span class="conf-label">Home Win</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tomorrow Tab -->
+        <div class="tab-content" data-group="matches" data-tab="tomorrow" style="display:none">
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">Premier League</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 15:00</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Liverpool</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Chelsea</span>
+                </div>
+              </div>
+              <div class="confidence-badge high">
+                <span class="conf-value">76%</span>
+                <span class="conf-label">Home Win</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card match-card-full">
+            <div class="match-top-row">
+              <span class="badge badge-primary">La Liga</span>
+              <span class="match-time"><span class="material-symbols-outlined">schedule</span> 18:00</span>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="teams-area">
+                <div class="team-row">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:600">Atletico Madrid</span>
+                </div>
+                <div class="team-divider"></div>
+                <div class="team-row" style="margin-top:4px">
+                  <div class="team-icon"><span class="material-symbols-outlined" style="font-size:18px">shield</span></div>
+                  <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.7)">Sevilla</span>
+                </div>
+              </div>
+              <div class="confidence-badge medium">
+                <span class="conf-value">69%</span>
+                <span class="conf-label">Under 2.5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leagues Tab -->
+        <div class="tab-content" data-group="matches" data-tab="leagues" style="display:none">
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(255,0,128,0.15);border:1px solid rgba(255,0,128,0.3);color:var(--neon-pink)">PL</div>
+              <div class="league-info">
+                <div class="league-name">Premier League</div>
+                <div class="league-country">England</div>
+              </div>
+              <span class="league-count">12 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);color:var(--gold)">ES</div>
+              <div class="league-info">
+                <div class="league-name">La Liga</div>
+                <div class="league-country">Spain</div>
+              </div>
+              <span class="league-count">10 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.3);color:var(--error)">BL</div>
+              <div class="league-info">
+                <div class="league-name">Bundesliga</div>
+                <div class="league-country">Germany</div>
+              </div>
+              <span class="league-count">8 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:var(--neon-green)">IT</div>
+              <div class="league-info">
+                <div class="league-name">Serie A</div>
+                <div class="league-country">Italy</div>
+              </div>
+              <span class="league-count">9 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(0,245,255,0.15);border:1px solid rgba(0,245,255,0.3);color:var(--primary)">FR</div>
+              <div class="league-info">
+                <div class="league-name">Ligue 1</div>
+                <div class="league-country">France</div>
+              </div>
+              <span class="league-count">7 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="league-card">
+              <div class="league-icon" style="background:rgba(191,0,255,0.15);border:1px solid rgba(191,0,255,0.3);color:var(--accent-purple)">UCL</div>
+              <div class="league-info">
+                <div class="league-name">Champions League</div>
+                <div class="league-country">Europe</div>
+              </div>
+              <span class="league-count">4 matches</span>
+              <span class="material-symbols-outlined league-chevron">chevron_right</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== STATS PAGE ==================== -->
+      <div id="page-stats" class="page">
+        <div class="stats-header">
+          <h1 class="page-title" style="margin-bottom:0">Statistics</h1>
+          <div class="period-selector">
+            Last 30 days
+            <span class="material-symbols-outlined" style="font-size:18px">keyboard_arrow_down</span>
+          </div>
+        </div>
+
+        <!-- Accuracy Card -->
+        <div class="card-glow" style="margin-bottom:20px">
+          <div class="flex justify-between items-center">
+            <span style="font-size:16px;font-weight:700">Overall Accuracy</span>
+            <div class="badge-success">
+              <span class="material-symbols-outlined" style="font-size:14px">trending_up</span>
+              +3.2%
+            </div>
+          </div>
+          <div class="accuracy-circle">
+            <svg viewBox="0 0 128 128">
+              <circle class="bg-ring" cx="64" cy="64" r="56"></circle>
+              <circle class="progress-ring" cx="64" cy="64" r="56"></circle>
+            </svg>
+            <div class="accuracy-center">
+              <div class="accuracy-value">72%</div>
+              <div class="accuracy-subtitle">36/50 bets</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="card quick-stat">
+            <div class="qs-icon" style="color:var(--conf-high)">
+              <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            <div class="qs-value" style="color:var(--conf-high)">36</div>
+            <div class="qs-label">Wins</div>
+          </div>
+          <div class="card quick-stat">
+            <div class="qs-icon" style="color:var(--error)">
+              <span class="material-symbols-outlined">cancel</span>
+            </div>
+            <div class="qs-value" style="color:var(--error)">14</div>
+            <div class="qs-label">Losses</div>
+          </div>
+          <div class="card quick-stat">
+            <div class="qs-icon" style="color:var(--warning)">
+              <span class="material-symbols-outlined">schedule</span>
+            </div>
+            <div class="qs-value" style="color:var(--warning)">3</div>
+            <div class="qs-label">Pending</div>
+          </div>
+        </div>
+
+        <!-- Accuracy by Bet Type -->
+        <div class="section-label">ACCURACY BY BET TYPE</div>
+        <div class="card" style="margin-bottom:24px">
+          <div class="bet-type-row">
+            <span class="bt-name">Home Win</span>
+            <div class="progress-bar"><div class="progress-fill" style="width:75%;background:var(--conf-high)"></div></div>
+            <span class="bt-pct" style="color:var(--conf-high)">75%</span>
+            <span class="bt-total">(20)</span>
+          </div>
+          <div class="bet-type-row">
+            <span class="bt-name">Away Win</span>
+            <div class="progress-bar"><div class="progress-fill" style="width:68%;background:var(--conf-med)"></div></div>
+            <span class="bt-pct" style="color:var(--conf-med)">68%</span>
+            <span class="bt-total">(15)</span>
+          </div>
+          <div class="bet-type-row">
+            <span class="bt-name">Over 2.5</span>
+            <div class="progress-bar"><div class="progress-fill" style="width:78%;background:var(--conf-high)"></div></div>
+            <span class="bt-pct" style="color:var(--conf-high)">78%</span>
+            <span class="bt-total">(18)</span>
+          </div>
+          <div class="bet-type-row">
+            <span class="bt-name">BTTS</span>
+            <div class="progress-bar"><div class="progress-fill" style="width:71%;background:var(--conf-med)"></div></div>
+            <span class="bt-pct" style="color:var(--conf-med)">71%</span>
+            <span class="bt-total">(12)</span>
+          </div>
+          <div class="bet-type-row">
+            <span class="bt-name">Double Chance</span>
+            <div class="progress-bar"><div class="progress-fill" style="width:82%;background:var(--conf-high)"></div></div>
+            <span class="bt-pct" style="color:var(--conf-high)">82%</span>
+            <span class="bt-total">(10)</span>
+          </div>
+        </div>
+
+        <!-- Recent Predictions -->
+        <div class="section-label">RECENT PREDICTIONS</div>
+
+        <div class="card">
+          <div class="recent-pred">
+            <div class="pred-icon win"><span class="material-symbols-outlined">check</span></div>
+            <div class="pred-info">
+              <div class="pred-teams">Man City vs Arsenal</div>
+              <div class="pred-meta">
+                <span class="badge badge-primary">Home Win</span>
+                <span class="pred-date">Today</span>
+              </div>
+            </div>
+            <div class="pred-result win">WIN</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="recent-pred">
+            <div class="pred-icon win"><span class="material-symbols-outlined">check</span></div>
+            <div class="pred-info">
+              <div class="pred-teams">Real Madrid vs Barcelona</div>
+              <div class="pred-meta">
+                <span class="badge badge-primary">Over 2.5</span>
+                <span class="pred-date">Yesterday</span>
+              </div>
+            </div>
+            <div class="pred-result win">WIN</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="recent-pred">
+            <div class="pred-icon loss"><span class="material-symbols-outlined">close</span></div>
+            <div class="pred-info">
+              <div class="pred-teams">Bayern vs Dortmund</div>
+              <div class="pred-meta">
+                <span class="badge badge-primary">Home Win</span>
+                <span class="pred-date">Yesterday</span>
+              </div>
+            </div>
+            <div class="pred-result loss">LOSS</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="recent-pred">
+            <div class="pred-icon win"><span class="material-symbols-outlined">check</span></div>
+            <div class="pred-info">
+              <div class="pred-teams">Inter vs Milan</div>
+              <div class="pred-meta">
+                <span class="badge badge-primary">BTTS Yes</span>
+                <span class="pred-date">2 days ago</span>
+              </div>
+            </div>
+            <div class="pred-result win">WIN</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="recent-pred">
+            <div class="pred-icon win"><span class="material-symbols-outlined">check</span></div>
+            <div class="pred-info">
+              <div class="pred-teams">Liverpool vs Chelsea</div>
+              <div class="pred-meta">
+                <span class="badge badge-primary">Over 2.5</span>
+                <span class="pred-date">2 days ago</span>
+              </div>
+            </div>
+            <div class="pred-result win">WIN</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== FAVORITES PAGE ==================== -->
+      <div id="page-favorites" class="page">
+        <div class="fav-header">
+          <h1 class="page-title" style="margin-bottom:0">Favorites</h1>
+          <div class="icon-btn">
+            <span class="material-symbols-outlined">add</span>
+          </div>
+        </div>
+
+        <div class="tab-bar" data-group="favorites">
+          <div class="tab-item active" data-tab="teams">Teams</div>
+          <div class="tab-item" data-tab="leagues">Leagues</div>
+        </div>
+
+        <!-- Teams Tab -->
+        <div class="tab-content" data-group="favorites" data-tab="teams" style="display:block">
+          <div class="card">
+            <div class="fav-card">
+              <div class="fav-icon" style="background:rgba(0,245,255,0.15);border:1px solid rgba(0,245,255,0.3);color:var(--primary)">
+                <span class="material-symbols-outlined">shield</span>
+              </div>
+              <div class="fav-info">
+                <div class="fav-name">Manchester City</div>
+                <div class="fav-subtitle">Premier League</div>
+              </div>
+              <div class="fav-actions">
+                <div class="fav-action-btn notify"><span class="material-symbols-outlined" style="font-size:18px">notifications_active</span></div>
+                <div class="fav-action-btn delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="fav-card">
+              <div class="fav-icon" style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);color:var(--gold)">
+                <span class="material-symbols-outlined">shield</span>
+              </div>
+              <div class="fav-info">
+                <div class="fav-name">Real Madrid</div>
+                <div class="fav-subtitle">La Liga</div>
+              </div>
+              <div class="fav-actions">
+                <div class="fav-action-btn notify"><span class="material-symbols-outlined" style="font-size:18px">notifications_active</span></div>
+                <div class="fav-action-btn delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="fav-card">
+              <div class="fav-icon" style="background:rgba(255,0,128,0.15);border:1px solid rgba(255,0,128,0.3);color:var(--neon-pink)">
+                <span class="material-symbols-outlined">shield</span>
+              </div>
+              <div class="fav-info">
+                <div class="fav-name">Barcelona</div>
+                <div class="fav-subtitle">La Liga</div>
+              </div>
+              <div class="fav-actions">
+                <div class="fav-action-btn notify"><span class="material-symbols-outlined" style="font-size:18px">notifications_active</span></div>
+                <div class="fav-action-btn delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leagues Tab -->
+        <div class="tab-content" data-group="favorites" data-tab="leagues" style="display:none">
+          <div class="card">
+            <div class="fav-card">
+              <div class="fav-icon" style="background:rgba(255,0,128,0.15);border:1px solid rgba(255,0,128,0.3)">
+                <span style="color:var(--neon-pink);font-size:12px;font-weight:700">PL</span>
+              </div>
+              <div class="fav-info">
+                <div class="fav-name">Premier League</div>
+                <div class="fav-subtitle">England</div>
+              </div>
+              <div class="fav-actions">
+                <div class="fav-action-btn notify"><span class="material-symbols-outlined" style="font-size:18px">notifications_active</span></div>
+                <div class="fav-action-btn delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="fav-card">
+              <div class="fav-icon" style="background:rgba(191,0,255,0.15);border:1px solid rgba(191,0,255,0.3)">
+                <span style="color:var(--accent-purple);font-size:12px;font-weight:700">UCL</span>
+              </div>
+              <div class="fav-info">
+                <div class="fav-name">Champions League</div>
+                <div class="fav-subtitle">Europe</div>
+              </div>
+              <div class="fav-actions">
+                <div class="fav-action-btn notify"><span class="material-symbols-outlined" style="font-size:18px">notifications_active</span></div>
+                <div class="fav-action-btn delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SETTINGS PAGE ==================== -->
+      <div id="page-settings" class="page">
+        <h1 class="page-title">Settings</h1>
+
+        <!-- Profile -->
+        <div class="card-glow" style="margin-bottom:24px">
+          <div class="profile-card">
+            <div class="profile-avatar">P</div>
+            <div class="profile-info">
+              <div class="profile-name">Player</div>
+              <div class="profile-email">player@fc26.app</div>
+            </div>
+            <div class="badge-gold" style="font-size:11px;padding:6px 10px">
+              <span class="material-symbols-outlined" style="font-size:14px">star</span>
+              PRO
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="section-label">PREFERENCES</div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">dark_mode</span>
+            <span class="si-label">Dark Mode</span>
+            <span class="si-value">Always On</span>
+            <div class="toggle on"></div>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">notifications</span>
+            <span class="si-label">Notifications</span>
+            <span class="si-value">Enabled</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">language</span>
+            <span class="si-label">Language</span>
+            <span class="si-value">English</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+        </div>
+
+        <!-- Betting Preferences -->
+        <div class="section-label" style="margin-top:24px">BETTING PREFERENCES</div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">trending_down</span>
+            <span class="si-label">Minimum Odds</span>
+            <span class="si-value">1.5</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">trending_up</span>
+            <span class="si-label">Maximum Odds</span>
+            <span class="si-value">5.0</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">warning</span>
+            <span class="si-label">Risk Level</span>
+            <span class="si-value" style="color:var(--conf-med)">MEDIUM</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+        </div>
+
+        <!-- Premium CTA -->
+        <div style="margin-top:24px">
+          <div class="premium-cta">
+            <div class="premium-icon">
+              <span class="material-symbols-outlined">star</span>
+            </div>
+            <div class="premium-text">
+              <div class="premium-title">Upgrade to PRO</div>
+              <div class="premium-subtitle">Unlock unlimited predictions</div>
+            </div>
+            <span class="material-symbols-outlined premium-chevron">chevron_right</span>
+          </div>
+        </div>
+
+        <!-- Other -->
+        <div class="section-label" style="margin-top:24px">OTHER</div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">info</span>
+            <span class="si-label">About</span>
+            <span class="si-value">Version 1.0.0</span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon">help</span>
+            <span class="si-label">Help & Support</span>
+            <span class="si-value"></span>
+            <span class="material-symbols-outlined si-chevron">chevron_right</span>
+          </div>
+          <div class="settings-item">
+            <span class="material-symbols-outlined si-icon danger">logout</span>
+            <span class="si-label danger">Sign Out</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== BOTTOM NAVIGATION ==================== -->
+    <nav id="bottom-nav">
+      <div class="nav-item active" data-page="home">
+        <span class="material-symbols-outlined nav-icon filled">home</span>
+        <span class="nav-label">Home</span>
+      </div>
+      <div class="nav-item" data-page="matches">
+        <span class="material-symbols-outlined nav-icon">sports_soccer</span>
+        <span class="nav-label">Matches</span>
+      </div>
+      <div class="nav-item" data-page="stats">
+        <span class="material-symbols-outlined nav-icon">bar_chart</span>
+        <span class="nav-label">Stats</span>
+      </div>
+      <div class="nav-item" data-page="favorites">
+        <span class="material-symbols-outlined nav-icon">star</span>
+        <span class="nav-label">Favorites</span>
+      </div>
+      <div class="nav-item" data-page="settings">
+        <span class="material-symbols-outlined nav-icon">settings</span>
+        <span class="nav-label">Settings</span>
+      </div>
+    </nav>
+  </div>
+
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
