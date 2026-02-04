@@ -193,6 +193,44 @@ async def get_tomorrow_matches(league: Optional[str] = Query(None)):
     return []
 
 
+@router.get("/date/today", response_model=List[Match])
+async def get_date_today_matches(league: Optional[str] = Query(None)):
+    """Get matches for today only (by date)"""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    all_matches = await fetch_matches(date_from=today, date_to=tomorrow, league=league)
+
+    if all_matches:
+        # Filter to today only
+        today_matches = [
+            m for m in all_matches
+            if m.get("match_date", "").startswith(today)
+        ]
+        return [Match(**m) for m in today_matches]
+
+    return []
+
+
+@router.get("/date/tomorrow", response_model=List[Match])
+async def get_date_tomorrow_matches(league: Optional[str] = Query(None)):
+    """Get matches for tomorrow only (by date)"""
+    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+    day_after = (datetime.utcnow() + timedelta(days=2)).strftime("%Y-%m-%d")
+
+    all_matches = await fetch_matches(date_from=tomorrow, date_to=day_after, league=league)
+
+    if all_matches:
+        # Filter to tomorrow only
+        tomorrow_matches = [
+            m for m in all_matches
+            if m.get("match_date", "").startswith(tomorrow)
+        ]
+        return [Match(**m) for m in tomorrow_matches]
+
+    return []
+
+
 @router.get("/upcoming", response_model=List[Match])
 async def get_upcoming_matches(
     days: int = Query(7, ge=1, le=14),

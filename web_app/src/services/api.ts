@@ -171,6 +171,7 @@ class ApiService {
 
   // ============= MATCHES =============
 
+  // Round-based (full matchday)
   async getTodayMatches(): Promise<Match[]> {
     const data = await this.fetchWithRetry<Record<string, unknown>[]>(
       `${API_URL}/api/v1/matches/today`,
@@ -185,6 +186,29 @@ class ApiService {
   async getTomorrowMatches(): Promise<Match[]> {
     const data = await this.fetchWithRetry<Record<string, unknown>[]>(
       `${API_URL}/api/v1/matches/tomorrow`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+    return data.map(parseMatch);
+  }
+
+  // Date-based (specific day only)
+  async getDateTodayMatches(): Promise<Match[]> {
+    const data = await this.fetchWithRetry<Record<string, unknown>[]>(
+      `${API_URL}/api/v1/matches/date/today`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+    return data.map(parseMatch);
+  }
+
+  async getDateTomorrowMatches(): Promise<Match[]> {
+    const data = await this.fetchWithRetry<Record<string, unknown>[]>(
+      `${API_URL}/api/v1/matches/date/tomorrow`,
       {
         method: 'GET',
         headers: this.getHeaders(),

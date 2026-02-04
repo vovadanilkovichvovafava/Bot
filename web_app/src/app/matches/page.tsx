@@ -21,33 +21,46 @@ const LEAGUES = [
   { code: 'EL', name: 'Europa League', logo: 'https://media.api-sports.io/football/leagues/3.png' },
 ];
 
-type TabType = 'today' | 'tomorrow';
+type TabType = 'today' | 'tomorrow' | 'currentRound' | 'nextRound';
+
+const TAB_CONFIG = {
+  today: { label: 'Today', description: 'by date' },
+  tomorrow: { label: 'Tomorrow', description: 'by date' },
+  currentRound: { label: 'Current Round', description: 'full matchday' },
+  nextRound: { label: 'Next Round', description: 'full matchday' },
+};
 
 export default function MatchesPage() {
   const { selectedTheme } = useThemeStore();
   const {
-    todayMatches,
-    tomorrowMatches,
+    currentRoundMatches,
+    nextRoundMatches,
+    dateTodayMatches,
+    dateTomorrowMatches,
     isLoading,
     isFromCache,
     isOffline,
     error,
     lastUpdated,
-    loadTodayMatches,
-    loadTomorrowMatches,
+    loadCurrentRound,
+    loadNextRound,
+    loadDateToday,
+    loadDateTomorrow,
     refresh,
   } = useMatchesStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('today');
+  const [activeTab, setActiveTab] = useState<TabType>('currentRound');
   const [selectedLeague, setSelectedLeague] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load matches on mount
   useEffect(() => {
-    loadTodayMatches();
-    loadTomorrowMatches();
-  }, [loadTodayMatches, loadTomorrowMatches]);
+    loadCurrentRound();
+    loadNextRound();
+    loadDateToday();
+    loadDateTomorrow();
+  }, [loadCurrentRound, loadNextRound, loadDateToday, loadDateTomorrow]);
 
   // Handle refresh
   const handleRefresh = useCallback(async () => {
@@ -57,7 +70,16 @@ export default function MatchesPage() {
   }, [refresh]);
 
   // Get current matches based on active tab
-  const currentMatches = activeTab === 'today' ? todayMatches : tomorrowMatches;
+  const getMatchesForTab = (tab: TabType): Match[] => {
+    switch (tab) {
+      case 'today': return dateTodayMatches;
+      case 'tomorrow': return dateTomorrowMatches;
+      case 'currentRound': return currentRoundMatches;
+      case 'nextRound': return nextRoundMatches;
+      default: return [];
+    }
+  };
+  const currentMatches = getMatchesForTab(activeTab);
 
   // Filter matches
   const filteredMatches = currentMatches.filter((match) => {
@@ -168,20 +190,20 @@ export default function MatchesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="flex gap-2 mb-6"
+          className="flex flex-wrap gap-2 mb-6"
         >
-          {(['today', 'tomorrow'] as TabType[]).map((tab) => (
+          {(['currentRound', 'nextRound', 'today', 'tomorrow'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                'px-6 py-3 rounded-xl font-semibold transition-all',
+                'px-4 py-2.5 rounded-xl font-semibold transition-all',
                 activeTab === tab ? styles.tabActive : cn(styles.card, styles.tabInactive)
               )}
             >
-              {tab === 'today' ? 'Current Round' : 'Next Round'}
+              <span>{TAB_CONFIG[tab].label}</span>
               <span className="ml-2 text-xs opacity-70">
-                ({tab === 'today' ? todayMatches.length : tomorrowMatches.length})
+                ({getMatchesForTab(tab).length})
               </span>
             </button>
           ))}

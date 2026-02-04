@@ -7,67 +7,118 @@ import { api } from '@/services/api';
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const CACHE_KEYS = {
-  today: 'cache_today_matches',
-  tomorrow: 'cache_tomorrow_matches',
+  currentRound: 'cache_current_round_matches',
+  nextRound: 'cache_next_round_matches',
+  dateToday: 'cache_date_today_matches',
+  dateTomorrow: 'cache_date_tomorrow_matches',
   live: 'cache_live_matches',
   timestamp: 'cache_matches_timestamp',
 };
 
 interface MatchesState {
-  todayMatches: Match[];
-  tomorrowMatches: Match[];
+  // Round-based (full matchday)
+  currentRoundMatches: Match[];
+  nextRoundMatches: Match[];
+  // Date-based (specific day)
+  dateTodayMatches: Match[];
+  dateTomorrowMatches: Match[];
+  // Live
   liveMatches: Match[];
+  // Status
   isLoading: boolean;
   isFromCache: boolean;
   isOffline: boolean;
   error: string | null;
   lastUpdated: Date | null;
 
+  // Legacy aliases for compatibility
+  todayMatches: Match[];
+  tomorrowMatches: Match[];
+
   // Actions
-  loadTodayMatches: (forceRefresh?: boolean) => Promise<void>;
-  loadTomorrowMatches: (forceRefresh?: boolean) => Promise<void>;
+  loadCurrentRound: (forceRefresh?: boolean) => Promise<void>;
+  loadNextRound: (forceRefresh?: boolean) => Promise<void>;
+  loadDateToday: (forceRefresh?: boolean) => Promise<void>;
+  loadDateTomorrow: (forceRefresh?: boolean) => Promise<void>;
   loadLiveMatches: () => Promise<void>;
   refresh: () => Promise<void>;
   clearCache: () => void;
+
+  // Legacy aliases
+  loadTodayMatches: (forceRefresh?: boolean) => Promise<void>;
+  loadTomorrowMatches: (forceRefresh?: boolean) => Promise<void>;
 }
 
 // Helper to load from localStorage cache
-function loadFromCache(): { todayMatches: Match[]; tomorrowMatches: Match[]; timestamp: Date | null } {
+function loadFromCache() {
   if (typeof window === 'undefined') {
-    return { todayMatches: [], tomorrowMatches: [], timestamp: null };
+    return {
+      currentRoundMatches: [],
+      nextRoundMatches: [],
+      dateTodayMatches: [],
+      dateTomorrowMatches: [],
+      timestamp: null,
+    };
   }
 
   try {
     const timestampStr = localStorage.getItem(CACHE_KEYS.timestamp);
-    if (!timestampStr) return { todayMatches: [], tomorrowMatches: [], timestamp: null };
+    if (!timestampStr) return {
+      currentRoundMatches: [],
+      nextRoundMatches: [],
+      dateTodayMatches: [],
+      dateTomorrowMatches: [],
+      timestamp: null,
+    };
 
     const timestamp = new Date(timestampStr);
     const isExpired = Date.now() - timestamp.getTime() > CACHE_DURATION;
 
     if (isExpired) {
-      return { todayMatches: [], tomorrowMatches: [], timestamp: null };
+      return {
+        currentRoundMatches: [],
+        nextRoundMatches: [],
+        dateTodayMatches: [],
+        dateTomorrowMatches: [],
+        timestamp: null,
+      };
     }
 
-    const todayJson = localStorage.getItem(CACHE_KEYS.today);
-    const tomorrowJson = localStorage.getItem(CACHE_KEYS.tomorrow);
-
     return {
-      todayMatches: todayJson ? JSON.parse(todayJson) : [],
-      tomorrowMatches: tomorrowJson ? JSON.parse(tomorrowJson) : [],
+      currentRoundMatches: JSON.parse(localStorage.getItem(CACHE_KEYS.currentRound) || '[]'),
+      nextRoundMatches: JSON.parse(localStorage.getItem(CACHE_KEYS.nextRound) || '[]'),
+      dateTodayMatches: JSON.parse(localStorage.getItem(CACHE_KEYS.dateToday) || '[]'),
+      dateTomorrowMatches: JSON.parse(localStorage.getItem(CACHE_KEYS.dateTomorrow) || '[]'),
       timestamp,
     };
   } catch {
-    return { todayMatches: [], tomorrowMatches: [], timestamp: null };
+    return {
+      currentRoundMatches: [],
+      nextRoundMatches: [],
+      dateTodayMatches: [],
+      dateTomorrowMatches: [],
+      timestamp: null,
+    };
   }
 }
 
 // Helper to save to localStorage cache
-function saveToCache(todayMatches: Match[], tomorrowMatches: Match[]) {
+function saveToCache(state: Partial<MatchesState>) {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem(CACHE_KEYS.today, JSON.stringify(todayMatches));
-    localStorage.setItem(CACHE_KEYS.tomorrow, JSON.stringify(tomorrowMatches));
+    if (state.currentRoundMatches) {
+      localStorage.setItem(CACHE_KEYS.currentRound, JSON.stringify(state.currentRoundMatches));
+    }
+    if (state.nextRoundMatches) {
+      localStorage.setItem(CACHE_KEYS.nextRound, JSON.stringify(state.nextRoundMatches));
+    }
+    if (state.dateTodayMatches) {
+      localStorage.setItem(CACHE_KEYS.dateToday, JSON.stringify(state.dateTodayMatches));
+    }
+    if (state.dateTomorrowMatches) {
+      localStorage.setItem(CACHE_KEYS.dateTomorrow, JSON.stringify(state.dateTomorrowMatches));
+    }
     localStorage.setItem(CACHE_KEYS.timestamp, new Date().toISOString());
   } catch {
     // Ignore storage errors
@@ -77,39 +128,35 @@ function saveToCache(todayMatches: Match[], tomorrowMatches: Match[]) {
 export const useMatchesStore = create<MatchesState>((set, get) => {
   // Load initial data from cache
   const cached = loadFromCache();
+  const hasCache = cached.currentRoundMatches.length > 0 || cached.dateTodayMatches.length > 0;
 
   return {
-    todayMatches: cached.todayMatches,
-    tomorrowMatches: cached.tomorrowMatches,
+    currentRoundMatches: cached.currentRoundMatches,
+    nextRoundMatches: cached.nextRoundMatches,
+    dateTodayMatches: cached.dateTodayMatches,
+    dateTomorrowMatches: cached.dateTomorrowMatches,
     liveMatches: [],
     isLoading: false,
-    isFromCache: cached.todayMatches.length > 0 || cached.tomorrowMatches.length > 0,
+    isFromCache: hasCache,
     isOffline: false,
     error: null,
     lastUpdated: cached.timestamp,
 
-    loadTodayMatches: async (forceRefresh = false) => {
-      const state = get();
+    // Legacy aliases
+    get todayMatches() { return get().currentRoundMatches; },
+    get tomorrowMatches() { return get().nextRoundMatches; },
 
-      // Skip if already loading
+    loadCurrentRound: async (forceRefresh = false) => {
+      const state = get();
       if (state.isLoading) return;
 
-      // Use cache if available and not forcing refresh
-      if (!forceRefresh && state.todayMatches.length > 0 && state.isFromCache) {
-        // Fetch in background to update
+      if (!forceRefresh && state.currentRoundMatches.length > 0 && state.isFromCache) {
         api.getTodayMatches()
           .then(matches => {
-            set({
-              todayMatches: matches,
-              isFromCache: false,
-              isOffline: false,
-              lastUpdated: new Date(),
-            });
-            saveToCache(matches, get().tomorrowMatches);
+            set({ currentRoundMatches: matches, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+            saveToCache({ currentRoundMatches: matches });
           })
-          .catch(() => {
-            set({ isOffline: true });
-          });
+          .catch(() => set({ isOffline: true }));
         return;
       }
 
@@ -117,16 +164,10 @@ export const useMatchesStore = create<MatchesState>((set, get) => {
 
       try {
         const matches = await api.getTodayMatches();
-        set({
-          todayMatches: matches,
-          isLoading: false,
-          isFromCache: false,
-          isOffline: false,
-          lastUpdated: new Date(),
-        });
-        saveToCache(matches, get().tomorrowMatches);
+        set({ currentRoundMatches: matches, isLoading: false, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+        saveToCache({ currentRoundMatches: matches });
       } catch (e) {
-        const hasData = get().todayMatches.length > 0;
+        const hasData = get().currentRoundMatches.length > 0;
         set({
           isLoading: false,
           isOffline: hasData,
@@ -135,25 +176,17 @@ export const useMatchesStore = create<MatchesState>((set, get) => {
       }
     },
 
-    loadTomorrowMatches: async (forceRefresh = false) => {
+    loadNextRound: async (forceRefresh = false) => {
       const state = get();
-
       if (state.isLoading) return;
 
-      if (!forceRefresh && state.tomorrowMatches.length > 0 && state.isFromCache) {
+      if (!forceRefresh && state.nextRoundMatches.length > 0 && state.isFromCache) {
         api.getTomorrowMatches()
           .then(matches => {
-            set({
-              tomorrowMatches: matches,
-              isFromCache: false,
-              isOffline: false,
-              lastUpdated: new Date(),
-            });
-            saveToCache(get().todayMatches, matches);
+            set({ nextRoundMatches: matches, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+            saveToCache({ nextRoundMatches: matches });
           })
-          .catch(() => {
-            set({ isOffline: true });
-          });
+          .catch(() => set({ isOffline: true }));
         return;
       }
 
@@ -161,16 +194,70 @@ export const useMatchesStore = create<MatchesState>((set, get) => {
 
       try {
         const matches = await api.getTomorrowMatches();
-        set({
-          tomorrowMatches: matches,
-          isLoading: false,
-          isFromCache: false,
-          isOffline: false,
-          lastUpdated: new Date(),
-        });
-        saveToCache(get().todayMatches, matches);
+        set({ nextRoundMatches: matches, isLoading: false, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+        saveToCache({ nextRoundMatches: matches });
       } catch (e) {
-        const hasData = get().tomorrowMatches.length > 0;
+        const hasData = get().nextRoundMatches.length > 0;
+        set({
+          isLoading: false,
+          isOffline: hasData,
+          error: hasData ? null : (e instanceof Error ? e.message : 'Failed to load matches'),
+        });
+      }
+    },
+
+    loadDateToday: async (forceRefresh = false) => {
+      const state = get();
+      if (state.isLoading) return;
+
+      if (!forceRefresh && state.dateTodayMatches.length > 0 && state.isFromCache) {
+        api.getDateTodayMatches()
+          .then(matches => {
+            set({ dateTodayMatches: matches, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+            saveToCache({ dateTodayMatches: matches });
+          })
+          .catch(() => set({ isOffline: true }));
+        return;
+      }
+
+      set({ isLoading: true, error: null, isOffline: false });
+
+      try {
+        const matches = await api.getDateTodayMatches();
+        set({ dateTodayMatches: matches, isLoading: false, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+        saveToCache({ dateTodayMatches: matches });
+      } catch (e) {
+        const hasData = get().dateTodayMatches.length > 0;
+        set({
+          isLoading: false,
+          isOffline: hasData,
+          error: hasData ? null : (e instanceof Error ? e.message : 'Failed to load matches'),
+        });
+      }
+    },
+
+    loadDateTomorrow: async (forceRefresh = false) => {
+      const state = get();
+      if (state.isLoading) return;
+
+      if (!forceRefresh && state.dateTomorrowMatches.length > 0 && state.isFromCache) {
+        api.getDateTomorrowMatches()
+          .then(matches => {
+            set({ dateTomorrowMatches: matches, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+            saveToCache({ dateTomorrowMatches: matches });
+          })
+          .catch(() => set({ isOffline: true }));
+        return;
+      }
+
+      set({ isLoading: true, error: null, isOffline: false });
+
+      try {
+        const matches = await api.getDateTomorrowMatches();
+        set({ dateTomorrowMatches: matches, isLoading: false, isFromCache: false, isOffline: false, lastUpdated: new Date() });
+        saveToCache({ dateTomorrowMatches: matches });
+      } catch (e) {
+        const hasData = get().dateTomorrowMatches.length > 0;
         set({
           isLoading: false,
           isOffline: hasData,
@@ -192,25 +279,34 @@ export const useMatchesStore = create<MatchesState>((set, get) => {
       set({ isLoading: true, error: null, isOffline: false });
 
       try {
-        const [todayMatches, tomorrowMatches, liveMatches] = await Promise.all([
+        const [currentRound, nextRound, dateToday, dateTomorrow, live] = await Promise.all([
           api.getTodayMatches(),
           api.getTomorrowMatches(),
+          api.getDateTodayMatches(),
+          api.getDateTomorrowMatches(),
           api.getLiveMatches(),
         ]);
 
         set({
-          todayMatches,
-          tomorrowMatches,
-          liveMatches,
+          currentRoundMatches: currentRound,
+          nextRoundMatches: nextRound,
+          dateTodayMatches: dateToday,
+          dateTomorrowMatches: dateTomorrow,
+          liveMatches: live,
           isLoading: false,
           isFromCache: false,
           isOffline: false,
           lastUpdated: new Date(),
         });
 
-        saveToCache(todayMatches, tomorrowMatches);
+        saveToCache({
+          currentRoundMatches: currentRound,
+          nextRoundMatches: nextRound,
+          dateTodayMatches: dateToday,
+          dateTomorrowMatches: dateTomorrow,
+        });
       } catch (e) {
-        const hasData = get().todayMatches.length > 0 || get().tomorrowMatches.length > 0;
+        const hasData = get().currentRoundMatches.length > 0 || get().dateTodayMatches.length > 0;
         set({
           isLoading: false,
           isOffline: hasData,
@@ -221,17 +317,24 @@ export const useMatchesStore = create<MatchesState>((set, get) => {
 
     clearCache: () => {
       if (typeof window === 'undefined') return;
-      localStorage.removeItem(CACHE_KEYS.today);
-      localStorage.removeItem(CACHE_KEYS.tomorrow);
-      localStorage.removeItem(CACHE_KEYS.live);
-      localStorage.removeItem(CACHE_KEYS.timestamp);
+      Object.values(CACHE_KEYS).forEach(key => localStorage.removeItem(key));
     },
+
+    // Legacy aliases
+    loadTodayMatches: async (forceRefresh = false) => get().loadCurrentRound(forceRefresh),
+    loadTomorrowMatches: async (forceRefresh = false) => get().loadNextRound(forceRefresh),
   };
 });
 
 // Selectors
-export const selectTodayMatches = (state: MatchesState) => state.todayMatches;
-export const selectTomorrowMatches = (state: MatchesState) => state.tomorrowMatches;
+export const selectCurrentRoundMatches = (state: MatchesState) => state.currentRoundMatches;
+export const selectNextRoundMatches = (state: MatchesState) => state.nextRoundMatches;
+export const selectDateTodayMatches = (state: MatchesState) => state.dateTodayMatches;
+export const selectDateTomorrowMatches = (state: MatchesState) => state.dateTomorrowMatches;
 export const selectLiveMatches = (state: MatchesState) => state.liveMatches;
 export const selectIsLoading = (state: MatchesState) => state.isLoading;
 export const selectIsOffline = (state: MatchesState) => state.isOffline;
+
+// Legacy selectors
+export const selectTodayMatches = selectCurrentRoundMatches;
+export const selectTomorrowMatches = selectNextRoundMatches;
