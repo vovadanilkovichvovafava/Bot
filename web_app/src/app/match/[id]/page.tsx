@@ -46,8 +46,8 @@ export default function MatchDetailPage({ params }: PageParams) {
     sendMessage,
     messages: chatMessages,
     isLoading: chatLoading,
-    tokensRemaining,
-    clearMessages
+    localTokens,
+    clearChat
   } = useChatStore();
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
@@ -70,7 +70,7 @@ export default function MatchDetailPage({ params }: PageParams) {
     const loadMatch = async () => {
       setIsLoading(true);
       setError(null);
-      clearMessages();
+      clearChat();
 
       try {
         const matchData = await api.getMatchDetail(parseInt(matchId));
@@ -99,7 +99,7 @@ export default function MatchDetailPage({ params }: PageParams) {
     };
 
     loadMatch();
-  }, [matchId, clearMessages]);
+  }, [matchId, clearChat]);
 
   // Quick questions for AI
   const quickQuestions = [
@@ -324,7 +324,7 @@ export default function MatchDetailPage({ params }: PageParams) {
             styles={styles}
             badge={
               <span className={cn('text-xs px-2 py-0.5 rounded-full', styles.accentBg, 'text-white')}>
-                {tokensRemaining} left
+                {localTokens} left
               </span>
             }
           >
