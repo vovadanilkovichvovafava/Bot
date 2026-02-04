@@ -184,6 +184,28 @@ export function getMatchScore(match: Match): string {
   return '-';
 }
 
+// Helper to get short team name (handles "1. FC Union" → "Union", "FC Barcelona" → "Barcelona")
+export function getShortTeamName(name: string): string {
+  // Remove common prefixes
+  const prefixes = ['1.', '1', 'FC', 'AFC', 'SC', 'AC', 'AS', 'SS', 'SV', 'TSV', 'VfB', 'VfL', 'RB', 'US', 'Borussia', 'Real', 'Sporting', 'Athletic'];
+
+  let words = name.split(' ').filter(w => w.length > 0);
+
+  // Remove leading prefixes
+  while (words.length > 1 && prefixes.some(p => words[0].toLowerCase() === p.toLowerCase() || words[0] === p)) {
+    words.shift();
+  }
+
+  // If only one word left, use it; otherwise take first meaningful word
+  if (words.length === 0) return name.substring(0, 3).toUpperCase();
+
+  // Take first word that isn't a common suffix
+  const suffixes = ['FC', 'United', 'City', 'Town', 'County', 'Rovers'];
+  const mainWord = words.find(w => !suffixes.includes(w)) || words[0];
+
+  return mainWord.toUpperCase();
+}
+
 export function formatMatchDate(date: string): string {
   const matchDate = new Date(date);
   const now = new Date();

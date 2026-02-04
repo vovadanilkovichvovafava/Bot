@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { RadarChart } from '@/components/charts/RadarChart';
 import { useMatchesStore } from '@/store/matchesStore';
-import { Match, formatMatchDate, isMatchLive } from '@/types';
+import { Match, formatMatchDate, isMatchLive, getShortTeamName } from '@/types';
 
 // Team colors for fallback
 const TEAM_COLORS: Record<string, string> = {
@@ -316,7 +316,7 @@ export function NeonHome() {
                         </div>
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xl md:text-2xl font-bold neon-gradient">
-                            {prediction.homeWin}% {featuredMatch.homeTeam.name.split(' ')[0].toUpperCase()}
+                            {prediction.homeWin}% {getShortTeamName(featuredMatch.homeTeam.name)}
                           </span>
                         </div>
                         <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-gray-800">
@@ -341,7 +341,7 @@ export function NeonHome() {
                         </div>
                         <div className="flex justify-between mt-2 text-xs text-gray-500">
                           <span>DRAW: {prediction.draw}%</span>
-                          <span>{featuredMatch.awayTeam.name.split(' ')[0].toUpperCase()}: {prediction.awayWin}%</span>
+                          <span>{getShortTeamName(featuredMatch.awayTeam.name)}: {prediction.awayWin}%</span>
                         </div>
                       </div>
 
