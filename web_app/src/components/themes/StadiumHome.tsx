@@ -59,25 +59,36 @@ export function StadiumHome() {
     setMounted(true);
   }, []);
 
+  // Stadium image URLs - fallback chain
+  const stadiumImages = [
+    'https://images.pexels.com/photos/46798/the-ball-stadance-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    'https://images.pexels.com/photos/114296/pexels-photo-114296.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  ];
+
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Stadium Background Image */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=2070&auto=format&fit=crop')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 30%',
-        }}
-      >
-        {/* Dark overlay with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+      {/* Stadium Background - Using img tag for better compatibility */}
+      <div className="absolute inset-0 z-0">
+        {/* Primary stadium image */}
+        <img
+          src={stadiumImages[0]}
+          alt="Stadium"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center 40%' }}
+          onError={(e) => {
+            // Fallback to second image
+            (e.target as HTMLImageElement).src = stadiumImages[1];
+          }}
+        />
+
+        {/* Dark overlay with gradient for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/90" />
 
         {/* Floodlight glow effects */}
-        <div className="absolute top-0 left-[15%] w-64 h-96 bg-white/10 blur-[100px] rounded-full" />
-        <div className="absolute top-0 right-[15%] w-64 h-96 bg-white/10 blur-[100px] rounded-full" />
-        <div className="absolute top-10 left-[35%] w-48 h-72 bg-white/5 blur-[80px] rounded-full" />
-        <div className="absolute top-10 right-[35%] w-48 h-72 bg-white/5 blur-[80px] rounded-full" />
+        <div className="absolute top-0 left-[10%] w-80 h-[500px] bg-white/20 blur-[120px] rounded-full" />
+        <div className="absolute top-0 right-[10%] w-80 h-[500px] bg-white/20 blur-[120px] rounded-full" />
+        <div className="absolute top-0 left-[40%] w-60 h-96 bg-white/10 blur-[100px] rounded-full" />
+        <div className="absolute top-0 right-[40%] w-60 h-96 bg-white/10 blur-[100px] rounded-full" />
       </div>
 
       {/* Content */}
@@ -281,15 +292,12 @@ export function StadiumHome() {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center justify-center gap-4 mb-2">
+            <div className="flex items-center justify-center gap-3 mb-2">
               <span className="text-3xl md:text-4xl font-bold text-indigo-400">
                 {FEATURED_MATCH.aiPrediction.confidence}%
               </span>
               <span className="text-gray-400 text-lg">vs</span>
               <span className="text-3xl md:text-4xl font-bold text-white">
-                {FEATURED_MATCH.aiPrediction.score}
-              </span>
-              <span className="text-3xl md:text-4xl font-bold text-emerald-400">
                 {FEATURED_MATCH.aiPrediction.score}
               </span>
             </div>
