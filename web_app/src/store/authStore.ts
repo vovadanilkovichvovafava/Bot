@@ -8,46 +8,23 @@ import { api } from '@/services/api';
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  isDemoMode: boolean;
   user: User | null;
   error: string | null;
 
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, username?: string) => Promise<boolean>;
-  loginDemo: () => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   clearError: () => void;
   checkAuth: () => Promise<void>;
 }
 
-const createDemoUser = (): User => ({
-  id: 0,
-  email: 'demo@aibettingbot.com',
-  username: 'Demo User',
-  language: 'en',
-  timezone: 'UTC',
-  isPremium: true,
-  premiumUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  dailyRequests: 0,
-  dailyLimit: 100,
-  bonusPredictions: 10,
-  minOdds: 1.5,
-  maxOdds: 3.0,
-  riskLevel: 'medium',
-  totalPredictions: 150,
-  correctPredictions: 105,
-  accuracy: 70.0,
-  createdAt: new Date().toISOString(),
-});
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
       isLoading: true,
-      isDemoMode: false,
       user: null,
       error: null,
 
@@ -55,17 +32,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
 
         try {
-          // Check if demo mode
-          const isDemoMode = localStorage.getItem('demo_mode') === 'true';
-          if (isDemoMode) {
-            set({
-              isAuthenticated: true,
-              isDemoMode: true,
-              user: createDemoUser(),
-              isLoading: false,
-            });
-            return;
-          }
+          // Clear any old demo_mode flag
+          localStorage.removeItem('demo_mode');
 
           // Check if we have a token
           const token = localStorage.getItem('access_token');
@@ -123,7 +91,6 @@ export const useAuthStore = create<AuthState>()(
 
           set({
             isAuthenticated: true,
-            isDemoMode: false,
             user,
             isLoading: false,
           });
@@ -153,7 +120,6 @@ export const useAuthStore = create<AuthState>()(
 
           set({
             isAuthenticated: true,
-            isDemoMode: false,
             user,
             isLoading: false,
           });
@@ -166,20 +132,6 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      loginDemo: async () => {
-        set({ isLoading: true, error: null });
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-        localStorage.setItem('demo_mode', 'true');
-
-        set({
-          isAuthenticated: true,
-          isDemoMode: true,
-          user: createDemoUser(),
-          isLoading: false,
-        });
-      },
-
       logout: () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -189,14 +141,12 @@ export const useAuthStore = create<AuthState>()(
 
         set({
           isAuthenticated: false,
-          isDemoMode: false,
           user: null,
           error: null,
         });
       },
 
       refreshUser: async () => {
-        if (get().isDemoMode) return;
 
         try {
           const user = await api.getCurrentUser();
@@ -213,7 +163,6 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
-        isDemoMode: state.isDemoMode,
         user: state.user,
       }),
     }

@@ -483,11 +483,8 @@ export const useChatStore = create<ChatState>((set, get) => {
       const state = get();
       if (!message.trim() || state.isLoading) return;
 
-      // Check if user is in demo mode (no real backend auth)
-      const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true';
-
       // Check tokens for non-premium users when AI is available
-      if (state.aiAvailable && !isPremium && !isDemoMode) {
+      if (state.aiAvailable && !isPremium) {
         const canUse = get().useToken();
         if (!canUse) {
           // Add error message about limit
@@ -540,12 +537,8 @@ Premium benefits:
 
       let response: string;
 
-      // Demo mode - use local fallback (no real backend auth)
-      if (isDemoMode) {
-        response = generateFallbackResponse(message, [], [], matchInfo);
-      }
-      // Try real AI API (only if authenticated with real account)
-      else if (state.aiAvailable) {
+      // Try real AI API
+      if (state.aiAvailable) {
         try {
           // Build history for API
           const history = state.messages
@@ -569,9 +562,7 @@ Please try again in a few minutes.`;
           } else if (errorStr.includes('401') || errorStr.includes('authenticated')) {
             response = `**Authentication Required**
 
-Please sign in with a real account to use AI analysis.
-
-Demo mode has limited features.`;
+Please sign in to use AI analysis.`;
           } else {
             // Fallback to local response
             response = generateFallbackResponse(message, [], [], matchInfo);
