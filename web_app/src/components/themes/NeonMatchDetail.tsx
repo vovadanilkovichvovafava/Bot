@@ -25,7 +25,13 @@ export function NeonMatchDetail({ matchId }: NeonMatchDetailProps) {
     messages: chatMessages,
     isLoading: chatLoading,
     localTokens,
+    initializeChat,
   } = useChatStore();
+
+  // Initialize chat on mount to check AI availability
+  useEffect(() => {
+    initializeChat();
+  }, [initializeChat]);
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -25,6 +25,7 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
     messages: chatMessages,
     isLoading: chatLoading,
     localTokens,
+    initializeChat,
   } = useChatStore();
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
@@ -32,6 +33,11 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [question, setQuestion] = useState('');
   const [expandedSection, setExpandedSection] = useState<string | null>('ai');
+
+  // Initialize chat on mount to check AI availability
+  useEffect(() => {
+    initializeChat();
+  }, [initializeChat]);
 
   useEffect(() => {
     if (!matchId) return;

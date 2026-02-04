@@ -550,8 +550,25 @@ Premium benefits:
 
       let response: string;
 
+      // Get fresh state - aiAvailable might have been updated
+      let currentAiAvailable = get().aiAvailable;
+
+      // If AI seems unavailable, do a quick re-check (in case init was slow)
+      if (!currentAiAvailable) {
+        console.log('[AI Chat] AI appears unavailable, doing quick re-check...');
+        try {
+          currentAiAvailable = await api.isChatAvailable();
+          if (currentAiAvailable) {
+            console.log('[AI Chat] AI is now available!');
+            set({ aiAvailable: true });
+          }
+        } catch (e) {
+          console.log('[AI Chat] Re-check failed:', e);
+        }
+      }
+
       // Try real AI API
-      if (state.aiAvailable) {
+      if (currentAiAvailable) {
         try {
           // Build history for API (last 10 messages max)
           const history = state.messages
