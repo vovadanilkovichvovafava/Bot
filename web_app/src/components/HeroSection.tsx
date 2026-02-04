@@ -1,169 +1,193 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Zap, TrendingUp, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-// Top league emblems that will fall
-const LEAGUE_EMBLEMS = [
-  { id: 'pl', name: 'Premier League', color: '#38003c' },
-  { id: 'laliga', name: 'La Liga', color: '#ee8707' },
-  { id: 'bundesliga', name: 'Bundesliga', color: '#d20515' },
-  { id: 'seriea', name: 'Serie A', color: '#024494' },
-  { id: 'ligue1', name: 'Ligue 1', color: '#091c3e' },
-  { id: 'ucl', name: 'Champions League', color: '#071d49' },
+// Club banners with their colors - like EPL 2010 promo
+const CLUB_BANNERS = [
+  { id: 'arsenal', name: 'Arsenal', color: '#EF0107', accent: '#ffffff' },
+  { id: 'chelsea', name: 'Chelsea', color: '#034694', accent: '#ffffff' },
+  { id: 'manu', name: 'Man United', color: '#DA291C', accent: '#FBE122' },
+  { id: 'mancity', name: 'Man City', color: '#6CABDD', accent: '#1C2C5B' },
+  { id: 'liverpool', name: 'Liverpool', color: '#C8102E', accent: '#F6EB61' },
+  { id: 'tottenham', name: 'Tottenham', color: '#132257', accent: '#ffffff' },
 ];
 
 export function HeroSection() {
-  const [showEmblems, setShowEmblems] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Start emblem animation after a short delay
-    const timer = setTimeout(() => setShowEmblems(true), 500);
-    return () => clearTimeout(timer);
+    setIsLoaded(true);
   }, []);
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-      {/* Falling Emblems Background */}
-      <AnimatePresence>
-        {showEmblems && (
-          <div className="absolute inset-0 pointer-events-none">
-            {LEAGUE_EMBLEMS.map((league, index) => (
-              <FallingEmblem
-                key={league.id}
-                league={league}
-                delay={index * 0.3}
-                startX={15 + (index % 3) * 30 + Math.random() * 10}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
+    <section className="relative min-h-screen overflow-hidden stadium-bg">
+      {/* Stadium light beams */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="light-beam w-[300px] h-[150vh] -rotate-[20deg] -left-20 -top-20 opacity-50" />
+        <div className="light-beam w-[200px] h-[120vh] rotate-[15deg] right-10 -top-10 opacity-40" />
+        <div className="light-beam w-[150px] h-[100vh] -rotate-[10deg] left-1/3 -top-10 opacity-30" />
+      </div>
 
-      {/* Hero Content */}
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+      {/* Banner Flags - EPL 2010 Style */}
+      <div className="absolute inset-0 flex justify-between px-4 md:px-8 pt-20 pointer-events-none">
+        {/* Left banners */}
+        <div className="hidden lg:flex flex-col gap-8">
+          {CLUB_BANNERS.slice(0, 3).map((club, index) => (
+            <motion.div
+              key={club.id}
+              initial={{ y: -200, opacity: 0 }}
+              animate={isLoaded ? { y: 0, opacity: 1 } : {}}
+              transition={{ duration: 1, delay: index * 0.2, ease: 'easeOut' }}
+            >
+              <BannerFlag club={club} />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Right banners */}
+        <div className="hidden lg:flex flex-col gap-8">
+          {CLUB_BANNERS.slice(3, 6).map((club, index) => (
+            <motion.div
+              key={club.id}
+              initial={{ y: -200, opacity: 0 }}
+              animate={isLoaded ? { y: 0, opacity: 1 } : {}}
+              transition={{ duration: 1, delay: 0.3 + index * 0.2, ease: 'easeOut' }}
+            >
+              <BannerFlag club={club} />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 1, delay: 0.5 }}
+          className="max-w-4xl"
         >
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">
-            <span className="gradient-text">AI-Powered</span>
+          {/* Main Title */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 text-shadow-dark">
+            <span className="gradient-text">FOOTBALL</span>
             <br />
-            <span className="text-white">Football Predictions</span>
+            <span className="text-white">PREDICTIONS</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Get intelligent match analysis, betting recommendations, and live insights powered by advanced AI
+          <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-light">
+            AI-powered match analysis inspired by the golden era of football
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link
-              href="/matches"
-              className="px-8 py-4 bg-accent text-primary-dark font-bold rounded-xl hover:bg-accent-light transition-all transform hover:scale-105"
-            >
-              <span className="flex items-center gap-2 justify-center">
-                <Zap size={20} />
-                Get Predictions
-              </span>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/matches">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn-gold text-lg px-10 py-4"
+              >
+                View Matches
+              </motion.button>
             </Link>
-
-            <Link
-              href="/live"
-              className="px-8 py-4 glass-card font-bold rounded-xl transition-all transform hover:scale-105 border-accent/50 text-white hover:border-accent"
-            >
-              <span className="flex items-center gap-2 justify-center">
-                🔴 Live Matches
-              </span>
+            <Link href="/live">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-10 py-4 border-2 border-[#d4af37] text-[#d4af37] font-semibold uppercase tracking-wider hover:bg-[#d4af37]/10 transition-colors"
+              >
+                <span className="flex items-center gap-2 justify-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full live-pulse" />
+                  Live Now
+                </span>
+              </motion.button>
             </Link>
           </div>
         </motion.div>
 
-        {/* Features */}
+        {/* Features Row */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          transition={{ duration: 1, delay: 0.8 }}
+          className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl"
         >
-          <FeatureCard
-            icon={<Bot className="w-8 h-8" />}
+          <FeatureItem
             title="AI Analysis"
-            description="Claude-powered match predictions with detailed reasoning"
+            description="Powered by advanced AI for accurate predictions"
           />
-          <FeatureCard
-            icon={<TrendingUp className="w-8 h-8" />}
+          <FeatureItem
             title="Live Updates"
-            description="Real-time analysis for in-play betting opportunities"
+            description="Real-time insights during matches"
           />
-          <FeatureCard
-            icon={<Shield className="w-8 h-8" />}
-            title="Risk Management"
-            description="Personalized recommendations based on your risk profile"
+          <FeatureItem
+            title="All Leagues"
+            description="Premier League, La Liga, Serie A & more"
           />
         </motion.div>
       </div>
 
-      {/* Gradient overlay at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+      {/* Bottom gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0d0d14] to-transparent" />
     </section>
   );
 }
 
-function FallingEmblem({
-  league,
-  delay,
-  startX,
-}: {
-  league: { id: string; name: string; color: string };
-  delay: number;
-  startX: number;
-}) {
+function BannerFlag({ club }: { club: typeof CLUB_BANNERS[0] }) {
   return (
-    <motion.div
-      initial={{ y: '-100vh', x: `${startX}vw`, rotate: 0, opacity: 0 }}
-      animate={{
-        y: '100vh',
-        rotate: 720,
-        opacity: [0, 1, 1, 0.5, 0],
-      }}
-      transition={{
-        duration: 4 + Math.random() * 2,
-        delay,
-        ease: 'easeIn',
-      }}
-      className="absolute"
-    >
+    <div className="flag-wave">
+      {/* Flag pole */}
+      <div className="w-1 h-8 mx-auto bg-gradient-to-b from-[#d4af37] to-[#996515] rounded-full" />
+
+      {/* Flag */}
       <div
-        className="w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center text-white font-bold text-xs md:text-sm shadow-2xl"
+        className="relative w-24 md:w-32"
         style={{
-          background: `linear-gradient(135deg, ${league.color}, ${league.color}88)`,
-          boxShadow: `0 0 30px ${league.color}66`,
+          background: `linear-gradient(180deg, ${club.color} 0%, ${club.color}dd 100%)`,
+          borderRadius: '0 0 4px 4px',
+          boxShadow: `0 10px 30px ${club.color}66, inset 0 0 30px rgba(0,0,0,0.3)`,
         }}
       >
-        {league.name.split(' ')[0]}
+        {/* Top border accent */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ background: club.accent }}
+        />
+
+        {/* Flag content */}
+        <div className="py-8 px-4 text-center">
+          <div
+            className="text-2xl md:text-3xl font-bold mb-2"
+            style={{ color: club.accent }}
+          >
+            {club.name.substring(0, 3).toUpperCase()}
+          </div>
+          <div className="w-8 h-8 mx-auto rounded-full bg-white/20 flex items-center justify-center">
+            <span className="text-xs font-bold" style={{ color: club.accent }}>FC</span>
+          </div>
+        </div>
+
+        {/* Flag bottom point */}
+        <div
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-0 h-0"
+          style={{
+            borderLeft: '48px solid transparent',
+            borderRight: '48px solid transparent',
+            borderTop: `16px solid ${club.color}dd`,
+          }}
+        />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
+function FeatureItem({ title, description }: { title: string; description: string }) {
   return (
-    <div className="glass-card p-6 text-center hover:border-accent/50 transition-colors">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center text-accent">
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+    <div className="text-center">
+      <h3 className="text-[#d4af37] text-lg font-semibold mb-2 uppercase tracking-wider">
+        {title}
+      </h3>
       <p className="text-gray-400 text-sm">{description}</p>
     </div>
   );

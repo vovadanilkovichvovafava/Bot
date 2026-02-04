@@ -2,71 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
 :root {
-  --foreground: #ffffff;
-  --background-start: #0a0a0a;
-  --background-end: #1a001d;
+  --foreground: #f5f5f5;
+  --background: #0d0d14;
+  --gold: #d4af37;
+  --gold-light: #f4d03f;
+  --gold-dark: #996515;
+  --purple-deep: #1a0a2e;
+  --purple-mid: #2d1b4e;
+  --red-epl: #e90052;
 }
 
 body {
   color: var(--foreground);
-  background: linear-gradient(135deg, var(--background-start), var(--background-end));
+  background: var(--background);
   min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
 }
 
-/* EPL-style gradient text */
+/* EPL 2007-2015 Typography - Bold, Impactful */
+h1, h2, h3, h4 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Golden gradient text */
 .gradient-text {
-  background: linear-gradient(90deg, #00ff85, #38003c, #ff4500);
+  background: linear-gradient(180deg, #ffffff 0%, #d4af37 60%, #996515 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Fire glow effect */
-.fire-glow {
-  box-shadow: 0 0 30px rgba(255, 69, 0, 0.6),
-              0 0 60px rgba(255, 69, 0, 0.4),
-              0 0 90px rgba(255, 69, 0, 0.2);
+/* Stadium atmosphere background */
+.stadium-bg {
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 0%, rgba(212, 175, 55, 0.1) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(26, 10, 46, 0.8) 0%, transparent 60%),
+    linear-gradient(180deg, #0d0d14 0%, #1a0a2e 50%, #0d0d14 100%);
 }
 
-/* Emblem container for falling animation */
-.emblem-container {
-  position: fixed;
-  z-index: 50;
-  pointer-events: none;
+/* Banner/Flag Card - Like the EPL promo flags */
+.banner-card {
+  background: linear-gradient(180deg,
+    rgba(26, 10, 46, 0.95) 0%,
+    rgba(13, 13, 20, 0.98) 100%);
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
+  position: relative;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(212, 175, 55, 0.2);
 }
 
-.emblem-left {
-  left: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
+/* Flag pole top decoration */
+.banner-card::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 8px;
+  background: linear-gradient(90deg, #996515, #d4af37, #f4d03f, #d4af37, #996515);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
 }
 
-.emblem-right {
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Glass morphism card */
+/* Glass card - dramatic dark */
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(13, 13, 20, 0.9);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
 }
 
-/* Match card hover effect */
+/* Match card - stadium ticket feel */
 .match-card {
-  transition: all 0.3s ease;
+  background: linear-gradient(145deg,
+    rgba(45, 27, 78, 0.9) 0%,
+    rgba(26, 10, 46, 0.95) 50%,
+    rgba(13, 13, 20, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
 }
 
 .match-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 40px rgba(0, 255, 133, 0.2);
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(212, 175, 55, 0.2);
 }
 
-/* Live pulse indicator */
+/* Live pulse - dramatic red */
 .live-pulse {
   animation: live-pulse 1.5s ease-in-out infinite;
 }
@@ -74,28 +120,102 @@ body {
 @keyframes live-pulse {
   0%, 100% {
     opacity: 1;
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(233, 0, 82, 0.7);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(1.2);
+    opacity: 0.8;
+    box-shadow: 0 0 0 10px rgba(233, 0, 82, 0);
   }
 }
 
-/* Scrollbar styling */
+/* Golden button */
+.btn-gold {
+  background: linear-gradient(180deg, #d4af37 0%, #996515 100%);
+  color: #0d0d14;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(180deg, #f4d03f 0%, #d4af37 100%);
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Flag wave animation */
+@keyframes flag-wave {
+  0%, 100% {
+    transform: perspective(800px) rotateY(-3deg) skewY(1deg);
+  }
+  50% {
+    transform: perspective(800px) rotateY(3deg) skewY(-1deg);
+  }
+}
+
+.flag-wave {
+  animation: flag-wave 6s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Light beams from stadium */
+.light-beam {
+  position: absolute;
+  background: linear-gradient(180deg,
+    rgba(212, 175, 55, 0.15) 0%,
+    rgba(212, 175, 55, 0.05) 30%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* EPL style input */
+input, select, textarea {
+  font-family: 'Roboto', sans-serif;
+  background: rgba(13, 13, 20, 0.8) !important;
+  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15) !important;
+  outline: none !important;
+}
+
+/* Scrollbar - golden era */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: #0d0d14;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 133, 0.3);
-  border-radius: 4px;
+  background: linear-gradient(180deg, #d4af37, #996515);
+  border-radius: 5px;
+  border: 2px solid #0d0d14;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 133, 0.5);
+  background: linear-gradient(180deg, #f4d03f, #d4af37);
+}
+
+/* Emblem shadow glow */
+.emblem-glow {
+  filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+}
+
+/* Text shadow for dramatic effect */
+.text-shadow-gold {
+  text-shadow: 0 2px 20px rgba(212, 175, 55, 0.5);
+}
+
+.text-shadow-dark {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
 }

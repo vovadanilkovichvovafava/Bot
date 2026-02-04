@@ -8,47 +8,38 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // EPL-inspired dark theme
-        primary: {
-          DEFAULT: '#38003c', // EPL purple
-          light: '#5c0066',
-          dark: '#1a001d',
+        // EPL 2007-2015 Golden Era Theme
+        gold: {
+          DEFAULT: '#d4af37',
+          light: '#f4d03f',
+          dark: '#996515',
         },
-        accent: {
-          DEFAULT: '#00ff85', // EPL green
-          light: '#33ff9e',
-          dark: '#00cc6a',
+        purple: {
+          deep: '#1a0a2e',
+          mid: '#2d1b4e',
+          light: '#3d1a5c',
         },
-        fire: {
-          DEFAULT: '#ff4500',
-          light: '#ff6b35',
-          dark: '#cc3700',
+        epl: {
+          red: '#e90052',
+          dark: '#0d0d14',
         },
+      },
+      fontFamily: {
+        oswald: ['Oswald', 'sans-serif'],
+        roboto: ['Roboto', 'sans-serif'],
       },
       animation: {
-        'fall': 'fall 3s ease-in-out forwards',
-        'bounce-slow': 'bounce 2s infinite',
-        'pulse-glow': 'pulse-glow 2s infinite',
-        'slide-left': 'slide-left 1s ease-out forwards',
-        'slide-right': 'slide-right 1s ease-out forwards',
+        'flag-wave': 'flag-wave 6s ease-in-out infinite',
+        'pulse-gold': 'pulse-gold 2s infinite',
       },
       keyframes: {
-        fall: {
-          '0%': { transform: 'translateY(-100vh) rotate(0deg)', opacity: '0' },
-          '10%': { opacity: '1' },
-          '100%': { transform: 'translateY(0) rotate(720deg)', opacity: '1' },
+        'flag-wave': {
+          '0%, 100%': { transform: 'perspective(800px) rotateY(-3deg) skewY(1deg)' },
+          '50%': { transform: 'perspective(800px) rotateY(3deg) skewY(-1deg)' },
         },
-        'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(0, 255, 133, 0.5)' },
-          '50%': { boxShadow: '0 0 40px rgba(0, 255, 133, 0.8)' },
-        },
-        'slide-left': {
-          '0%': { transform: 'translateX(-100%)', opacity: '0' },
-          '100%': { transform: 'translateX(0)', opacity: '1' },
-        },
-        'slide-right': {
-          '0%': { transform: 'translateX(100%)', opacity: '0' },
-          '100%': { transform: 'translateX(0)', opacity: '1' },
+        'pulse-gold': {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 175, 55, 0.5)' },
+          '50%': { boxShadow: '0 0 40px rgba(212, 175, 55, 0.8)' },
         },
       },
     },
