@@ -33,10 +33,31 @@
           </div>
         </div>
 
-        <div class="section-label" id="home-title">TODAY'S MATCHES</div>
-        <div id="home-matches">
-          <div class="loader">Loading matches...</div>
+        <!-- Top Matches Slider -->
+        <div class="section-label">TOP MATCHES OF THE WEEK</div>
+        <div class="slider-wrapper">
+          <div class="slider-track" id="home-slider"></div>
+          <div class="slider-dots" id="home-slider-dots"></div>
+          <div class="slider-arrow slider-arrow-left" onclick="app.slideHome(-1)">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </div>
+          <div class="slider-arrow slider-arrow-right" onclick="app.slideHome(1)">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </div>
         </div>
+
+        <!-- Quick Stats -->
+        <div id="home-stats"></div>
+
+        <!-- Features -->
+        <div class="section-label">WHAT WE OFFER</div>
+        <div id="home-features" class="home-features"></div>
+
+        <!-- Recent AI Picks -->
+        <div id="home-recent"></div>
+
+        <!-- PRO Banner -->
+        <div id="home-pro"></div>
       </div>
 
       <!-- ==================== MATCHES PAGE ==================== -->
@@ -66,15 +87,14 @@
         <div class="app-header">
           <div class="logo">
             <div class="logo-icon">
-              <span class="material-symbols-outlined">psychology</span>
+              <span class="material-symbols-outlined">smart_toy</span>
             </div>
-            <div class="logo-text">AI <span>INSIGHTS</span></div>
+            <div class="logo-text">AI <span>ASSISTANT</span></div>
           </div>
         </div>
 
-        <div class="section-label">PREDICTION HISTORY</div>
         <div id="ai-content">
-          <div class="loader">Loading AI insights...</div>
+          <div class="loader">Loading...</div>
         </div>
       </div>
 
@@ -124,7 +144,7 @@
         <span class="nav-label">Matches</span>
       </div>
       <div class="nav-item" data-page="ai">
-        <span class="material-symbols-outlined nav-icon">psychology</span>
+        <span class="material-symbols-outlined nav-icon">smart_toy</span>
         <span class="nav-label">AI</span>
       </div>
       <div class="nav-item" data-page="bets">

@@ -109,6 +109,13 @@ const api = {
   async getPredictionHistory(limit = 20) {
     return await this.request('GET', `/predictions/history?limit=${limit}`);
   },
+
+  // Chat
+  async sendChat(message, matchId = null) {
+    const body = { message };
+    if (matchId) body.match_id = matchId;
+    return await this.request('POST', '/chat/', body);
+  },
 };
 
 window.api = api;

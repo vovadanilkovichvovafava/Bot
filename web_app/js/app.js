@@ -10,10 +10,24 @@ const predStorage = {
   },
   save(pred) {
     const all = this.getAll();
-    // Avoid duplicates by match_id + timestamp proximity
     all.unshift({ ...pred, saved_at: new Date().toISOString() });
-    // Keep max 50
     if (all.length > 50) all.length = 50;
+    localStorage.setItem(this.KEY, JSON.stringify(all));
+  },
+  clear() { localStorage.removeItem(this.KEY); }
+};
+
+// ===== CHAT STORAGE =====
+const chatStorage = {
+  KEY: 'ai_chat_history',
+  getAll() {
+    try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); }
+    catch { return []; }
+  },
+  add(msg) {
+    const all = this.getAll();
+    all.push(msg);
+    if (all.length > 100) all.splice(0, all.length - 100);
     localStorage.setItem(this.KEY, JSON.stringify(all));
   },
   clear() { localStorage.removeItem(this.KEY); }
@@ -24,6 +38,10 @@ const app = {
   loaded: {},
   matchesCache: null,
   activeLeague: null,
+  homeSlide: 0,
+  homeSlideCount: 0,
+  homeSlideTimer: null,
+  chatSending: false,
 
   async init() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -49,6 +67,11 @@ const app = {
   },
 
   async onPageShow(page) {
+    // Stop home slider when leaving home
+    if (page !== 'home' && this.homeSlideTimer) {
+      clearInterval(this.homeSlideTimer);
+      this.homeSlideTimer = null;
+    }
     switch (page) {
       case 'home': await this.loadHome(); break;
       case 'matches': await this.loadMatches(); break;
@@ -58,25 +81,190 @@ const app = {
     }
   },
 
-  // ===== HOME PAGE =====
+  // ========================================
+  // ===== HOME PAGE — SLIDER + FEATURES ====
+  // ========================================
   async loadHome() {
-    const c = document.getElementById('home-matches');
-    const titleEl = document.getElementById('home-title');
-    c.innerHTML = '<div class="loader"><div class="spinner"></div>Loading matches...</div>';
+    const slider = document.getElementById('home-slider');
+    const dots = document.getElementById('home-slider-dots');
+    const statsEl = document.getElementById('home-stats');
+    const featEl = document.getElementById('home-features');
+    const recentEl = document.getElementById('home-recent');
+    const proEl = document.getElementById('home-pro');
 
-    const matches = await api.getTodayMatches();
-    if (matches && matches.length > 0) {
-      if (titleEl) titleEl.textContent = "TODAY'S MATCHES";
-      this.renderMatchList(c, matches, 'No matches today');
+    // 1) Load slider - top match per league
+    slider.innerHTML = '<div class="slide"><div class="loader"><div class="spinner"></div></div></div>';
+    dots.innerHTML = '';
+
+    const matches = await api.getUpcomingMatches(7);
+    const topMatches = this._pickTopMatches(matches || []);
+
+    if (topMatches.length > 0) {
+      this.homeSlide = 0;
+      this.homeSlideCount = topMatches.length;
+      slider.innerHTML = topMatches.map((m, i) => `
+        <div class="slide ${i === 0 ? 'active' : ''}" data-idx="${i}">
+          <div class="slide-league">
+            <span class="badge-sm">${esc(m.league)}</span>
+          </div>
+          <div class="slide-match" onclick="app.showMatchDetail(${m.id})">
+            <div class="slide-team">
+              <div class="slide-logo">${logoImg(m.home_team, 'hero')}</div>
+              <div class="slide-team-name">${esc(m.home_team.name)}</div>
+            </div>
+            <div class="slide-center">
+              <div class="slide-vs">VS</div>
+              <div class="slide-date">${fmtDate(m.match_date)}</div>
+            </div>
+            <div class="slide-team">
+              <div class="slide-logo">${logoImg(m.away_team, 'hero')}</div>
+              <div class="slide-team-name">${esc(m.away_team.name)}</div>
+            </div>
+          </div>
+          <div class="slide-cta" onclick="app.showMatchDetail(${m.id})">
+            <span class="material-symbols-outlined" style="font-size:16px">psychology</span>
+            Get AI Analysis
+          </div>
+        </div>
+      `).join('');
+
+      dots.innerHTML = topMatches.map((_, i) =>
+        `<div class="slider-dot ${i === 0 ? 'active' : ''}" onclick="app.goSlide(${i})"></div>`
+      ).join('');
+
+      // Auto-rotate every 8 seconds
+      if (this.homeSlideTimer) clearInterval(this.homeSlideTimer);
+      if (topMatches.length > 1) {
+        this.homeSlideTimer = setInterval(() => this.slideHome(1), 8000);
+      }
     } else {
-      // Fallback to upcoming
-      if (titleEl) titleEl.textContent = 'UPCOMING MATCHES';
-      const upcoming = await api.getUpcomingMatches(3);
-      this.renderMatchList(c, upcoming || [], 'No matches found');
+      slider.innerHTML = `<div class="slide active">
+        <div class="empty" style="padding:30px 20px">
+          <div class="empty-icon"><span class="material-symbols-outlined">sports_soccer</span></div>
+          <p class="empty-title">No upcoming matches</p>
+        </div>
+      </div>`;
+    }
+
+    // 2) Quick stats
+    if (api.isLoggedIn() && this.user) {
+      const localPreds = predStorage.getAll();
+      const totalP = Math.max(this.user.total_predictions || 0, localPreds.length);
+      const acc = totalP > 0 ? Math.round(((this.user.correct_predictions || 0) / totalP) * 100) : 0;
+      statsEl.innerHTML = `
+        <div class="section-label">YOUR STATS</div>
+        <div class="stats-grid">
+          <div class="card stat-box"><div class="stat-val" style="color:var(--green)">${totalP}</div><div class="stat-lbl">Predictions</div></div>
+          <div class="card stat-box"><div class="stat-val" style="color:var(--cyan)">${this.user.correct_predictions || 0}</div><div class="stat-lbl">Correct</div></div>
+          <div class="card stat-box"><div class="stat-val" style="color:var(--gold)">${acc}%</div><div class="stat-lbl">Accuracy</div></div>
+        </div>`;
+    } else {
+      statsEl.innerHTML = '';
+    }
+
+    // 3) Features
+    featEl.innerHTML = `
+      <div class="feat-card" onclick="router.go('ai')">
+        <div class="feat-icon"><span class="material-symbols-outlined">smart_toy</span></div>
+        <div class="feat-info">
+          <div class="feat-title">AI Chat</div>
+          <div class="feat-desc">Ask about matches, tips & standings</div>
+        </div>
+        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+      </div>
+      <div class="feat-card" onclick="router.go('matches')">
+        <div class="feat-icon" style="background:linear-gradient(135deg,var(--cyan),#0097A7)"><span class="material-symbols-outlined">sports_soccer</span></div>
+        <div class="feat-info">
+          <div class="feat-title">Match Analysis</div>
+          <div class="feat-desc">H2H stats, odds & AI predictions</div>
+        </div>
+        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+      </div>
+      <div class="feat-card" onclick="app.showPro()">
+        <div class="feat-icon" style="background:linear-gradient(135deg,var(--gold),var(--orange))"><span class="material-symbols-outlined">star</span></div>
+        <div class="feat-info">
+          <div class="feat-title">PRO Features</div>
+          <div class="feat-desc">Unlimited picks, BTTS, Over/Under & more</div>
+        </div>
+        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+      </div>
+      <div class="feat-card" onclick="router.go('bets')">
+        <div class="feat-icon" style="background:linear-gradient(135deg,#7C4DFF,#651FFF)"><span class="material-symbols-outlined">receipt_long</span></div>
+        <div class="feat-info">
+          <div class="feat-title">Bet Tracker</div>
+          <div class="feat-desc">Track predictions & results</div>
+        </div>
+        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+      </div>
+    `;
+
+    // 4) Recent AI picks (last 3)
+    const recentPreds = predStorage.getAll().slice(0, 3);
+    if (recentPreds.length > 0) {
+      recentEl.innerHTML = `<div class="section-label">RECENT AI PICKS</div>` +
+        recentPreds.map((p) => this.renderPredictionCard(p)).join('') +
+        `<div style="text-align:center;margin-top:4px">
+          <span style="font-size:12px;color:var(--green);cursor:pointer;font-weight:600" onclick="router.go('bets')">View all predictions &rarr;</span>
+        </div>`;
+    } else {
+      recentEl.innerHTML = '';
+    }
+
+    // 5) PRO banner (if not premium)
+    if (!this.user?.is_premium) {
+      proEl.innerHTML = `
+        <div class="home-pro-banner" onclick="app.showPro()">
+          <div class="pro-banner-icon"><span class="material-symbols-outlined" style="font-size:28px;color:#000">star</span></div>
+          <div class="pro-banner-text">
+            <div style="font-weight:800;font-size:14px;color:#000">Upgrade to PRO</div>
+            <div style="font-size:11px;color:rgba(0,0,0,0.6)">Unlimited AI predictions & advanced analysis</div>
+          </div>
+          <span class="material-symbols-outlined" style="color:#000;font-size:20px">chevron_right</span>
+        </div>`;
+    } else {
+      proEl.innerHTML = '';
     }
   },
 
-  // ===== MATCHES PAGE =====
+  _pickTopMatches(matches) {
+    // Pick 1 match per league — the earliest scheduled match
+    const seen = {};
+    const result = [];
+    for (const m of matches) {
+      const lg = m.league;
+      if (!seen[lg] && m.status !== 'finished') {
+        seen[lg] = true;
+        result.push(m);
+        if (result.length >= 6) break;
+      }
+    }
+    return result;
+  },
+
+  slideHome(dir) {
+    if (this.homeSlideCount <= 1) return;
+    this.homeSlide = (this.homeSlide + dir + this.homeSlideCount) % this.homeSlideCount;
+    this.goSlide(this.homeSlide);
+  },
+
+  goSlide(idx) {
+    this.homeSlide = idx;
+    document.querySelectorAll('#home-slider .slide').forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('#home-slider-dots .slider-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+    // Reset auto-timer
+    if (this.homeSlideTimer) clearInterval(this.homeSlideTimer);
+    if (this.homeSlideCount > 1) {
+      this.homeSlideTimer = setInterval(() => this.slideHome(1), 8000);
+    }
+  },
+
+  // ========================================
+  // ===== MATCHES PAGE =====================
+  // ========================================
   async loadMatches() {
     const tab = document.querySelector('#matches-tabs .tab-item.active')?.dataset.tab || 'today';
     await this.loadMatchTab(tab);
@@ -104,7 +292,6 @@ const app = {
   filterByLeague(league) {
     this.activeLeague = this.activeLeague === league ? null : league;
     const c = document.getElementById('matches-content');
-    // Update filter chip active state
     document.querySelectorAll('.league-chip').forEach((ch) => {
       ch.classList.toggle('active', ch.dataset.league === this.activeLeague);
     });
@@ -124,58 +311,195 @@ const app = {
       </div>`;
       return;
     }
-
-    // Extract unique leagues for filter chips
     const leagues = [...new Set(matches.map((m) => m.league))].sort();
-
     let html = '<div class="league-chips">';
     html += `<div class="league-chip ${!this.activeLeague ? 'active' : ''}" onclick="app.filterByLeague(null)">All</div>`;
     leagues.forEach((lg) => {
       html += `<div class="league-chip ${this.activeLeague === lg ? 'active' : ''}" data-league="${esc(lg)}" onclick="app.filterByLeague('${esc(lg)}')">${shortLeague(lg)}</div>`;
     });
-    html += '</div>';
-    html += '<div id="matches-cards"></div>';
+    html += '</div><div id="matches-cards"></div>';
     container.innerHTML = html;
-
-    const cardsContainer = document.getElementById('matches-cards');
-    this.renderMatchCards(cardsContainer, matches);
+    this.renderMatchCards(document.getElementById('matches-cards'), matches);
   },
 
   renderMatchCards(container, matches) {
     if (!matches || matches.length === 0) {
-      container.innerHTML = `<div class="empty" style="padding:30px 20px">
-        <p class="empty-title">No matches in this league</p>
-      </div>`;
+      container.innerHTML = `<div class="empty" style="padding:30px 20px"><p class="empty-title">No matches in this league</p></div>`;
       return;
     }
-
-    // Group by league
     const grouped = {};
     matches.forEach((m) => {
       const league = m.league || 'Other';
       if (!grouped[league]) grouped[league] = [];
       grouped[league].push(m);
     });
-
     let html = '';
-    for (const [league, leagueMatches] of Object.entries(grouped)) {
-      html += `<div class="league-group">
-        <div class="league-group-header">
-          <span class="league-group-name">${esc(league)}</span>
-          <span class="league-group-count">${leagueMatches.length}</span>
-        </div>`;
-
-      leagueMatches.forEach((m) => {
-        html += this.renderFifaCard(m);
-      });
+    for (const [league, lm] of Object.entries(grouped)) {
+      html += `<div class="league-group"><div class="league-group-header"><span class="league-group-name">${esc(league)}</span><span class="league-group-count">${lm.length}</span></div>`;
+      lm.forEach((m) => { html += this.renderFifaCard(m); });
       html += '</div>';
     }
     container.innerHTML = html;
   },
 
-  // ===== AI PAGE =====
+  // ========================================
+  // ===== AI PAGE — CHAT + HISTORY =========
+  // ========================================
   loadAI() {
     const c = document.getElementById('ai-content');
+    const activeTab = c.querySelector('.tab-item.active')?.dataset.tab;
+
+    c.innerHTML = `
+      <div id="ai-tabs" class="tab-bar">
+        <div class="tab-item ${activeTab !== 'history' ? 'active' : ''}" data-tab="chat" onclick="app.switchAITab(this)">
+          <span class="material-symbols-outlined" style="font-size:16px">smart_toy</span> Chat
+        </div>
+        <div class="tab-item ${activeTab === 'history' ? 'active' : ''}" data-tab="history" onclick="app.switchAITab(this)">
+          <span class="material-symbols-outlined" style="font-size:16px">history</span> History
+        </div>
+      </div>
+      <div id="ai-tab-content"></div>
+    `;
+
+    this.switchAITab(c.querySelector('.tab-item.active'));
+  },
+
+  switchAITab(el) {
+    document.querySelectorAll('#ai-tabs .tab-item').forEach((t) => t.classList.remove('active'));
+    el.classList.add('active');
+    const tab = el.dataset.tab;
+    if (tab === 'chat') this._renderChat();
+    else this._renderHistory();
+  },
+
+  _renderChat() {
+    const c = document.getElementById('ai-tab-content');
+    const history = chatStorage.getAll();
+
+    let messagesHtml = '';
+    if (history.length === 0) {
+      messagesHtml = `
+        <div class="chat-welcome">
+          <div class="chat-welcome-icon"><span class="material-symbols-outlined">smart_toy</span></div>
+          <div class="chat-welcome-title">AI Assistant</div>
+          <div class="chat-welcome-desc">Ask me about matches, tips, standings or anything football!</div>
+        </div>`;
+    } else {
+      messagesHtml = history.map((m) => this._renderChatBubble(m)).join('');
+    }
+
+    c.innerHTML = `
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          ${messagesHtml}
+        </div>
+        <div class="chat-suggestions" id="chat-suggestions">
+          <div class="chat-sug" onclick="app.sendChatSuggestion('Today\\'s matches')">Today's matches</div>
+          <div class="chat-sug" onclick="app.sendChatSuggestion('Give me tips')">Give me tips</div>
+          <div class="chat-sug" onclick="app.sendChatSuggestion('PL standings')">PL standings</div>
+          <div class="chat-sug" onclick="app.sendChatSuggestion('Upcoming matches')">Upcoming</div>
+        </div>
+        <div class="chat-input-bar">
+          <input type="text" id="chat-input" placeholder="Ask about matches, tips..." autocomplete="off"
+                 onkeydown="if(event.key==='Enter')app.sendChat()">
+          <button class="chat-send-btn" onclick="app.sendChat()" id="chat-send-btn">
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </div>
+      </div>`;
+
+    // Scroll to bottom
+    const msgEl = document.getElementById('chat-messages');
+    if (msgEl) msgEl.scrollTop = msgEl.scrollHeight;
+  },
+
+  _renderChatBubble(msg) {
+    if (msg.role === 'user') {
+      return `<div class="chat-bubble chat-user"><div class="chat-text">${esc(msg.text)}</div></div>`;
+    }
+    // Bot message - render markdown-like (bold, newlines, bullets)
+    let html = msg.text || '';
+    html = esc(html);
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\n/g, '<br>');
+    return `<div class="chat-bubble chat-bot">
+      <div class="chat-bot-avatar"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">smart_toy</span></div>
+      <div class="chat-text">${html}</div>
+    </div>`;
+  },
+
+  sendChatSuggestion(text) {
+    document.getElementById('chat-input').value = text;
+    this.sendChat();
+  },
+
+  async sendChat() {
+    if (this.chatSending) return;
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!api.isLoggedIn()) {
+      this.showLogin();
+      return;
+    }
+
+    this.chatSending = true;
+    input.value = '';
+
+    // Add user message
+    chatStorage.add({ role: 'user', text, ts: Date.now() });
+
+    const msgEl = document.getElementById('chat-messages');
+    // Remove welcome if present
+    const welcome = msgEl.querySelector('.chat-welcome');
+    if (welcome) welcome.remove();
+
+    msgEl.insertAdjacentHTML('beforeend', this._renderChatBubble({ role: 'user', text }));
+    msgEl.insertAdjacentHTML('beforeend', `<div class="chat-bubble chat-bot chat-typing" id="chat-typing">
+      <div class="chat-bot-avatar"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">smart_toy</span></div>
+      <div class="chat-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>`);
+    msgEl.scrollTop = msgEl.scrollHeight;
+
+    // Hide suggestions while loading
+    const sugEl = document.getElementById('chat-suggestions');
+    sugEl.style.display = 'none';
+
+    const resp = await api.sendChat(text);
+
+    // Remove typing indicator
+    const typing = document.getElementById('chat-typing');
+    if (typing) typing.remove();
+
+    if (resp && resp.reply) {
+      chatStorage.add({ role: 'bot', text: resp.reply, ts: Date.now() });
+      msgEl.insertAdjacentHTML('beforeend', this._renderChatBubble({ role: 'bot', text: resp.reply }));
+
+      // Update suggestions
+      if (resp.suggestions && resp.suggestions.length > 0) {
+        sugEl.innerHTML = resp.suggestions.map((s) =>
+          `<div class="chat-sug" onclick="app.sendChatSuggestion('${esc(s)}')">${esc(s)}</div>`
+        ).join('');
+      }
+    } else {
+      const errMsg = "Sorry, I couldn't process that. Please try again.";
+      chatStorage.add({ role: 'bot', text: errMsg, ts: Date.now() });
+      msgEl.insertAdjacentHTML('beforeend', this._renderChatBubble({ role: 'bot', text: errMsg }));
+    }
+
+    sugEl.style.display = '';
+    msgEl.scrollTop = msgEl.scrollHeight;
+    this.chatSending = false;
+  },
+
+  clearChat() {
+    chatStorage.clear();
+    this._renderChat();
+  },
+
+  _renderHistory() {
+    const c = document.getElementById('ai-tab-content');
     const preds = predStorage.getAll();
 
     if (preds.length > 0) {
@@ -190,7 +514,9 @@ const app = {
     }
   },
 
-  // ===== BETS PAGE =====
+  // ========================================
+  // ===== BETS PAGE ========================
+  // ========================================
   loadBets() {
     const c = document.getElementById('bets-content');
     const preds = predStorage.getAll();
@@ -219,7 +545,9 @@ const app = {
     }
   },
 
-  // ===== PROFILE PAGE =====
+  // ========================================
+  // ===== PROFILE PAGE =====================
+  // ========================================
   loadProfile() {
     const c = document.getElementById('profile-content');
     if (!api.isLoggedIn() || !this.user) {
@@ -232,8 +560,8 @@ const app = {
     }
     const u = this.user;
     const localPreds = predStorage.getAll();
-    const totalP = Math.max(u.total_predictions, localPreds.length);
-    const acc = totalP > 0 ? Math.round((u.correct_predictions / totalP) * 100) : 0;
+    const totalP = Math.max(u.total_predictions || 0, localPreds.length);
+    const acc = totalP > 0 ? Math.round(((u.correct_predictions || 0) / totalP) * 100) : 0;
     c.innerHTML = `
       <div class="card-glow profile-header">
         <div class="profile-avatar">${(u.username || u.email)[0].toUpperCase()}</div>
@@ -247,7 +575,7 @@ const app = {
       <div class="section-label">STATISTICS</div>
       <div class="stats-grid">
         <div class="card stat-box"><div class="stat-val" style="color:var(--green)">${totalP}</div><div class="stat-lbl">Predictions</div></div>
-        <div class="card stat-box"><div class="stat-val" style="color:var(--cyan)">${u.correct_predictions}</div><div class="stat-lbl">Correct</div></div>
+        <div class="card stat-box"><div class="stat-val" style="color:var(--cyan)">${u.correct_predictions || 0}</div><div class="stat-lbl">Correct</div></div>
         <div class="card stat-box"><div class="stat-val" style="color:var(--gold)">${acc}%</div><div class="stat-lbl">Accuracy</div></div>
       </div>
 
@@ -444,7 +772,6 @@ const app = {
       return;
     }
 
-    // Save prediction locally
     predStorage.save(pred);
 
     const betName = BET_NAMES[pred.bet_type] || pred.bet_name || pred.bet_type;
@@ -531,33 +858,6 @@ const app = {
           <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">chevron_right</span>
         </div>
       </div>`;
-  },
-
-  renderMatchList(container, matches, emptyMsg) {
-    if (!matches || matches.length === 0) {
-      container.innerHTML = `<div class="empty">
-        <div class="empty-icon"><span class="material-symbols-outlined">sports_soccer</span></div>
-        <p class="empty-title">${emptyMsg}</p>
-      </div>`;
-      return;
-    }
-    const grouped = {};
-    matches.forEach((m) => {
-      const league = m.league || 'Other';
-      if (!grouped[league]) grouped[league] = [];
-      grouped[league].push(m);
-    });
-    let html = '';
-    for (const [league, leagueMatches] of Object.entries(grouped)) {
-      html += `<div class="league-group">
-        <div class="league-group-header">
-          <span class="league-group-name">${esc(league)}</span>
-          <span class="league-group-count">${leagueMatches.length}</span>
-        </div>`;
-      leagueMatches.forEach((m) => { html += this.renderFifaCard(m); });
-      html += '</div>';
-    }
-    container.innerHTML = html;
   },
 
   renderPredictionCard(p) {
