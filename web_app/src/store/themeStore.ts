@@ -15,7 +15,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      selectedTheme: 'stadium', // Default to stadium theme
+      selectedTheme: 'stadium', // Default to AI Analysis Center theme
       hasSelectedTheme: false,
       setTheme: (theme) => set({ selectedTheme: theme, hasSelectedTheme: true }),
       resetTheme: () => set({ selectedTheme: 'stadium', hasSelectedTheme: false }),
@@ -59,18 +59,33 @@ export const themes = {
     },
   },
   stadium: {
-    name: 'Stadium Immersive',
-    description: 'Feel the atmosphere of the stadium',
+    name: 'AI Analysis Center',
+    nameRu: 'AI ЦЕНТР АНАЛИЗА',
+    description: 'Иммерсивный стадионный интерфейс с AI-предсказаниями',
     colors: {
-      primary: '#6366f1',
-      secondary: '#1e1b4b',
-      accent: '#818cf8',
-      background: '#0f0f23',
-      surface: 'rgba(30, 27, 75, 0.85)',
-      text: '#ffffff',
-      textMuted: '#a5b4fc',
-      border: 'rgba(99, 102, 241, 0.3)',
-      glow: 'rgba(99, 102, 241, 0.5)',
+      // Backgrounds
+      primary: '#4A7AFF',
+      secondary: '#10141E',
+      accent: '#E0E8FF',
+      background: '#080A10',
+      surface: 'rgba(12, 15, 24, 0.85)',
+      surfaceSolid: '#10141E',
+      // Text
+      text: '#FFFFFF',
+      textSecondary: '#BFC7D9',
+      textMuted: '#6E7891',
+      // Accents
+      blue: '#4A7AFF',
+      green: '#3DDC84',
+      red: '#FF3B3B',
+      redOrange: '#FF5A5A',
+      orange: '#FF7A4A',
+      purple: '#9D6AFF',
+      // Borders
+      border: 'rgba(255, 255, 255, 0.08)',
+      borderBlue: 'rgba(74, 122, 255, 0.5)',
+      // Glow
+      glow: 'rgba(74, 122, 255, 0.2)',
     },
   },
 };

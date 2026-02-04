@@ -3,39 +3,70 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bot, Clock, Loader2, ArrowLeft, MapPin,
-  TrendingUp, History, Zap, ChevronDown, ChevronUp, Trophy, RefreshCw
+  Bot, Clock, Loader2, ArrowLeft, MapPin, Brain,
+  TrendingUp, History, Zap, ChevronDown, ChevronUp, Trophy, RefreshCw,
+  Target, BarChart3, Users, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { MatchDetail, isMatchLive, isMatchFinished, formatMatchDate } from '@/types';
-import { cn } from '@/lib/utils';
+import { MatchDetail, isMatchLive, isMatchFinished, formatMatchDate, getShortTeamName } from '@/types';
+
+// ===== AI ANALYSIS CENTER DESIGN SYSTEM =====
+const COLORS = {
+  bgPrimary: '#080A10',
+  bgSecondary: '#10141E',
+  bgCard: '#10141E',
+  bgGlass: 'rgba(12, 15, 24, 0.85)',
+  blue: '#4A7AFF',
+  blueLight: '#6A94FF',
+  green: '#3DDC84',
+  red: '#FF3B3B',
+  redOrange: '#FF5A5A',
+  orange: '#FF7A4A',
+  purple: '#9D6AFF',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#BFC7D9',
+  textMuted: '#6E7891',
+  border: 'rgba(255, 255, 255, 0.08)',
+  borderBlue: 'rgba(74, 122, 255, 0.5)',
+};
+
+// Stadium background
+const STADIUM_BG = 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1920&q=80';
+
+// Team colors for flag banners
+const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
+  'Arsenal': { primary: '#EF0107', secondary: '#FFFFFF' },
+  'Chelsea': { primary: '#034694', secondary: '#FFFFFF' },
+  'Manchester United': { primary: '#DA291C', secondary: '#FFFFFF' },
+  'Manchester City': { primary: '#6CABDD', secondary: '#1C2C5B' },
+  'Liverpool': { primary: '#C8102E', secondary: '#00B2A9' },
+  'Tottenham': { primary: '#132257', secondary: '#FFFFFF' },
+  'Real Madrid': { primary: '#FEBE10', secondary: '#00529F' },
+  'Barcelona': { primary: '#A50044', secondary: '#004D98' },
+  'Bayern Munich': { primary: '#DC052D', secondary: '#0066B2' },
+  'PSG': { primary: '#004170', secondary: '#DA291C' },
+  'Juventus': { primary: '#000000', secondary: '#FFFFFF' },
+  'Dortmund': { primary: '#FDE100', secondary: '#000000' },
+  'Inter': { primary: '#0068A8', secondary: '#000000' },
+  'AC Milan': { primary: '#FB090B', secondary: '#000000' },
+  'Napoli': { primary: '#12A0D7', secondary: '#FFFFFF' },
+  'Atletico Madrid': { primary: '#CB3524', secondary: '#FFFFFF' },
+};
 
 /**
  * Format AI analysis text to display bullet points on separate lines
- * Uses markdown list format for proper rendering
  */
 function formatAnalysisText(text: string): string {
   if (!text) return text;
 
   let formatted = text;
-
-  // Convert bullet points to markdown list items
-  // First, replace all " • " with a unique marker
   formatted = formatted.replace(/ • /g, '\n\n- ');
-
-  // Handle bullets right after colons (e.g., "Analysis: •")
   formatted = formatted.replace(/:\s*•\s*/g, ':\n\n- ');
-
-  // Handle remaining standalone bullets
   formatted = formatted.replace(/•\s*/g, '\n\n- ');
-
-  // Ensure emoji sections start on new lines
   formatted = formatted.replace(/([.!?%])\s*(📊|🎯|💡|💰|⚠️)/g, '$1\n\n$2');
-
-  // Clean up multiple consecutive newlines (max 2)
   formatted = formatted.replace(/\n{3,}/g, '\n\n');
 
   return formatted;
@@ -53,7 +84,6 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('ai');
 
-  // AI Analysis - local state (NOT from global chat store)
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [analysisError, setAnalysisError] = useState(false);
@@ -67,7 +97,7 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
         const matchData = await api.getMatchDetail(parseInt(matchId));
         setMatch(matchData);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load match');
+        setError(e instanceof Error ? e.message : 'Ошибка загрузки');
         setMatch({
           id: parseInt(matchId),
           homeTeam: { name: 'Team A', logo: '' },
@@ -86,7 +116,6 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
     loadMatch();
   }, [matchId]);
 
-  // Request AI analysis for this specific match
   const requestAnalysis = useCallback(async () => {
     if (!match || isLoadingAnalysis) return;
 
@@ -94,7 +123,6 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
     setAnalysisError(false);
 
     try {
-      // Check AI availability first
       const available = await api.isChatAvailable();
       if (!available) {
         setAnalysisError(true);
@@ -102,22 +130,18 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
         return;
       }
 
-      // Format match date
       const matchDate = new Date(match.matchDate);
-      const formattedDate = `${matchDate.getDate().toString().padStart(2, '0')}.${(matchDate.getMonth() + 1).toString().padStart(2, '0')}.${matchDate.getFullYear()} at ${matchDate.getHours().toString().padStart(2, '0')}:${matchDate.getMinutes().toString().padStart(2, '0')}`;
-      const matchdayInfo = match.matchday ? `, Matchday ${match.matchday}` : '';
+      const formattedDate = `${matchDate.getDate().toString().padStart(2, '0')}.${(matchDate.getMonth() + 1).toString().padStart(2, '0')}.${matchDate.getFullYear()} в ${matchDate.getHours().toString().padStart(2, '0')}:${matchDate.getMinutes().toString().padStart(2, '0')}`;
+      const matchdayInfo = match.matchday ? `, тур ${match.matchday}` : '';
 
-      // Build analysis request message
-      const message = `Analyze this match:\n⚽ ${match.homeTeam.name} vs ${match.awayTeam.name}\n🏆 ${match.league}${matchdayInfo}\n📅 ${formattedDate}`;
+      const message = `Проанализируй этот матч:\n⚽ ${match.homeTeam.name} vs ${match.awayTeam.name}\n🏆 ${match.league}${matchdayInfo}\n📅 ${formattedDate}`;
 
-      // Get user preferences
       const preferences = user ? {
         minOdds: user.minOdds || 1.5,
         maxOdds: user.maxOdds || 3.0,
         riskLevel: user.riskLevel || 'medium',
       } : undefined;
 
-      // Match info for ML data collection
       const matchInfo = {
         matchId: match.id.toString(),
         homeTeam: match.homeTeam.name,
@@ -126,7 +150,6 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
         matchDate: match.matchDate,
       };
 
-      // Make API request
       const result = await api.sendChatMessage(message, [], preferences, matchInfo);
       setAiAnalysis(result.response);
     } catch (e) {
@@ -140,369 +163,600 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
   const live = match ? isMatchLive(match) : false;
   const finished = match ? isMatchFinished(match) : false;
 
+  const getTeamColors = (teamName: string) => {
+    return TEAM_COLORS[teamName] || { primary: COLORS.blue, secondary: '#FFFFFF' };
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen stadium-bg flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full"
-        />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.bgPrimary }}>
+        <Loader2 className="w-12 h-12 animate-spin" style={{ color: COLORS.blue }} />
       </div>
     );
   }
 
   if (!match) {
     return (
-      <div className="min-h-screen stadium-bg flex flex-col items-center justify-center">
-        <p className="text-red-400 mb-4">{error || 'Match not found'}</p>
-        <Link href="/matches" className="px-6 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-semibold">
-          Back to Matches
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: COLORS.bgPrimary }}>
+        <p className="mb-4" style={{ color: COLORS.red }}>{error || 'Матч не найден'}</p>
+        <Link
+          href="/matches"
+          className="px-6 py-2 rounded-lg font-semibold"
+          style={{ background: COLORS.blue, color: COLORS.textPrimary }}
+        >
+          К матчам
         </Link>
       </div>
     );
   }
 
+  const homeColors = getTeamColors(match.homeTeam.name);
+  const awayColors = getTeamColors(match.awayTeam.name);
+
   return (
-    <div className="min-h-screen stadium-bg relative overflow-hidden">
-      {/* Stadium Atmosphere */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Stadium lights */}
-        <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-indigo-500/5 to-transparent" />
+    <div className="min-h-screen relative overflow-hidden" style={{ background: COLORS.bgPrimary }}>
 
-        {/* Spotlight beams */}
-        <svg className="absolute top-0 left-0 w-full h-full opacity-10">
-          <polygon points="200,0 300,500 100,500" fill="url(#spotlight1)" />
-          <polygon points="600,0 700,500 500,500" fill="url(#spotlight1)" />
-          <polygon points="1000,0 1100,500 900,500" fill="url(#spotlight1)" />
-          <defs>
-            <linearGradient id="spotlight1" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="white" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="white" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
-
-        {/* Crowd silhouettes at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 flex justify-around">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="w-8 h-12 bg-black/60 rounded-t-full"
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 0.5 + Math.random() * 0.5, repeat: Infinity, delay: Math.random() * 0.5 }}
-            />
-          ))}
-        </div>
+      {/* Hero Background - Stadium Photo */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src={STADIUM_BG}
+          alt="Stadium"
+          className="w-full h-[60vh] object-cover"
+          style={{ filter: 'saturate(0.5) brightness(0.8)' }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(180deg, rgba(8,10,16,0.5) 0%, rgba(8,10,16,0.85) 50%, #080A10 100%)'
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 0%, rgba(8,10,16,0.5) 100%)'
+          }}
+        />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-6">
+        {/* Back Link */}
         <Link
           href="/matches"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-indigo-400 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 mb-6 transition-colors"
+          style={{ color: COLORS.textMuted }}
+          onMouseEnter={(e) => e.currentTarget.style.color = COLORS.blue}
+          onMouseLeave={(e) => e.currentTarget.style.color = COLORS.textMuted}
         >
           <ArrowLeft size={20} />
-          Back to Matches
+          К матчам
         </Link>
 
-        {/* Match Header - Stadium Glass Card */}
+        {/* Hero Section with Flag Banners */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mb-8"
+          className="mb-10"
         >
-          {/* Glass effect background */}
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-2xl" />
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl" />
-
-          <div className="relative rounded-2xl p-8 border border-white/10 overflow-hidden">
-            {/* Trophy decoration */}
-            <div className="absolute top-4 right-4 opacity-10">
-              <Trophy className="w-20 h-20 text-indigo-400" />
-            </div>
-
-            {/* League & Status */}
-            <div className="text-center mb-8">
-              <motion.span
-                className="inline-block px-4 py-2 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-lg border border-indigo-500/30"
-                whileHover={{ scale: 1.05 }}
-              >
-                {match.league}
-              </motion.span>
-              <div className="flex items-center justify-center gap-4 mt-4">
+          {/* Match Badge */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="px-5 py-2 rounded-full backdrop-blur-sm"
+              style={{
+                background: COLORS.bgGlass,
+                border: `1px solid ${COLORS.border}`
+              }}
+            >
+              <span className="font-inter text-sm" style={{ color: COLORS.textSecondary }}>
                 {live ? (
-                  <motion.span
-                    className="flex items-center gap-2 px-4 py-1 rounded-full bg-red-500/20 text-red-400 font-bold border border-red-500/30"
-                    animate={{ opacity: [1, 0.6, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    LIVE {match.minute && `${match.minute}'`}
-                  </motion.span>
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: COLORS.red }} />
+                    <span style={{ color: COLORS.red }}>LIVE {match.minute && `${match.minute}'`}</span>
+                    <span className="mx-2">•</span>
+                    {match.league}
+                  </span>
                 ) : finished ? (
-                  <span className="px-4 py-1 rounded-full bg-gray-500/20 text-gray-300 border border-gray-500/30">
-                    Full Time
-                  </span>
+                  <span>Завершён • {match.league}</span>
                 ) : (
-                  <span className="flex items-center gap-2 text-indigo-300">
-                    <Clock size={16} />
-                    {formatMatchDate(match.matchDate)}
+                  <span className="flex items-center gap-2">
+                    <Clock size={14} />
+                    {formatMatchDate(match.matchDate)} • {match.league}
                   </span>
                 )}
-              </div>
+              </span>
             </div>
+          </div>
 
-            {/* Teams */}
-            <div className="flex items-center justify-between">
-              {/* Home Team */}
-              <div className="flex-1 text-center">
-                <StadiumTeamBadge team={match.homeTeam} isHome />
-                <h2 className="text-2xl font-bold text-white mt-4">{match.homeTeam.name}</h2>
-                <span className="text-indigo-400/60 text-sm">HOME</span>
-              </div>
+          {/* Teams with Flag Banners */}
+          <div className="flex items-center justify-center gap-6 md:gap-12 lg:gap-20">
+            {/* Home Team Flag */}
+            <FlagBanner
+              team={match.homeTeam}
+              colors={homeColors}
+              side="left"
+              label="ХОЗЯЕВА"
+            />
 
-              {/* Score / VS */}
-              <div className="px-8 py-6">
-                {live || finished ? (
-                  <div className="relative">
-                    <motion.div
-                      className="flex items-center gap-4 text-6xl font-bold"
-                      initial={{ scale: 0.5 }}
-                      animate={{ scale: 1 }}
-                    >
-                      <span className={cn(
-                        'drop-shadow-lg',
-                        live ? 'text-red-400' : 'text-white'
-                      )}>
-                        {match.homeScore ?? 0}
-                      </span>
-                      <span className="text-indigo-500/50 text-4xl">-</span>
-                      <span className={cn(
-                        'drop-shadow-lg',
-                        live ? 'text-red-400' : 'text-white'
-                      )}>
-                        {match.awayScore ?? 0}
-                      </span>
-                    </motion.div>
-                  </div>
-                ) : (
-                  <motion.div
-                    className="relative"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+            {/* Center - Score or VS */}
+            <div className="text-center py-4">
+              {live || finished ? (
+                <div>
+                  <div
+                    className="font-montserrat text-6xl md:text-7xl lg:text-8xl font-extrabold"
+                    style={{ color: live ? COLORS.red : COLORS.textPrimary }}
                   >
-                    <span className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                      VS
-                    </span>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Away Team */}
-              <div className="flex-1 text-center">
-                <StadiumTeamBadge team={match.awayTeam} />
-                <h2 className="text-2xl font-bold text-white mt-4">{match.awayTeam.name}</h2>
-                <span className="text-purple-400/60 text-sm">AWAY</span>
-              </div>
+                    {match.homeScore ?? 0}
+                    <span style={{ color: COLORS.textMuted }} className="mx-3">—</span>
+                    {match.awayScore ?? 0}
+                  </div>
+                  {live && match.minute && (
+                    <motion.span
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="font-mono text-lg"
+                      style={{ color: COLORS.red }}
+                    >
+                      {match.minute}'
+                    </motion.span>
+                  )}
+                </div>
+              ) : (
+                <motion.div
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="font-montserrat text-7xl md:text-8xl lg:text-9xl font-extrabold"
+                  style={{
+                    color: COLORS.textPrimary,
+                    opacity: 0.9,
+                    textShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  VS
+                </motion.div>
+              )}
             </div>
 
-            {match.venue && (
-              <div className="flex items-center justify-center gap-2 mt-8 text-gray-400">
-                <MapPin size={16} className="text-indigo-400" />
-                <span>{match.venue}</span>
+            {/* Away Team Flag */}
+            <FlagBanner
+              team={match.awayTeam}
+              colors={awayColors}
+              side="right"
+              label="ГОСТИ"
+            />
+          </div>
+
+          {/* Venue */}
+          {match.venue && (
+            <div className="flex items-center justify-center gap-2 mt-6" style={{ color: COLORS.textMuted }}>
+              <MapPin size={16} style={{ color: COLORS.blue }} />
+              <span className="text-sm">{match.venue}</span>
+            </div>
+          )}
+        </motion.div>
+
+        {/* AI VERDICT Block */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <div
+            className="p-6 rounded-2xl"
+            style={{
+              background: COLORS.bgGlass,
+              backdropFilter: 'blur(16px)',
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="h-[1px] flex-1" style={{ background: `linear-gradient(90deg, transparent 0%, ${COLORS.border} 100%)` }} />
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5" style={{ color: COLORS.textPrimary }} />
+                <span
+                  className="font-montserrat uppercase tracking-[0.2em] text-sm font-bold"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  AI Verdict
+                </span>
+              </div>
+              <div className="h-[1px] flex-1" style={{ background: `linear-gradient(90deg, ${COLORS.border} 0%, transparent 100%)` }} />
+            </div>
+
+            {/* No analysis yet */}
+            {!aiAnalysis && !isLoadingAnalysis && !analysisError && (
+              <div className="text-center py-8">
+                <p className="mb-4" style={{ color: COLORS.textMuted }}>
+                  Получите AI-анализ для этого матча
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={requestAnalysis}
+                  className="px-8 py-4 rounded-lg font-inter font-bold text-sm uppercase tracking-wider flex items-center gap-3 mx-auto"
+                  style={{
+                    background: `linear-gradient(135deg, ${COLORS.blue} 0%, #3A6AEE 100%)`,
+                    color: COLORS.textPrimary,
+                  }}
+                >
+                  <Brain className="w-5 h-5" />
+                  Получить анализ AI
+                </motion.button>
+              </div>
+            )}
+
+            {/* Loading */}
+            {isLoadingAnalysis && (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: COLORS.blue }} />
+                <span style={{ color: COLORS.blue }}>Анализирую данные матча...</span>
+              </div>
+            )}
+
+            {/* Error */}
+            {analysisError && !isLoadingAnalysis && (
+              <div className="text-center py-8">
+                <p className="mb-4" style={{ color: COLORS.red }}>Не удалось получить анализ. Попробуйте снова.</p>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={requestAnalysis}
+                  className="px-6 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto"
+                  style={{
+                    background: `${COLORS.red}20`,
+                    border: `1px solid ${COLORS.red}50`,
+                    color: COLORS.red,
+                  }}
+                >
+                  <RefreshCw size={20} />
+                  Повторить
+                </motion.button>
+              </div>
+            )}
+
+            {/* Analysis Result */}
+            {aiAnalysis && !isLoadingAnalysis && (
+              <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-5 rounded-xl"
+                  style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: `1px solid ${COLORS.border}`,
+                  }}
+                >
+                  <div className="prose prose-invert prose-sm max-w-none" style={{ color: COLORS.textSecondary }}>
+                    <ReactMarkdown>{formatAnalysisText(aiAnalysis)}</ReactMarkdown>
+                  </div>
+                </motion.div>
+
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={requestAnalysis}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
+                    style={{ color: COLORS.blue }}
+                  >
+                    <RefreshCw size={16} />
+                    Обновить анализ
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!isAuthenticated && (
+              <div
+                className="mt-4 p-4 rounded-xl text-sm"
+                style={{
+                  background: `${COLORS.purple}15`,
+                  border: `1px solid ${COLORS.purple}30`,
+                  color: COLORS.purple,
+                }}
+              >
+                <Zap className="inline w-4 h-4 mr-2" />
+                <Link href="/login" className="underline hover:no-underline">
+                  Войдите
+                </Link>{' '}
+                для персонализированных предсказаний
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* AI Analysis - Glass Panel */}
+        {/* Win Probability Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative mb-6"
+          transition={{ delay: 0.3 }}
+          className="mb-8"
         >
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-xl" />
-
-          <div className="relative rounded-xl border border-white/10 overflow-hidden">
-            <button
-              onClick={() => setExpandedSection(expandedSection === 'ai' ? null : 'ai')}
-              className="w-full p-5 flex items-center justify-between"
+          <div
+            className="p-6 rounded-xl"
+            style={{
+              background: COLORS.bgCard,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <h3
+              className="font-montserrat uppercase tracking-[0.15em] text-xs font-bold mb-6 text-center"
+              style={{ color: COLORS.textMuted }}
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-indigo-500/20">
-                  <Bot className="w-5 h-5 text-indigo-400" />
+              AI Win Probability
+            </h3>
+
+            {/* Probability Numbers */}
+            <div className="flex items-center justify-center gap-8 mb-4">
+              <div className="text-center">
+                <div className="font-montserrat text-4xl font-extrabold" style={{ color: COLORS.blue }}>
+                  65%
                 </div>
-                <span className="font-semibold text-white">AI Match Analysis</span>
+                <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>{getShortTeamName(match.homeTeam.name)}</p>
               </div>
-              {expandedSection === 'ai' ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-            </button>
+              <div className="text-center">
+                <div className="font-montserrat text-4xl font-extrabold" style={{ color: COLORS.textMuted }}>
+                  20%
+                </div>
+                <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>Ничья</p>
+              </div>
+              <div className="text-center">
+                <div className="font-montserrat text-4xl font-extrabold" style={{ color: COLORS.orange }}>
+                  15%
+                </div>
+                <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>{getShortTeamName(match.awayTeam.name)}</p>
+              </div>
+            </div>
 
-            <AnimatePresence>
-              {expandedSection === 'ai' && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5">
-                    {/* No analysis yet - show button to request */}
-                    {!aiAnalysis && !isLoadingAnalysis && !analysisError && (
-                      <div className="text-center py-6">
-                        <p className="text-gray-400 mb-4">Get AI-powered analysis for this match</p>
-                        <button
-                          onClick={requestAnalysis}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-semibold transition-all"
-                        >
-                          <Bot size={20} />
-                          Get AI Analysis
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Loading state */}
-                    {isLoadingAnalysis && (
-                      <div className="flex flex-col items-center justify-center py-8">
-                        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
-                        <span className="text-indigo-400 animate-pulse">Analyzing match data...</span>
-                      </div>
-                    )}
-
-                    {/* Error state */}
-                    {analysisError && !isLoadingAnalysis && (
-                      <div className="text-center py-6">
-                        <p className="text-red-400 mb-4">Failed to get analysis. Please try again.</p>
-                        <button
-                          onClick={requestAnalysis}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 font-semibold transition-all border border-red-500/30"
-                        >
-                          <RefreshCw size={20} />
-                          Retry
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Analysis result */}
-                    {aiAnalysis && !isLoadingAnalysis && (
-                      <div>
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-4 rounded-xl bg-black/30 border border-indigo-500/20"
-                        >
-                          <div className="prose prose-invert prose-sm max-w-none">
-                            <ReactMarkdown>{formatAnalysisText(aiAnalysis)}</ReactMarkdown>
-                          </div>
-                        </motion.div>
-
-                        {/* Refresh button */}
-                        <div className="mt-4 text-center">
-                          <button
-                            onClick={requestAnalysis}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-indigo-400 hover:bg-indigo-500/10 transition-all"
-                          >
-                            <RefreshCw size={16} />
-                            Refresh Analysis
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {!isAuthenticated && (
-                      <div className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-sm">
-                        <Zap className="inline w-4 h-4 mr-2" />
-                        <Link href="/login" className="underline hover:no-underline">
-                          Sign in
-                        </Link>{' '}
-                        for personalized AI predictions
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Stacked Bar */}
+            <div className="h-3 rounded-full overflow-hidden flex" style={{ background: 'rgba(255,255,255,0.1)' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: '65%' }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="h-full"
+                style={{ background: COLORS.blue }}
+              />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: '20%' }}
+                transition={{ duration: 1, delay: 0.6 }}
+                className="h-full"
+                style={{ background: COLORS.textMuted }}
+              />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: '15%' }}
+                transition={{ duration: 1, delay: 0.7 }}
+                className="h-full"
+                style={{ background: COLORS.orange }}
+              />
+            </div>
           </div>
         </motion.div>
 
-        {/* Stats */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <StadiumStatsCard
-            title="Head to Head"
-            icon={<History className="w-5 h-5 text-indigo-400" />}
-            expanded={expandedSection === 'h2h'}
-            onToggle={() => setExpandedSection(expandedSection === 'h2h' ? null : 'h2h')}
+        {/* Stats Grid */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          {/* Team Comparison */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
           >
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
-                <p className="text-2xl font-bold text-indigo-400">4</p>
-                <p className="text-xs text-gray-400">{match.homeTeam.name}</p>
+            <StatsCard
+              title="Сравнение команд"
+              icon={<BarChart3 className="w-5 h-5" style={{ color: COLORS.blue }} />}
+              expanded={expandedSection === 'compare'}
+              onToggle={() => setExpandedSection(expandedSection === 'compare' ? null : 'compare')}
+            >
+              <div className="space-y-4">
+                <StatBar label="Голы/Игра" home={2.1} away={1.8} homeColor={COLORS.blue} awayColor={COLORS.orange} />
+                <StatBar label="Владение" home={58} away={52} homeColor={COLORS.blue} awayColor={COLORS.orange} />
+                <StatBar label="Удары" home={15} away={12} homeColor={COLORS.blue} awayColor={COLORS.orange} />
+                <StatBar label="xG" home={1.8} away={1.2} homeColor={COLORS.blue} awayColor={COLORS.orange} />
               </div>
-              <div className="p-4 rounded-xl bg-gray-500/10 border border-gray-500/30">
-                <p className="text-2xl font-bold text-gray-300">3</p>
-                <p className="text-xs text-gray-400">Draws</p>
-              </div>
-              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30">
-                <p className="text-2xl font-bold text-purple-400">3</p>
-                <p className="text-xs text-gray-400">{match.awayTeam.name}</p>
-              </div>
-            </div>
-          </StadiumStatsCard>
+            </StatsCard>
+          </motion.div>
 
-          <StadiumStatsCard
-            title="Match Statistics"
-            icon={<TrendingUp className="w-5 h-5 text-indigo-400" />}
-            expanded={expandedSection === 'stats'}
-            onToggle={() => setExpandedSection(expandedSection === 'stats' ? null : 'stats')}
+          {/* Head to Head */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
           >
-            <div className="space-y-3">
-              <StadiumStatBar label="Goals/Game" home={2.1} away={1.8} />
-              <StadiumStatBar label="Possession" home={58} away={52} />
-              <StadiumStatBar label="Shots" home={15} away={12} />
-            </div>
-          </StadiumStatsCard>
+            <StatsCard
+              title="Личные встречи"
+              icon={<History className="w-5 h-5" style={{ color: COLORS.blue }} />}
+              expanded={expandedSection === 'h2h'}
+              onToggle={() => setExpandedSection(expandedSection === 'h2h' ? null : 'h2h')}
+            >
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div
+                  className="p-4 rounded-xl"
+                  style={{ background: `${COLORS.blue}15`, border: `1px solid ${COLORS.blue}30` }}
+                >
+                  <p className="text-2xl font-bold" style={{ color: COLORS.blue }}>4</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>{getShortTeamName(match.homeTeam.name)}</p>
+                </div>
+                <div
+                  className="p-4 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${COLORS.border}` }}
+                >
+                  <p className="text-2xl font-bold" style={{ color: COLORS.textMuted }}>3</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>Ничьи</p>
+                </div>
+                <div
+                  className="p-4 rounded-xl"
+                  style={{ background: `${COLORS.orange}15`, border: `1px solid ${COLORS.orange}30` }}
+                >
+                  <p className="text-2xl font-bold" style={{ color: COLORS.orange }}>3</p>
+                  <p className="text-xs mt-1" style={{ color: COLORS.textMuted }}>{getShortTeamName(match.awayTeam.name)}</p>
+                </div>
+              </div>
+            </StatsCard>
+          </motion.div>
+
+          {/* Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <StatsCard
+              title="Форма"
+              icon={<Activity className="w-5 h-5" style={{ color: COLORS.blue }} />}
+              expanded={expandedSection === 'form'}
+              onToggle={() => setExpandedSection(expandedSection === 'form' ? null : 'form')}
+            >
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs mb-2" style={{ color: COLORS.textMuted }}>{match.homeTeam.name}</p>
+                  <div className="flex gap-1.5">
+                    {['W', 'W', 'D', 'W', 'L'].map((result, i) => (
+                      <FormBadge key={i} result={result as 'W' | 'D' | 'L'} />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs mb-2" style={{ color: COLORS.textMuted }}>{match.awayTeam.name}</p>
+                  <div className="flex gap-1.5">
+                    {['W', 'L', 'W', 'D', 'W'].map((result, i) => (
+                      <FormBadge key={i} result={result as 'W' | 'D' | 'L'} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </StatsCard>
+          </motion.div>
+
+          {/* Key Players */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <StatsCard
+              title="Ключевые игроки"
+              icon={<Users className="w-5 h-5" style={{ color: COLORS.blue }} />}
+              expanded={expandedSection === 'players'}
+              onToggle={() => setExpandedSection(expandedSection === 'players' ? null : 'players')}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'rgba(0,0,0,0.2)' }}
+                >
+                  <p className="font-semibold text-sm" style={{ color: COLORS.textPrimary }}>Haaland</p>
+                  <p className="text-xs" style={{ color: COLORS.textMuted }}>15 голов, 3 асс.</p>
+                </div>
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'rgba(0,0,0,0.2)' }}
+                >
+                  <p className="font-semibold text-sm" style={{ color: COLORS.textPrimary }}>Vinicius Jr</p>
+                  <p className="text-xs" style={{ color: COLORS.textMuted }}>12 голов, 8 асс.</p>
+                </div>
+              </div>
+            </StatsCard>
+          </motion.div>
         </div>
+
       </div>
     </div>
   );
 }
 
-function StadiumTeamBadge({ team, isHome }: { team: { name: string; logo?: string }; isHome?: boolean }) {
-  const [imgError, setImgError] = useState(false);
-  const color = isHome ? 'indigo' : 'purple';
+// ===== COMPONENTS =====
 
-  if (team.logo && !imgError) {
-    return (
-      <div className="relative group mx-auto">
-        <motion.div
-          className={`absolute inset-0 bg-${color}-500/20 rounded-full blur-xl`}
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-        <div className={`relative w-28 h-28 rounded-full bg-black/40 backdrop-blur-sm p-4 border-2 border-${color}-500/30`}>
-          <img
-            src={team.logo}
-            alt={team.name}
-            className="w-full h-full object-contain"
-            onError={() => setImgError(true)}
-          />
-        </div>
-      </div>
-    );
-  }
+function FlagBanner({ team, colors, side, label }: {
+  team: { name: string; logo?: string };
+  colors: { primary: string; secondary: string };
+  side: 'left' | 'right';
+  label: string;
+}) {
+  const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="relative group mx-auto">
-      <div className={`absolute inset-0 bg-${color}-500/20 rounded-full blur-xl`} />
-      <div className={`relative w-28 h-28 rounded-full bg-gradient-to-br from-${color}-600 to-${color}-800 border-2 border-${color}-400/50 flex items-center justify-center text-3xl font-bold text-white`}>
-        {team.name.substring(0, 2).toUpperCase()}
+    <motion.div
+      initial={{ y: -30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', damping: 15 }}
+      className="relative"
+    >
+      {/* Pole */}
+      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="w-1.5 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #888 0%, #CCC 50%, #888 100%)' }} />
       </div>
-    </div>
+
+      {/* Flag */}
+      <motion.div
+        animate={{
+          rotateY: side === 'left' ? [0, 2, 0, -1, 0] : [0, -2, 0, 1, 0],
+          rotateZ: [-0.3, 0.3, -0.3],
+        }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        className="relative w-24 md:w-32 lg:w-36 min-h-[140px] md:min-h-[180px] mt-4 rounded-b-lg overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${colors.primary} 0%, ${colors.primary}dd 100%)`,
+          boxShadow: `0 10px 30px ${colors.primary}40`,
+          transformStyle: 'preserve-3d',
+          transformOrigin: 'top center',
+        }}
+      >
+        {/* Shimmer */}
+        <motion.div
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          className="absolute inset-0 w-[200%] opacity-10"
+          style={{ background: 'linear-gradient(90deg, transparent 0%, white 50%, transparent 100%)' }}
+        />
+
+        {/* Secondary stripe */}
+        <div className="absolute bottom-0 left-0 right-0 h-4" style={{ background: colors.secondary, opacity: 0.8 }} />
+
+        {/* Content */}
+        <div className="flex flex-col items-center justify-center h-full p-3 relative z-10">
+          {team.logo && !imgError ? (
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20 p-1.5 backdrop-blur-sm">
+              <img
+                src={team.logo}
+                alt={team.name}
+                className="w-full h-full object-contain"
+                onError={() => setImgError(true)}
+              />
+            </div>
+          ) : (
+            <div
+              className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-bold"
+              style={{ background: colors.secondary, color: colors.primary }}
+            >
+              {team.name.substring(0, 2).toUpperCase()}
+            </div>
+          )}
+          <h3 className="text-white font-bold text-xs md:text-sm text-center mt-2 uppercase">
+            {getShortTeamName(team.name)}
+          </h3>
+        </div>
+
+        {/* Fringe */}
+        <div className="absolute -bottom-1 left-0 right-0 flex justify-center gap-0.5">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="w-1.5 h-2 rounded-b"
+              style={{ background: i % 2 === 0 ? colors.primary : colors.secondary, opacity: 0.85 }}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Label */}
+      <p className="text-center mt-2 text-xs uppercase tracking-wider" style={{ color: COLORS.textMuted }}>
+        {label}
+      </p>
+    </motion.div>
   );
 }
 
-function StadiumStatsCard({ title, icon, expanded, onToggle, children }: {
+function StatsCard({ title, icon, expanded, onToggle, children }: {
   title: string;
   icon: React.ReactNode;
   expanded: boolean;
@@ -510,60 +764,92 @@ function StadiumStatsCard({ title, icon, expanded, onToggle, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative"
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: COLORS.bgCard,
+        border: `1px solid ${COLORS.border}`,
+      }}
     >
-      <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-xl" />
-      <div className="relative rounded-xl border border-white/10 overflow-hidden">
-        <button onClick={onToggle} className="w-full p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {icon}
-            <span className="font-semibold text-white">{title}</span>
-          </div>
-          {expanded ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-        </button>
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 pb-4">{children}</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+      <button onClick={onToggle} className="w-full p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {icon}
+          <span className="font-semibold text-sm" style={{ color: COLORS.textPrimary }}>{title}</span>
+        </div>
+        {expanded ? (
+          <ChevronUp style={{ color: COLORS.textMuted }} />
+        ) : (
+          <ChevronDown style={{ color: COLORS.textMuted }} />
+        )}
+      </button>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
-function StadiumStatBar({ label, home, away }: { label: string; home: number; away: number }) {
+function StatBar({ label, home, away, homeColor, awayColor }: {
+  label: string;
+  home: number;
+  away: number;
+  homeColor: string;
+  awayColor: string;
+}) {
   const total = home + away;
   const homePercent = (home / total) * 100;
 
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-indigo-400">{home}</span>
-        <span className="text-gray-400">{label}</span>
-        <span className="text-purple-400">{away}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs">
+        <span style={{ color: homeColor }}>{home}</span>
+        <span style={{ color: COLORS.textMuted }}>{label}</span>
+        <span style={{ color: awayColor }}>{away}</span>
       </div>
-      <div className="h-2 bg-black/30 rounded-full overflow-hidden flex">
+      <div className="h-2 rounded-full overflow-hidden flex" style={{ background: 'rgba(255,255,255,0.1)' }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${homePercent}%` }}
-          className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400"
+          transition={{ duration: 0.8 }}
+          className="h-full"
+          style={{ background: homeColor }}
         />
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${100 - homePercent}%` }}
-          className="h-full bg-gradient-to-r from-purple-400 to-purple-600"
+          transition={{ duration: 0.8 }}
+          className="h-full"
+          style={{ background: awayColor }}
         />
       </div>
+    </div>
+  );
+}
+
+function FormBadge({ result }: { result: 'W' | 'D' | 'L' }) {
+  const styles = {
+    W: { bg: `${COLORS.green}20`, border: `${COLORS.green}40`, color: COLORS.green },
+    D: { bg: 'rgba(255,255,255,0.1)', border: COLORS.border, color: COLORS.textMuted },
+    L: { bg: `${COLORS.red}20`, border: `${COLORS.red}40`, color: COLORS.red },
+  };
+
+  const style = styles[result];
+
+  return (
+    <div
+      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+      style={{ background: style.bg, border: `1px solid ${style.border}`, color: style.color }}
+    >
+      {result}
     </div>
   );
 }
