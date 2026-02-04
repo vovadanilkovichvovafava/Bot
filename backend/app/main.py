@@ -12,7 +12,8 @@ from app.core.database import init_db
 from app.models import (  # noqa: F401
     User, MLTrainingData, MLModel, EnsembleModel,
     ConfidenceCalibration, ROIAnalytics, LearningPattern,
-    FeatureErrorPattern, LeagueLearning, LearningLog, Prediction
+    FeatureErrorPattern, LeagueLearning, LearningLog, Prediction,
+    CachedAIResponse
 )
 
 logger = logging.getLogger(__name__)
