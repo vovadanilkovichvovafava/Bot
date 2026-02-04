@@ -10,6 +10,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'media.api-sports.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
     ],
   },
   // API proxy to backend

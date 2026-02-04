@@ -15,10 +15,10 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      selectedTheme: null,
+      selectedTheme: 'stadium', // Default to stadium theme
       hasSelectedTheme: false,
       setTheme: (theme) => set({ selectedTheme: theme, hasSelectedTheme: true }),
-      resetTheme: () => set({ selectedTheme: null, hasSelectedTheme: false }),
+      resetTheme: () => set({ selectedTheme: 'stadium', hasSelectedTheme: false }),
     }),
     {
       name: 'theme-storage',
