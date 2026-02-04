@@ -467,10 +467,13 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     initializeChat: async () => {
       // Check AI availability
+      console.log('[Chat Store] Initializing chat, checking AI availability...');
       let aiAvailable = false;
       try {
         aiAvailable = await api.isChatAvailable();
-      } catch {
+        console.log('[Chat Store] AI available:', aiAvailable);
+      } catch (error) {
+        console.error('[Chat Store] Failed to check AI availability:', error);
         aiAvailable = false;
       }
 

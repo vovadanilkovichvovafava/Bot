@@ -398,15 +398,18 @@ class ApiService {
 
   async isChatAvailable(): Promise<boolean> {
     try {
-      const data = await this.fetchWithRetry<{ available: boolean }>(
+      console.log('[API] Checking AI availability at:', `${API_URL}/api/v1/chat/status`);
+      const data = await this.fetchWithRetry<{ available: boolean; model?: string }>(
         `${API_URL}/api/v1/chat/status`,
         {
           method: 'GET',
           headers: this.getHeaders(),
         }
       );
+      console.log('[API] AI status response:', data);
       return data.available;
-    } catch {
+    } catch (error) {
+      console.error('[API] AI status check failed:', error);
       return false;
     }
   }
