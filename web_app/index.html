@@ -33,7 +33,7 @@
           </div>
         </div>
 
-        <div class="section-label">TODAY'S MATCHES</div>
+        <div class="section-label" id="home-title">TODAY'S MATCHES</div>
         <div id="home-matches">
           <div class="loader">Loading matches...</div>
         </div>
@@ -179,6 +179,37 @@
       </div>
       <div class="detail-body" id="match-detail-content">
         <div class="loader">Loading match...</div>
+      </div>
+    </div>
+
+    <!-- ==================== EDIT SETTINGS OVERLAY ==================== -->
+    <div id="edit-overlay"></div>
+
+    <!-- ==================== PRO OVERLAY ==================== -->
+    <div id="pro-overlay">
+      <div class="pro-box">
+        <div class="pro-close" onclick="app.closePro()">
+          <span class="material-symbols-outlined">close</span>
+        </div>
+        <div class="pro-icon">
+          <span class="material-symbols-outlined" style="font-size:48px;color:var(--gold)">star</span>
+        </div>
+        <h2 class="pro-title">AI Bet Analyst <span style="color:var(--gold)">PRO</span></h2>
+        <p class="pro-sub">Unlock the full power of AI predictions</p>
+        <div class="pro-features">
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Unlimited AI predictions</span></div>
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Advanced factor analysis</span></div>
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Multi-market predictions (1X2, O/U, BTTS)</span></div>
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Team form & league standings</span></div>
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Push notifications for top picks</span></div>
+          <div class="pro-feat"><span class="material-symbols-outlined" style="color:var(--green)">check_circle</span><span>Express bet combinations</span></div>
+        </div>
+        <div class="pro-price">
+          <span class="pro-price-val">$4.99</span>
+          <span class="pro-price-per">/month</span>
+        </div>
+        <button class="btn btn-primary pro-btn" style="background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;font-weight:800" onclick="alert('Coming soon! PRO subscription will be available shortly.')">Subscribe to PRO</button>
+        <p class="pro-note">Cancel anytime. 7-day free trial.</p>
       </div>
     </div>
 

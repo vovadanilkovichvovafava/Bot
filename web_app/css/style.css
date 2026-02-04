@@ -208,3 +208,80 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
 .si-ic{font-size:20px;color:var(--green)}
 .si-lb{flex:1;font-size:14px;font-weight:500}
 .si-val{font-size:13px;color:var(--text-sec)}
+.si-chev{font-size:18px;color:var(--text-muted);margin-left:4px}
+.si{cursor:pointer;transition:background .15s}
+.si:active{background:rgba(0,230,118,0.05)}
+
+/* ===== LEAGUE FILTER CHIPS ===== */
+.league-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.league-chips::-webkit-scrollbar{display:none}
+.league-chip{flex-shrink:0;padding:7px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--text-sec);cursor:pointer;transition:all .2s;white-space:nowrap}
+.league-chip.active{background:rgba(0,230,118,0.15);border-color:rgba(0,230,118,0.4);color:var(--green)}
+.league-chip:active{transform:scale(0.95)}
+
+/* ===== PREDICTION COUNT ===== */
+.pred-count{font-size:12px;color:var(--text-muted);margin-bottom:12px;font-weight:600}
+
+/* ===== LOGO FALLBACK ===== */
+.logo-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+
+/* ===== EDIT OVERLAY ===== */
+#edit-overlay{position:fixed;inset:0;background:rgba(10,22,40,0.85);backdrop-filter:blur(8px);z-index:2500;display:none;align-items:center;justify-content:center;padding:24px}
+#edit-overlay.show{display:flex}
+.edit-box{background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:340px;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.edit-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:18px}
+.edit-box input[type="number"]{width:100%;padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;color:#fff;font-size:18px;font-weight:600;text-align:center;margin-bottom:16px;outline:none;transition:border-color .2s}
+.edit-box input[type="number"]:focus{border-color:var(--green)}
+.edit-actions{display:flex;gap:10px}
+
+/* ===== RISK OPTIONS ===== */
+.risk-options{display:flex;gap:10px;margin-bottom:18px}
+.risk-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;background:var(--bg-surface);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:all .2s;font-size:13px;font-weight:600;color:var(--text-sec)}
+.risk-opt.active{border-color:var(--green);background:rgba(0,230,118,0.08);color:var(--text)}
+.risk-opt:active{transform:scale(0.96)}
+.risk-opt .material-symbols-outlined{font-size:28px}
+
+/* ===== PRO OVERLAY ===== */
+#pro-overlay{position:fixed;inset:0;background:rgba(10,22,40,0.9);backdrop-filter:blur(10px);z-index:3000;display:none;align-items:center;justify-content:center;padding:24px}
+#pro-overlay.show{display:flex}
+.pro-box{background:var(--bg-card);border:1px solid rgba(255,215,64,0.3);border-radius:20px;padding:32px 24px;width:100%;max-width:380px;text-align:center;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.6)}
+.pro-close{position:absolute;top:14px;right:14px;width:32px;height:32px;background:var(--bg-surface);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pro-close .material-symbols-outlined{font-size:20px;color:var(--text-sec)}
+.pro-icon{margin-bottom:16px}
+.pro-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.pro-sub{font-size:13px;color:var(--text-sec);margin-bottom:24px}
+.pro-features{text-align:left;margin-bottom:24px}
+.pro-feat{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;color:var(--text-sec)}
+.pro-feat .material-symbols-outlined{font-size:20px;flex-shrink:0}
+.pro-price{margin-bottom:16px}
+.pro-price-val{font-size:36px;font-weight:900;color:var(--gold)}
+.pro-price-per{font-size:14px;color:var(--text-muted)}
+.pro-btn{margin-bottom:12px}
+.pro-note{font-size:11px;color:var(--text-muted)}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 400px) {
+  .page{padding:12px 12px}
+  .fifa-name{max-width:80px;font-size:11px}
+  .hero-team{width:90px}
+  .hero-shield{width:64px;height:64px}
+  .hero-shield img{width:44px;height:44px}
+  .hero-team-name{font-size:12px}
+  .hero-vs{font-size:20px}
+  .hero-score{font-size:26px}
+  .nav-item{padding:8px 6px}
+  .nav-item .nav-label{font-size:9px}
+  .nav-item .nav-icon{font-size:20px}
+  .ai-pick-conf{font-size:44px}
+  .profile-name{font-size:15px}
+  .factor-label{width:100px;font-size:11px}
+  .stat-val{font-size:18px}
+  .league-chip{padding:6px 10px;font-size:11px}
+}
+
+@media (max-width: 340px) {
+  .fifa-name{max-width:65px;font-size:10px}
+  .nav-item .nav-label{font-size:8px}
+  .nav-item{padding:8px 4px}
+  .hero-team{width:80px}
+}
