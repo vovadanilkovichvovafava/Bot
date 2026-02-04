@@ -196,12 +196,12 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: COLORS.bgPrimary }}>
 
-      {/* Hero Background - Stadium Photo */}
+      {/* Hero Background - Stadium Photo - Mobile optimized */}
       <div className="absolute inset-0 z-0">
         <img
           src={STADIUM_BG}
           alt="Stadium"
-          className="w-full h-[60vh] object-cover"
+          className="w-full h-[50vh] sm:h-[60vh] object-cover"
           style={{ filter: 'saturate(0.5) brightness(0.8)' }}
         />
         <div
@@ -218,56 +218,54 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
         />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-6">
-        {/* Back Link */}
+      <div className="relative z-10 max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* Back Link - Touch friendly */}
         <Link
           href="/matches"
-          className="inline-flex items-center gap-2 mb-6 transition-colors"
+          className="inline-flex items-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 transition-colors p-1 -ml-1 touch-manipulation active:opacity-70"
           style={{ color: COLORS.textMuted }}
-          onMouseEnter={(e) => e.currentTarget.style.color = COLORS.blue}
-          onMouseLeave={(e) => e.currentTarget.style.color = COLORS.textMuted}
         >
-          <ArrowLeft size={20} />
-          К матчам
+          <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+          <span className="text-sm sm:text-base">К матчам</span>
         </Link>
 
-        {/* Hero Section with Flag Banners */}
+        {/* Hero Section with Flag Banners - Mobile optimized */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
+          className="mb-6 sm:mb-10"
         >
-          {/* Match Badge */}
-          <div className="flex justify-center mb-6">
+          {/* Match Badge - Mobile compact */}
+          <div className="flex justify-center mb-4 sm:mb-6">
             <div
-              className="px-5 py-2 rounded-full backdrop-blur-sm"
+              className="px-3 sm:px-5 py-1.5 sm:py-2 rounded-full backdrop-blur-sm"
               style={{
                 background: COLORS.bgGlass,
                 border: `1px solid ${COLORS.border}`
               }}
             >
-              <span className="font-inter text-sm" style={{ color: COLORS.textSecondary }}>
+              <span className="font-inter text-xs sm:text-sm" style={{ color: COLORS.textSecondary }}>
                 {live ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: COLORS.red }} />
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse" style={{ background: COLORS.red }} />
                     <span style={{ color: COLORS.red }}>LIVE {match.minute && `${match.minute}'`}</span>
-                    <span className="mx-2">•</span>
-                    {match.league}
+                    <span className="mx-1 sm:mx-2">•</span>
+                    <span className="truncate max-w-[100px] sm:max-w-none">{match.league}</span>
                   </span>
                 ) : finished ? (
                   <span>Завершён • {match.league}</span>
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <Clock size={14} />
-                    {formatMatchDate(match.matchDate)} • {match.league}
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <Clock size={12} className="sm:w-3.5 sm:h-3.5" />
+                    {formatMatchDate(match.matchDate)} • <span className="truncate max-w-[80px] sm:max-w-none">{match.league}</span>
                   </span>
                 )}
               </span>
             </div>
           </div>
 
-          {/* Teams with Flag Banners */}
-          <div className="flex items-center justify-center gap-6 md:gap-12 lg:gap-20">
+          {/* Teams with Flag Banners - Mobile responsive gaps */}
+          <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-12 lg:gap-20">
             {/* Home Team Flag */}
             <FlagBanner
               team={match.homeTeam}
@@ -276,23 +274,23 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
               label="ХОЗЯЕВА"
             />
 
-            {/* Center - Score or VS */}
-            <div className="text-center py-4">
+            {/* Center - Score or VS - Mobile responsive sizes */}
+            <div className="text-center py-2 sm:py-4">
               {live || finished ? (
                 <div>
                   <div
-                    className="font-montserrat text-6xl md:text-7xl lg:text-8xl font-extrabold"
+                    className="font-montserrat text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold"
                     style={{ color: live ? COLORS.red : COLORS.textPrimary }}
                   >
                     {match.homeScore ?? 0}
-                    <span style={{ color: COLORS.textMuted }} className="mx-3">—</span>
+                    <span style={{ color: COLORS.textMuted }} className="mx-1 sm:mx-3">—</span>
                     {match.awayScore ?? 0}
                   </div>
                   {live && match.minute && (
                     <motion.span
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 1, repeat: Infinity }}
-                      className="font-mono text-lg"
+                      className="font-mono text-sm sm:text-lg"
                       style={{ color: COLORS.red }}
                     >
                       {match.minute}'
@@ -303,7 +301,7 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
                 <motion.div
                   animate={{ scale: [1, 1.03, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
-                  className="font-montserrat text-7xl md:text-8xl lg:text-9xl font-extrabold"
+                  className="font-montserrat text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold"
                   style={{
                     color: COLORS.textPrimary,
                     opacity: 0.9,
@@ -324,24 +322,24 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
             />
           </div>
 
-          {/* Venue */}
+          {/* Venue - Mobile smaller */}
           {match.venue && (
-            <div className="flex items-center justify-center gap-2 mt-6" style={{ color: COLORS.textMuted }}>
-              <MapPin size={16} style={{ color: COLORS.blue }} />
-              <span className="text-sm">{match.venue}</span>
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-4 sm:mt-6" style={{ color: COLORS.textMuted }}>
+              <MapPin size={14} className="sm:w-4 sm:h-4" style={{ color: COLORS.blue }} />
+              <span className="text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none">{match.venue}</span>
             </div>
           )}
         </motion.div>
 
-        {/* AI VERDICT Block */}
+        {/* AI VERDICT Block - Mobile optimized */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
           <div
-            className="p-6 rounded-2xl"
+            className="p-4 sm:p-6 rounded-xl sm:rounded-2xl"
             style={{
               background: COLORS.bgGlass,
               backdropFilter: 'blur(16px)',
@@ -533,8 +531,8 @@ export function StadiumMatchDetail({ matchId }: StadiumMatchDetailProps) {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
+        {/* Stats Grid - Mobile single column */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {/* Team Comparison */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -683,17 +681,17 @@ function FlagBanner({ team, colors, side, label }: {
     >
       {/* Pole */}
       <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="w-1.5 h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #888 0%, #CCC 50%, #888 100%)' }} />
+        <div className="w-1 sm:w-1.5 h-3 sm:h-5 rounded-full" style={{ background: 'linear-gradient(180deg, #888 0%, #CCC 50%, #888 100%)' }} />
       </div>
 
-      {/* Flag */}
+      {/* Flag - Mobile responsive */}
       <motion.div
         animate={{
           rotateY: side === 'left' ? [0, 2, 0, -1, 0] : [0, -2, 0, 1, 0],
           rotateZ: [-0.3, 0.3, -0.3],
         }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-        className="relative w-24 md:w-32 lg:w-36 min-h-[140px] md:min-h-[180px] mt-4 rounded-b-lg overflow-hidden"
+        className="relative w-20 sm:w-24 md:w-32 lg:w-36 min-h-[100px] sm:min-h-[140px] md:min-h-[180px] mt-3 sm:mt-4 rounded-b-lg overflow-hidden"
         style={{
           background: `linear-gradient(180deg, ${colors.primary} 0%, ${colors.primary}dd 100%)`,
           boxShadow: `0 10px 30px ${colors.primary}40`,
@@ -710,34 +708,35 @@ function FlagBanner({ team, colors, side, label }: {
         />
 
         {/* Secondary stripe */}
-        <div className="absolute bottom-0 left-0 right-0 h-4" style={{ background: colors.secondary, opacity: 0.8 }} />
+        <div className="absolute bottom-0 left-0 right-0 h-3 sm:h-4" style={{ background: colors.secondary, opacity: 0.8 }} />
 
         {/* Content */}
-        <div className="flex flex-col items-center justify-center h-full p-3 relative z-10">
+        <div className="flex flex-col items-center justify-center h-full p-2 sm:p-3 relative z-10">
           {team.logo && !imgError ? (
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20 p-1.5 backdrop-blur-sm">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-white/20 p-1 sm:p-1.5 backdrop-blur-sm">
               <img
                 src={team.logo}
                 alt={team.name}
                 className="w-full h-full object-contain"
                 onError={() => setImgError(true)}
+                loading="lazy"
               />
             </div>
           ) : (
             <div
-              className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-bold"
+              className="w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm"
               style={{ background: colors.secondary, color: colors.primary }}
             >
               {team.name.substring(0, 2).toUpperCase()}
             </div>
           )}
-          <h3 className="text-white font-bold text-xs md:text-sm text-center mt-2 uppercase">
+          <h3 className="text-white font-bold text-[10px] sm:text-xs md:text-sm text-center mt-1.5 sm:mt-2 uppercase leading-tight">
             {getShortTeamName(team.name)}
           </h3>
         </div>
 
-        {/* Fringe */}
-        <div className="absolute -bottom-1 left-0 right-0 flex justify-center gap-0.5">
+        {/* Fringe - Hide on very small screens */}
+        <div className="absolute -bottom-1 left-0 right-0 hidden sm:flex justify-center gap-0.5">
           {[...Array(12)].map((_, i) => (
             <div
               key={i}
@@ -748,8 +747,8 @@ function FlagBanner({ team, colors, side, label }: {
         </div>
       </motion.div>
 
-      {/* Label */}
-      <p className="text-center mt-2 text-xs uppercase tracking-wider" style={{ color: COLORS.textMuted }}>
+      {/* Label - Mobile smaller */}
+      <p className="text-center mt-1.5 sm:mt-2 text-[10px] sm:text-xs uppercase tracking-wider" style={{ color: COLORS.textMuted }}>
         {label}
       </p>
     </motion.div>
@@ -771,15 +770,15 @@ function StatsCard({ title, icon, expanded, onToggle, children }: {
         border: `1px solid ${COLORS.border}`,
       }}
     >
-      <button onClick={onToggle} className="w-full p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <button onClick={onToggle} className="w-full p-3 sm:p-4 flex items-center justify-between touch-manipulation active:bg-white/5">
+        <div className="flex items-center gap-2 sm:gap-3">
           {icon}
-          <span className="font-semibold text-sm" style={{ color: COLORS.textPrimary }}>{title}</span>
+          <span className="font-semibold text-xs sm:text-sm" style={{ color: COLORS.textPrimary }}>{title}</span>
         </div>
         {expanded ? (
-          <ChevronUp style={{ color: COLORS.textMuted }} />
+          <ChevronUp size={18} style={{ color: COLORS.textMuted }} />
         ) : (
-          <ChevronDown style={{ color: COLORS.textMuted }} />
+          <ChevronDown size={18} style={{ color: COLORS.textMuted }} />
         )}
       </button>
       <AnimatePresence>
@@ -790,7 +789,7 @@ function StatsCard({ title, icon, expanded, onToggle, children }: {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4">{children}</div>
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>

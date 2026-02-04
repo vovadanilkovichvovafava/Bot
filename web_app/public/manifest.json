@@ -1,0 +1,97 @@
+{
+  "name": "AI Analysis Center - Football Predictions",
+  "short_name": "AI Analysis",
+  "description": "AI-powered football match analysis and betting predictions",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080A10",
+  "theme_color": "#4A7AFF",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ru",
+  "categories": ["sports", "entertainment", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "/screenshots/mobile-matches.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Matches"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Matches",
+      "short_name": "Live",
+      "description": "View live matches",
+      "url": "/live",
+      "icons": [{ "src": "/icons/live-shortcut.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "AI Chat",
+      "short_name": "Chat",
+      "description": "Chat with AI analyst",
+      "url": "/ai-chat",
+      "icons": [{ "src": "/icons/chat-shortcut.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

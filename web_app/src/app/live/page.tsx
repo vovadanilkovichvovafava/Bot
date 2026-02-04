@@ -123,7 +123,7 @@ export default function LiveMatchesPage() {
 
   const styles = selectedTheme ? themeStyles[selectedTheme] : themeStyles.neon;
 
-  // Stadium theme - AI Analysis Center
+  // Stadium theme - AI Analysis Center - Mobile optimized
   if (isStadiumTheme) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ background: COLORS.bgPrimary }}>
@@ -132,7 +132,7 @@ export default function LiveMatchesPage() {
           <img
             src={STADIUM_BG}
             alt="Stadium"
-            className="w-full h-[35vh] object-cover"
+            className="w-full h-[25vh] sm:h-[35vh] object-cover"
             style={{ filter: 'saturate(0.4) brightness(0.7) blur(2px)' }}
           />
           <div
@@ -143,57 +143,57 @@ export default function LiveMatchesPage() {
           />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
-          {/* Header */}
+        <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          {/* Header - Mobile optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
           >
-            <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Radio className="w-8 h-8" style={{ color: COLORS.red }} />
+            <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="relative flex-shrink-0">
+                  <Radio className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: COLORS.red }} />
                   <motion.span
                     animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                    className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-3 sm:h-3 rounded-full"
                     style={{ background: COLORS.red }}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h1
-                    className="font-montserrat text-3xl font-bold uppercase tracking-wide"
+                    className="font-montserrat text-lg sm:text-3xl font-bold uppercase tracking-wide truncate"
                     style={{ color: COLORS.textPrimary }}
                   >
-                    В прямом эфире
+                    В эфире
                   </h1>
-                  <p className="text-sm" style={{ color: COLORS.textMuted }}>
-                    {activeLiveMatches.length} матчей сейчас
+                  <p className="text-xs sm:text-sm" style={{ color: COLORS.textMuted }}>
+                    {activeLiveMatches.length} матчей
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 {/* Auto-refresh Toggle */}
                 <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-all touch-manipulation active:scale-95"
                   style={{
                     background: COLORS.bgCard,
                     border: `1px solid ${COLORS.border}`,
                     color: autoRefresh ? COLORS.green : COLORS.textMuted,
                   }}
                 >
-                  {autoRefresh ? <Wifi size={18} /> : <WifiOff size={18} />}
-                  <span className="text-sm">Авто</span>
+                  {autoRefresh ? <Wifi size={16} /> : <WifiOff size={16} />}
+                  <span className="text-xs sm:text-sm hidden xs:inline">Авто</span>
                 </button>
 
                 {/* Manual Refresh */}
                 <button
                   onClick={handleRefresh}
                   disabled={isRefreshing || isLoading}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg transition-all touch-manipulation active:scale-95"
                   style={{
                     background: COLORS.bgCard,
                     border: `1px solid ${COLORS.border}`,
@@ -201,30 +201,31 @@ export default function LiveMatchesPage() {
                     opacity: (isRefreshing || isLoading) ? 0.5 : 1,
                   }}
                 >
-                  <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-                  <span className="hidden sm:inline">Обновить</span>
+                  <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                  <span className="hidden sm:inline text-sm">Обновить</span>
                 </button>
               </div>
             </div>
 
-            {/* Status Bar */}
-            <div className="flex items-center gap-4 text-sm">
+            {/* Status Bar - Mobile compact */}
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
               {isOffline && (
                 <span className="flex items-center gap-1" style={{ color: '#F59E0B' }}>
-                  <WifiOff size={14} />
+                  <WifiOff size={12} />
                   Офлайн
                 </span>
               )}
               {lastUpdated && (
-                <span className="flex items-center gap-1" style={{ color: COLORS.textMuted }}>
+                <span className="hidden sm:flex items-center gap-1" style={{ color: COLORS.textMuted }}>
                   <Clock size={14} />
-                  Обновлено: {new Date(lastUpdated).toLocaleTimeString('ru-RU')}
+                  {new Date(lastUpdated).toLocaleTimeString('ru-RU')}
                 </span>
               )}
               {autoRefresh && (
                 <span className="flex items-center gap-1" style={{ color: COLORS.green }}>
-                  <Activity size={14} />
-                  Авто-обновление
+                  <Activity size={12} />
+                  <span className="hidden sm:inline">Авто-обновление</span>
+                  <span className="sm:hidden">Авто</span>
                 </span>
               )}
             </div>
@@ -284,8 +285,8 @@ export default function LiveMatchesPage() {
                       </span>
                     </div>
 
-                    {/* Matches */}
-                    <div className="grid md:grid-cols-2 gap-4">
+                    {/* Matches - Mobile optimized grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                       {matches.map((match, index) => (
                         <StadiumLiveMatchCard key={match.id} match={match} index={index} />
                       ))}
@@ -381,20 +382,20 @@ export default function LiveMatchesPage() {
   );
 }
 
-// Stadium Live Match Card
+// Stadium Live Match Card - Mobile optimized
 function StadiumLiveMatchCard({ match, index }: { match: Match; index: number }) {
   return (
     <Link href={`/match/${match.id}`}>
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: index * 0.05 }}
-        whileHover={{ scale: 1.01 }}
-        className="group relative rounded-2xl p-5 cursor-pointer transition-all overflow-hidden"
+        transition={{ delay: index * 0.03 }}
+        whileTap={{ scale: 0.98 }}
+        className="group relative rounded-xl sm:rounded-2xl p-3 sm:p-5 cursor-pointer transition-all overflow-hidden touch-manipulation active:bg-[#161C2A]"
         style={{
           background: COLORS.bgGlass,
           backdropFilter: 'blur(12px)',
-          borderLeft: `4px solid ${COLORS.red}`,
+          borderLeft: `3px solid ${COLORS.red}`,
         }}
       >
         {/* Pulsing glow */}
@@ -407,62 +408,62 @@ function StadiumLiveMatchCard({ match, index }: { match: Match; index: number })
 
         {/* Live Badge */}
         <div
-          className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full"
           style={{ background: `${COLORS.red}20` }}
         >
           <motion.div
             animate={{ opacity: [1, 0.5, 1], scale: [1, 1.2, 1] }}
             transition={{ duration: 1, repeat: Infinity }}
-            className="w-2 h-2 rounded-full"
+            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
             style={{ background: COLORS.red }}
           />
-          <span className="text-xs font-bold" style={{ color: COLORS.red }}>
+          <span className="text-[10px] sm:text-xs font-bold" style={{ color: COLORS.red }}>
             {match.minute ? `${match.minute}'` : 'LIVE'}
           </span>
         </div>
 
         {/* League */}
-        <span className="text-xs" style={{ color: COLORS.textMuted }}>{match.league}</span>
+        <span className="text-[10px] sm:text-xs" style={{ color: COLORS.textMuted }}>{match.league}</span>
 
-        {/* Score */}
-        <div className="flex items-center justify-between gap-4 my-4">
-          <div className="flex items-center gap-3 flex-1">
-            <StadiumTeamBadge team={match.homeTeam} />
-            <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
+        {/* Score - Mobile compact layout */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4 my-3 sm:my-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <StadiumTeamBadge team={match.homeTeam} size="mobile" />
+            <span className="text-xs sm:text-sm font-semibold truncate" style={{ color: COLORS.textPrimary }}>
               {getShortTeamName(match.homeTeam.name)}
             </span>
           </div>
 
           <span
-            className="font-montserrat text-3xl font-extrabold"
+            className="font-montserrat text-xl sm:text-3xl font-extrabold flex-shrink-0"
             style={{ color: COLORS.red }}
           >
-            {match.homeScore ?? 0} — {match.awayScore ?? 0}
+            {match.homeScore ?? 0}<span className="mx-1 sm:mx-2">—</span>{match.awayScore ?? 0}
           </span>
 
-          <div className="flex items-center gap-3 flex-1 justify-end">
-            <span className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-end">
+            <span className="text-xs sm:text-sm font-semibold truncate text-right" style={{ color: COLORS.textPrimary }}>
               {getShortTeamName(match.awayTeam.name)}
             </span>
-            <StadiumTeamBadge team={match.awayTeam} />
+            <StadiumTeamBadge team={match.awayTeam} size="mobile" />
           </div>
         </div>
 
-        {/* AI Insight */}
-        <p className="text-xs text-center italic mb-4" style={{ color: COLORS.textSecondary }}>
+        {/* AI Insight - Hidden on mobile for space */}
+        <p className="hidden sm:block text-xs text-center italic mb-4" style={{ color: COLORS.textSecondary }}>
           AI: Ожидается ещё 1 гол (73% вероятность)
         </p>
 
-        {/* AI Analysis Button */}
+        {/* AI Analysis Button - Touch friendly */}
         <div
-          className="w-full py-3 rounded-xl text-center font-semibold transition-all flex items-center justify-center gap-2"
+          className="w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-center font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
           style={{
             background: `${COLORS.red}15`,
             border: `1px solid ${COLORS.red}40`,
             color: COLORS.red,
           }}
         >
-          <Brain size={20} />
+          <Brain size={16} className="sm:w-5 sm:h-5" />
           Live AI анализ
         </div>
       </motion.div>
@@ -470,15 +471,17 @@ function StadiumLiveMatchCard({ match, index }: { match: Match; index: number })
   );
 }
 
-// Stadium Team Badge
-function StadiumTeamBadge({ team }: { team: { name: string; logo?: string } }) {
+// Stadium Team Badge - Mobile responsive
+function StadiumTeamBadge({ team, size = 'default' }: { team: { name: string; logo?: string }; size?: 'mobile' | 'default' }) {
   const [imgError, setImgError] = useState(false);
   const bgColor = TEAM_COLORS[team.name] || COLORS.blue;
+  const sizeClass = size === 'mobile' ? 'w-9 h-9 sm:w-12 sm:h-12' : 'w-12 h-12';
+  const fontSizeClass = size === 'mobile' ? 'text-xs sm:text-sm' : 'text-lg';
 
   if (team.logo && !imgError) {
     return (
       <div
-        className="w-12 h-12 rounded-full p-1.5 overflow-hidden flex-shrink-0"
+        className={cn(sizeClass, 'rounded-full p-1 sm:p-1.5 overflow-hidden flex-shrink-0')}
         style={{ background: 'rgba(255,255,255,0.1)' }}
       >
         <img
@@ -486,6 +489,7 @@ function StadiumTeamBadge({ team }: { team: { name: string; logo?: string } }) {
           alt={team.name}
           className="w-full h-full object-contain"
           onError={() => setImgError(true)}
+          loading="lazy"
         />
       </div>
     );
@@ -493,7 +497,7 @@ function StadiumTeamBadge({ team }: { team: { name: string; logo?: string } }) {
 
   return (
     <div
-      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0"
+      className={cn(sizeClass, fontSizeClass, 'rounded-full flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0')}
       style={{
         background: `linear-gradient(135deg, ${bgColor}, ${bgColor}99)`,
         boxShadow: `0 4px 20px ${bgColor}40`,

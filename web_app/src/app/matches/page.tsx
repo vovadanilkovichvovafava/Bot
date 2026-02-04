@@ -164,7 +164,7 @@ export default function MatchesPage() {
           <img
             src={STADIUM_BG}
             alt="Stadium"
-            className="w-full h-[30vh] object-cover"
+            className="w-full h-[25vh] sm:h-[30vh] object-cover"
             style={{ filter: 'saturate(0.4) brightness(0.7) blur(2px)' }}
           />
           <div
@@ -175,18 +175,18 @@ export default function MatchesPage() {
           />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-8 h-8" style={{ color: COLORS.blue }} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Calendar className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: COLORS.blue }} />
                 <h1
-                  className="font-montserrat text-3xl font-bold uppercase tracking-wide"
+                  className="font-montserrat text-xl sm:text-3xl font-bold uppercase tracking-wide"
                   style={{ color: COLORS.textPrimary }}
                 >
                   Матчи
@@ -196,7 +196,7 @@ export default function MatchesPage() {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing || isLoading}
-                className="p-2 rounded-lg transition-all"
+                className="p-2.5 sm:p-2 rounded-lg transition-all touch-manipulation active:scale-95"
                 style={{
                   background: COLORS.bgCard,
                   border: `1px solid ${COLORS.border}`,
@@ -211,7 +211,7 @@ export default function MatchesPage() {
             </div>
 
             {/* Status indicators */}
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
               {isOffline && (
                 <span className="flex items-center gap-1" style={{ color: '#F59E0B' }}>
                   <WifiOff size={14} />
@@ -219,28 +219,28 @@ export default function MatchesPage() {
                 </span>
               )}
               {isFromCache && !isOffline && (
-                <span style={{ color: COLORS.textMuted }}>Кэшированные данные</span>
+                <span style={{ color: COLORS.textMuted }}>Кэш</span>
               )}
               {lastUpdated && (
-                <span style={{ color: COLORS.textMuted }}>
+                <span className="hidden sm:inline" style={{ color: COLORS.textMuted }}>
                   Обновлено: {new Date(lastUpdated).toLocaleTimeString('ru-RU')}
                 </span>
               )}
             </div>
           </motion.div>
 
-          {/* Tabs - Pill style */}
+          {/* Tabs - Horizontal scroll on mobile */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="flex flex-wrap gap-2 mb-6"
+            className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap hide-scrollbar"
           >
             {(['currentRound', 'nextRound', 'today', 'tomorrow'] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="font-montserrat font-bold text-sm uppercase tracking-wider px-5 py-2.5 rounded-full transition-all"
+                className="font-montserrat font-bold text-xs sm:text-sm uppercase tracking-wider px-4 sm:px-5 py-2.5 rounded-full transition-all whitespace-nowrap flex-shrink-0 touch-manipulation active:scale-95"
                 style={{
                   background: activeTab === tab ? COLORS.blue : 'transparent',
                   border: `1px solid ${activeTab === tab ? COLORS.blue : COLORS.border}`,
@@ -248,36 +248,36 @@ export default function MatchesPage() {
                 }}
               >
                 {TAB_CONFIG[tab].labelRu}
-                <span className="ml-2 opacity-70">({getMatchesForTab(tab).length})</span>
+                <span className="ml-1.5 sm:ml-2 opacity-70">({getMatchesForTab(tab).length})</span>
               </button>
             ))}
           </motion.div>
 
-          {/* Filters */}
+          {/* Filters - Mobile optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl p-4 mb-6"
+            className="rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
             style={{
               background: COLORS.bgCard,
               border: `1px solid ${COLORS.border}`,
             }}
           >
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               {/* Search */}
-              <div className="flex-1 relative">
+              <div className="relative">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2"
-                  size={20}
+                  size={18}
                   style={{ color: COLORS.blue }}
                 />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск команд или лиг..."
-                  className="w-full pl-10 pr-4 py-3 rounded-xl transition-all"
+                  placeholder="Поиск команд..."
+                  className="w-full pl-10 pr-4 py-3 rounded-xl transition-all text-sm sm:text-base"
                   style={{
                     background: COLORS.bgSecondary,
                     border: `1px solid ${COLORS.border}`,
@@ -286,8 +286,8 @@ export default function MatchesPage() {
                 />
               </div>
 
-              {/* League Filter */}
-              <div className="flex items-center gap-2">
+              {/* League Filter - Hidden on mobile, show pills instead */}
+              <div className="hidden sm:flex items-center gap-2">
                 <Filter size={20} style={{ color: COLORS.blue }} />
                 <select
                   value={selectedLeague}
@@ -308,13 +308,13 @@ export default function MatchesPage() {
               </div>
             </div>
 
-            {/* League Pills */}
-            <div className="flex flex-wrap gap-2 mt-4">
+            {/* League Pills - Horizontal scroll on mobile */}
+            <div className="flex gap-2 mt-3 sm:mt-4 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap hide-scrollbar">
               {LEAGUES.map((league) => (
                 <button
                   key={league.code}
                   onClick={() => setSelectedLeague(league.code)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-1.5 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 touch-manipulation active:scale-95"
                   style={{
                     background: selectedLeague === league.code ? COLORS.blue : 'transparent',
                     border: `1px solid ${selectedLeague === league.code ? COLORS.blue : COLORS.border}`,
@@ -391,8 +391,8 @@ export default function MatchesPage() {
                       <span className="text-sm" style={{ color: COLORS.textMuted }}>({matches.length})</span>
                     </div>
 
-                    {/* Matches Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Matches Grid - Mobile optimized */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {matches.map((match, index) => (
                         <StadiumMatchCard key={match.id} match={match} index={index} />
                       ))}
@@ -554,7 +554,7 @@ export default function MatchesPage() {
   );
 }
 
-// Stadium Theme Match Card
+// Stadium Theme Match Card - Mobile optimized
 function StadiumMatchCard({ match, index }: { match: Match; index: number }) {
   const live = isMatchLive(match);
   const finished = isMatchFinished(match);
@@ -564,10 +564,9 @@ function StadiumMatchCard({ match, index }: { match: Match; index: number }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.03 }}
-        whileHover={{ scale: 1.02, y: -2 }}
+        transition={{ delay: index * 0.02 }}
         whileTap={{ scale: 0.98 }}
-        className="group relative rounded-xl p-5 cursor-pointer transition-all overflow-hidden"
+        className="group relative rounded-xl p-3 sm:p-5 cursor-pointer transition-all overflow-hidden touch-manipulation active:bg-[#161C2A]"
         style={{
           background: COLORS.bgCard,
           border: `1px solid ${live ? `${COLORS.red}50` : COLORS.border}`,
@@ -582,75 +581,75 @@ function StadiumMatchCard({ match, index }: { match: Match; index: number }) {
         )}
 
         {/* Time/Status */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           {live ? (
-            <span className="flex items-center gap-2 text-sm font-bold" style={{ color: COLORS.red }}>
+            <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold" style={{ color: COLORS.red }}>
               <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: COLORS.red }} />
               LIVE {match.minute && `${match.minute}'`}
             </span>
           ) : finished ? (
-            <span className="text-sm font-medium" style={{ color: COLORS.textMuted }}>Завершён</span>
+            <span className="text-xs sm:text-sm font-medium" style={{ color: COLORS.textMuted }}>Завершён</span>
           ) : (
-            <span className="flex items-center gap-1 text-sm" style={{ color: COLORS.textMuted }}>
-              <Clock size={14} />
+            <span className="flex items-center gap-1 text-xs sm:text-sm" style={{ color: COLORS.textMuted }}>
+              <Clock size={12} className="sm:w-3.5 sm:h-3.5" />
               {formatMatchDate(match.matchDate)}
             </span>
           )}
 
           {match.matchday && (
-            <span className="text-xs" style={{ color: COLORS.textMuted }}>Тур {match.matchday}</span>
+            <span className="text-[10px] sm:text-xs" style={{ color: COLORS.textMuted }}>Тур {match.matchday}</span>
           )}
         </div>
 
-        {/* Teams */}
+        {/* Teams - Mobile compact layout */}
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0 text-center">
-            <StadiumTeamLogo team={match.homeTeam} />
-            <p className="mt-2 text-sm font-medium truncate px-1" style={{ color: COLORS.textPrimary }}>
+            <StadiumTeamLogo team={match.homeTeam} size="mobile" />
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm font-medium truncate px-0.5 sm:px-1" style={{ color: COLORS.textPrimary }}>
               {getShortTeamName(match.homeTeam.name)}
             </p>
           </div>
 
-          <div className="px-4 py-2 flex-shrink-0">
+          <div className="px-2 sm:px-4 py-1 sm:py-2 flex-shrink-0">
             {live || finished ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span
-                  className="font-montserrat text-2xl font-bold"
+                  className="font-montserrat text-lg sm:text-2xl font-bold"
                   style={{ color: live ? COLORS.red : COLORS.textPrimary }}
                 >
                   {match.homeScore ?? 0}
                 </span>
-                <span className="text-xl" style={{ color: COLORS.textMuted }}>:</span>
+                <span className="text-base sm:text-xl" style={{ color: COLORS.textMuted }}>:</span>
                 <span
-                  className="font-montserrat text-2xl font-bold"
+                  className="font-montserrat text-lg sm:text-2xl font-bold"
                   style={{ color: live ? COLORS.red : COLORS.textPrimary }}
                 >
                   {match.awayScore ?? 0}
                 </span>
               </div>
             ) : (
-              <span className="font-montserrat text-lg font-bold" style={{ color: COLORS.blue }}>VS</span>
+              <span className="font-montserrat text-sm sm:text-lg font-bold" style={{ color: COLORS.blue }}>VS</span>
             )}
           </div>
 
           <div className="flex-1 min-w-0 text-center">
-            <StadiumTeamLogo team={match.awayTeam} />
-            <p className="mt-2 text-sm font-medium truncate px-1" style={{ color: COLORS.textPrimary }}>
+            <StadiumTeamLogo team={match.awayTeam} size="mobile" />
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm font-medium truncate px-0.5 sm:px-1" style={{ color: COLORS.textPrimary }}>
               {getShortTeamName(match.awayTeam.name)}
             </p>
           </div>
         </div>
 
-        {/* AI Prediction */}
-        <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${COLORS.border}` }}>
+        {/* AI Prediction - Touch friendly */}
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4" style={{ borderTop: `1px solid ${COLORS.border}` }}>
           <div
-            className="w-full py-2.5 rounded-lg text-center text-sm font-semibold flex items-center justify-center gap-2 transition-all group-hover:bg-opacity-20"
+            className="w-full py-2.5 sm:py-2.5 rounded-lg text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-all"
             style={{
               color: COLORS.blue,
               border: `1px solid ${COLORS.borderBlue}`,
             }}
           >
-            <Brain className="w-4 h-4" />
+            <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Получить прогноз AI
           </div>
         </div>
@@ -659,8 +658,8 @@ function StadiumMatchCard({ match, index }: { match: Match; index: number }) {
   );
 }
 
-// Stadium Team Logo
-function StadiumTeamLogo({ team }: { team: { name: string; logo?: string } }) {
+// Stadium Team Logo - Mobile responsive
+function StadiumTeamLogo({ team, size = 'default' }: { team: { name: string; logo?: string }; size?: 'mobile' | 'default' }) {
   const [imgError, setImgError] = useState(false);
 
   const teamColors: Record<string, string> = {
@@ -683,11 +682,13 @@ function StadiumTeamLogo({ team }: { team: { name: string; logo?: string } }) {
   };
 
   const bgColor = teamColors[team.name] || COLORS.blue;
+  const sizeClass = size === 'mobile' ? 'w-10 h-10 sm:w-14 sm:h-14' : 'w-14 h-14';
+  const fontSizeClass = size === 'mobile' ? 'text-xs sm:text-sm' : 'text-sm';
 
   if (team.logo && !imgError) {
     return (
       <div
-        className="w-14 h-14 mx-auto rounded-full p-1.5 overflow-hidden"
+        className={cn(sizeClass, 'mx-auto rounded-full p-1 sm:p-1.5 overflow-hidden')}
         style={{ background: 'rgba(255,255,255,0.1)' }}
       >
         <img
@@ -695,6 +696,7 @@ function StadiumTeamLogo({ team }: { team: { name: string; logo?: string } }) {
           alt={team.name}
           className="w-full h-full object-contain"
           onError={() => setImgError(true)}
+          loading="lazy"
         />
       </div>
     );
@@ -702,7 +704,7 @@ function StadiumTeamLogo({ team }: { team: { name: string; logo?: string } }) {
 
   return (
     <div
-      className="w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold shadow-lg"
+      className={cn(sizeClass, fontSizeClass, 'mx-auto rounded-full flex items-center justify-center text-white font-bold shadow-lg')}
       style={{
         background: `linear-gradient(135deg, ${bgColor}, ${bgColor}99)`,
         boxShadow: `0 4px 15px ${bgColor}40`,
