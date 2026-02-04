@@ -1,56 +1,40 @@
-// Simple SPA router for PWA
+// SPA Router
 class Router {
   constructor() {
-    this.currentPage = 'home';
-    this.navItems = document.querySelectorAll('.nav-item');
-    this.pages = document.querySelectorAll('.page');
+    this.current = null;
+    this.pages = {};
+  }
 
-    this.navItems.forEach((item) => {
-      item.addEventListener('click', (e) => {
+  init() {
+    document.querySelectorAll('.nav-item').forEach((el) => {
+      el.addEventListener('click', (e) => {
         e.preventDefault();
-        const page = item.dataset.page;
-        this.navigate(page);
+        this.go(el.dataset.page);
       });
     });
-
-    // Handle browser back/forward
     window.addEventListener('popstate', (e) => {
-      if (e.state && e.state.page) {
-        this.showPage(e.state.page);
-      }
+      if (e.state?.page) this.show(e.state.page);
     });
-
-    // Initial route
-    const hash = window.location.hash.replace('#', '') || 'home';
-    this.navigate(hash, false);
+    const hash = location.hash.replace('#', '') || 'home';
+    this.go(hash, false);
   }
 
-  navigate(page, pushState = true) {
-    this.showPage(page);
-    if (pushState) {
-      history.pushState({ page }, '', `#${page}`);
-    }
+  go(page, push = true) {
+    this.show(page);
+    if (push) history.pushState({ page }, '', `#${page}`);
   }
 
-  showPage(page) {
-    this.currentPage = page;
-
-    // Update pages
-    this.pages.forEach((p) => {
-      p.classList.toggle('active', p.id === `page-${page}`);
-    });
-
-    // Update nav
-    this.navItems.forEach((item) => {
-      item.classList.toggle('active', item.dataset.page === page);
-    });
-
-    // Scroll to top
+  show(page) {
+    this.current = page;
+    document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === `page-${page}`));
+    document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.page === page));
     document.getElementById('page-container').scrollTop = 0;
+
+    // Trigger page load
+    if (window.app && window.app.onPageShow) {
+      window.app.onPageShow(page);
+    }
   }
 }
 
-// Initialize router when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.router = new Router();
-});
+window.router = new Router();

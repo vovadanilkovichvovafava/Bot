@@ -1,11 +1,11 @@
 {
-  "name": "AI Betting Bot",
-  "short_name": "AI Bot",
+  "name": "AI Bet Analyst",
+  "short_name": "AI Bet",
   "description": "AI-powered football match analysis and predictions",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#00F5FF",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
   "orientation": "portrait",
   "icons": [
     {
