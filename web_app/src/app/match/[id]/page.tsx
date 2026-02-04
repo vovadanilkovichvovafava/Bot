@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Clock, Send, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useAudio } from '@/components/AudioProvider';
 import ReactMarkdown from 'react-markdown';
 
 interface Match {
@@ -20,7 +19,6 @@ interface Match {
 }
 
 export default function MatchDetailPage({ params }: { params: { id: string } }) {
-  const { playEpicMoment, isPlaying } = useAudio();
   const [match, setMatch] = useState<Match | null>(null);
   const [showEmblems, setShowEmblems] = useState(false);
   const [question, setQuestion] = useState('');
@@ -41,9 +39,6 @@ export default function MatchDetailPage({ params }: { params: { id: string } }) 
       matchDate: new Date().toISOString(),
       status: 'SCHEDULED',
     });
-
-    // Play epic music
-    playEpicMoment();
   }, [params.id]);
 
   const quickQuestions = [

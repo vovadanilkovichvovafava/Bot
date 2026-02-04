@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAudio } from './AudioProvider';
 import { Bot, Zap, TrendingUp, Shield } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,22 +16,13 @@ const LEAGUE_EMBLEMS = [
 ];
 
 export function HeroSection() {
-  const { playEpicMoment, isPlaying } = useAudio();
   const [showEmblems, setShowEmblems] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
     // Start emblem animation after a short delay
     const timer = setTimeout(() => setShowEmblems(true), 500);
     return () => clearTimeout(timer);
   }, []);
-
-  const handleExperience = () => {
-    if (!hasInteracted) {
-      playEpicMoment();
-      setHasInteracted(true);
-    }
-  };
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -72,8 +62,7 @@ export function HeroSection() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
               href="/matches"
-              onClick={handleExperience}
-              className="px-8 py-4 bg-accent text-primary-dark font-bold rounded-xl hover:bg-accent-light transition-all transform hover:scale-105 fire-glow"
+              className="px-8 py-4 bg-accent text-primary-dark font-bold rounded-xl hover:bg-accent-light transition-all transform hover:scale-105"
             >
               <span className="flex items-center gap-2 justify-center">
                 <Zap size={20} />
@@ -81,16 +70,14 @@ export function HeroSection() {
               </span>
             </Link>
 
-            <button
-              onClick={handleExperience}
-              className={`px-8 py-4 glass-card font-bold rounded-xl transition-all transform hover:scale-105 ${
-                isPlaying ? 'border-fire text-fire' : 'border-accent/50 text-white hover:border-accent'
-              }`}
+            <Link
+              href="/live"
+              className="px-8 py-4 glass-card font-bold rounded-xl transition-all transform hover:scale-105 border-accent/50 text-white hover:border-accent"
             >
               <span className="flex items-center gap-2 justify-center">
-                {isPlaying ? '🔥 FIRE!' : '🎵 Experience'}
+                🔴 Live Matches
               </span>
-            </button>
+            </Link>
           </div>
         </motion.div>
 
