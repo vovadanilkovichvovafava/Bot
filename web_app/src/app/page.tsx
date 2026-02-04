@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
@@ -12,21 +11,18 @@ import { StadiumHome } from '@/components/themes/StadiumHome';
 export default function HomePage() {
   const router = useRouter();
   const { selectedTheme, hasSelectedTheme } = useThemeStore();
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
-  const [isChecking, setIsChecking] = useState(true);
+  const { isAuthenticated } = useAuthStore();
+  const [hydrated, setHydrated] = useState(false);
 
+  // Wait for hydration
   useEffect(() => {
-    const init = async () => {
-      await checkAuth();
-      setIsChecking(false);
-    };
-    init();
-  }, [checkAuth]);
+    setHydrated(true);
+  }, []);
 
+  // Redirect logic
   useEffect(() => {
-    if (isChecking || isLoading) return;
+    if (!hydrated) return;
 
-    // Flow: select-style → login → home
     if (!hasSelectedTheme) {
       router.replace('/select-style');
       return;
@@ -36,21 +32,15 @@ export default function HomePage() {
       router.replace('/login');
       return;
     }
-  }, [hasSelectedTheme, isAuthenticated, isChecking, isLoading, router]);
+  }, [hydrated, hasSelectedTheme, isAuthenticated, router]);
 
-  // Show loading while checking auth
-  if (isChecking || isLoading || !hasSelectedTheme || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a12]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full"
-        />
-      </div>
-    );
+  // Before hydration or if not ready, show themed content anyway
+  // (redirects will happen if needed)
+  if (!hydrated) {
+    return null; // SSR - return nothing, client will hydrate
   }
 
+  // Show themed home based on selection
   if (selectedTheme === 'cinematic') {
     return <CinematicHome />;
   }
@@ -63,14 +53,6 @@ export default function HomePage() {
     return <StadiumHome />;
   }
 
-  // Fallback loading
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a12]">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full"
-      />
-    </div>
-  );
+  // Default - show stadium while redirect happens
+  return <StadiumHome />;
 }

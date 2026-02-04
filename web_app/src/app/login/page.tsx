@@ -18,25 +18,24 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     username: '',
   });
 
-  // Redirect if no theme selected - must choose style first
+  // Wait for hydration
   useEffect(() => {
-    if (!hasSelectedTheme) {
-      router.replace('/select-style');
-    }
-  }, [hasSelectedTheme, router]);
+    setHydrated(true);
+  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (hydrated && isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
   // Sync auth error
   useEffect(() => {
