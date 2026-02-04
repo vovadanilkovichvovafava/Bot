@@ -211,12 +211,103 @@ Please bet responsibly`,
   };
 }
 
+// Generate match-specific fallback when AI is unavailable
+function generateMatchAnalysisFallback(query: string, matchInfo: MatchInfo): string {
+  const { homeTeam, awayTeam, leagueCode } = matchInfo;
+  const queryLower = query.toLowerCase();
+
+  // Who will win / prediction question
+  if (queryLower.includes('win') || queryLower.includes('predict') || queryLower.includes('best bet')) {
+    return `**${homeTeam} vs ${awayTeam}**
+
+**Quick Analysis:**
+
+This is a competitive match in ${leagueCode || 'top league'} football.
+
+**Factors to consider:**
+- Home advantage for ${homeTeam}
+- Recent form of both teams
+- Head-to-head history
+- Key player availability
+
+**Suggestion:** Check the "Head to Head" and "Match Statistics" sections below for detailed data before placing any bets.
+
+*AI analysis temporarily unavailable - this is a general response.*`;
+  }
+
+  // Over/under goals
+  if (queryLower.includes('goal') || queryLower.includes('over') || queryLower.includes('under')) {
+    return `**${homeTeam} vs ${awayTeam} - Goals Analysis**
+
+**Factors affecting goals:**
+- Both teams' attacking and defensive records
+- Recent scoring trends
+- Historical meetings
+
+**To estimate:**
+- Check "Match Statistics" for average goals
+- Look at recent form in "Head to Head"
+
+*AI analysis temporarily unavailable - check the stats below.*`;
+  }
+
+  // BTTS (Both teams to score)
+  if (queryLower.includes('btts') || queryLower.includes('both team')) {
+    return `**${homeTeam} vs ${awayTeam} - BTTS Analysis**
+
+**Key factors:**
+- Defensive solidity of both teams
+- Clean sheet percentages
+- Recent games with both teams scoring
+
+**Check:**
+- Goals Conceded stats in "Match Statistics"
+- Clean Sheets % for both teams
+
+*AI analysis temporarily unavailable.*`;
+  }
+
+  // Score prediction
+  if (queryLower.includes('score')) {
+    return `**${homeTeam} vs ${awayTeam} - Score Prediction**
+
+Score predictions require detailed analysis of:
+- Recent goal-scoring records
+- Defensive statistics
+- Head-to-head scoring patterns
+
+Check the "Match Statistics" section for detailed data.
+
+*AI analysis temporarily unavailable.*`;
+  }
+
+  // Default response
+  return `**${homeTeam} vs ${awayTeam}**
+
+I can provide analysis on:
+- **Who will win?** - Match outcome prediction
+- **Best bet?** - Value betting suggestion
+- **Over 2.5 goals?** - Goals market analysis
+- **Both teams score?** - BTTS analysis
+- **Predicted score?** - Scoreline prediction
+
+Click one of the quick questions above or type your own!
+
+*Note: Full AI analysis temporarily unavailable.*`;
+}
+
 // Generate fallback AI response (when server unavailable)
 function generateFallbackResponse(
   query: string,
   todayMatches: Match[],
-  tomorrowMatches: Match[]
+  tomorrowMatches: Match[],
+  matchInfo?: MatchInfo
 ): string {
+  // If we have specific match info, generate response for that match
+  if (matchInfo?.homeTeam && matchInfo?.awayTeam) {
+    return generateMatchAnalysisFallback(query, matchInfo);
+  }
+
   const queryLower = query.toLowerCase();
 
   // Check for league-specific requests
@@ -388,7 +479,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
     },
 
-    sendMessage: async (message, preferences, matchInfo, isPremium = false) => {
+    sendMessage: async (message, preferences, matchInfo?, isPremium = false) => {
       const state = get();
       if (!message.trim() || state.isLoading) return;
 
@@ -470,12 +561,12 @@ The AI service is temporarily unavailable due to high demand.
 Please try again in a few minutes.`;
           } else {
             // Fallback to local response
-            response = generateFallbackResponse(message, [], []);
+            response = generateFallbackResponse(message, [], [], matchInfo);
           }
         }
       } else {
         // Use fallback
-        response = generateFallbackResponse(message, [], []);
+        response = generateFallbackResponse(message, [], [], matchInfo);
       }
 
       // Add assistant response
