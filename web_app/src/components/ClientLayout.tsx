@@ -18,9 +18,6 @@ function LayoutContent({ children }: ClientLayoutProps) {
 
   return (
     <>
-      {/* Neon theme scan line effect */}
-      {selectedTheme === 'neon' && <div className="scan-line" />}
-
       {showNavbar && <ThemedNavbar />}
       <main className={showNavbar ? 'min-h-screen pt-16' : 'min-h-screen'}>
         {children}

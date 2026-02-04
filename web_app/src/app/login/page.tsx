@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/themeStore';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://appbot-production-152e.up.railway.app';
-
 export default function LoginPage() {
+  const router = useRouter();
   const { selectedTheme } = useThemeStore();
+  const { login, register, loginDemo, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuthStore();
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,41 +24,50 @@ export default function LoginPage() {
     username: '',
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
+
+  // Sync auth error
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    clearError();
 
     try {
-      const endpoint = isLogin
-        ? `${API_URL}/api/v1/auth/login`
-        : `${API_URL}/api/v1/auth/register`;
-
-      const body = isLogin
-        ? { email: formData.email, password: formData.password }
-        : { email: formData.email, password: formData.password, username: formData.username };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Authentication failed');
+      let success: boolean;
+      if (isLogin) {
+        success = await login(formData.email, formData.password);
+      } else {
+        success = await register(formData.email, formData.password, formData.username);
       }
 
-      // Store token and redirect
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      window.location.href = '/';
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      if (success) {
+        router.push('/');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDemoMode = async () => {
+    setIsLoading(true);
+    setError(null);
+    await loginDemo();
+    router.push('/');
   };
 
   // Theme-specific styles
@@ -262,23 +274,24 @@ export default function LoginPage() {
             <div className={cn('flex-1 h-px', styles.accentBorder.replace('border-', 'bg-'))} />
           </div>
 
-          {/* Guest Mode */}
-          <Link href="/">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={cn(
-                'w-full py-4 rounded-xl text-center font-semibold transition-all border',
-                styles.accent,
-                styles.accentBorder,
-                'hover:bg-white/5'
-              )}
-            >
-              Continue as Guest
-            </motion.button>
-          </Link>
+          {/* Demo Mode */}
+          <motion.button
+            onClick={handleDemoMode}
+            disabled={isLoading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={cn(
+              'w-full py-4 rounded-xl text-center font-semibold transition-all border flex items-center justify-center gap-2',
+              styles.accent,
+              styles.accentBorder,
+              'hover:bg-white/5'
+            )}
+          >
+            <Zap size={18} />
+            Try Demo Mode
+          </motion.button>
           <p className="text-center text-gray-500 text-xs mt-3">
-            3 free AI predictions per day
+            Full access for 30 minutes - no registration needed
           </p>
         </div>
       </motion.div>
