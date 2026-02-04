@@ -13,6 +13,22 @@ import { useAuthStore } from '@/store/authStore';
 import { MatchDetail, isMatchLive, isMatchFinished, formatMatchDate } from '@/types';
 import { cn } from '@/lib/utils';
 
+/**
+ * Format AI analysis text to display bullet points on separate lines
+ */
+function formatAnalysisText(text: string): string {
+  if (!text) return text;
+
+  // Replace inline bullet points with newline + bullet
+  // Pattern: space + bullet + space (but not at start of line)
+  let formatted = text.replace(/(?<!^)(?<!\n)\s*•\s*/g, '\n• ');
+
+  // Ensure sections start on new lines
+  formatted = formatted.replace(/([.!?])\s*(📊|🎯|💡|💰|⚠️|🏆|📅)/g, '$1\n\n$2');
+
+  return formatted;
+}
+
 interface NeonMatchDetailProps {
   matchId: string;
 }
@@ -340,7 +356,7 @@ export function NeonMatchDetail({ matchId }: NeonMatchDetailProps) {
                           className="p-4 rounded-xl bg-gray-800/50 border border-emerald-500/20"
                         >
                           <div className="prose prose-invert prose-sm prose-emerald max-w-none">
-                            <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                            <ReactMarkdown>{formatAnalysisText(aiAnalysis)}</ReactMarkdown>
                           </div>
                         </motion.div>
 
