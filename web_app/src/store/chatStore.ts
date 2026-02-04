@@ -540,36 +540,57 @@ Premium benefits:
       // Try real AI API
       if (state.aiAvailable) {
         try {
-          // Build history for API
+          // Build history for API (last 10 messages max)
           const history = state.messages
+            .slice(-10)
             .filter(m => m.isUser || state.messages.some(other => other.isUser))
             .map(m => ({
               role: m.isUser ? 'user' : 'assistant',
               content: m.text,
             }));
 
+          console.log('[AI Chat] Sending message to API...', { message, hasMatchInfo: !!matchInfo });
           const result = await api.sendChatMessage(message, history, preferences, matchInfo);
+          console.log('[AI Chat] Got response:', result);
           response = result.response;
         } catch (error) {
-          // Check for rate limit or auth error
+          // Log the actual error for debugging
+          console.error('[AI Chat] API Error:', error);
           const errorStr = String(error);
+          const errorMessage = error instanceof Error ? error.message : errorStr;
+
           if (errorStr.includes('429') || errorStr.includes('limit')) {
             response = `**Rate Limit Reached**
 
 The AI service is temporarily unavailable due to high demand.
 
 Please try again in a few minutes.`;
-          } else if (errorStr.includes('401') || errorStr.includes('authenticated')) {
+          } else if (errorStr.includes('401') || errorStr.includes('Unauthorized')) {
             response = `**Authentication Required**
 
 Please sign in to use AI analysis.`;
+          } else if (errorStr.includes('500') || errorStr.includes('Internal Server')) {
+            response = `**Server Error**
+
+The AI service encountered an error. Please try again later.
+
+Error: ${errorMessage}`;
+          } else if (errorStr.includes('fetch') || errorStr.includes('network') || errorStr.includes('Failed to fetch')) {
+            response = `**Connection Error**
+
+Could not connect to the AI service. Please check your internet connection.`;
           } else {
-            // Fallback to local response
-            response = generateFallbackResponse(message, [], [], matchInfo);
+            // Show actual error instead of generic fallback
+            response = `**AI Error**
+
+${errorMessage}
+
+If this persists, please try again later.`;
           }
         }
       } else {
-        // Use fallback
+        // AI not available - use fallback
+        console.log('[AI Chat] AI not available, using fallback');
         response = generateFallbackResponse(message, [], [], matchInfo);
       }
 

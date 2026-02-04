@@ -347,6 +347,15 @@ class ApiService {
     preferences?: ChatPreferences,
     matchInfo?: MatchInfo
   ): Promise<{ response: string; cached?: boolean }> {
+    // Ensure we have the latest token from localStorage
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('access_token');
+      if (storedToken && storedToken !== this.token) {
+        this.token = storedToken;
+        console.log('[API] Updated token from localStorage');
+      }
+    }
+
     const body: Record<string, unknown> = {
       message,
       history,
@@ -369,6 +378,12 @@ class ApiService {
         match_date: matchInfo.matchDate,
       };
     }
+
+    console.log('[API] Sending chat message:', {
+      url: `${API_URL}/api/v1/chat/send`,
+      hasToken: !!this.token,
+      hasMatchInfo: !!matchInfo
+    });
 
     const data = await this.fetchWithRetry<{ response: string; cached?: boolean }>(
       `${API_URL}/api/v1/chat/send`,
