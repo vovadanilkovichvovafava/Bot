@@ -28,7 +28,7 @@ interface UserSettings {
 export default function SettingsPage() {
   const router = useRouter();
   const { selectedTheme } = useThemeStore();
-  const { user, isAuthenticated, isDemoMode, logout, refreshUser } = useAuthStore();
+  const { user, isAuthenticated, logout, refreshUser } = useAuthStore();
   const { clearCache } = useMatchesStore();
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -136,10 +136,10 @@ export default function SettingsPage() {
 
   // Load favorite teams
   useEffect(() => {
-    if (isAuthenticated && !isDemoMode) {
+    if (isAuthenticated) {
       loadFavoriteTeams();
     }
-  }, [isAuthenticated, isDemoMode]);
+  }, [isAuthenticated]);
 
   const loadFavoriteTeams = async () => {
     setIsLoadingFavorites(true);
@@ -174,13 +174,6 @@ export default function SettingsPage() {
   };
 
   const handleSaveSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
-    if (isDemoMode) {
-      setSettings(s => ({ ...s, ...newSettings }));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-      return;
-    }
-
     setIsSaving(true);
     try {
       await api.updateUser({
@@ -195,11 +188,12 @@ export default function SettingsPage() {
       setTimeout(() => setSaveSuccess(false), 2000);
       refreshUser();
     } catch {
-      // Silent fail
+      // Still update local state on error
+      setSettings(s => ({ ...s, ...newSettings }));
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, refreshUser]);
+  }, [refreshUser]);
 
   const handleLogout = () => {
     clearCache();
@@ -219,7 +213,7 @@ export default function SettingsPage() {
 
   const currentRisk = getRiskInfo(settings.riskLevel);
 
-  if (!isAuthenticated && !isDemoMode) {
+  if (!isAuthenticated) {
     return (
       <div className={cn('min-h-screen flex items-center justify-center py-8 px-4', styles.bg)}>
         <motion.div
@@ -301,14 +295,8 @@ export default function SettingsPage() {
                 {(user?.username ?? user?.email)?.[0].toUpperCase() ?? 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{user?.username ?? user?.email ?? 'Demo User'}</p>
-                <p className="text-gray-500 text-sm truncate">{user?.email ?? 'demo@example.com'}</p>
-                {isDemoMode && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs mt-1">
-                    <Clock size={10} />
-                    Demo Mode
-                  </span>
-                )}
+                <p className="text-white font-medium truncate">{user?.username ?? user?.email ?? 'User'}</p>
+                <p className="text-gray-500 text-sm truncate">{user?.email ?? ''}</p>
               </div>
               {user?.isPremium && (
                 <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-sm">

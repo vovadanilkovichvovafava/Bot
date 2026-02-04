@@ -20,7 +20,7 @@ interface AccuracyData {
 
 export default function StatsPage() {
   const { selectedTheme } = useThemeStore();
-  const { user, isAuthenticated, isDemoMode } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [accuracyData, setAccuracyData] = useState<AccuracyData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,18 +59,18 @@ export default function StatsPage() {
 
   useEffect(() => {
     const loadStats = async () => {
-      if (!isAuthenticated && !isDemoMode) {
+      if (!isAuthenticated) {
         setIsLoading(false);
         return;
       }
 
       try {
-        if (isDemoMode || !user) {
-          // Demo data
+        if (!user) {
+          // Fallback data when user not loaded yet
           setAccuracyData({
-            totalPredictions: 150,
-            correctPredictions: 105,
-            accuracy: 70,
+            totalPredictions: 0,
+            correctPredictions: 0,
+            accuracy: 0,
           });
         } else {
           const data = await api.getAccuracy(30);
@@ -92,7 +92,7 @@ export default function StatsPage() {
     };
 
     loadStats();
-  }, [isAuthenticated, isDemoMode, user]);
+  }, [isAuthenticated, user]);
 
   const getAccuracyColor = (accuracy: number) => {
     if (accuracy >= 60) return 'text-green-400';
@@ -106,7 +106,7 @@ export default function StatsPage() {
     return 'bg-red-500';
   };
 
-  if (!isAuthenticated && !isDemoMode) {
+  if (!isAuthenticated) {
     return (
       <div className={cn('min-h-screen flex items-center justify-center py-8 px-4', styles.bg)}>
         <motion.div

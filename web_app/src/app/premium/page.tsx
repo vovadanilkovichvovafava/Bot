@@ -54,7 +54,7 @@ const benefits = [
 
 export default function PremiumPage() {
   const { selectedTheme } = useThemeStore();
-  const { user, isAuthenticated, isDemoMode } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null);
   const [copied, setCopied] = useState(false);
 
