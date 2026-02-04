@@ -483,8 +483,11 @@ export const useChatStore = create<ChatState>((set, get) => {
       const state = get();
       if (!message.trim() || state.isLoading) return;
 
+      // Check if user is in demo mode (no real backend auth)
+      const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true';
+
       // Check tokens for non-premium users when AI is available
-      if (state.aiAvailable && !isPremium) {
+      if (state.aiAvailable && !isPremium && !isDemoMode) {
         const canUse = get().useToken();
         if (!canUse) {
           // Add error message about limit
@@ -537,8 +540,12 @@ Premium benefits:
 
       let response: string;
 
-      // Try real AI API
-      if (state.aiAvailable) {
+      // Demo mode - use local fallback (no real backend auth)
+      if (isDemoMode) {
+        response = generateFallbackResponse(message, [], [], matchInfo);
+      }
+      // Try real AI API (only if authenticated with real account)
+      else if (state.aiAvailable) {
         try {
           // Build history for API
           const history = state.messages
@@ -551,7 +558,7 @@ Premium benefits:
           const result = await api.sendChatMessage(message, history, preferences, matchInfo);
           response = result.response;
         } catch (error) {
-          // Check for rate limit
+          // Check for rate limit or auth error
           const errorStr = String(error);
           if (errorStr.includes('429') || errorStr.includes('limit')) {
             response = `**Rate Limit Reached**
@@ -559,6 +566,12 @@ Premium benefits:
 The AI service is temporarily unavailable due to high demand.
 
 Please try again in a few minutes.`;
+          } else if (errorStr.includes('401') || errorStr.includes('authenticated')) {
+            response = `**Authentication Required**
+
+Please sign in with a real account to use AI analysis.
+
+Demo mode has limited features.`;
           } else {
             // Fallback to local response
             response = generateFallbackResponse(message, [], [], matchInfo);
