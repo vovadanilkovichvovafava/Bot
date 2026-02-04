@@ -175,11 +175,11 @@ export default function MatchesPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                'px-6 py-3 rounded-xl font-semibold transition-all capitalize',
+                'px-6 py-3 rounded-xl font-semibold transition-all',
                 activeTab === tab ? styles.tabActive : cn(styles.card, styles.tabInactive)
               )}
             >
-              {tab}
+              {tab === 'today' ? 'Current Round' : 'Next Round'}
               <span className="ml-2 text-xs opacity-70">
                 ({tab === 'today' ? todayMatches.length : tomorrowMatches.length})
               </span>

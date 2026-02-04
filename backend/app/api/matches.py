@@ -90,57 +90,105 @@ async def get_live_matches():
     return []
 
 
+def _get_upcoming_matchday_matches(all_matches: List[dict], exclude_matchdays: set = None) -> List[dict]:
+    """
+    Get all matches from the next upcoming matchday.
+    Groups by league+matchday and returns the earliest complete matchday.
+    """
+    if not all_matches:
+        return []
+
+    exclude_matchdays = exclude_matchdays or set()
+
+    # Group matches by league_code + matchday
+    matchday_groups = {}
+    for m in all_matches:
+        league_code = m.get("league_code", "")
+        matchday = m.get("matchday")
+        if matchday is None:
+            continue
+
+        key = (league_code, matchday)
+        if key in exclude_matchdays:
+            continue
+
+        if key not in matchday_groups:
+            matchday_groups[key] = []
+        matchday_groups[key].append(m)
+
+    if not matchday_groups:
+        # Fallback: return sorted matches if no matchday info
+        sorted_matches = sorted(all_matches, key=lambda m: m.get("match_date", ""))
+        return sorted_matches[:20]
+
+    # Find the earliest matchday (by first match date in each group)
+    earliest_date = None
+    earliest_keys = []
+
+    for key, matches in matchday_groups.items():
+        first_match_date = min(m.get("match_date", "") for m in matches)
+        if earliest_date is None or first_match_date < earliest_date:
+            earliest_date = first_match_date
+            earliest_keys = [key]
+        elif first_match_date == earliest_date:
+            earliest_keys.append(key)
+
+    # Collect all matches from the earliest matchdays (across all leagues)
+    # Get all matchdays that start within same day as the earliest
+    result = []
+    earliest_day = earliest_date[:10] if earliest_date else ""
+
+    for key, matches in matchday_groups.items():
+        first_match_date = min(m.get("match_date", "") for m in matches)
+        # Include matchdays that start within 3 days of the earliest
+        if first_match_date[:10] <= (datetime.fromisoformat(earliest_day) + timedelta(days=3)).strftime("%Y-%m-%d"):
+            result.extend(matches)
+
+    # Sort by date
+    result.sort(key=lambda m: m.get("match_date", ""))
+    return result
+
+
 @router.get("/today", response_model=List[Match])
 async def get_today_matches(league: Optional[str] = Query(None)):
-    """Get today's matches (or upcoming if none today)"""
+    """Get current matchday matches (all matches from the upcoming round)"""
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    # Fetch 7 days ahead to find matches even during breaks
-    week_ahead = (datetime.utcnow() + timedelta(days=7)).strftime("%Y-%m-%d")
+    # Fetch 14 days ahead to capture full matchweek
+    two_weeks = (datetime.utcnow() + timedelta(days=14)).strftime("%Y-%m-%d")
 
-    all_matches = await fetch_matches(date_from=today, date_to=week_ahead, league=league)
+    all_matches = await fetch_matches(date_from=today, date_to=two_weeks, league=league)
 
     if all_matches:
-        # First try to get today's matches
-        today_matches = [
-            m for m in all_matches
-            if m.get("match_date", "").startswith(today)
-        ]
-        if today_matches:
-            return [Match(**m) for m in today_matches]
-
-        # If no matches today, return next upcoming matches (up to 10)
-        # Sort by date and return earliest
-        sorted_matches = sorted(all_matches, key=lambda m: m.get("match_date", ""))
-        return [Match(**m) for m in sorted_matches[:10]]
+        # Get all matches from the upcoming matchday
+        matchday_matches = _get_upcoming_matchday_matches(all_matches)
+        if matchday_matches:
+            return [Match(**m) for m in matchday_matches]
 
     return []
 
 
 @router.get("/tomorrow", response_model=List[Match])
 async def get_tomorrow_matches(league: Optional[str] = Query(None)):
-    """Get tomorrow's matches (or upcoming after today's)"""
+    """Get next matchday matches (the round after current)"""
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
-    week_ahead = (datetime.utcnow() + timedelta(days=7)).strftime("%Y-%m-%d")
+    three_weeks = (datetime.utcnow() + timedelta(days=21)).strftime("%Y-%m-%d")
 
-    all_matches = await fetch_matches(date_from=today, date_to=week_ahead, league=league)
+    all_matches = await fetch_matches(date_from=today, date_to=three_weeks, league=league)
 
     if all_matches:
-        # First try tomorrow's matches
-        tomorrow_matches = [
-            m for m in all_matches
-            if m.get("match_date", "").startswith(tomorrow)
-        ]
-        if tomorrow_matches:
-            return [Match(**m) for m in tomorrow_matches]
+        # First get current matchday to exclude it
+        current_matchday_matches = _get_upcoming_matchday_matches(all_matches)
 
-        # If no matches tomorrow, return matches after today (excluding today)
-        future_matches = [
-            m for m in all_matches
-            if not m.get("match_date", "").startswith(today)
-        ]
-        sorted_matches = sorted(future_matches, key=lambda m: m.get("match_date", ""))
-        return [Match(**m) for m in sorted_matches[:10]]
+        # Build set of matchdays to exclude
+        exclude_matchdays = set()
+        for m in current_matchday_matches:
+            key = (m.get("league_code", ""), m.get("matchday"))
+            exclude_matchdays.add(key)
+
+        # Get the next matchday
+        next_matchday_matches = _get_upcoming_matchday_matches(all_matches, exclude_matchdays)
+        if next_matchday_matches:
+            return [Match(**m) for m in next_matchday_matches]
 
     return []
 
