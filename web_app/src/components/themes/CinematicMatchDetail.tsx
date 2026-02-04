@@ -3,13 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bot, Clock, Send, Loader2, ArrowLeft, MapPin,
-  TrendingUp, History, Zap, ChevronDown, ChevronUp, Crosshair, Target
+  Bot, Clock, Loader2, ArrowLeft, MapPin,
+  TrendingUp, History, Zap, ChevronDown, ChevronUp, Crosshair, Target, RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { api } from '@/services/api';
-import { useChatStore } from '@/store/chatStore';
 import { useAuthStore } from '@/store/authStore';
 import { MatchDetail, isMatchLive, isMatchFinished, formatMatchDate } from '@/types';
 import { cn } from '@/lib/utils';
@@ -20,24 +19,16 @@ interface CinematicMatchDetailProps {
 
 export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
   const { user, isAuthenticated } = useAuthStore();
-  const {
-    sendMessage,
-    messages: chatMessages,
-    isLoading: chatLoading,
-    localTokens,
-    initializeChat,
-  } = useChatStore();
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [question, setQuestion] = useState('');
   const [expandedSection, setExpandedSection] = useState<string | null>('ai');
 
-  // Initialize chat on mount to check AI availability
-  useEffect(() => {
-    initializeChat();
-  }, [initializeChat]);
+  // AI Analysis - local state (NOT from global chat store)
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [analysisError, setAnalysisError] = useState(false);
 
   useEffect(() => {
     if (!matchId) return;
@@ -67,33 +58,56 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
     loadMatch();
   }, [matchId]);
 
-  const quickQuestions = [
-    { text: 'Who will win?', icon: '🏆' },
-    { text: 'Best bet?', icon: '💰' },
-    { text: 'Over 2.5?', icon: '⚽' },
-    { text: 'BTTS?', icon: '🎯' },
-  ];
+  // Request AI analysis for this specific match
+  const requestAnalysis = useCallback(async () => {
+    if (!match || isLoadingAnalysis) return;
 
-  const handleAskAI = useCallback(async (q: string) => {
-    if (!match || !q.trim()) return;
+    setIsLoadingAnalysis(true);
+    setAnalysisError(false);
 
-    const matchInfo = {
-      matchId: match.id.toString(),
-      homeTeam: match.homeTeam.name,
-      awayTeam: match.awayTeam.name,
-      leagueCode: match.leagueCode,
-      matchDate: match.matchDate,
-    };
+    try {
+      // Check AI availability first
+      const available = await api.isChatAvailable();
+      if (!available) {
+        setAnalysisError(true);
+        setIsLoadingAnalysis(false);
+        return;
+      }
 
-    const preferences = user ? {
-      minOdds: user.minOdds,
-      maxOdds: user.maxOdds,
-      riskLevel: user.riskLevel,
-    } : undefined;
+      // Format match date
+      const matchDate = new Date(match.matchDate);
+      const formattedDate = `${matchDate.getDate().toString().padStart(2, '0')}.${(matchDate.getMonth() + 1).toString().padStart(2, '0')}.${matchDate.getFullYear()} at ${matchDate.getHours().toString().padStart(2, '0')}:${matchDate.getMinutes().toString().padStart(2, '0')}`;
+      const matchdayInfo = match.matchday ? `, Matchday ${match.matchday}` : '';
 
-    await sendMessage(q, preferences, matchInfo);
-    setQuestion('');
-  }, [match, user, sendMessage]);
+      // Build analysis request message
+      const message = `Analyze this match:\n⚽ ${match.homeTeam.name} vs ${match.awayTeam.name}\n🏆 ${match.league}${matchdayInfo}\n📅 ${formattedDate}`;
+
+      // Get user preferences
+      const preferences = user ? {
+        minOdds: user.minOdds || 1.5,
+        maxOdds: user.maxOdds || 3.0,
+        riskLevel: user.riskLevel || 'medium',
+      } : undefined;
+
+      // Match info for ML data collection
+      const matchInfo = {
+        matchId: match.id.toString(),
+        homeTeam: match.homeTeam.name,
+        awayTeam: match.awayTeam.name,
+        leagueCode: match.leagueCode,
+        matchDate: match.matchDate,
+      };
+
+      // Make API request
+      const result = await api.sendChatMessage(message, [], preferences, matchInfo);
+      setAiAnalysis(result.response);
+    } catch (e) {
+      console.error('[Match Analysis] Error:', e);
+      setAnalysisError(true);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  }, [match, user, isLoadingAnalysis]);
 
   const live = match ? isMatchLive(match) : false;
   const finished = match ? isMatchFinished(match) : false;
@@ -271,9 +285,6 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
                   <Crosshair className="w-5 h-5 text-amber-400" />
                 </div>
                 <span className="font-semibold text-white tracking-wide">TACTICAL ANALYSIS</span>
-                <span className="text-xs px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  {localTokens} remaining
-                </span>
               </div>
               {expandedSection === 'ai' ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
             </button>
@@ -287,70 +298,65 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5">
-                    {/* Quick Questions */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {quickQuestions.map((q) => (
+                    {/* No analysis yet - show button to request */}
+                    {!aiAnalysis && !isLoadingAnalysis && !analysisError && (
+                      <div className="text-center py-6">
+                        <p className="text-gray-400 mb-4">Get AI-powered tactical analysis for this match</p>
                         <button
-                          key={q.text}
-                          onClick={() => handleAskAI(q.text)}
-                          disabled={chatLoading}
-                          className="px-4 py-2 rounded-full text-sm border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:border-amber-400 disabled:opacity-50 transition-all"
+                          onClick={requestAnalysis}
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-semibold transition-all"
                         >
-                          {q.icon} {q.text}
+                          <Bot size={20} />
+                          Get AI Analysis
                         </button>
-                      ))}
-                    </div>
+                      </div>
+                    )}
 
-                    {/* Input */}
-                    <div className="flex gap-3 mb-4">
-                      <input
-                        type="text"
-                        value={question}
-                        onChange={(e) => setQuestion(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAskAI(question)}
-                        placeholder="Ask the AI analyst..."
-                        className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-amber-500/20 focus:border-amber-400 text-white placeholder-gray-500 transition-all outline-none"
-                      />
-                      <button
-                        onClick={() => handleAskAI(question)}
-                        disabled={chatLoading || !question.trim()}
-                        className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold transition-all disabled:opacity-50"
-                      >
-                        {chatLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send size={20} />}
-                      </button>
-                    </div>
+                    {/* Loading state */}
+                    {isLoadingAnalysis && (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-4" />
+                        <span className="text-amber-400 animate-pulse">Analyzing tactical data...</span>
+                      </div>
+                    )}
 
-                    {/* Messages */}
-                    {chatMessages.length > 0 && (
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                        {chatMessages.map((msg) => (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={cn(
-                              'p-4 rounded-xl',
-                              msg.isUser
-                                ? 'bg-amber-500/10 border border-amber-500/30 ml-8'
-                                : 'bg-gray-800/50 border border-gray-700/50'
-                            )}
-                          >
-                            {msg.isUser ? (
-                              <p className="text-amber-100">{msg.text}</p>
-                            ) : (
-                              <div className="prose prose-invert prose-sm prose-amber max-w-none">
-                                <ReactMarkdown>{msg.text}</ReactMarkdown>
-                              </div>
-                            )}
-                          </motion.div>
-                        ))}
+                    {/* Error state */}
+                    {analysisError && !isLoadingAnalysis && (
+                      <div className="text-center py-6">
+                        <p className="text-red-400 mb-4">Failed to get analysis. Please try again.</p>
+                        <button
+                          onClick={requestAnalysis}
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 font-semibold transition-all border border-red-500/30"
+                        >
+                          <RefreshCw size={20} />
+                          Retry
+                        </button>
+                      </div>
+                    )}
 
-                        {chatLoading && (
-                          <div className="flex items-center gap-3 text-amber-400 p-4">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Analyzing tactical data...</span>
+                    {/* Analysis result */}
+                    {aiAnalysis && !isLoadingAnalysis && (
+                      <div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-4 rounded-xl bg-gray-800/50 border border-amber-500/20"
+                        >
+                          <div className="prose prose-invert prose-sm prose-amber max-w-none">
+                            <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                           </div>
-                        )}
+                        </motion.div>
+
+                        {/* Refresh button */}
+                        <div className="mt-4 text-center">
+                          <button
+                            onClick={requestAnalysis}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-amber-400 hover:bg-amber-500/10 transition-all"
+                          >
+                            <RefreshCw size={16} />
+                            Refresh Analysis
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -360,7 +366,7 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
                         <Link href="/login" className="underline hover:no-underline">
                           Sign in
                         </Link>{' '}
-                        for full tactical analysis
+                        for personalized tactical analysis
                       </div>
                     )}
                   </div>
