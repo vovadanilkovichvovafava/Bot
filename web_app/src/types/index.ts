@@ -192,12 +192,13 @@ export function formatMatchDate(date: string): string {
   const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
 
   const time = matchDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   if (matchDay.getTime() === today.getTime()) {
     return `Today ${time}`;
   } else if (matchDay.getTime() === tomorrow.getTime()) {
     return `Tomorrow ${time}`;
   } else {
-    return `${matchDate.getDate()}.${matchDate.getMonth() + 1} ${time}`;
+    return `${matchDate.getDate()} ${months[matchDate.getMonth()]} ${time}`;
   }
 }

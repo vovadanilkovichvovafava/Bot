@@ -573,7 +573,7 @@ export function StadiumHome() {
   );
 }
 
-// Team Logo Component
+// Team Logo Component - Stadium Atmosphere with Spotlight Glow
 function TeamLogo({ team, size = 'medium' }: { team: { name: string; logo?: string }; size?: 'small' | 'medium' | 'large' }) {
   const [imgError, setImgError] = useState(false);
   const colors = TEAM_COLORS[team.name] || { primary: '#6366f1', secondary: '#FFFFFF', tifo: '#6366f1' };
@@ -584,28 +584,49 @@ function TeamLogo({ team, size = 'medium' }: { team: { name: string; logo?: stri
     large: 'w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24',
   };
 
+  const glowSizes = {
+    small: 'blur-md',
+    medium: 'blur-lg',
+    large: 'blur-xl',
+  };
+
   if (team.logo && !imgError) {
     return (
-      <div className={`${sizeClasses[size]} rounded-full bg-white/20 p-1 overflow-hidden flex-shrink-0`}>
-        <img
-          src={team.logo}
-          alt={team.name}
-          className="w-full h-full object-contain drop-shadow-xl"
-          onError={() => setImgError(true)}
+      <div className="relative group flex-shrink-0">
+        {/* Stadium spotlight glow */}
+        <div
+          className={`absolute inset-0 rounded-full opacity-60 group-hover:opacity-80 transition-opacity ${glowSizes[size]}`}
+          style={{ background: `radial-gradient(circle, ${colors.tifo}80 0%, transparent 70%)` }}
         />
+        {/* Dark container with purple tint */}
+        <div className={`relative ${sizeClasses[size]} rounded-full bg-gray-900/90 backdrop-blur-sm p-1.5 overflow-hidden border border-indigo-500/30`}
+          style={{ boxShadow: `0 4px 30px ${colors.tifo}30` }}>
+          <img
+            src={team.logo}
+            alt={team.name}
+            className="w-full h-full object-contain drop-shadow-xl"
+            onError={() => setImgError(true)}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-bold shadow-xl flex-shrink-0`}
-      style={{
-        background: `linear-gradient(135deg, ${colors.primary}, ${colors.primary}99)`,
-        boxShadow: `0 4px 20px ${colors.primary}40`,
-      }}
-    >
-      {team.name.substring(0, 2).toUpperCase()}
+    <div className="relative group flex-shrink-0">
+      <div
+        className={`absolute inset-0 rounded-full opacity-60 group-hover:opacity-80 transition-opacity ${glowSizes[size]}`}
+        style={{ background: `radial-gradient(circle, ${colors.tifo}80 0%, transparent 70%)` }}
+      />
+      <div
+        className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-bold border border-white/20`}
+        style={{
+          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primary}99)`,
+          boxShadow: `0 4px 30px ${colors.primary}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
+        }}
+      >
+        {team.name.substring(0, 2).toUpperCase()}
+      </div>
     </div>
   );
 }

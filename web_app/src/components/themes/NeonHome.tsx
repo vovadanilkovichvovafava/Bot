@@ -546,33 +546,48 @@ export function NeonHome() {
   );
 }
 
-// Team Badge Component
+// Team Badge Component - FIFA Card Style with Neon Glow
 function TeamBadge({ team }: { team: { name: string; logo?: string } }) {
   const [imgError, setImgError] = useState(false);
   const bgColor = TEAM_COLORS[team.name] || '#10b981';
 
   if (team.logo && !imgError) {
     return (
-      <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 p-2 md:p-3 mx-auto border border-white/10">
-        <img
-          src={team.logo}
-          alt={team.name}
-          className="w-full h-full object-contain"
-          onError={() => setImgError(true)}
+      <div className="relative group">
+        {/* Neon glow background */}
+        <div
+          className="absolute inset-0 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"
+          style={{ background: `radial-gradient(circle, ${bgColor}80 0%, transparent 70%)` }}
         />
+        {/* Main container - dark background */}
+        <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900/90 backdrop-blur-sm p-2 md:p-3 mx-auto border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+          <img
+            src={team.logo}
+            alt={team.name}
+            className="w-full h-full object-contain drop-shadow-lg"
+            onError={() => setImgError(true)}
+          />
+        </div>
       </div>
     );
   }
 
+  // Fallback with team color gradient
   return (
-    <div
-      className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg mx-auto"
-      style={{
-        background: `linear-gradient(135deg, ${bgColor}, ${bgColor}99)`,
-        boxShadow: `0 4px 20px ${bgColor}40`,
-      }}
-    >
-      {team.name.substring(0, 3).toUpperCase()}
+    <div className="relative group">
+      <div
+        className="absolute inset-0 rounded-2xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity"
+        style={{ background: `radial-gradient(circle, ${bgColor}80 0%, transparent 70%)` }}
+      />
+      <div
+        className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-white font-bold text-xl mx-auto border border-white/20"
+        style={{
+          background: `linear-gradient(135deg, ${bgColor}, ${bgColor}99)`,
+          boxShadow: `0 4px 30px ${bgColor}40, inset 0 1px 0 rgba(255,255,255,0.1)`,
+        }}
+      >
+        {team.name.substring(0, 3).toUpperCase()}
+      </div>
     </div>
   );
 }

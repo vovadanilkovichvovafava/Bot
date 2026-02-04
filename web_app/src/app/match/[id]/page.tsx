@@ -445,7 +445,7 @@ export default function MatchDetailPage({ params }: PageParams) {
   );
 }
 
-// Team Badge Component
+// Team Badge Component with Theme-aware Neon/Glow Effects
 function TeamBadge({ team, size = 'medium' }: { team: { name: string; logo?: string }; size?: 'small' | 'medium' | 'large' }) {
   const [imgError, setImgError] = useState(false);
   const bgColor = TEAM_COLORS[team.name] || '#6366f1';
@@ -456,28 +456,49 @@ function TeamBadge({ team, size = 'medium' }: { team: { name: string; logo?: str
     large: 'w-20 h-20 md:w-24 md:h-24 text-2xl',
   };
 
+  const glowSizes = {
+    small: 'blur-lg',
+    medium: 'blur-xl',
+    large: 'blur-2xl',
+  };
+
   if (team.logo && !imgError) {
     return (
-      <div className={cn('mx-auto rounded-full bg-white/10 p-2 overflow-hidden', sizeClasses[size])}>
-        <img
-          src={team.logo}
-          alt={team.name}
-          className="w-full h-full object-contain"
-          onError={() => setImgError(true)}
+      <div className="relative group">
+        {/* Glow effect */}
+        <div
+          className={cn('absolute inset-0 rounded-full opacity-40 group-hover:opacity-60 transition-opacity', glowSizes[size])}
+          style={{ background: `radial-gradient(circle, ${bgColor}80 0%, transparent 70%)` }}
         />
+        {/* Main container - dark background */}
+        <div className={cn('relative mx-auto rounded-full bg-gray-900/80 backdrop-blur-sm p-2 md:p-3 overflow-hidden border border-white/10 shadow-lg', sizeClasses[size])}>
+          <img
+            src={team.logo}
+            alt={team.name}
+            className="w-full h-full object-contain drop-shadow-lg"
+            onError={() => setImgError(true)}
+          />
+        </div>
       </div>
     );
   }
 
+  // Fallback with team color gradient
   return (
-    <div
-      className={cn('mx-auto rounded-full flex items-center justify-center text-white font-bold shadow-xl', sizeClasses[size])}
-      style={{
-        background: `linear-gradient(135deg, ${bgColor}, ${bgColor}99)`,
-        boxShadow: `0 8px 30px ${bgColor}50`,
-      }}
-    >
-      {team.name.substring(0, 2).toUpperCase()}
+    <div className="relative group">
+      <div
+        className={cn('absolute inset-0 rounded-full opacity-50 group-hover:opacity-70 transition-opacity', glowSizes[size])}
+        style={{ background: `radial-gradient(circle, ${bgColor}80 0%, transparent 70%)` }}
+      />
+      <div
+        className={cn('relative mx-auto rounded-full flex items-center justify-center text-white font-bold border border-white/20', sizeClasses[size])}
+        style={{
+          background: `linear-gradient(135deg, ${bgColor}, ${bgColor}aa)`,
+          boxShadow: `0 8px 30px ${bgColor}50, inset 0 1px 0 rgba(255,255,255,0.15)`,
+        }}
+      >
+        {team.name.substring(0, 2).toUpperCase()}
+      </div>
     </div>
   );
 }
@@ -637,7 +658,7 @@ function MatchStats({ homeTeam, awayTeam, styles }: {
   );
 }
 
-// Side Emblem Component
+// Side Emblem Component - Floating badge with glow
 function SideEmblem({ team, side }: { team: { name: string; logo?: string }; side: 'left' | 'right' }) {
   const [imgError, setImgError] = useState(false);
   const bgColor = TEAM_COLORS[team.name] || '#6366f1';
@@ -655,21 +676,29 @@ function SideEmblem({ team, side }: { team: { name: string; logo?: string }; sid
       }}
       className="relative"
     >
+      {/* Glow effect */}
+      <div
+        className="absolute inset-0 rounded-full blur-2xl opacity-60"
+        style={{ background: `radial-gradient(circle, ${bgColor}80 0%, transparent 70%)` }}
+      />
       {team.logo && !imgError ? (
-        <div className="w-28 h-28 rounded-full bg-white/10 backdrop-blur-sm p-3 shadow-2xl">
+        <div
+          className="relative w-28 h-28 rounded-full bg-gray-900/80 backdrop-blur-sm p-3 shadow-2xl border border-white/10"
+          style={{ boxShadow: `0 0 40px ${bgColor}40` }}
+        >
           <img
             src={team.logo}
             alt={team.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain drop-shadow-lg"
             onError={() => setImgError(true)}
           />
         </div>
       ) : (
         <div
-          className="w-28 h-28 rounded-full flex items-center justify-center text-white text-3xl font-bold"
+          className="relative w-28 h-28 rounded-full flex items-center justify-center text-white text-3xl font-bold border border-white/20"
           style={{
             background: `linear-gradient(135deg, ${bgColor}, ${bgColor}88)`,
-            boxShadow: `0 0 60px ${bgColor}66, 0 0 100px ${bgColor}33`,
+            boxShadow: `0 0 60px ${bgColor}66, 0 0 100px ${bgColor}33, inset 0 1px 0 rgba(255,255,255,0.15)`,
           }}
         >
           {team.name.substring(0, 2).toUpperCase()}
