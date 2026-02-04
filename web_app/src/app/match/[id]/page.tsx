@@ -36,7 +36,7 @@ const TEAM_COLORS: Record<string, string> = {
 };
 
 interface PageParams {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function MatchDetailPage({ params }: PageParams) {
@@ -56,12 +56,9 @@ export default function MatchDetailPage({ params }: PageParams) {
   const [showEmblems, setShowEmblems] = useState(false);
   const [question, setQuestion] = useState('');
   const [expandedSection, setExpandedSection] = useState<string | null>('ai');
-  const [matchId, setMatchId] = useState<string | null>(null);
 
-  // Unwrap params
-  useEffect(() => {
-    params.then(p => setMatchId(p.id));
-  }, [params]);
+  // Get match ID directly from params
+  const matchId = params.id;
 
   // Load match details
   useEffect(() => {
