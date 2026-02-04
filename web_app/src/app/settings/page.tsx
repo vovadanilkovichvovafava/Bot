@@ -3,33 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Settings, User, Globe, Palette, Bell, Shield, TrendingDown,
+  Settings, User, Globe, Bell, TrendingDown,
   TrendingUp, LogOut, ChevronRight, X, Crown, Zap, Heart, Trash2,
-  Check, Loader2, Save, Clock, Brain
+  Check, Loader2, Clock, Brain, Shield
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { useThemeStore } from '@/store/themeStore';
 import { useMatchesStore } from '@/store/matchesStore';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-// Stadium theme colors
-const STADIUM_COLORS = {
-  bgPrimary: '#080A10',
-  bgSecondary: '#10141E',
-  blue: '#4A7AFF',
-  blueHover: '#5D8AFF',
-  green: '#3DDC84',
-  red: '#FF3B3B',
-  glass: 'rgba(12, 15, 24, 0.85)',
-  glassBorder: 'rgba(255, 255, 255, 0.08)',
-};
-
-const STADIUM_BG = 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1920&q=80';
-
-type ModalType = 'language' | 'theme' | 'minOdds' | 'maxOdds' | 'risk' | 'favorites' | 'timezone' | null;
+type ModalType = 'language' | 'minOdds' | 'maxOdds' | 'risk' | 'favorites' | 'timezone' | null;
 
 interface UserSettings {
   language: string;
@@ -41,7 +26,6 @@ interface UserSettings {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { selectedTheme } = useThemeStore();
   const { user, isAuthenticated, logout, refreshUser } = useAuthStore();
   const { clearCache } = useMatchesStore();
 
@@ -59,57 +43,11 @@ export default function SettingsPage() {
   const [newFavoriteTeam, setNewFavoriteTeam] = useState('');
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
 
-  // Theme styles
-  const themeStyles = {
-    cinematic: {
-      bg: 'cinematic-bg',
-      card: 'bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-amber-500/20',
-      accent: 'text-amber-400',
-      accentBg: 'bg-amber-500',
-      gradient: 'from-amber-500 to-amber-700',
-      listItem: 'hover:bg-amber-500/10',
-      input: 'bg-gray-900/50 border-amber-500/20 focus:border-amber-500',
-    },
-    neon: {
-      bg: 'neon-bg',
-      card: 'bg-gray-900/80 backdrop-blur-xl border border-emerald-500/20',
-      accent: 'text-emerald-400',
-      accentBg: 'bg-emerald-500',
-      gradient: 'from-emerald-400 to-cyan-500',
-      listItem: 'hover:bg-emerald-500/10',
-      input: 'bg-gray-900/50 border-emerald-500/20 focus:border-emerald-500',
-    },
-    stadium: {
-      bg: 'stadium-bg',
-      card: 'bg-black/60 backdrop-blur-md border border-white/20',
-      accent: 'text-indigo-400',
-      accentBg: 'bg-indigo-500',
-      gradient: 'from-indigo-500 to-purple-600',
-      listItem: 'hover:bg-indigo-500/10',
-      input: 'bg-black/50 border-indigo-500/20 focus:border-indigo-500',
-    },
-  };
-
-  const styles = selectedTheme ? themeStyles[selectedTheme] : themeStyles.neon;
-  const isStadiumTheme = selectedTheme === 'stadium';
-
-  // Stadium theme tabs
-  const stadiumTabs = [
-    { id: 'profile', label: 'Профиль', icon: User },
-    { id: 'general', label: 'Общие', icon: Globe },
-    { id: 'ai', label: 'AI Настройки', icon: Brain },
-    { id: 'favorites', label: 'Избранное', icon: Heart },
-  ];
-  const [activeTab, setActiveTab] = useState('profile');
-
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-    { code: 'pt', name: 'Português', flag: '🇵🇹' },
   ];
 
   const timezones = [
@@ -118,51 +56,18 @@ export default function SettingsPage() {
     { code: 'Europe/Moscow', name: 'Moscow (GMT+3)' },
     { code: 'Europe/Paris', name: 'Paris (GMT+1/+2)' },
     { code: 'America/New_York', name: 'New York (GMT-5/-4)' },
-    { code: 'America/Los_Angeles', name: 'Los Angeles (GMT-8/-7)' },
-    { code: 'Asia/Dubai', name: 'Dubai (GMT+4)' },
-    { code: 'Asia/Tokyo', name: 'Tokyo (GMT+9)' },
   ];
 
-  const oddsOptions = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0, 7.0, 10.0];
+  const oddsOptions = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
   const riskLevels = [
-    {
-      value: 'low',
-      label: 'LOW',
-      subtitle: 'Safer bets | 1-2% stakes',
-      description: 'Double chance, under goals, low odds favorites',
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/20',
-      borderColor: 'border-green-500/50',
-      icon: Shield,
-    },
-    {
-      value: 'medium',
-      label: 'MEDIUM',
-      subtitle: 'Balanced | 2-5% stakes',
-      description: '1X2, over/under, BTTS, moderate odds',
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/20',
-      borderColor: 'border-orange-500/50',
-      icon: TrendingUp,
-    },
-    {
-      value: 'high',
-      label: 'HIGH',
-      subtitle: 'Aggressive | 5-10% stakes',
-      description: 'Accumulators, correct scores, value picks',
-      color: 'text-red-400',
-      bgColor: 'bg-red-500/20',
-      borderColor: 'border-red-500/50',
-      icon: Zap,
-    },
+    { value: 'low', label: 'Low', description: 'Safer bets, lower returns', color: 'text-emerald-500', bg: 'bg-emerald-100', icon: Shield },
+    { value: 'medium', label: 'Medium', description: 'Balanced risk/reward', color: 'text-amber-500', bg: 'bg-amber-100', icon: TrendingUp },
+    { value: 'high', label: 'High', description: 'Higher risk, higher reward', color: 'text-red-500', bg: 'bg-red-100', icon: Zap },
   ];
 
-  // Load favorite teams
   useEffect(() => {
-    if (isAuthenticated) {
-      loadFavoriteTeams();
-    }
+    if (isAuthenticated) loadFavoriteTeams();
   }, [isAuthenticated]);
 
   const loadFavoriteTeams = async () => {
@@ -170,9 +75,7 @@ export default function SettingsPage() {
     try {
       const teams = await api.getFavoriteTeams();
       setFavoriteTeams(teams);
-    } catch {
-      // Silent fail
-    } finally {
+    } catch { /* silent */ } finally {
       setIsLoadingFavorites(false);
     }
   };
@@ -183,18 +86,14 @@ export default function SettingsPage() {
       await api.addFavoriteTeam(newFavoriteTeam.trim());
       setFavoriteTeams([...favoriteTeams, newFavoriteTeam.trim()]);
       setNewFavoriteTeam('');
-    } catch {
-      // Silent fail
-    }
+    } catch { /* silent */ }
   };
 
   const handleRemoveFavoriteTeam = async (team: string) => {
     try {
       await api.removeFavoriteTeam(team);
       setFavoriteTeams(favoriteTeams.filter(t => t !== team));
-    } catch {
-      // Silent fail
-    }
+    } catch { /* silent */ }
   };
 
   const handleSaveSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
@@ -212,7 +111,6 @@ export default function SettingsPage() {
       setTimeout(() => setSaveSuccess(false), 2000);
       refreshUser();
     } catch {
-      // Still update local state on error
       setSettings(s => ({ ...s, ...newSettings }));
     } finally {
       setIsSaving(false);
@@ -222,7 +120,7 @@ export default function SettingsPage() {
   const handleLogout = () => {
     clearCache();
     logout();
-    router.push('/');
+    router.push('/login');
   };
 
   const handleClearCache = () => {
@@ -231,1096 +129,254 @@ export default function SettingsPage() {
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
-  const getRiskInfo = (level: string) => {
-    return riskLevels.find(r => r.value === level) || riskLevels[1];
-  };
-
-  const currentRisk = getRiskInfo(settings.riskLevel);
+  const currentRisk = riskLevels.find(r => r.value === settings.riskLevel) || riskLevels[1];
 
   if (!isAuthenticated) {
-    // Stadium theme unauthenticated view
-    if (isStadiumTheme) {
-      return (
-        <div
-          className="min-h-screen flex items-center justify-center py-8 px-4 relative"
-          style={{ backgroundColor: STADIUM_COLORS.bgPrimary }}
-        >
-          <div
-            className="fixed inset-0 z-0"
-            style={{
-              backgroundImage: `url(${STADIUM_BG})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(to bottom,
-                  rgba(8, 10, 16, 0.85) 0%,
-                  rgba(8, 10, 16, 0.95) 100%)`
-              }}
-            />
-          </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative z-10 max-w-md w-full rounded-2xl p-8 text-center"
-            style={{
-              background: STADIUM_COLORS.glass,
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-            }}
-          >
-            <Settings className="w-16 h-16 mx-auto mb-4" style={{ color: STADIUM_COLORS.blue }} />
-            <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              НАСТРОЙКИ
-            </h1>
-            <p className="text-gray-400 mb-6">
-              Войдите, чтобы настроить свой опыт
-            </p>
-            <Link href="/login">
-              <button
-                className="w-full py-3 rounded-xl font-semibold text-white uppercase tracking-wide"
-                style={{
-                  fontFamily: 'Montserrat, sans-serif',
-                  background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
-                }}
-              >
-                Войти
-              </button>
-            </Link>
-          </motion.div>
-        </div>
-      );
-    }
-
     return (
-      <div className={cn('min-h-screen flex items-center justify-center py-8 px-4', styles.bg)}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn('max-w-md w-full rounded-2xl p-8 text-center', styles.card)}
-        >
-          <Settings className={cn('w-16 h-16 mx-auto mb-4', styles.accent)} />
-          <h1 className="text-2xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-gray-400 mb-6">
-            Sign in to customize your experience and betting preferences.
-          </p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 text-center max-w-md w-full shadow-sm">
+          <Settings className="w-16 h-16 mx-auto mb-4 text-[#3B5998]" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-500 mb-6">Sign in to customize your experience</p>
           <Link href="/login">
-            <button className={cn(
-              'w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r',
-              styles.gradient
-            )}>
+            <button className="w-full py-3 rounded-xl font-medium text-white bg-[#3B5998]">
               Sign In
             </button>
           </Link>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
-  // Stadium Theme - Vertical Tabs Layout
-  if (isStadiumTheme) {
-    return (
-      <div
-        className="min-h-screen relative"
-        style={{ backgroundColor: STADIUM_COLORS.bgPrimary }}
-      >
-        {/* Stadium Background */}
-        <div
-          className="fixed inset-0 z-0"
-          style={{
-            backgroundImage: `url(${STADIUM_BG})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundAttachment: 'fixed',
-          }}
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(to bottom,
-                rgba(8, 10, 16, 0.9) 0%,
-                rgba(8, 10, 16, 0.95) 100%)`
-            }}
-          />
-        </div>
-
-        <div className="relative z-10 min-h-screen flex">
-          {/* Left Sidebar - Vertical Tabs */}
-          <div
-            className="hidden md:flex w-64 flex-col p-6"
-            style={{
-              background: STADIUM_COLORS.glass,
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              borderRight: `1px solid ${STADIUM_COLORS.glassBorder}`,
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-8">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
-                }}
-              >
-                <Settings className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1
-                  className="text-lg font-bold uppercase tracking-wide text-white"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
-                  Настройки
-                </h1>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <nav className="flex-1 space-y-2">
-              {stadiumTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
-                  style={{
-                    background: activeTab === tab.id ? `${STADIUM_COLORS.blue}20` : 'transparent',
-                    color: activeTab === tab.id ? STADIUM_COLORS.blue : '#9CA3AF',
-                    borderLeft: activeTab === tab.id ? `3px solid ${STADIUM_COLORS.blue}` : '3px solid transparent',
-                  }}
-                >
-                  <tab.icon size={20} />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all mt-4"
-            >
-              <LogOut size={20} />
-              <span className="font-medium">Выйти</span>
-            </button>
-          </div>
-
-          {/* Mobile Header */}
-          <div
-            className="md:hidden fixed top-0 left-0 right-0 z-20 px-4 py-3"
-            style={{
-              background: STADIUM_COLORS.glass,
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              borderBottom: `1px solid ${STADIUM_COLORS.glassBorder}`,
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <h1
-                className="text-lg font-bold uppercase text-white"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
-                Настройки
-              </h1>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-lg text-red-400"
-              >
-                <LogOut size={20} />
-              </button>
-            </div>
-            {/* Mobile Tabs */}
-            <div className="flex gap-1 mt-3 overflow-x-auto pb-2">
-              {stadiumTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-all"
-                  style={{
-                    background: activeTab === tab.id ? `${STADIUM_COLORS.blue}20` : 'transparent',
-                    color: activeTab === tab.id ? STADIUM_COLORS.blue : '#9CA3AF',
-                  }}
-                >
-                  <tab.icon size={16} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Content */}
-          <div className="flex-1 p-6 md:p-8 pt-32 md:pt-8 overflow-y-auto">
-            <div className="max-w-2xl mx-auto">
-              {/* Profile Tab */}
-              {activeTab === 'profile' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  <div
-                    className="rounded-2xl p-6"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <div className="flex items-center gap-4 mb-6">
-                      <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-                        style={{ background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)` }}
-                      >
-                        {(user?.username ?? user?.email)?.[0].toUpperCase() ?? 'U'}
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold text-lg">{user?.username ?? user?.email ?? 'User'}</p>
-                        <p className="text-gray-400 text-sm">{user?.email ?? ''}</p>
-                        {user?.isPremium && (
-                          <div
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs mt-1"
-                            style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }}
-                          >
-                            <Crown size={12} />
-                            <span>PRO</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* AI Limits */}
-                    {user && (
-                      <div
-                        className="p-4 rounded-xl"
-                        style={{ background: 'rgba(255, 255, 255, 0.05)' }}
-                      >
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-gray-400">Дневные AI-прогнозы</span>
-                          <span style={{ color: STADIUM_COLORS.blue }}>{user.dailyRequests}/{user.dailyLimit}</span>
-                        </div>
-                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.1)' }}>
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min((user.dailyRequests / user.dailyLimit) * 100, 100)}%`,
-                              background: `linear-gradient(90deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Premium CTA */}
-                  {!user?.isPremium && (
-                    <Link href="/premium">
-                      <div
-                        className="rounded-2xl p-4 flex items-center gap-4 transition-all hover:scale-[1.02]"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 146, 60, 0.1))',
-                          border: '2px solid rgba(251, 191, 36, 0.3)',
-                        }}
-                      >
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
-                          <Crown className="w-6 h-6 text-amber-400" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-white font-semibold">Получить Premium</p>
-                          <p className="text-amber-400/70 text-sm">Безлимитные AI-прогнозы</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-amber-400" />
-                      </div>
-                    </Link>
-                  )}
-                </motion.div>
-              )}
-
-              {/* General Tab */}
-              {activeTab === 'general' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <button
-                      onClick={() => setActiveModal('language')}
-                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
-                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
-                    >
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
-                        <Globe className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Язык</p>
-                        <p className="text-gray-500 text-sm">
-                          {languages.find(l => l.code === settings.language)?.flag}{' '}
-                          {languages.find(l => l.code === settings.language)?.name ?? 'English'}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-500" />
-                    </button>
-
-                    <button
-                      onClick={() => setActiveModal('timezone')}
-                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
-                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
-                    >
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
-                        <Clock className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Часовой пояс</p>
-                        <p className="text-gray-500 text-sm">
-                          {timezones.find(t => t.code === settings.timezone)?.name ?? settings.timezone}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-500" />
-                    </button>
-
-                    <button
-                      onClick={() => router.push('/select-style')}
-                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
-                    >
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
-                        <Palette className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Тема</p>
-                        <p className="text-gray-500 text-sm">AI Центр Анализа</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-500" />
-                    </button>
-                  </div>
-
-                  {/* Clear Cache */}
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <button
-                      onClick={handleClearCache}
-                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
-                    >
-                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
-                        <Trash2 className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Очистить кэш</p>
-                        <p className="text-gray-500 text-sm">Освободить память и обновить данные</p>
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* AI Settings Tab */}
-              {activeTab === 'ai' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  {/* AI Profile Preview */}
-                  <div
-                    className="rounded-2xl p-4"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Brain className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
-                      <span className="font-semibold" style={{ color: STADIUM_COLORS.blue }}>Ваш AI-профиль</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-gray-500">Диапазон кф:</span>
-                        <span className="text-white ml-2">{settings.minOdds} - {settings.maxOdds}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Риск:</span>
-                        <span className={cn('ml-2', currentRisk.color)}>{currentRisk.label}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Settings */}
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <button
-                      onClick={() => setActiveModal('minOdds')}
-                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
-                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
-                    >
-                      <div className="p-2 rounded-lg bg-blue-500/20">
-                        <TrendingDown className="w-5 h-5 text-blue-400" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Минимальный кф</p>
-                        <p className="text-gray-500 text-sm">AI не рекомендует ниже {settings.minOdds}</p>
-                      </div>
-                      <span style={{ color: STADIUM_COLORS.blue }} className="font-semibold">{settings.minOdds}</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveModal('maxOdds')}
-                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
-                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
-                    >
-                      <div className="p-2 rounded-lg bg-purple-500/20">
-                        <TrendingUp className="w-5 h-5 text-purple-400" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Максимальный кф</p>
-                        <p className="text-gray-500 text-sm">AI не рекомендует выше {settings.maxOdds}</p>
-                      </div>
-                      <span style={{ color: STADIUM_COLORS.blue }} className="font-semibold">{settings.maxOdds}</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveModal('risk')}
-                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
-                    >
-                      <div className={cn('p-2 rounded-lg', currentRisk.bgColor)}>
-                        <currentRisk.icon className={cn('w-5 h-5', currentRisk.color)} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white">Уровень риска</p>
-                        <p className="text-gray-500 text-sm">{currentRisk.subtitle}</p>
-                      </div>
-                      <span className={cn('font-semibold', currentRisk.color)}>{currentRisk.label}</span>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Favorites Tab */}
-              {activeTab === 'favorites' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  <div
-                    className="rounded-2xl p-6"
-                    style={{
-                      background: STADIUM_COLORS.glass,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                    }}
-                  >
-                    <h3 className="text-lg font-semibold text-white mb-4">Избранные команды</h3>
-
-                    {/* Add new team */}
-                    <div className="flex gap-2 mb-4">
-                      <input
-                        type="text"
-                        value={newFavoriteTeam}
-                        onChange={(e) => setNewFavoriteTeam(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddFavoriteTeam()}
-                        placeholder="Введите название команды..."
-                        className="flex-1 px-4 py-2 rounded-lg text-white placeholder-gray-500 outline-none"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                        }}
-                      />
-                      <button
-                        onClick={handleAddFavoriteTeam}
-                        disabled={!newFavoriteTeam.trim()}
-                        className="px-4 py-2 rounded-lg font-medium text-white transition-all disabled:opacity-50"
-                        style={{ background: STADIUM_COLORS.blue }}
-                      >
-                        Добавить
-                      </button>
-                    </div>
-
-                    {/* Teams list */}
-                    {isLoadingFavorites ? (
-                      <div className="text-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-                      </div>
-                    ) : favoriteTeams.length === 0 ? (
-                      <p className="text-center text-gray-500 py-8">
-                        Нет избранных команд. Добавьте выше!
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {favoriteTeams.map(team => (
-                          <div
-                            key={team}
-                            className="flex items-center justify-between p-3 rounded-lg"
-                            style={{ background: 'rgba(255, 255, 255, 0.05)' }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Heart className="w-4 h-4 text-pink-400" fill="currentColor" />
-                              <span className="text-white">{team}</span>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveFavoriteTeam(team)}
-                              className="text-gray-500 hover:text-red-400 transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Stadium Theme Modals */}
-        <AnimatePresence>
-          {activeModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
-              onClick={() => setActiveModal(null)}
-            >
-              <motion.div
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 100, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl"
-                style={{
-                  background: STADIUM_COLORS.glass,
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  border: `1px solid ${STADIUM_COLORS.glassBorder}`,
-                }}
-              >
-                {/* Language Modal */}
-                {activeModal === 'language' && (
-                  <>
-                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
-                      <h3 className="text-lg font-semibold text-white">Выберите язык</h3>
-                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="p-2 max-h-[60vh] overflow-y-auto">
-                      {languages.map(lang => (
-                        <button
-                          key={lang.code}
-                          onClick={() => {
-                            handleSaveSettings({ language: lang.code });
-                            setActiveModal(null);
-                          }}
-                          className="w-full p-3 rounded-lg text-left flex items-center gap-3 transition-colors"
-                          style={{
-                            background: settings.language === lang.code ? STADIUM_COLORS.blue : 'transparent',
-                            color: settings.language === lang.code ? 'white' : '#D1D5DB',
-                          }}
-                        >
-                          <span className="text-xl">{lang.flag}</span>
-                          <span>{lang.name}</span>
-                          {settings.language === lang.code && <Check className="ml-auto" size={18} />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Timezone Modal */}
-                {activeModal === 'timezone' && (
-                  <>
-                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
-                      <h3 className="text-lg font-semibold text-white">Часовой пояс</h3>
-                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="p-2 max-h-[60vh] overflow-y-auto">
-                      {timezones.map(tz => (
-                        <button
-                          key={tz.code}
-                          onClick={() => {
-                            handleSaveSettings({ timezone: tz.code });
-                            setActiveModal(null);
-                          }}
-                          className="w-full p-3 rounded-lg text-left flex items-center gap-3 transition-colors"
-                          style={{
-                            background: settings.timezone === tz.code ? STADIUM_COLORS.blue : 'transparent',
-                            color: settings.timezone === tz.code ? 'white' : '#D1D5DB',
-                          }}
-                        >
-                          <Clock size={18} className="opacity-50" />
-                          <span>{tz.name}</span>
-                          {settings.timezone === tz.code && <Check className="ml-auto" size={18} />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Min/Max Odds Modal */}
-                {(activeModal === 'minOdds' || activeModal === 'maxOdds') && (
-                  <>
-                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
-                      <h3 className="text-lg font-semibold text-white">
-                        {activeModal === 'minOdds' ? 'Минимальный коэффициент' : 'Максимальный коэффициент'}
-                      </h3>
-                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="p-4">
-                      <p className="text-gray-400 text-sm mb-4">
-                        {activeModal === 'minOdds'
-                          ? 'AI не будет рекомендовать ставки с кф ниже этого значения'
-                          : 'AI не будет рекомендовать ставки с кф выше этого значения'}
-                      </p>
-                      <div className="grid grid-cols-5 gap-2">
-                        {oddsOptions.map(odds => {
-                          const isSelected = activeModal === 'minOdds'
-                            ? settings.minOdds === odds
-                            : settings.maxOdds === odds;
-                          const isDisabled = activeModal === 'minOdds'
-                            ? odds >= settings.maxOdds
-                            : odds <= settings.minOdds;
-                          return (
-                            <button
-                              key={odds}
-                              disabled={isDisabled}
-                              onClick={() => {
-                                if (activeModal === 'minOdds') {
-                                  handleSaveSettings({ minOdds: odds });
-                                } else {
-                                  handleSaveSettings({ maxOdds: odds });
-                                }
-                                setActiveModal(null);
-                              }}
-                              className="p-3 rounded-lg text-center font-medium transition-all"
-                              style={{
-                                background: isSelected
-                                  ? STADIUM_COLORS.blue
-                                  : isDisabled
-                                    ? 'rgba(255, 255, 255, 0.03)'
-                                    : 'rgba(255, 255, 255, 0.05)',
-                                color: isSelected
-                                  ? 'white'
-                                  : isDisabled
-                                    ? '#4B5563'
-                                    : '#D1D5DB',
-                                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                              }}
-                            >
-                              {odds}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Risk Level Modal */}
-                {activeModal === 'risk' && (
-                  <>
-                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
-                      <h3 className="text-lg font-semibold text-white">Уровень риска</h3>
-                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <p className="text-gray-400 text-sm mb-4">
-                        Выберите уровень агрессивности AI-рекомендаций:
-                      </p>
-                      {riskLevels.map(risk => (
-                        <button
-                          key={risk.value}
-                          onClick={() => {
-                            handleSaveSettings({ riskLevel: risk.value });
-                            setActiveModal(null);
-                          }}
-                          className="w-full p-4 rounded-xl border-2 flex items-start gap-3 transition-all"
-                          style={{
-                            background: settings.riskLevel === risk.value ? risk.bgColor.replace('bg-', '').replace('/20', '') : 'transparent',
-                            borderColor: settings.riskLevel === risk.value ? risk.borderColor.replace('border-', '').replace('/50', '') : 'rgba(255, 255, 255, 0.1)',
-                          }}
-                        >
-                          <div className={cn('p-2 rounded-lg', risk.bgColor)}>
-                            <risk.icon className={cn('w-5 h-5', risk.color)} />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2">
-                              <span className={cn('font-bold', risk.color)}>{risk.label}</span>
-                            </div>
-                            <p className="text-gray-500 text-xs mt-1">{risk.description}</p>
-                          </div>
-                          {settings.riskLevel === risk.value && (
-                            <Check className={cn('w-5 h-5', risk.color)} />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // Default theme rendering
   return (
-    <div className={cn('min-h-screen py-6 px-4', styles.bg)}>
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-[#3B5998] via-[#4A66A0] to-[#6B5B95] px-4 pt-12 pb-6">
+        <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={cn('w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br', styles.gradient)}>
-                <Settings className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Settings</h1>
-                <p className="text-gray-400 text-sm">Customize your experience</p>
-              </div>
+              <Settings className="w-7 h-7 text-white" />
+              <h1 className="text-2xl font-bold text-white">Settings</h1>
             </div>
-
-            {/* Save indicator */}
             <AnimatePresence>
-              {(isSaving || saveSuccess) && (
-                <motion.div
+              {saveSuccess && (
+                <motion.span
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm',
-                    saveSuccess ? 'bg-green-500/20 text-green-400' : styles.card
-                  )}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-1 text-emerald-300 text-sm"
                 >
-                  {isSaving ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                  ) : (
-                    <><Check className="w-4 h-4" /> Saved</>
-                  )}
-                </motion.div>
+                  <Check size={16} /> Saved
+                </motion.span>
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
+      </div>
 
-        <div className="space-y-4">
-          {/* Profile Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className={cn('rounded-2xl overflow-hidden', styles.card)}
-          >
-            <div className="p-4 flex items-center gap-4">
-              <div className={cn('w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold', styles.accentBg)}>
+      {/* Content */}
+      <div className="px-4 -mt-3 pb-8">
+        <div className="max-w-lg mx-auto space-y-4">
+          {/* Profile Card */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#3B5998] to-[#6B5B95] flex items-center justify-center text-white text-xl font-bold">
                 {(user?.username ?? user?.email)?.[0].toUpperCase() ?? 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{user?.username ?? user?.email ?? 'User'}</p>
+                <p className="font-semibold text-gray-900 truncate">{user?.username ?? user?.email ?? 'User'}</p>
                 <p className="text-gray-500 text-sm truncate">{user?.email ?? ''}</p>
               </div>
               {user?.isPremium && (
-                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-sm">
-                  <Crown size={14} />
-                  <span>PRO</span>
-                </div>
+                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-600 text-sm font-medium">
+                  <Crown size={14} /> PRO
+                </span>
               )}
             </div>
 
-            {/* AI Limits */}
+            {/* AI Usage */}
             {user && (
-              <div className="px-4 pb-4">
-                <div className="p-3 rounded-xl bg-white/5">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-400">Daily AI Predictions</span>
-                    <span className={styles.accent}>{user.dailyRequests}/{user.dailyLimit}</span>
-                  </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={cn('h-full rounded-full bg-gradient-to-r', styles.gradient)}
-                      style={{ width: `${Math.min((user.dailyRequests / user.dailyLimit) * 100, 100)}%` }}
-                    />
-                  </div>
+              <div className="mt-4 p-4 rounded-xl bg-gray-50">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-gray-500">Daily AI Predictions</span>
+                  <span className="text-[#3B5998] font-medium">{user.dailyRequests}/{user.dailyLimit}</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#3B5998] to-[#6B5B95]"
+                    style={{ width: `${Math.min((user.dailyRequests / user.dailyLimit) * 100, 100)}%` }}
+                  />
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
+
+          {/* Premium CTA */}
+          {!user?.isPremium && (
+            <Link href="/pro-tools">
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 flex items-center gap-4 shadow-lg">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold">Upgrade to Premium</p>
+                  <p className="text-white/80 text-sm">Unlimited predictions</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/70" />
+              </div>
+            </Link>
+          )}
 
           {/* General Settings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className={cn('rounded-2xl overflow-hidden', styles.card)}
-          >
-            <div className="p-4 border-b border-white/5">
-              <h3 className={cn('font-semibold', styles.accent)}>General</h3>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">General</h3>
             </div>
 
             <button
               onClick={() => setActiveModal('language')}
-              className={cn('w-full p-4 flex items-center gap-4 border-b border-white/5', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 border-b border-gray-50 active:bg-gray-50"
             >
-              <div className={cn('p-2 rounded-lg bg-white/5')}>
-                <Globe className={cn('w-5 h-5', styles.accent)} />
+              <div className="w-10 h-10 rounded-xl bg-[#3B5998]/10 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-[#3B5998]" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Language</p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-900">Language</p>
+                <p className="text-gray-400 text-sm">
                   {languages.find(l => l.code === settings.language)?.flag}{' '}
                   {languages.find(l => l.code === settings.language)?.name ?? 'English'}
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-500" />
+              <ChevronRight className="w-5 h-5 text-gray-300" />
             </button>
 
             <button
               onClick={() => setActiveModal('timezone')}
-              className={cn('w-full p-4 flex items-center gap-4 border-b border-white/5', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 active:bg-gray-50"
             >
-              <div className={cn('p-2 rounded-lg bg-white/5')}>
-                <Clock className={cn('w-5 h-5', styles.accent)} />
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-purple-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Timezone</p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-900">Timezone</p>
+                <p className="text-gray-400 text-sm">
                   {timezones.find(t => t.code === settings.timezone)?.name ?? settings.timezone}
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-500" />
+              <ChevronRight className="w-5 h-5 text-gray-300" />
             </button>
+          </div>
 
-            <button
-              onClick={() => router.push('/select-style')}
-              className={cn('w-full p-4 flex items-center gap-4', styles.listItem)}
-            >
-              <div className={cn('p-2 rounded-lg bg-white/5')}>
-                <Palette className={cn('w-5 h-5', styles.accent)} />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-white">Theme</p>
-                <p className="text-gray-500 text-sm capitalize">{selectedTheme ?? 'Neon'}</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-500" />
-            </button>
-          </motion.div>
-
-          {/* AI Betting Preferences */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className={cn('rounded-2xl overflow-hidden', styles.card)}
-          >
-            <div className="p-4 border-b border-white/5">
-              <h3 className={cn('font-semibold', styles.accent)}>AI Betting Preferences</h3>
-              <p className="text-gray-500 text-sm">Personalize AI recommendations</p>
+          {/* AI Preferences */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">AI Preferences</h3>
+              <p className="text-gray-400 text-sm">Customize predictions</p>
             </div>
 
-            {/* AI Profile Preview */}
-            <div className="mx-4 my-4 p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className={cn('w-4 h-4', styles.accent)} />
-                <span className={cn('font-medium', styles.accent)}>Your AI Profile</span>
+            {/* AI Profile */}
+            <div className="mx-4 my-4 p-4 rounded-xl bg-[#3B5998]/5 border border-[#3B5998]/10">
+              <div className="flex items-center gap-2 mb-2">
+                <Brain className="w-4 h-4 text-[#3B5998]" />
+                <span className="text-[#3B5998] font-medium text-sm">Your AI Profile</span>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-500">Odds Range:</span>
-                  <span className="text-white ml-2">{settings.minOdds} - {settings.maxOdds}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Risk:</span>
-                  <span className={cn('ml-2', currentRisk.color)}>{currentRisk.label}</span>
-                </div>
+              <div className="flex gap-4 text-sm">
+                <span className="text-gray-500">Odds: <strong className="text-gray-900">{settings.minOdds} - {settings.maxOdds}</strong></span>
+                <span className="text-gray-500">Risk: <strong className={currentRisk.color}>{currentRisk.label}</strong></span>
               </div>
-              <p className="text-gray-500 text-xs mt-2 italic">{currentRisk.description}</p>
             </div>
 
             <button
               onClick={() => setActiveModal('minOdds')}
-              className={cn('w-full p-4 flex items-center gap-4 border-b border-white/5', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 border-b border-gray-50 active:bg-gray-50"
             >
-              <div className="p-2 rounded-lg bg-blue-500/20">
-                <TrendingDown className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <TrendingDown className="w-5 h-5 text-blue-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Minimum Odds</p>
-                <p className="text-gray-500 text-sm">AI won't recommend below {settings.minOdds}</p>
+                <p className="text-gray-900">Min Odds</p>
+                <p className="text-gray-400 text-sm">Won't recommend below</p>
               </div>
-              <span className={cn('font-semibold', styles.accent)}>{settings.minOdds}</span>
+              <span className="text-[#3B5998] font-semibold">{settings.minOdds}</span>
             </button>
 
             <button
               onClick={() => setActiveModal('maxOdds')}
-              className={cn('w-full p-4 flex items-center gap-4 border-b border-white/5', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 border-b border-gray-50 active:bg-gray-50"
             >
-              <div className="p-2 rounded-lg bg-purple-500/20">
-                <TrendingUp className="w-5 h-5 text-purple-400" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-indigo-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Maximum Odds</p>
-                <p className="text-gray-500 text-sm">AI won't recommend above {settings.maxOdds}</p>
+                <p className="text-gray-900">Max Odds</p>
+                <p className="text-gray-400 text-sm">Won't recommend above</p>
               </div>
-              <span className={cn('font-semibold', styles.accent)}>{settings.maxOdds}</span>
+              <span className="text-[#3B5998] font-semibold">{settings.maxOdds}</span>
             </button>
 
             <button
               onClick={() => setActiveModal('risk')}
-              className={cn('w-full p-4 flex items-center gap-4', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 active:bg-gray-50"
             >
-              <div className={cn('p-2 rounded-lg', currentRisk.bgColor)}>
+              <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', currentRisk.bg)}>
                 <currentRisk.icon className={cn('w-5 h-5', currentRisk.color)} />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Risk Level</p>
-                <p className="text-gray-500 text-sm">{currentRisk.subtitle}</p>
+                <p className="text-gray-900">Risk Level</p>
+                <p className="text-gray-400 text-sm">{currentRisk.description}</p>
               </div>
               <span className={cn('font-semibold', currentRisk.color)}>{currentRisk.label}</span>
             </button>
-          </motion.div>
+          </div>
 
-          {/* Favorite Teams */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className={cn('rounded-2xl overflow-hidden', styles.card)}
-          >
+          {/* Favorites */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <button
               onClick={() => setActiveModal('favorites')}
-              className={cn('w-full p-4 flex items-center gap-4', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 active:bg-gray-50"
             >
-              <div className="p-2 rounded-lg bg-pink-500/20">
-                <Heart className="w-5 h-5 text-pink-400" />
+              <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-pink-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Favorite Teams</p>
-                <p className="text-gray-500 text-sm">
-                  {favoriteTeams.length > 0
-                    ? `${favoriteTeams.length} teams selected`
-                    : 'Get notified about their matches'}
+                <p className="text-gray-900">Favorite Teams</p>
+                <p className="text-gray-400 text-sm">
+                  {favoriteTeams.length > 0 ? `${favoriteTeams.length} teams` : 'Add your favorites'}
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-500" />
+              <ChevronRight className="w-5 h-5 text-gray-300" />
             </button>
-          </motion.div>
+          </div>
 
-          {/* Premium */}
-          {!user?.isPremium && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Link href="/premium">
-                <div className={cn(
-                  'rounded-2xl p-4 flex items-center gap-4 border-2 border-amber-500/30',
-                  'bg-gradient-to-r from-amber-500/10 to-orange-500/10',
-                  'hover:from-amber-500/20 hover:to-orange-500/20 transition-all'
-                )}>
-                  <div className="p-2 rounded-lg bg-amber-500/30">
-                    <Crown className="w-6 h-6 text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-semibold">Upgrade to Premium</p>
-                    <p className="text-amber-400/70 text-sm">Unlimited AI predictions + exclusive features</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-amber-400" />
-                </div>
-              </Link>
-            </motion.div>
-          )}
-
-          {/* Data & Cache */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className={cn('rounded-2xl overflow-hidden', styles.card)}
-          >
-            <div className="p-4 border-b border-white/5">
-              <h3 className={cn('font-semibold', styles.accent)}>Data & Storage</h3>
-            </div>
-
+          {/* Data */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <button
               onClick={handleClearCache}
-              className={cn('w-full p-4 flex items-center gap-4', styles.listItem)}
+              className="w-full p-4 flex items-center gap-4 active:bg-gray-50"
             >
-              <div className="p-2 rounded-lg bg-white/5">
-                <Trash2 className="w-5 h-5 text-gray-400" />
+              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-gray-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-white">Clear Cache</p>
-                <p className="text-gray-500 text-sm">Free up storage and refresh data</p>
+                <p className="text-gray-900">Clear Cache</p>
+                <p className="text-gray-400 text-sm">Free up storage</p>
               </div>
             </button>
-          </motion.div>
+          </div>
 
           {/* Logout */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+          <button
+            onClick={handleLogout}
+            className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm active:bg-red-50"
           >
-            <button
-              onClick={handleLogout}
-              className={cn(
-                'w-full rounded-2xl p-4 flex items-center gap-4',
-                styles.card,
-                'hover:bg-red-500/10 transition-colors'
-              )}
-            >
-              <div className="p-2 rounded-lg bg-red-500/20">
-                <LogOut className="w-5 h-5 text-red-400" />
-              </div>
-              <span className="text-red-400 font-medium">Sign Out</span>
-            </button>
-          </motion.div>
+            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+              <LogOut className="w-5 h-5 text-red-500" />
+            </div>
+            <span className="text-red-500 font-medium">Sign Out</span>
+          </button>
 
-          {/* Version */}
-          <p className="text-center text-gray-600 text-sm py-4">
-            Football AI Predictor v1.0.0
+          <p className="text-center text-gray-400 text-sm py-4">
+            Football AI Predictor v1.0
           </p>
         </div>
       </div>
@@ -1332,7 +388,7 @@ export default function SettingsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4"
             onClick={() => setActiveModal(null)}
           >
             <motion.div
@@ -1340,29 +396,23 @@ export default function SettingsPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className={cn('w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl', styles.card)}
+              className="w-full max-w-md max-h-[80vh] overflow-hidden bg-white rounded-2xl"
             >
-              {/* Language Modal */}
+              {/* Language */}
               {activeModal === 'language' && (
                 <>
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">Select Language</h3>
-                    <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                      <X size={20} />
-                    </button>
+                  <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Language</h3>
+                    <button onClick={() => setActiveModal(null)} className="text-gray-400"><X size={20} /></button>
                   </div>
-                  <div className="p-2 max-h-[60vh] overflow-y-auto">
+                  <div className="p-2">
                     {languages.map(lang => (
                       <button
                         key={lang.code}
-                        onClick={() => {
-                          handleSaveSettings({ language: lang.code });
-                          setActiveModal(null);
-                        }}
+                        onClick={() => { handleSaveSettings({ language: lang.code }); setActiveModal(null); }}
                         className={cn(
                           'w-full p-3 rounded-lg text-left flex items-center gap-3',
-                          settings.language === lang.code ? styles.accentBg : 'hover:bg-white/5',
-                          settings.language === lang.code ? 'text-white' : 'text-gray-300'
+                          settings.language === lang.code ? 'bg-[#3B5998] text-white' : 'text-gray-700 hover:bg-gray-50'
                         )}
                       >
                         <span className="text-xl">{lang.flag}</span>
@@ -1374,27 +424,21 @@ export default function SettingsPage() {
                 </>
               )}
 
-              {/* Timezone Modal */}
+              {/* Timezone */}
               {activeModal === 'timezone' && (
                 <>
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">Select Timezone</h3>
-                    <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                      <X size={20} />
-                    </button>
+                  <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Timezone</h3>
+                    <button onClick={() => setActiveModal(null)} className="text-gray-400"><X size={20} /></button>
                   </div>
-                  <div className="p-2 max-h-[60vh] overflow-y-auto">
+                  <div className="p-2">
                     {timezones.map(tz => (
                       <button
                         key={tz.code}
-                        onClick={() => {
-                          handleSaveSettings({ timezone: tz.code });
-                          setActiveModal(null);
-                        }}
+                        onClick={() => { handleSaveSettings({ timezone: tz.code }); setActiveModal(null); }}
                         className={cn(
                           'w-full p-3 rounded-lg text-left flex items-center gap-3',
-                          settings.timezone === tz.code ? styles.accentBg : 'hover:bg-white/5',
-                          settings.timezone === tz.code ? 'text-white' : 'text-gray-300'
+                          settings.timezone === tz.code ? 'bg-[#3B5998] text-white' : 'text-gray-700 hover:bg-gray-50'
                         )}
                       >
                         <Clock size={18} className="opacity-50" />
@@ -1406,50 +450,31 @@ export default function SettingsPage() {
                 </>
               )}
 
-              {/* Min/Max Odds Modal */}
+              {/* Odds */}
               {(activeModal === 'minOdds' || activeModal === 'maxOdds') && (
                 <>
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
                       {activeModal === 'minOdds' ? 'Minimum Odds' : 'Maximum Odds'}
                     </h3>
-                    <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                      <X size={20} />
-                    </button>
+                    <button onClick={() => setActiveModal(null)} className="text-gray-400"><X size={20} /></button>
                   </div>
                   <div className="p-4">
-                    <p className="text-gray-400 text-sm mb-4">
-                      {activeModal === 'minOdds'
-                        ? 'AI will not recommend bets with odds below this value'
-                        : 'AI will not recommend bets with odds above this value'}
-                    </p>
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {oddsOptions.map(odds => {
-                        const isSelected = activeModal === 'minOdds'
-                          ? settings.minOdds === odds
-                          : settings.maxOdds === odds;
-                        const isDisabled = activeModal === 'minOdds'
-                          ? odds >= settings.maxOdds
-                          : odds <= settings.minOdds;
+                        const isSelected = activeModal === 'minOdds' ? settings.minOdds === odds : settings.maxOdds === odds;
+                        const isDisabled = activeModal === 'minOdds' ? odds >= settings.maxOdds : odds <= settings.minOdds;
                         return (
                           <button
                             key={odds}
                             disabled={isDisabled}
                             onClick={() => {
-                              if (activeModal === 'minOdds') {
-                                handleSaveSettings({ minOdds: odds });
-                              } else {
-                                handleSaveSettings({ maxOdds: odds });
-                              }
+                              handleSaveSettings(activeModal === 'minOdds' ? { minOdds: odds } : { maxOdds: odds });
                               setActiveModal(null);
                             }}
                             className={cn(
-                              'p-3 rounded-lg text-center font-medium transition-all',
-                              isSelected
-                                ? cn('text-white', styles.accentBg)
-                                : isDisabled
-                                  ? 'bg-white/5 text-gray-600 cursor-not-allowed'
-                                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                              'p-3 rounded-lg font-medium transition-all',
+                              isSelected ? 'bg-[#3B5998] text-white' : isDisabled ? 'bg-gray-100 text-gray-300' : 'bg-gray-50 text-gray-700'
                             )}
                           >
                             {odds}
@@ -1461,111 +486,75 @@ export default function SettingsPage() {
                 </>
               )}
 
-              {/* Risk Level Modal */}
+              {/* Risk */}
               {activeModal === 'risk' && (
                 <>
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">Risk Level</h3>
-                    <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                      <X size={20} />
-                    </button>
+                  <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Risk Level</h3>
+                    <button onClick={() => setActiveModal(null)} className="text-gray-400"><X size={20} /></button>
                   </div>
                   <div className="p-4 space-y-3">
-                    <p className="text-gray-400 text-sm mb-4">
-                      Choose how aggressive AI recommendations should be:
-                    </p>
                     {riskLevels.map(risk => (
                       <button
                         key={risk.value}
-                        onClick={() => {
-                          handleSaveSettings({ riskLevel: risk.value });
-                          setActiveModal(null);
-                        }}
+                        onClick={() => { handleSaveSettings({ riskLevel: risk.value }); setActiveModal(null); }}
                         className={cn(
-                          'w-full p-4 rounded-xl border-2 flex items-start gap-3 transition-all',
-                          settings.riskLevel === risk.value
-                            ? cn(risk.bgColor, risk.borderColor)
-                            : 'border-white/10 hover:border-white/20'
+                          'w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-all',
+                          settings.riskLevel === risk.value ? 'border-[#3B5998] bg-[#3B5998]/5' : 'border-gray-100'
                         )}
                       >
-                        <div className={cn('p-2 rounded-lg', risk.bgColor)}>
+                        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', risk.bg)}>
                           <risk.icon className={cn('w-5 h-5', risk.color)} />
                         </div>
                         <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className={cn('font-bold', risk.color)}>{risk.label}</span>
-                            <span className="text-gray-500 text-sm">{risk.subtitle.split('|')[1]?.trim()}</span>
-                          </div>
-                          <p className="text-gray-500 text-xs mt-1">{risk.description}</p>
+                          <p className={cn('font-semibold', risk.color)}>{risk.label}</p>
+                          <p className="text-gray-500 text-sm">{risk.description}</p>
                         </div>
-                        {settings.riskLevel === risk.value && (
-                          <Check className={cn('w-5 h-5', risk.color)} />
-                        )}
+                        {settings.riskLevel === risk.value && <Check className="text-[#3B5998]" size={20} />}
                       </button>
                     ))}
                   </div>
                 </>
               )}
 
-              {/* Favorites Modal */}
+              {/* Favorites */}
               {activeModal === 'favorites' && (
                 <>
-                  <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-white">Favorite Teams</h3>
-                    <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
-                      <X size={20} />
-                    </button>
+                  <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Favorite Teams</h3>
+                    <button onClick={() => setActiveModal(null)} className="text-gray-400"><X size={20} /></button>
                   </div>
                   <div className="p-4">
-                    {/* Add new team */}
                     <div className="flex gap-2 mb-4">
                       <input
                         type="text"
                         value={newFavoriteTeam}
                         onChange={(e) => setNewFavoriteTeam(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAddFavoriteTeam()}
-                        placeholder="Enter team name..."
-                        className={cn(
-                          'flex-1 px-4 py-2 rounded-lg text-white placeholder-gray-500 border',
-                          styles.input
-                        )}
+                        placeholder="Team name..."
+                        className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400"
                       />
                       <button
                         onClick={handleAddFavoriteTeam}
                         disabled={!newFavoriteTeam.trim()}
-                        className={cn(
-                          'px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50',
-                          styles.accentBg, 'text-white'
-                        )}
+                        className="px-4 py-2 rounded-lg bg-[#3B5998] text-white disabled:opacity-50"
                       >
                         Add
                       </button>
                     </div>
-
-                    {/* Teams list */}
                     {isLoadingFavorites ? (
-                      <div className="text-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-                      </div>
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
                     ) : favoriteTeams.length === 0 ? (
-                      <p className="text-center text-gray-500 py-4">
-                        No favorite teams yet. Add one above!
-                      </p>
+                      <p className="text-center text-gray-400 py-4">No favorite teams yet</p>
                     ) : (
-                      <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
                         {favoriteTeams.map(team => (
-                          <div
-                            key={team}
-                            className="flex items-center justify-between p-3 rounded-lg bg-white/5"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Heart className="w-4 h-4 text-pink-400" fill="currentColor" />
-                              <span className="text-white">{team}</span>
+                          <div key={team} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                            <div className="flex items-center gap-2">
+                              <Heart className="w-4 h-4 text-pink-500" fill="currentColor" />
+                              <span className="text-gray-900">{team}</span>
                             </div>
-                            <button
-                              onClick={() => handleRemoveFavoriteTeam(team)}
-                              className="text-gray-500 hover:text-red-400 transition-colors"
-                            >
+                            <button onClick={() => handleRemoveFavoriteTeam(team)} className="text-gray-400 hover:text-red-500">
                               <Trash2 size={16} />
                             </button>
                           </div>

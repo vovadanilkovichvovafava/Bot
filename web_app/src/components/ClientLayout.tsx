@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ThemeProvider } from './ThemeProvider';
-import { ThemedNavbar } from './ThemedNavbar';
-import { useThemeStore } from '@/store/themeStore';
+import { BottomTabBar } from './BottomTabBar';
 import { useAuthStore } from '@/store/authStore';
 
 interface ClientLayoutProps {
@@ -12,12 +10,11 @@ interface ClientLayoutProps {
 }
 
 // Public routes that don't require auth
-const PUBLIC_ROUTES = ['/select-style', '/login'];
+const PUBLIC_ROUTES = ['/login'];
 
 function LayoutContent({ children }: ClientLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { hasSelectedTheme } = useThemeStore();
   const { isAuthenticated, checkAuth } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
 
@@ -43,43 +40,32 @@ function LayoutContent({ children }: ClientLayoutProps) {
     // Public routes - allow access
     if (isPublicRoute) {
       // If on login and already authenticated, go to home
-      if (isLoginPage && isAuthenticated && hasSelectedTheme) {
+      if (isLoginPage && isAuthenticated) {
         router.replace('/');
       }
       return;
     }
 
-    // Protected routes - check requirements
-    // Must select theme first
-    if (!hasSelectedTheme) {
-      router.replace('/select-style');
-      return;
-    }
-
-    // Must be authenticated
+    // Protected routes - must be authenticated
     if (!isAuthenticated) {
       router.replace('/login');
       return;
     }
-  }, [hydrated, pathname, hasSelectedTheme, isAuthenticated, isPublicRoute, isLoginPage, router]);
+  }, [hydrated, pathname, isAuthenticated, isPublicRoute, isLoginPage, router]);
 
-  // Show navbar only for authenticated users on non-public routes
-  const showNavbar = hydrated && !isPublicRoute && hasSelectedTheme && isAuthenticated;
+  // Show bottom tab bar only for authenticated users on non-public routes
+  const showBottomBar = hydrated && !isPublicRoute && isAuthenticated;
 
   return (
     <>
-      {showNavbar && <ThemedNavbar />}
-      <main className={showNavbar ? 'min-h-screen pt-16' : 'min-h-screen'}>
+      <main className={showBottomBar ? 'min-h-screen pb-20' : 'min-h-screen'}>
         {children}
       </main>
+      {showBottomBar && <BottomTabBar />}
     </>
   );
 }
 
 export function ClientLayout({ children }: ClientLayoutProps) {
-  return (
-    <ThemeProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </ThemeProvider>
-  );
+  return <LayoutContent>{children}</LayoutContent>;
 }
