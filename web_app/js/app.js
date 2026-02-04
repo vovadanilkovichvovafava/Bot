@@ -8,7 +8,6 @@ const app = {
   async init() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     router.init();
-    // Check auth
     if (api.isLoggedIn()) {
       this.user = await api.getUser();
       if (!this.user) api.logout();
@@ -42,7 +41,7 @@ const app = {
   // ===== HOME PAGE =====
   async loadHome() {
     const c = document.getElementById('home-matches');
-    c.innerHTML = '<div class="loader">Loading matches...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div>Loading matches...</div>';
     const matches = await api.getTodayMatches();
     if (!matches || matches.length === 0) {
       const upcoming = await api.getUpcomingMatches(3);
@@ -66,7 +65,7 @@ const app = {
 
   async loadMatchTab(tab) {
     const c = document.getElementById('matches-content');
-    c.innerHTML = '<div class="loader">Loading...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div>Loading...</div>';
     let data;
     if (tab === 'today') data = await api.getTodayMatches();
     else if (tab === 'tomorrow') data = await api.getTomorrowMatches();
@@ -78,15 +77,15 @@ const app = {
   async loadAI() {
     if (!api.isLoggedIn()) { this.showLogin(); return; }
     const c = document.getElementById('ai-content');
-    c.innerHTML = '<div class="loader">Loading AI insights...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div>Loading AI insights...</div>';
     const hist = await api.getPredictionHistory(10);
     if (hist && hist.length > 0) {
       c.innerHTML = hist.map((p) => this.renderPredictionCard(p)).join('');
     } else {
       c.innerHTML = `<div class="empty">
-        <span class="material-symbols-outlined" style="font-size:48px;color:var(--green);opacity:0.5">psychology</span>
-        <p style="color:var(--text-muted);margin-top:12px">No AI predictions yet</p>
-        <p style="color:var(--text-muted);font-size:12px;margin-top:4px">Go to a match and tap "Get AI Prediction"</p>
+        <div class="empty-icon"><span class="material-symbols-outlined">psychology</span></div>
+        <p class="empty-title">No AI predictions yet</p>
+        <p class="empty-sub">Open a match and tap "Get AI Analysis" to generate predictions</p>
       </div>`;
     }
   },
@@ -95,7 +94,7 @@ const app = {
   async loadBets() {
     if (!api.isLoggedIn()) { this.showLogin(); return; }
     const c = document.getElementById('bets-content');
-    c.innerHTML = '<div class="loader">Loading history...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div>Loading history...</div>';
     const hist = await api.getPredictionHistory(20);
     if (hist && hist.length > 0) {
       c.innerHTML = hist.map((p) => `
@@ -114,8 +113,9 @@ const app = {
       `).join('');
     } else {
       c.innerHTML = `<div class="empty">
-        <span class="material-symbols-outlined" style="font-size:48px;color:var(--green);opacity:0.5">receipt_long</span>
-        <p style="color:var(--text-muted);margin-top:12px">No betting history yet</p>
+        <div class="empty-icon"><span class="material-symbols-outlined">receipt_long</span></div>
+        <p class="empty-title">No betting history yet</p>
+        <p class="empty-sub">Your AI predictions will appear here</p>
       </div>`;
     }
   },
@@ -125,8 +125,9 @@ const app = {
     const c = document.getElementById('profile-content');
     if (!api.isLoggedIn() || !this.user) {
       c.innerHTML = `<div class="empty">
-        <span class="material-symbols-outlined" style="font-size:48px;color:var(--green);opacity:0.5">person</span>
-        <p style="color:var(--text-muted);margin-top:12px">Log in to see your profile</p>
+        <div class="empty-icon"><span class="material-symbols-outlined">person</span></div>
+        <p class="empty-title">Sign in to view profile</p>
+        <button class="btn btn-primary" style="max-width:200px;margin:16px auto 0" onclick="app.showLogin()">Sign In</button>
       </div>`;
       return;
     }
@@ -142,7 +143,7 @@ const app = {
         ${u.is_premium ? '<div class="badge-pro">PRO</div>' : ''}
       </div>
 
-      <div class="section-label">STATS</div>
+      <div class="section-label">STATISTICS</div>
       <div class="stats-grid">
         <div class="card stat-box"><div class="stat-val" style="color:var(--green)">${u.total_predictions}</div><div class="stat-lbl">Predictions</div></div>
         <div class="card stat-box"><div class="stat-val" style="color:var(--cyan)">${u.correct_predictions}</div><div class="stat-lbl">Correct</div></div>
@@ -180,61 +181,170 @@ const app = {
     const overlay = document.getElementById('match-detail-overlay');
     const content = document.getElementById('match-detail-content');
     overlay.classList.add('show');
-    content.innerHTML = '<div class="loader">Loading match...</div>';
+    content.innerHTML = '<div class="loader"><div class="spinner"></div>Loading match details...</div>';
 
     const match = await api.getMatch(matchId);
-    if (!match) { content.innerHTML = '<p style="color:var(--text-muted)">Failed to load match</p>'; return; }
+    if (!match) {
+      content.innerHTML = '<div class="empty"><p class="empty-title">Failed to load match</p></div>';
+      return;
+    }
 
     const h2h = match.head_to_head;
+    const homeLogoHTML = match.home_team.logo
+      ? `<img src="${match.home_team.logo}" alt="${esc(match.home_team.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : '';
+    const awayLogoHTML = match.away_team.logo
+      ? `<img src="${match.away_team.logo}" alt="${esc(match.away_team.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : '';
+
     content.innerHTML = `
-      <div class="detail-header">
-        <div class="detail-team">
-          <div class="team-shield">${match.home_team.logo ? `<img src="${match.home_team.logo}" alt="" onerror="this.style.display='none'">` : ''}<span class="material-symbols-outlined">shield</span></div>
-          <div class="team-name-sm">${esc(match.home_team.name)}</div>
+      <!-- Match Header - FIFA style -->
+      <div class="match-hero">
+        <div class="hero-team">
+          <div class="hero-shield">
+            ${homeLogoHTML}
+            <div class="shield-fallback" style="${match.home_team.logo ? 'display:none' : ''}">
+              <span class="material-symbols-outlined">shield</span>
+            </div>
+          </div>
+          <div class="hero-team-name">${esc(match.home_team.name)}</div>
         </div>
-        <div class="detail-vs">
-          <div class="detail-score">${match.status === 'finished' ? `${match.home_score ?? '-'} - ${match.away_score ?? '-'}` : 'VS'}</div>
-          <div class="detail-league">${esc(match.league)}</div>
-          <div class="detail-time">${fmtDate(match.match_date)}</div>
+
+        <div class="hero-center">
+          ${match.status === 'finished'
+            ? `<div class="hero-score">${match.home_score ?? 0} - ${match.away_score ?? 0}</div>`
+            : `<div class="hero-vs">VS</div>`
+          }
+          <div class="hero-league">${esc(match.league)}</div>
+          <div class="hero-date">${fmtDateFull(match.match_date)}</div>
         </div>
-        <div class="detail-team">
-          <div class="team-shield">${match.away_team.logo ? `<img src="${match.away_team.logo}" alt="" onerror="this.style.display='none'">` : ''}<span class="material-symbols-outlined">shield</span></div>
-          <div class="team-name-sm">${esc(match.away_team.name)}</div>
+
+        <div class="hero-team">
+          <div class="hero-shield">
+            ${awayLogoHTML}
+            <div class="shield-fallback" style="${match.away_team.logo ? 'display:none' : ''}">
+              <span class="material-symbols-outlined">shield</span>
+            </div>
+          </div>
+          <div class="hero-team-name">${esc(match.away_team.name)}</div>
         </div>
       </div>
 
-      ${h2h ? `
+      <!-- H2H Section -->
+      ${h2h && h2h.total_matches > 0 ? `
       <div class="section-label">HEAD TO HEAD</div>
-      <div class="card h2h-card">
-        <div class="h2h-row"><span>Total Matches</span><span style="font-weight:700">${h2h.total_matches}</span></div>
-        <div class="h2h-row"><span>${esc(match.home_team.name)} Wins</span><span style="font-weight:700;color:var(--green)">${h2h.home_wins}</span></div>
-        <div class="h2h-row"><span>Draws</span><span style="font-weight:700;color:var(--gold)">${h2h.draws}</span></div>
-        <div class="h2h-row"><span>${esc(match.away_team.name)} Wins</span><span style="font-weight:700;color:var(--red)">${h2h.away_wins}</span></div>
+      <div class="card-glow h2h-section">
+        <div class="h2h-row">
+          <span class="h2h-label">Total Matches</span>
+          <span class="h2h-value">${h2h.total_matches}</span>
+        </div>
+        <div class="h2h-row">
+          <span class="h2h-label">${esc(match.home_team.name)} Wins</span>
+          <span class="h2h-value h2h-green">${h2h.home_wins}</span>
+        </div>
+        <div class="h2h-row">
+          <span class="h2h-label">Draws</span>
+          <span class="h2h-value h2h-gold">${h2h.draws}</span>
+        </div>
+        <div class="h2h-row">
+          <span class="h2h-label">${esc(match.away_team.name)} Wins</span>
+          <span class="h2h-value h2h-cyan">${h2h.away_wins}</span>
+        </div>
+
+        <!-- H2H Bar Chart -->
+        <div class="h2h-bar">
+          <div class="h2h-bar-home" style="width:${h2h.total_matches > 0 ? (h2h.home_wins / h2h.total_matches * 100) : 33}%"></div>
+          <div class="h2h-bar-draw" style="width:${h2h.total_matches > 0 ? (h2h.draws / h2h.total_matches * 100) : 34}%"></div>
+          <div class="h2h-bar-away" style="width:${h2h.total_matches > 0 ? (h2h.away_wins / h2h.total_matches * 100) : 33}%"></div>
+        </div>
+        <div class="h2h-bar-labels">
+          <span style="color:var(--green)">${h2h.total_matches > 0 ? Math.round(h2h.home_wins / h2h.total_matches * 100) : 0}%</span>
+          <span style="color:var(--gold)">${h2h.total_matches > 0 ? Math.round(h2h.draws / h2h.total_matches * 100) : 0}%</span>
+          <span style="color:var(--cyan)">${h2h.total_matches > 0 ? Math.round(h2h.away_wins / h2h.total_matches * 100) : 0}%</span>
+        </div>
       </div>` : ''}
 
+      <!-- AI Prediction Section -->
       <div class="section-label">AI PREDICTION</div>
       <div id="detail-prediction">
-        <button class="btn btn-primary" onclick="app.getMatchPrediction(${matchId})">
-          <span class="material-symbols-outlined">psychology</span> Get AI Prediction
-        </button>
+        ${api.isLoggedIn()
+          ? `<button class="btn btn-ai" onclick="app.getMatchPrediction(${matchId})">
+               <span class="material-symbols-outlined">psychology</span>
+               Get AI Analysis
+             </button>`
+          : `<div class="card" style="text-align:center;padding:20px">
+               <p style="color:var(--text-sec);margin-bottom:12px">Sign in to access AI predictions</p>
+               <button class="btn btn-primary" style="max-width:200px;margin:0 auto" onclick="app.showLogin()">Sign In</button>
+             </div>`
+        }
       </div>
     `;
   },
 
   async getMatchPrediction(matchId) {
     const c = document.getElementById('detail-prediction');
-    c.innerHTML = '<div class="loader">AI analyzing...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div>AI analyzing match data...</div>';
+
     const pred = await api.getPrediction(matchId);
-    if (!pred) { c.innerHTML = '<p style="color:var(--red)">Failed to get prediction. Please log in.</p>'; return; }
+    if (!pred) {
+      c.innerHTML = `<div class="card" style="text-align:center;padding:20px">
+        <p style="color:var(--red)">Failed to get prediction</p>
+        <button class="btn btn-outline" style="margin-top:10px;max-width:200px;margin:10px auto 0" onclick="app.getMatchPrediction(${matchId})">Retry</button>
+      </div>`;
+      return;
+    }
+
+    const betName = BET_NAMES[pred.bet_type] || pred.bet_name || pred.bet_type;
+    const confCls = confClass(pred.confidence);
+    const factors = pred.factors || {};
+
     c.innerHTML = `
-      <div class="card-glow ai-pred-card">
-        <div class="ai-label">AI PICK</div>
-        <div class="ai-bet">${BET_NAMES[pred.bet_type] || pred.bet_name || pred.bet_type}</div>
-        <div class="ai-conf ${confClass(pred.confidence)}">${Math.round(pred.confidence)}%</div>
-        <div class="ai-conf-label">PROBABILITY</div>
-        ${pred.odds ? `<div class="ai-odds">Odds: ${pred.odds.toFixed(2)}</div>` : ''}
-        ${pred.reasoning ? `<div class="ai-reasoning">${esc(pred.reasoning)}</div>` : ''}
+      <div class="card-glow ai-prediction-card">
+        <div class="ai-pick-label">AI PICK</div>
+        <div class="ai-pick-bet">${betName}</div>
+        <div class="ai-pick-conf ${confCls}">${Math.round(pred.confidence)}%</div>
+        <div class="ai-pick-prob-label">PROBABILITY</div>
+        ${pred.odds ? `<div class="ai-pick-odds">Odds: ${pred.odds.toFixed(2)}</div>` : ''}
       </div>
+
+      ${factors.home_strength ? `
+      <div class="card factor-card">
+        <div class="factor-title">ANALYSIS BREAKDOWN</div>
+        <div class="factor-row">
+          <span class="factor-label">Home Team Strength</span>
+          <div class="factor-bar"><div class="factor-fill" style="width:${factors.home_strength}%;background:var(--green)"></div></div>
+          <span class="factor-pct">${factors.home_strength}%</span>
+        </div>
+        <div class="factor-row">
+          <span class="factor-label">Away Team Strength</span>
+          <div class="factor-bar"><div class="factor-fill" style="width:${factors.away_strength}%;background:var(--cyan)"></div></div>
+          <span class="factor-pct">${factors.away_strength}%</span>
+        </div>
+        <div class="factor-row">
+          <span class="factor-label">Draw Probability</span>
+          <div class="factor-bar"><div class="factor-fill" style="width:${factors.draw_chance}%;background:var(--gold)"></div></div>
+          <span class="factor-pct">${factors.draw_chance}%</span>
+        </div>
+        <div class="factor-row">
+          <span class="factor-label">Goals Potential</span>
+          <div class="factor-bar"><div class="factor-fill" style="width:${factors.goals_potential}%;background:var(--orange)"></div></div>
+          <span class="factor-pct">${factors.goals_potential}%</span>
+        </div>
+        ${factors.data_points > 0 ? `<div class="factor-data">Based on ${factors.data_points} historical matches</div>` : ''}
+      </div>` : ''}
+
+      ${pred.reasoning ? `
+      <div class="card reasoning-card">
+        <div class="reasoning-title">
+          <span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">auto_awesome</span>
+          AI REASONING
+        </div>
+        <div class="reasoning-text">${esc(pred.reasoning)}</div>
+      </div>` : ''}
+
+      <button class="btn btn-outline" style="margin-top:12px" onclick="app.getMatchPrediction(${matchId})">
+        <span class="material-symbols-outlined">refresh</span> New Analysis
+      </button>
     `;
   },
 
@@ -245,33 +355,78 @@ const app = {
   // ===== RENDERERS =====
   renderMatchList(container, matches, emptyMsg) {
     if (!matches || matches.length === 0) {
-      container.innerHTML = `<div class="empty"><span class="material-symbols-outlined" style="font-size:48px;color:var(--green);opacity:0.5">sports_soccer</span><p style="color:var(--text-muted);margin-top:12px">${emptyMsg}</p></div>`;
+      container.innerHTML = `<div class="empty">
+        <div class="empty-icon"><span class="material-symbols-outlined">sports_soccer</span></div>
+        <p class="empty-title">${emptyMsg}</p>
+      </div>`;
       return;
     }
-    container.innerHTML = matches.map((m) => `
-      <div class="card match-card" onclick="app.showMatchDetail(${m.id})">
-        <div class="mc-league">
-          <span class="badge-sm">${esc(m.league)}</span>
-          <span class="mc-time">${fmtDate(m.match_date)}</span>
-        </div>
-        <div class="mc-body">
-          <div class="mc-teams">
-            <div class="mc-team">
-              <div class="mc-team-logo">${m.home_team.logo ? `<img src="${m.home_team.logo}" alt="" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\'>shield</span>'">` : '<span class="material-symbols-outlined">shield</span>'}</div>
-              <span class="mc-team-name">${esc(m.home_team.name)}</span>
+
+    // Group matches by league
+    const grouped = {};
+    matches.forEach((m) => {
+      const league = m.league || 'Other';
+      if (!grouped[league]) grouped[league] = [];
+      grouped[league].push(m);
+    });
+
+    let html = '';
+    for (const [league, leagueMatches] of Object.entries(grouped)) {
+      html += `<div class="league-group">
+        <div class="league-group-header">
+          <span class="league-group-name">${esc(league)}</span>
+          <span class="league-group-count">${leagueMatches.length} matches</span>
+        </div>`;
+
+      leagueMatches.forEach((m) => {
+        const homeLogoHTML = m.home_team.logo
+          ? `<img src="${m.home_team.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+        const awayLogoHTML = m.away_team.logo
+          ? `<img src="${m.away_team.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+
+        html += `
+          <div class="fifa-card" onclick="app.showMatchDetail(${m.id})">
+            <div class="fifa-time">${fmtTime(m.match_date)}</div>
+            <div class="fifa-body">
+              <div class="fifa-team">
+                <div class="fifa-logo">
+                  ${homeLogoHTML}
+                  <div class="fifa-logo-fallback" style="${m.home_team.logo ? 'display:none' : ''}">
+                    <span class="material-symbols-outlined">shield</span>
+                  </div>
+                </div>
+                <span class="fifa-name">${esc(m.home_team.name)}</span>
+              </div>
+
+              <div class="fifa-center">
+                ${m.status === 'finished'
+                  ? `<span class="fifa-score">${m.home_score ?? 0} - ${m.away_score ?? 0}</span>`
+                  : `<span class="fifa-vs">VS</span>`
+                }
+              </div>
+
+              <div class="fifa-team fifa-team-right">
+                <div class="fifa-logo">
+                  ${awayLogoHTML}
+                  <div class="fifa-logo-fallback" style="${m.away_team.logo ? 'display:none' : ''}">
+                    <span class="material-symbols-outlined">shield</span>
+                  </div>
+                </div>
+                <span class="fifa-name">${esc(m.away_team.name)}</span>
+              </div>
             </div>
-            <div class="mc-vs">${m.status === 'finished' ? `<span class="mc-score">${m.home_score ?? 0} - ${m.away_score ?? 0}</span>` : '<span class="mc-vs-text">VS</span>'}</div>
-            <div class="mc-team">
-              <div class="mc-team-logo">${m.away_team.logo ? `<img src="${m.away_team.logo}" alt="" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined\\'>shield</span>'">` : '<span class="material-symbols-outlined">shield</span>'}</div>
-              <span class="mc-team-name">${esc(m.away_team.name)}</span>
+            <div class="fifa-footer">
+              <span class="material-symbols-outlined" style="font-size:14px;color:var(--green)">psychology</span>
+              <span class="fifa-analyze">AI Analysis</span>
+              <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">chevron_right</span>
             </div>
-          </div>
-          <div class="mc-action">
-            <span class="material-symbols-outlined" style="color:var(--green)">chevron_right</span>
-          </div>
-        </div>
-      </div>
-    `).join('');
+          </div>`;
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
   },
 
   renderPredictionCard(p) {
@@ -301,15 +456,28 @@ const app = {
 // Helpers
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function confClass(v) { if (v >= 75) return 'conf-high'; if (v >= 60) return 'conf-med'; return 'conf-low'; }
+
+function fmtTime(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function fmtDate(d) {
   if (!d) return '';
   const dt = new Date(d);
   const now = new Date();
   const diff = (dt - now) / 86400000;
-  if (diff < 0 && diff > -1) return 'Today ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (diff >= 0 && diff < 1) return 'Today ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (diff >= 1 && diff < 2) return 'Tomorrow ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff < 0 && diff > -1) return 'Today ' + fmtTime(d);
+  if (diff >= 0 && diff < 1) return 'Today ' + fmtTime(d);
+  if (diff >= 1 && diff < 2) return 'Tomorrow ' + fmtTime(d);
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(d);
+}
+
+function fmtDateFull(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + fmtTime(d);
 }
 
 // Auth form handlers
@@ -347,7 +515,7 @@ function handleRegister(e) {
       router.go('home');
       app.loadHome();
     } else {
-      document.getElementById('reg-error').textContent = 'Registration failed. Email may exist.';
+      document.getElementById('reg-error').textContent = 'Registration failed. Email may already exist.';
     }
   });
 }
