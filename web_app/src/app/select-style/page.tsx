@@ -178,7 +178,7 @@ export default function SelectStylePage() {
 
     setTimeout(() => {
       setTheme(theme);
-      router.push('/');
+      router.push('/login');
     }, 800);
   };
 

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { selectedTheme } = useThemeStore();
+  const { selectedTheme, hasSelectedTheme } = useThemeStore();
   const { login, register, loginDemo, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuthStore();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -23,6 +23,13 @@ export default function LoginPage() {
     password: '',
     username: '',
   });
+
+  // Redirect if no theme selected - must choose style first
+  useEffect(() => {
+    if (!hasSelectedTheme) {
+      router.replace('/select-style');
+    }
+  }, [hasSelectedTheme, router]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -150,11 +157,11 @@ export default function LoginPage() {
       >
         {/* Back link */}
         <Link
-          href="/"
+          href="/select-style"
           className={cn('inline-flex items-center gap-2 text-gray-400 mb-6 transition-colors', styles.accent.replace('text-', 'hover:text-'))}
         >
           <ArrowLeft size={18} />
-          Back to Home
+          Change Style
         </Link>
 
         <div className={cn('rounded-2xl p-8', styles.card)}>
