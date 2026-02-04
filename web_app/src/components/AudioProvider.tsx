@@ -12,14 +12,21 @@ interface AudioContextType {
   playEpicMoment: () => void;
 }
 
-const AudioContext = createContext<AudioContextType | null>(null);
+// Default values for SSR (server-side rendering)
+const defaultAudioContext: AudioContextType = {
+  isPlaying: false,
+  isMuted: true,
+  volume: 0.5,
+  togglePlay: () => {},
+  toggleMute: () => {},
+  setVolume: () => {},
+  playEpicMoment: () => {},
+};
+
+const AudioContext = createContext<AudioContextType>(defaultAudioContext);
 
 export function useAudio() {
-  const context = useContext(AudioContext);
-  if (!context) {
-    throw new Error('useAudio must be used within AudioProvider');
-  }
-  return context;
+  return useContext(AudioContext);
 }
 
 export function AudioProvider({ children }: { children: ReactNode }) {
@@ -100,13 +107,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }).catch(console.error);
   };
 
-  if (!isClient) {
-    return <>{children}</>;
-  }
-
-  return (
-    <AudioContext.Provider
-      value={{
+  const value = isClient
+    ? {
         isPlaying,
         isMuted,
         volume,
@@ -114,8 +116,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         toggleMute,
         setVolume,
         playEpicMoment,
-      }}
-    >
+      }
+    : defaultAudioContext;
+
+  return (
+    <AudioContext.Provider value={value}>
       {children}
     </AudioContext.Provider>
   );
