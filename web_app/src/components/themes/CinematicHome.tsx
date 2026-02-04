@@ -4,52 +4,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Play, ChevronRight, Trophy, TrendingUp, Users, Zap,
-  Calendar, Star, ArrowRight, Loader2, Brain, BarChart3
+  ChevronRight, Trophy, Zap, Calendar, ArrowRight, Loader2, Brain, BarChart3,
+  Swords, Shield, Target, Activity, TrendingUp, Users, Radio
 } from 'lucide-react';
 import { RadarChart } from '@/components/charts/RadarChart';
 import { useMatchesStore } from '@/store/matchesStore';
 import { Match, formatMatchDate, isMatchLive, getShortTeamName } from '@/types';
 
-// Team colors for banners
-const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
-  'Arsenal': { primary: '#EF0107', secondary: '#063672' },
-  'Chelsea': { primary: '#034694', secondary: '#D4AF37' },
-  'Manchester United': { primary: '#DA291C', secondary: '#FFE500' },
-  'Manchester City': { primary: '#6CABDD', secondary: '#1C2C5B' },
-  'Liverpool': { primary: '#C8102E', secondary: '#00B2A9' },
-  'Tottenham': { primary: '#132257', secondary: '#FFFFFF' },
-  'West Ham': { primary: '#7A263A', secondary: '#1BB1E7' },
-  'Newcastle': { primary: '#241F20', secondary: '#FFFFFF' },
-  'Everton': { primary: '#003399', secondary: '#FFFFFF' },
-  'Aston Villa': { primary: '#670E36', secondary: '#95BFE5' },
-  'Real Madrid': { primary: '#FEBE10', secondary: '#00529F' },
-  'Barcelona': { primary: '#A50044', secondary: '#004D98' },
-  'Bayern Munich': { primary: '#DC052D', secondary: '#0066B2' },
-  'PSG': { primary: '#004170', secondary: '#DA291C' },
-  'Juventus': { primary: '#000000', secondary: '#FFFFFF' },
+// Team colors for flags
+const TEAM_COLORS: Record<string, { primary: string; secondary: string; accent: string }> = {
+  'Arsenal': { primary: '#EF0107', secondary: '#FFFFFF', accent: '#063672' },
+  'Chelsea': { primary: '#034694', secondary: '#FFFFFF', accent: '#D4AF37' },
+  'Manchester United': { primary: '#DA291C', secondary: '#FFFFFF', accent: '#FFE500' },
+  'Manchester City': { primary: '#6CABDD', secondary: '#FFFFFF', accent: '#1C2C5B' },
+  'Liverpool': { primary: '#C8102E', secondary: '#FFFFFF', accent: '#00B2A9' },
+  'Tottenham': { primary: '#132257', secondary: '#FFFFFF', accent: '#FFFFFF' },
+  'West Ham': { primary: '#7A263A', secondary: '#FFFFFF', accent: '#1BB1E7' },
+  'Newcastle': { primary: '#241F20', secondary: '#FFFFFF', accent: '#FFFFFF' },
+  'Everton': { primary: '#003399', secondary: '#FFFFFF', accent: '#FFFFFF' },
+  'Aston Villa': { primary: '#670E36', secondary: '#95BFE5', accent: '#FFFFFF' },
+  'Real Madrid': { primary: '#FEBE10', secondary: '#FFFFFF', accent: '#00529F' },
+  'Barcelona': { primary: '#A50044', secondary: '#004D98', accent: '#FFFFFF' },
+  'Bayern Munich': { primary: '#DC052D', secondary: '#FFFFFF', accent: '#0066B2' },
+  'PSG': { primary: '#004170', secondary: '#DA291C', accent: '#FFFFFF' },
+  'Juventus': { primary: '#000000', secondary: '#FFFFFF', accent: '#FFFFFF' },
+  'Dortmund': { primary: '#FDE100', secondary: '#000000', accent: '#000000' },
+  'Inter': { primary: '#0068A8', secondary: '#000000', accent: '#FFFFFF' },
+  'AC Milan': { primary: '#FB090B', secondary: '#000000', accent: '#FFFFFF' },
 };
 
-// UK Landmarks with their images
-const LANDMARKS = [
-  {
-    name: 'Tower Bridge',
-    image: 'https://images.pexels.com/photos/77511/pexels-photo-77511.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    bannerPosition: { left: '20%', top: '15%' },
-    bannerSize: 'large',
-  },
-  {
-    name: 'Big Ben',
-    image: 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    bannerPosition: { left: '65%', top: '10%' },
-    bannerSize: 'large',
-  },
-  {
-    name: 'London Skyline',
-    image: 'https://images.pexels.com/photos/672532/pexels-photo-672532.jpeg?auto=compress&cs=tinysrgb&w=1600',
-    bannerPosition: { left: '40%', top: '20%' },
-    bannerSize: 'medium',
-  },
+// Stadium backgrounds
+const STADIUM_BACKGROUNDS = [
+  'https://images.pexels.com/photos/46798/the-ball-stadance-football-the-pitch-46798.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  'https://images.pexels.com/photos/114296/pexels-photo-114296.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  'https://images.pexels.com/photos/61135/pexels-photo-61135.jpeg?auto=compress&cs=tinysrgb&w=1920',
 ];
 
 const TOP_LEAGUES = [
@@ -62,8 +50,7 @@ const TOP_LEAGUES = [
 
 export function CinematicHome() {
   const [isVisible, setIsVisible] = useState(false);
-  const [currentLandmark, setCurrentLandmark] = useState(0);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [currentBg, setCurrentBg] = useState(0);
 
   const {
     todayMatches,
@@ -78,10 +65,10 @@ export function CinematicHome() {
     loadTodayMatches();
     loadLiveMatches();
 
-    // Rotate landmarks
+    // Rotate backgrounds
     const interval = setInterval(() => {
-      setCurrentLandmark((prev) => (prev + 1) % LANDMARKS.length);
-    }, 8000);
+      setCurrentBg((prev) => (prev + 1) % STADIUM_BACKGROUNDS.length);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [loadTodayMatches, loadLiveMatches]);
@@ -95,72 +82,102 @@ export function CinematicHome() {
 
   // Get team colors
   const getTeamColors = (teamName: string) => {
-    return TEAM_COLORS[teamName] || { primary: '#D4AF37', secondary: '#1a1a2e' };
+    return TEAM_COLORS[teamName] || { primary: '#D4AF37', secondary: '#FFFFFF', accent: '#1a1a2e' };
   };
 
-  // Generate AI prediction
+  // Generate AI prediction and stats
   const getAIPrediction = (match: Match | null) => {
-    if (!match) return { homeWin: 40, draw: 30, awayWin: 30 };
+    if (!match) return { homeWin: 40, draw: 30, awayWin: 30, attack: 75, defence: 70, momentum: 65 };
     const seed = match.id % 100;
     const homeWin = 35 + (seed % 35);
     const draw = 15 + ((seed * 3) % 25);
     const awayWin = 100 - homeWin - draw;
-    return { homeWin, draw, awayWin };
+    return {
+      homeWin,
+      draw,
+      awayWin,
+      attack: 65 + (seed % 25),
+      defence: 60 + ((seed * 2) % 30),
+      momentum: 55 + ((seed * 3) % 35),
+    };
+  };
+
+  // Generate team stats for radar
+  const getTeamStats = (match: Match | null, isHome: boolean) => {
+    if (!match) return { attack: 70, defense: 70, midfield: 70, form: 70, setpieces: 70 };
+    const seed = (match.id + (isHome ? 0 : 50)) % 100;
+    return {
+      attack: 65 + (seed % 25),
+      defense: 60 + ((seed * 2) % 30),
+      midfield: 65 + ((seed * 3) % 25),
+      form: 55 + ((seed * 4) % 35),
+      setpieces: 60 + ((seed * 5) % 30),
+    };
   };
 
   const prediction = getAIPrediction(featuredMatch);
-  const homeColors = featuredMatch ? getTeamColors(featuredMatch.homeTeam.name) : { primary: '#D4AF37', secondary: '#1a1a2e' };
-  const awayColors = featuredMatch ? getTeamColors(featuredMatch.awayTeam.name) : { primary: '#6CABDD', secondary: '#1a1a2e' };
+  const homeColors = featuredMatch ? getTeamColors(featuredMatch.homeTeam.name) : { primary: '#D4AF37', secondary: '#FFFFFF', accent: '#1a1a2e' };
+  const awayColors = featuredMatch ? getTeamColors(featuredMatch.awayTeam.name) : { primary: '#6CABDD', secondary: '#FFFFFF', accent: '#1a1a2e' };
+  const homeStats = getTeamStats(featuredMatch, true);
+  const awayStats = getTeamStats(featuredMatch, false);
+  const live = featuredMatch ? isMatchLive(featuredMatch) : false;
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-      {/* Background Landmark Image */}
+    <div className="min-h-screen relative overflow-hidden bg-gray-950">
+      {/* Stadium Background with Spotlight Effects */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentLandmark}
+            key={currentBg}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.5 }}
+            transition={{ duration: 2 }}
             className="absolute inset-0"
           >
             <img
-              src={LANDMARKS[currentLandmark].image}
-              alt={LANDMARKS[currentLandmark].name}
+              src={STADIUM_BACKGROUNDS[currentBg]}
+              alt="Stadium"
               className="w-full h-full object-cover"
-              onLoad={() => setImgLoaded(true)}
             />
-            {/* Dark overlay with gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
+            {/* Dark gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/50" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black" />
           </motion.div>
         </AnimatePresence>
+
+        {/* Spotlight beams */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.div
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity }}
+            className="absolute top-0 left-[10%] w-[200px] h-[500px] bg-gradient-to-b from-amber-400/30 via-amber-400/5 to-transparent rotate-12 blur-sm"
+          />
+          <motion.div
+            animate={{ opacity: [0.4, 0.7, 0.4] }}
+            transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+            className="absolute top-0 right-[15%] w-[150px] h-[400px] bg-gradient-to-b from-amber-400/25 via-amber-400/5 to-transparent -rotate-12 blur-sm"
+          />
+          <motion.div
+            animate={{ opacity: [0.2, 0.5, 0.2] }}
+            transition={{ duration: 6, repeat: Infinity, delay: 2 }}
+            className="absolute top-0 left-[45%] w-[100px] h-[350px] bg-gradient-to-b from-white/20 via-white/5 to-transparent blur-sm"
+          />
+        </div>
       </div>
 
-      {/* Dramatic light beams */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-        <div className="absolute top-0 left-[15%] w-[2px] h-[60%] bg-gradient-to-b from-amber-400/60 via-amber-400/20 to-transparent rotate-12" />
-        <div className="absolute top-0 left-[30%] w-[1px] h-[50%] bg-gradient-to-b from-amber-400/40 via-amber-400/10 to-transparent rotate-6" />
-        <div className="absolute top-0 right-[20%] w-[2px] h-[55%] bg-gradient-to-b from-amber-400/50 via-amber-400/15 to-transparent -rotate-12" />
-        <div className="absolute top-0 right-[35%] w-[1px] h-[45%] bg-gradient-to-b from-amber-400/30 via-amber-400/10 to-transparent -rotate-6" />
-      </div>
-
-      {/* Floating particles */}
+      {/* Floating golden particles */}
       <div className="absolute inset-0 pointer-events-none z-10">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-amber-400/50 rounded-full"
+            className="absolute w-1 h-1 bg-amber-400/60 rounded-full"
             initial={{ x: `${Math.random() * 100}%`, y: '110%', opacity: 0 }}
-            animate={{
-              y: '-10%',
-              opacity: [0, 0.8, 0],
-            }}
+            animate={{ y: '-10%', opacity: [0, 0.8, 0] }}
             transition={{
-              duration: 8 + Math.random() * 6,
+              duration: 6 + Math.random() * 4,
               repeat: Infinity,
-              delay: Math.random() * 10,
+              delay: Math.random() * 8,
               ease: 'linear',
             }}
           />
@@ -168,20 +185,20 @@ export function CinematicHome() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* EPL Style Header */}
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : -30 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-2">
-            <span className="text-white">FOOTBALL</span>{' '}
-            <span className="golden-gradient">AI</span>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-2">
+            <span className="text-white">MATCH</span>{' '}
+            <span className="golden-gradient">CENTER</span>
           </h1>
-          <p className="text-amber-400/80 uppercase tracking-[0.3em] text-sm">
-            Where Passion Meets Prediction
+          <p className="text-amber-400/70 uppercase tracking-[0.3em] text-xs">
+            AI-Powered Football Analysis
           </p>
         </motion.div>
 
@@ -193,154 +210,106 @@ export function CinematicHome() {
           </div>
         )}
 
-        {/* Hero Section - Featured Match with Banner Style */}
+        {/* Main Layout */}
         {featuredMatch && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-12"
-          >
-            {/* Match Type Badge */}
-            <div className="flex items-center justify-center mb-6">
-              {isMatchLive(featuredMatch) ? (
-                <span className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-red-400 font-bold uppercase tracking-wider">Live Now</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-full">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 font-bold uppercase tracking-wider">{featuredMatch.league}</span>
-                </span>
-              )}
-            </div>
-
-            {/* EPL 2010 Style Banners */}
-            <div className="flex items-stretch justify-center gap-4 md:gap-8 lg:gap-16 mb-8">
-              {/* Home Team Banner */}
-              <motion.div
-                initial={{ y: -100, opacity: 0, rotateZ: -5 }}
-                animate={{ y: 0, opacity: 1, rotateZ: 0 }}
-                transition={{ delay: 0.4, duration: 0.8, type: 'spring' }}
-                className="relative"
-              >
-                {/* Banner Rod */}
-                <div className="absolute -top-3 left-0 right-0 h-3 bg-gradient-to-b from-amber-600 to-amber-800 rounded-t-full shadow-lg" />
-                <div className="absolute -top-4 left-4 w-3 h-5 bg-amber-700 rounded-full" />
-                <div className="absolute -top-4 right-4 w-3 h-5 bg-amber-700 rounded-full" />
-
-                {/* Banner Fabric */}
-                <div
-                  className="relative w-36 md:w-48 lg:w-56 min-h-[200px] md:min-h-[280px] rounded-b-lg overflow-hidden shadow-2xl"
-                  style={{
-                    background: `linear-gradient(180deg, ${homeColors.primary} 0%, ${homeColors.primary}dd 50%, ${homeColors.primary}aa 100%)`,
-                    boxShadow: `0 20px 60px ${homeColors.primary}40, 0 10px 30px rgba(0,0,0,0.5)`,
-                  }}
-                >
-                  {/* Fabric texture overlay */}
-                  <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjMDAwIi8+PC9zdmc+')]" />
-
-                  {/* Team Logo */}
-                  <div className="flex flex-col items-center justify-center h-full p-6">
-                    <TeamLogo team={featuredMatch.homeTeam} size="large" />
-                    <h3 className="text-white font-bold text-lg md:text-xl text-center mt-4 uppercase tracking-wide drop-shadow-lg">
-                      {featuredMatch.homeTeam.name}
-                    </h3>
-                  </div>
-
-                  {/* Banner bottom fringe */}
-                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/30 to-transparent" />
-                  <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-1">
-                    {[...Array(12)].map((_, i) => (
-                      <div key={i} className="w-2 h-4 bg-current opacity-80 rounded-b" style={{ color: homeColors.secondary }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Banner shadow */}
-                <div className="absolute -bottom-4 left-4 right-4 h-8 bg-black/30 blur-xl rounded-full" />
-              </motion.div>
-
-              {/* VS / Score */}
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
-                className="flex flex-col items-center justify-center py-8"
-              >
-                {isMatchLive(featuredMatch) ? (
-                  <div className="text-center">
-                    <div className="text-5xl md:text-7xl font-black text-red-400 tracking-tight">
-                      {featuredMatch.homeScore ?? 0} : {featuredMatch.awayScore ?? 0}
-                    </div>
-                    {featuredMatch.minute && (
-                      <span className="text-red-500 font-bold text-xl">{featuredMatch.minute}'</span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="text-5xl md:text-7xl font-black text-gray-600 tracking-tight">VS</div>
-                    <p className="text-amber-400/70 text-sm mt-2 uppercase tracking-wider">
-                      {formatMatchDate(featuredMatch.matchDate)}
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Away Team Banner */}
-              <motion.div
-                initial={{ y: -100, opacity: 0, rotateZ: 5 }}
-                animate={{ y: 0, opacity: 1, rotateZ: 0 }}
-                transition={{ delay: 0.5, duration: 0.8, type: 'spring' }}
-                className="relative"
-              >
-                {/* Banner Rod */}
-                <div className="absolute -top-3 left-0 right-0 h-3 bg-gradient-to-b from-amber-600 to-amber-800 rounded-t-full shadow-lg" />
-                <div className="absolute -top-4 left-4 w-3 h-5 bg-amber-700 rounded-full" />
-                <div className="absolute -top-4 right-4 w-3 h-5 bg-amber-700 rounded-full" />
-
-                {/* Banner Fabric */}
-                <div
-                  className="relative w-36 md:w-48 lg:w-56 min-h-[200px] md:min-h-[280px] rounded-b-lg overflow-hidden shadow-2xl"
-                  style={{
-                    background: `linear-gradient(180deg, ${awayColors.primary} 0%, ${awayColors.primary}dd 50%, ${awayColors.primary}aa 100%)`,
-                    boxShadow: `0 20px 60px ${awayColors.primary}40, 0 10px 30px rgba(0,0,0,0.5)`,
-                  }}
-                >
-                  {/* Fabric texture overlay */}
-                  <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjMDAwIi8+PC9zdmc+')]" />
-
-                  {/* Team Logo */}
-                  <div className="flex flex-col items-center justify-center h-full p-6">
-                    <TeamLogo team={featuredMatch.awayTeam} size="large" />
-                    <h3 className="text-white font-bold text-lg md:text-xl text-center mt-4 uppercase tracking-wide drop-shadow-lg">
-                      {featuredMatch.awayTeam.name}
-                    </h3>
-                  </div>
-
-                  {/* Banner bottom fringe */}
-                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/30 to-transparent" />
-                  <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-1">
-                    {[...Array(12)].map((_, i) => (
-                      <div key={i} className="w-2 h-4 bg-current opacity-80 rounded-b" style={{ color: awayColors.secondary }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Banner shadow */}
-                <div className="absolute -bottom-4 left-4 right-4 h-8 bg-black/30 blur-xl rounded-full" />
-              </motion.div>
-            </div>
-
-            {/* AI Verdict Card */}
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            {/* Left Column - Tactical Analysis */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="max-w-2xl mx-auto"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: isVisible ? 1 : 0, x: isVisible ? 0 : -30 }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-1"
             >
-              <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-6">
+              <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Tactical Analysis</h3>
+                </div>
+
+                {/* Radar Chart */}
+                <div className="h-48 mb-4">
+                  <RadarChart
+                    homeStats={homeStats}
+                    awayStats={awayStats}
+                    theme="cinematic"
+                  />
+                </div>
+
+                {/* Team Legend */}
+                <div className="flex justify-center gap-6 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: homeColors.primary }} />
+                    <span className="text-xs text-gray-400">{getShortTeamName(featuredMatch.homeTeam.name)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: awayColors.primary }} />
+                    <span className="text-xs text-gray-400">{getShortTeamName(featuredMatch.awayTeam.name)}</span>
+                  </div>
+                </div>
+
+                {/* ATTACK / DEFENCE / MOMENTUM */}
+                <div className="space-y-3">
+                  <StatBar label="ATTACK" value={prediction.attack} icon={Swords} color="from-red-500 to-orange-500" />
+                  <StatBar label="DEFENCE" value={prediction.defence} icon={Shield} color="from-blue-500 to-cyan-500" />
+                  <StatBar label="MOMENTUM" value={prediction.momentum} icon={Activity} color="from-amber-500 to-yellow-500" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Center Column - Featured Match with Waving Flags */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+              transition={{ delay: 0.2 }}
+              className="lg:col-span-1"
+            >
+              {/* Match Badge */}
+              <div className="flex items-center justify-center mb-4">
+                {live ? (
+                  <span className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-red-400 font-bold uppercase tracking-wider text-sm">Live Now</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-full">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-400 font-bold uppercase tracking-wider text-sm">{featuredMatch.league}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* 3D Waving Flags with Teams */}
+              <div className="flex items-center justify-center gap-4 mb-6">
+                {/* Home Flag */}
+                <WavingFlag team={featuredMatch.homeTeam} colors={homeColors} side="left" />
+
+                {/* VS / Score */}
+                <div className="text-center px-4">
+                  {live ? (
+                    <div>
+                      <div className="text-4xl md:text-5xl font-black text-red-400 tracking-tight">
+                        {featuredMatch.homeScore ?? 0} : {featuredMatch.awayScore ?? 0}
+                      </div>
+                      {featuredMatch.minute && (
+                        <span className="text-red-500 font-bold">{featuredMatch.minute}'</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-4xl md:text-5xl font-black text-gray-600 tracking-tight">VS</div>
+                      <p className="text-amber-400/70 text-sm mt-1">
+                        {formatMatchDate(featuredMatch.matchDate)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Away Flag */}
+                <WavingFlag team={featuredMatch.awayTeam} colors={awayColors} side="right" />
+              </div>
+
+              {/* AI Verdict Card */}
+              <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-5">
                 <div className="flex items-center gap-2 justify-center mb-4">
                   <Brain className="w-5 h-5 text-amber-400" />
                   <span className="text-amber-400 font-bold uppercase tracking-widest text-sm">AI Prediction</span>
@@ -352,20 +321,20 @@ export function CinematicHome() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${prediction.homeWin}%` }}
-                      transition={{ duration: 1, delay: 1 }}
+                      transition={{ duration: 1, delay: 0.5 }}
                       className="rounded-l-full"
                       style={{ background: homeColors.primary }}
                     />
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${prediction.draw}%` }}
-                      transition={{ duration: 1, delay: 1.2 }}
+                      transition={{ duration: 1, delay: 0.7 }}
                       className="bg-gray-500"
                     />
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${prediction.awayWin}%` }}
-                      transition={{ duration: 1, delay: 1.4 }}
+                      transition={{ duration: 1, delay: 0.9 }}
                       className="rounded-r-full"
                       style={{ background: awayColors.primary }}
                     />
@@ -382,89 +351,109 @@ export function CinematicHome() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
                   >
                     <BarChart3 className="w-5 h-5" />
-                    View Full Analysis
+                    Full Analysis
                     <ArrowRight className="w-5 h-5" />
                   </motion.button>
                 </Link>
               </div>
             </motion.div>
-          </motion.div>
-        )}
 
-        {/* Upcoming Matches */}
-        {todayMatches.length > 1 && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="mb-12"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold golden-gradient">TODAY'S MATCHES</h2>
-              <Link href="/matches" className="text-amber-400 hover:text-amber-300 flex items-center gap-1 text-sm">
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+            {/* Right Column - Live & Upcoming */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: isVisible ? 1 : 0, x: isVisible ? 0 : 30 }}
+              transition={{ delay: 0.4 }}
+              className="lg:col-span-1"
+            >
+              {/* Live Matches */}
+              {liveMatches.length > 0 && (
+                <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 rounded-2xl p-5 mb-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Radio className="w-5 h-5 text-red-400" />
+                    <span className="text-red-400 font-bold uppercase tracking-wider text-sm">Live Now</span>
+                    <span className="ml-auto px-2 py-0.5 bg-red-500/20 rounded-full text-red-400 text-xs">
+                      {liveMatches.length}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {liveMatches.slice(0, 3).map(match => (
+                      <Link key={match.id} href={`/match/${match.id}`}>
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-white truncate flex-1">{match.homeTeam.name}</span>
+                            <span className="text-red-400 font-bold px-3">
+                              {match.homeScore ?? 0} : {match.awayScore ?? 0}
+                            </span>
+                            <span className="text-white truncate flex-1 text-right">{match.awayTeam.name}</span>
+                          </div>
+                          <div className="text-center text-xs text-red-500 mt-1">{match.minute}'</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todayMatches.slice(1, 7).map((match, index) => (
-                <motion.div
-                  key={match.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                >
-                  <Link href={`/match/${match.id}`}>
-                    <div className="bg-black/40 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 hover:border-amber-500/50 transition-all cursor-pointer group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <TeamLogo team={match.homeTeam} size="small" />
-                          <span className="text-white text-sm font-medium truncate">{match.homeTeam.name}</span>
-                        </div>
-                        <span className="text-gray-500 text-sm px-3">vs</span>
-                        <div className="flex items-center gap-3 flex-1 justify-end">
-                          <span className="text-white text-sm font-medium truncate text-right">{match.awayTeam.name}</span>
-                          <TeamLogo team={match.awayTeam} size="small" />
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                        <span className="text-gray-500 text-xs">{match.league}</span>
-                        <span className="text-amber-400 text-xs">{formatMatchDate(match.matchDate)}</span>
-                      </div>
-                    </div>
+              {/* Upcoming Today */}
+              <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-400" />
+                    <span className="text-amber-400 font-bold uppercase tracking-wider text-sm">Today</span>
+                  </div>
+                  <Link href="/matches" className="text-amber-400/70 hover:text-amber-400 text-xs flex items-center gap-1">
+                    All <ChevronRight className="w-3 h-3" />
                   </Link>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                </div>
+                <div className="space-y-2">
+                  {todayMatches.slice(0, 5).map(match => (
+                    <Link key={match.id} href={`/match/${match.id}`}>
+                      <div className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-transparent hover:border-amber-500/30">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-white truncate flex-1">{match.homeTeam.name}</span>
+                          <span className="text-gray-500 px-2">vs</span>
+                          <span className="text-white truncate flex-1 text-right">{match.awayTeam.name}</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-gray-500">{match.league}</span>
+                          <span className="text-xs text-amber-400">{formatMatchDate(match.matchDate)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {/* Top Leagues */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
+          transition={{ delay: 0.6 }}
+          className="mb-8"
         >
-          <h2 className="text-2xl font-bold golden-gradient mb-6 text-center">TOP LEAGUES</h2>
-          <div className="flex flex-wrap justify-center gap-4">
+          <h2 className="text-xl font-bold golden-gradient mb-4 text-center">TOP LEAGUES</h2>
+          <div className="flex flex-wrap justify-center gap-3">
             {TOP_LEAGUES.map((league, index) => (
               <motion.div
                 key={league.name}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.8 + index * 0.1 }}
+                transition={{ delay: 0.7 + index * 0.1 }}
               >
                 <Link href={`/matches?league=${league.code}`}>
-                  <div className="bg-black/40 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 hover:border-amber-500/50 hover:bg-black/60 transition-all cursor-pointer group w-32 text-center">
+                  <div className="bg-black/40 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 hover:border-amber-500/50 hover:bg-black/60 transition-all cursor-pointer group w-24 text-center">
                     <img
                       src={league.logo}
                       alt={league.name}
-                      className="w-12 h-12 mx-auto mb-2 object-contain group-hover:scale-110 transition-transform"
+                      className="w-10 h-10 mx-auto mb-2 object-contain group-hover:scale-110 transition-transform"
                     />
-                    <h3 className="text-xs font-semibold text-white">{league.name}</h3>
+                    <h3 className="text-xs font-semibold text-white truncate">{league.name}</h3>
                   </div>
                 </Link>
               </motion.div>
@@ -476,8 +465,8 @@ export function CinematicHome() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
-          transition={{ delay: 0.9, duration: 0.8 }}
-          className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4"
+          transition={{ delay: 0.8 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
           {[
             { icon: Calendar, label: 'All Matches', href: '/matches', color: 'from-amber-500 to-amber-600' },
@@ -489,17 +478,17 @@ export function CinematicHome() {
               <motion.div
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                className="bg-black/40 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:border-amber-500/50 transition-all"
+                className="bg-black/40 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 flex items-center gap-2 cursor-pointer hover:border-amber-500/50 transition-all"
               >
                 <div className={`p-2 rounded-lg bg-gradient-to-br ${action.color} relative`}>
-                  <action.icon className="w-5 h-5 text-white" />
+                  <action.icon className="w-4 h-4 text-white" />
                   {action.badge && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
                       {action.badge}
                     </span>
                   )}
                 </div>
-                <span className="font-semibold text-white">{action.label}</span>
+                <span className="font-semibold text-white text-sm">{action.label}</span>
                 <ChevronRight className="w-4 h-4 text-gray-500 ml-auto" />
               </motion.div>
             </Link>
@@ -510,60 +499,123 @@ export function CinematicHome() {
   );
 }
 
-// Team Logo Component - Cinematic Gold Glow Style
-function TeamLogo({ team, size = 'medium' }: { team: { name: string; logo?: string }; size?: 'small' | 'medium' | 'large' }) {
-  const [imgError, setImgError] = useState(false);
-  const colors = TEAM_COLORS[team.name] || { primary: '#D4AF37', secondary: '#1a1a2e' };
-
-  const sizeClasses = {
-    small: 'w-8 h-8',
-    medium: 'w-14 h-14',
-    large: 'w-20 h-20 md:w-24 md:h-24',
-  };
-
-  const glowSizes = {
-    small: 'blur-md',
-    medium: 'blur-lg',
-    large: 'blur-xl',
-  };
-
-  if (team.logo && !imgError) {
-    return (
-      <div className="relative group flex-shrink-0">
-        {/* Golden glow effect */}
-        <div
-          className={`absolute inset-0 rounded-full opacity-50 group-hover:opacity-70 transition-opacity ${glowSizes[size]}`}
-          style={{ background: `radial-gradient(circle, ${colors.primary}80 0%, transparent 70%)` }}
-        />
-        {/* Dark container */}
-        <div className={`relative ${sizeClasses[size]} rounded-full bg-gray-900/90 backdrop-blur-sm p-1.5 overflow-hidden border border-amber-500/30`}
-          style={{ boxShadow: `0 4px 20px ${colors.primary}30` }}>
-          <img
-            src={team.logo}
-            alt={team.name}
-            className="w-full h-full object-contain drop-shadow-lg"
-            onError={() => setImgError(true)}
-          />
-        </div>
-      </div>
-    );
-  }
-
+// Stat Bar Component
+function StatBar({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
   return (
-    <div className="relative group flex-shrink-0">
-      <div
-        className={`absolute inset-0 rounded-full opacity-50 group-hover:opacity-70 transition-opacity ${glowSizes[size]}`}
-        style={{ background: `radial-gradient(circle, ${colors.primary}80 0%, transparent 70%)` }}
-      />
-      <div
-        className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-bold border border-white/20`}
-        style={{
-          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primary}99)`,
-          boxShadow: `0 4px 20px ${colors.primary}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
-        }}
-      >
-        {team.name.substring(0, 2).toUpperCase()}
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-amber-400" />
+          <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
+        </div>
+        <span className="text-xs text-white font-bold">{value}%</span>
+      </div>
+      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 1, delay: 0.5 }}
+          className={`h-full bg-gradient-to-r ${color} rounded-full`}
+        />
       </div>
     </div>
+  );
+}
+
+// Waving Flag Component with CSS 3D Animation
+function WavingFlag({ team, colors, side }: {
+  team: { name: string; logo?: string };
+  colors: { primary: string; secondary: string; accent: string };
+  side: 'left' | 'right';
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ y: -50, opacity: 0, rotateZ: side === 'left' ? -10 : 10 }}
+      animate={{ y: 0, opacity: 1, rotateZ: 0 }}
+      transition={{ type: 'spring', damping: 15, delay: side === 'left' ? 0.3 : 0.4 }}
+      className="relative"
+      style={{ perspective: '500px' }}
+    >
+      {/* Flag Pole */}
+      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="w-2 h-6 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full shadow-lg" />
+        <div className="w-4 h-2 bg-amber-500 rounded-full mx-auto -mt-1" />
+      </div>
+
+      {/* Waving Flag with 3D Effect */}
+      <motion.div
+        animate={{
+          rotateY: side === 'left' ? [0, 8, 0, -5, 0] : [0, -8, 0, 5, 0],
+          rotateX: [0, 2, 0, -2, 0],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        className="relative w-28 md:w-36 min-h-[160px] md:min-h-[200px] mt-4 rounded-b-lg overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${colors.primary} 0%, ${colors.primary}dd 50%, ${colors.primary}bb 100%)`,
+          boxShadow: `0 15px 40px ${colors.primary}40, 0 5px 20px rgba(0,0,0,0.4)`,
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {/* Fabric wave pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <motion.div
+            animate={{ x: ['-100%', '100%'] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            className="absolute inset-0 w-[200%]"
+            style={{
+              background: `linear-gradient(90deg, transparent 0%, ${colors.secondary}40 50%, transparent 100%)`,
+            }}
+          />
+        </div>
+
+        {/* Secondary color stripe */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-8"
+          style={{ background: colors.secondary, opacity: 0.8 }}
+        />
+
+        {/* Team Logo */}
+        <div className="flex flex-col items-center justify-center h-full p-4 pt-2 relative z-10">
+          {team.logo && !imgError ? (
+            <div className="w-14 h-14 md:w-18 md:h-18 rounded-full bg-white/20 p-2 backdrop-blur-sm shadow-xl">
+              <img
+                src={team.logo}
+                alt={team.name}
+                className="w-full h-full object-contain drop-shadow-lg"
+                onError={() => setImgError(true)}
+              />
+            </div>
+          ) : (
+            <div
+              className="w-14 h-14 md:w-18 md:h-18 rounded-full flex items-center justify-center text-lg font-bold shadow-xl"
+              style={{ background: colors.secondary, color: colors.primary }}
+            >
+              {team.name.substring(0, 2).toUpperCase()}
+            </div>
+          )}
+          <h3 className="text-white font-bold text-sm md:text-base text-center mt-3 uppercase tracking-wide drop-shadow-lg">
+            {team.name}
+          </h3>
+        </div>
+
+        {/* Flag bottom fringe */}
+        <div className="absolute -bottom-1 left-0 right-0 flex justify-center gap-0.5">
+          {[...Array(14)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{ y: [0, 2, 0] }}
+              transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.05 }}
+              className="w-1.5 h-3 rounded-b"
+              style={{ background: i % 2 === 0 ? colors.primary : colors.secondary, opacity: 0.9 }}
+            />
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Shadow */}
+      <div className="absolute -bottom-3 left-2 right-2 h-6 bg-black/30 blur-lg rounded-full" />
+    </motion.div>
   );
 }
