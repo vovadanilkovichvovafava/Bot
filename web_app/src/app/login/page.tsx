@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Sparkles, Zap } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/themeStore';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 export default function LoginPage() {
   const router = useRouter();
   const { selectedTheme, hasSelectedTheme } = useThemeStore();
-  const { login, register, loginDemo, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuthStore();
+  const { login, register, isAuthenticated, isLoading: authLoading, error: authError, clearError } = useAuthStore();
 
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -67,13 +67,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoMode = async () => {
-    setIsLoading(true);
-    setError(null);
-    await loginDemo();
-    router.push('/');
   };
 
   // Theme-specific styles
@@ -273,32 +266,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-4">
-            <div className={cn('flex-1 h-px', styles.accentBorder.replace('border-', 'bg-'))} />
-            <span className="text-gray-500 text-sm uppercase tracking-wider">or</span>
-            <div className={cn('flex-1 h-px', styles.accentBorder.replace('border-', 'bg-'))} />
-          </div>
-
-          {/* Demo Mode */}
-          <motion.button
-            onClick={handleDemoMode}
-            disabled={isLoading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              'w-full py-4 rounded-xl text-center font-semibold transition-all border flex items-center justify-center gap-2',
-              styles.accent,
-              styles.accentBorder,
-              'hover:bg-white/5'
-            )}
-          >
-            <Zap size={18} />
-            Try Demo Mode
-          </motion.button>
-          <p className="text-center text-gray-500 text-xs mt-3">
-            Full access for 30 minutes - no registration needed
-          </p>
         </div>
       </motion.div>
     </div>
