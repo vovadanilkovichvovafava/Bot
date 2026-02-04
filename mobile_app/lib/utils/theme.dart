@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // FC26 Neon Brand Colors
+  // Neon Brand Colors
   static const Color primaryColor = Color(0xFF00F5FF);      // Cyan neon
   static const Color primaryDark = Color(0xFF0891B2);       // Dark cyan
   static const Color primaryLight = Color(0xFF67E8F9);      // Light cyan
   static const Color accentColor = Color(0xFFFF00FF);       // Magenta neon
   static const Color accentSecondary = Color(0xFFBF00FF);   // Purple neon
 
-  // FC26 Colors
-  static const Color fc26Gold = Color(0xFFFFD700);          // Gold accent
-  static const Color fc26Orange = Color(0xFFFF6B00);        // Orange neon
+  // Accent Colors
+  static const Color goldAccent = Color(0xFFFFD700);        // Gold accent
+  static const Color orangeAccent = Color(0xFFFF6B00);      // Orange neon
+  // Backward compat aliases
+  static const Color fc26Gold = goldAccent;
+  static const Color fc26Orange = orangeAccent;
   static const Color neonGreen = Color(0xFF00FF88);         // Green neon
   static const Color neonPink = Color(0xFFFF0080);          // Pink neon
 

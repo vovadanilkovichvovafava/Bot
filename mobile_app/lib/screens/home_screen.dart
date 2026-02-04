@@ -34,7 +34,7 @@ class HomeScreen extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // FC26 Logo/Title
+                          // Logo/Title
                           Row(
                             children: [
                               Container(
@@ -50,13 +50,10 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 child: const Center(
-                                  child: Text(
-                                    '26',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                    ),
+                                  child: Icon(
+                                    Icons.smart_toy,
+                                    color: Colors.black,
+                                    size: 22,
                                   ),
                                 ),
                               ),
@@ -65,16 +62,16 @@ class HomeScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'FC26',
+                                    'AI Betting Bot',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 20,
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      letterSpacing: 2,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                   Text(
-                                    'AI PREDICTIONS',
+                                    'MATCH ANALYSIS',
                                     style: TextStyle(
                                       color: AppTheme.primaryColor,
                                       fontSize: 10,

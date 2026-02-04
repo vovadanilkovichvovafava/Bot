@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fc26-pwa-v1';
+const CACHE_NAME = 'ai-betting-bot-pwa-v1';
 const ASSETS = [
   '/',
   '/index.html',

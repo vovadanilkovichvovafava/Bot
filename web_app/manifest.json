@@ -1,7 +1,7 @@
 {
-  "name": "FC26 AI Predictions",
-  "short_name": "FC26",
-  "description": "AI-powered football match predictions",
+  "name": "AI Betting Bot",
+  "short_name": "AI Bot",
+  "description": "AI-powered football match analysis and predictions",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0F",
