@@ -15,20 +15,28 @@ import { cn } from '@/lib/utils';
 
 /**
  * Format AI analysis text to display bullet points on separate lines
+ * Uses markdown list format for proper rendering
  */
 function formatAnalysisText(text: string): string {
   if (!text) return text;
 
   let formatted = text;
 
-  // Replace " • " (space-bullet-space) with newline + bullet
-  formatted = formatted.replace(/ • /g, '\n• ');
+  // Convert bullet points to markdown list items
+  // First, replace all " • " with a unique marker
+  formatted = formatted.replace(/ • /g, '\n\n- ');
 
-  // Add newline after "Analysis:" "Prediction:" etc. before first bullet
-  formatted = formatted.replace(/(Analysis:|Prediction:|Recommendation:)\s*•/g, '$1\n• ');
+  // Handle bullets right after colons (e.g., "Analysis: •")
+  formatted = formatted.replace(/:\s*•\s*/g, ':\n\n- ');
+
+  // Handle remaining standalone bullets
+  formatted = formatted.replace(/•\s*/g, '\n\n- ');
 
   // Ensure emoji sections start on new lines
   formatted = formatted.replace(/([.!?%])\s*(📊|🎯|💡|💰|⚠️)/g, '$1\n\n$2');
+
+  // Clean up multiple consecutive newlines (max 2)
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
 
   return formatted;
 }
