@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+/* Import Google Fonts - AI ANALYSIS Design System */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Chakra+Petch:wght@400;500;600;700&family=Bebas+Neue&display=swap');
 
 /* CSS Variables - Default (Neon theme) */
 :root {
@@ -40,103 +41,270 @@ body {
 }
 
 /* ========================================
-   CINEMATIC BROADCAST THEME
-   UEFA Champions League / Sky Sports style
+   CINEMATIC BROADCAST THEME - AI ANALYSIS
+   Sky Sports / BT Sport / ESPN Premium Style
+   Based on the AI ANALYSIS Design Specification
    ======================================== */
 .theme-cinematic {
-  --color-primary: #d4af37;
-  --color-secondary: #1a1a2e;
-  --color-accent: #c9a227;
-  --color-background: #0a0a12;
-  --color-surface: rgba(26, 26, 46, 0.9);
-  --color-text: #ffffff;
-  --color-textMuted: #a0a0a0;
-  --color-border: rgba(212, 175, 55, 0.3);
-  --color-glow: rgba(212, 175, 55, 0.5);
-  font-family: 'Oswald', sans-serif;
+  /* Backgrounds */
+  --color-bg-primary: #0B0D12;
+  --color-bg-secondary: #12151C;
+  --color-bg-card: #161A24;
+  --color-bg-overlay: rgba(8,10,18,0.88);
+
+  /* Accent Colors */
+  --color-gold: #D4A843;
+  --color-gold-light: #F5D16C;
+  --color-steel: #8C95A8;
+  --color-steel-light: #B8C1D4;
+  --color-blue: #4A9FD9;
+  --color-blue-light: #6CB8E8;
+  --color-amber: #D9954A;
+  --color-amber-light: #E8B46C;
+  --color-red: #D94A4A;
+  --color-green: #4AD97A;
+  --color-yellow: #D9B44A;
+
+  /* Text */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #C0C7D6;
+  --color-text-muted: #5A6378;
+
+  /* Legacy mappings */
+  --color-primary: var(--color-gold);
+  --color-secondary: var(--color-bg-secondary);
+  --color-accent: var(--color-gold-light);
+  --color-background: var(--color-bg-primary);
+  --color-surface: var(--color-bg-card);
+  --color-text: var(--color-text-primary);
+  --color-textMuted: var(--color-text-muted);
+  --color-border: rgba(212, 168, 67, 0.2);
+  --color-glow: rgba(212, 168, 67, 0.4);
+
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
 }
 
+/* Typography - Oswald for main headers (broadcast style) */
 .theme-cinematic h1, .theme-cinematic h2, .theme-cinematic h3, .theme-cinematic h4 {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'Oswald', 'Bebas Neue', sans-serif;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-.theme-cinematic .cinematic-bg {
-  background:
-    radial-gradient(ellipse at 20% -20%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% -10%, rgba(212, 175, 55, 0.1) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 120%, rgba(26, 10, 46, 0.8) 0%, transparent 60%),
-    linear-gradient(180deg, #0a0a12 0%, #12121f 50%, #0a0a12 100%);
+/* Typography - Rajdhani for subheaders (techno-condensed) */
+.theme-cinematic .subtitle,
+.theme-cinematic .section-title {
+  font-family: 'Rajdhani', 'Chakra Petch', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-gold);
 }
 
+/* Typography - Space Grotesk for stats/metrics */
+.theme-cinematic .stat-value,
+.theme-cinematic .metric {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+}
+
+/* Typography - JetBrains Mono for data */
+.theme-cinematic .data,
+.theme-cinematic .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Background with stadium effect */
+.theme-cinematic .cinematic-bg {
+  background:
+    radial-gradient(ellipse at 10% -10%, rgba(255,255,255,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% -5%, rgba(212, 168, 67, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+}
+
+/* Card styles */
 .theme-cinematic .card-cinematic {
-  background: linear-gradient(145deg, rgba(26, 26, 46, 0.95) 0%, rgba(15, 15, 25, 0.98) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 175, 55, 0.1);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
 }
 
 .theme-cinematic .card-cinematic:hover {
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 60px rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 168, 67, 0.3);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(212, 168, 67, 0.08);
 }
 
+/* Golden gradient text */
 .theme-cinematic .golden-gradient {
-  background: linear-gradient(135deg, #d4af37 0%, #f5d77f 50%, #d4af37 100%);
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 50%, var(--color-gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+/* Steel gradient text (for VS) */
+.theme-cinematic .steel-gradient {
+  background: linear-gradient(180deg, var(--color-steel) 0%, var(--color-steel-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Primary button - gold outline style */
 .theme-cinematic .btn-primary {
-  background: linear-gradient(180deg, #d4af37 0%, #996515 100%);
-  color: #0a0a12;
+  background: transparent;
+  border: 2px solid var(--color-gold);
+  color: var(--color-gold);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  font-family: 'Oswald', sans-serif;
   font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .theme-cinematic .btn-primary:hover {
-  background: linear-gradient(180deg, #f5d77f 0%, #d4af37 100%);
-  box-shadow: 0 6px 30px rgba(212, 175, 55, 0.5);
+  background: var(--color-gold);
+  color: var(--color-bg-primary);
+  box-shadow: 0 4px 20px rgba(212, 168, 67, 0.4);
 }
 
-/* Cinematic banner flag */
-.theme-cinematic .banner-flag {
-  position: relative;
-  perspective: 1000px;
+/* Secondary button - filled gold */
+.theme-cinematic .btn-gold-filled {
+  background: linear-gradient(180deg, var(--color-gold) 0%, #B8902A 100%);
+  color: var(--color-bg-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
 }
 
-.theme-cinematic .banner-flag::before {
+.theme-cinematic .btn-gold-filled:hover {
+  background: linear-gradient(180deg, var(--color-gold-light) 0%, var(--color-gold) 100%);
+  box-shadow: 0 6px 30px rgba(212, 168, 67, 0.5);
+}
+
+/* Section header with decorative lines */
+.theme-cinematic .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.theme-cinematic .section-header::before,
+.theme-cinematic .section-header::after {
   content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 12px;
-  background: linear-gradient(90deg, #996515 0%, #d4af37 30%, #f5d77f 50%, #d4af37 70%, #996515 100%);
-  border-radius: 6px;
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+  flex: 1;
+  max-width: 100px;
+  height: 1px;
 }
 
+.theme-cinematic .section-header::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 168, 67, 0.3) 100%);
+}
+
+.theme-cinematic .section-header::after {
+  background: linear-gradient(90deg, rgba(212, 168, 67, 0.3) 0%, transparent 100%);
+}
+
+/* Decorative horizontal divider */
+.theme-cinematic .divider-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 168, 67, 0.3) 50%, transparent 100%);
+}
+
+/* Status badges */
+.theme-cinematic .badge-even {
+  background: #2A2E38;
+  color: var(--color-steel);
+}
+
+.theme-cinematic .badge-good {
+  background: rgba(74, 217, 122, 0.15);
+  border: 1px solid rgba(74, 217, 122, 0.3);
+  color: var(--color-green);
+}
+
+.theme-cinematic .badge-out {
+  background: rgba(217, 74, 74, 0.15);
+  border: 1px solid rgba(217, 74, 74, 0.3);
+  color: var(--color-red);
+}
+
+.theme-cinematic .badge-doubt {
+  background: rgba(217, 180, 74, 0.15);
+  border: 1px solid rgba(217, 180, 74, 0.3);
+  color: var(--color-yellow);
+}
+
+.theme-cinematic .badge-upcoming {
+  background: transparent;
+  border: 1px solid rgba(212, 168, 67, 0.5);
+  color: var(--color-gold);
+}
+
+/* Flag banner pole */
+.theme-cinematic .flag-pole {
+  background: linear-gradient(180deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+}
+
+/* Cinematic flag wave animation */
 @keyframes cinematicFlagWave {
-  0%, 100% { transform: perspective(1000px) rotateY(-3deg) rotateX(1deg); }
-  50% { transform: perspective(1000px) rotateY(3deg) rotateX(-1deg); }
+  0%, 100% { transform: perspective(500px) rotateY(-5deg) rotateX(1deg); }
+  50% { transform: perspective(500px) rotateY(5deg) rotateX(-1deg); }
 }
 
 .theme-cinematic .flag-animate {
-  animation: cinematicFlagWave 5s ease-in-out infinite;
+  animation: cinematicFlagWave 4s ease-in-out infinite;
   transform-origin: top center;
+  transform-style: preserve-3d;
 }
 
-/* Light beams */
-.theme-cinematic .light-beam {
-  position: absolute;
-  width: 3px;
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.1) 40%, transparent 100%);
-  filter: blur(2px);
+/* Spotlight beam effect */
+.theme-cinematic .spotlight {
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.theme-cinematic .spotlight-gold {
+  background: linear-gradient(180deg, rgba(212, 168, 67, 0.15) 0%, transparent 100%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Live match indicators */
+.theme-cinematic .live-border {
+  border-left: 3px solid var(--color-red);
+}
+
+@keyframes livePulseRed {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.theme-cinematic .live-pulse {
+  animation: livePulseRed 1s ease-in-out infinite;
+}
+
+/* AI Verdict glow */
+.theme-cinematic .ai-verdict-glow {
+  box-shadow: 0 0 60px rgba(212, 168, 67, 0.08);
+}
+
+/* Noise texture overlay */
+.theme-cinematic .noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+/* Vignette effect */
+.theme-cinematic .vignette {
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(11,13,18,0.6) 100%);
   pointer-events: none;
 }
 

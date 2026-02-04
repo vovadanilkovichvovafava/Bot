@@ -8,12 +8,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Cinematic Theme - Golden broadcast style
+        // Cinematic Theme - AI ANALYSIS Broadcast style
         cinematic: {
-          primary: '#d4af37',
-          secondary: '#1a1a2e',
-          accent: '#c9a227',
-          bg: '#0a0a12',
+          primary: '#D4A843',
+          'primary-light': '#F5D16C',
+          secondary: '#12151C',
+          accent: '#D4A843',
+          bg: '#0B0D12',
+          'bg-secondary': '#12151C',
+          card: '#161A24',
+          steel: '#8C95A8',
+          'steel-light': '#B8C1D4',
+          blue: '#4A9FD9',
+          'blue-light': '#6CB8E8',
+          amber: '#D9954A',
+          'amber-light': '#E8B46C',
+          red: '#D94A4A',
+          green: '#4AD97A',
+          yellow: '#D9B44A',
         },
         // Neon Theme - Modern tech style
         neon: {
@@ -41,6 +53,10 @@ module.exports = {
         roboto: ['Roboto', 'sans-serif'],
         inter: ['Inter', 'sans-serif'],
         rajdhani: ['Rajdhani', 'sans-serif'],
+        'space-grotesk': ['Space Grotesk', 'sans-serif'],
+        'jetbrains': ['JetBrains Mono', 'monospace'],
+        'chakra': ['Chakra Petch', 'sans-serif'],
+        'bebas': ['Bebas Neue', 'sans-serif'],
       },
       animation: {
         'flag-wave': 'flag-wave 6s ease-in-out infinite',
