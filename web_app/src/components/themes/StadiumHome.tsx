@@ -192,6 +192,73 @@ export function StadiumHome() {
         ))}
       </div>
 
+      {/* Fan Silhouettes at Bottom */}
+      <div className="absolute bottom-0 left-0 right-0 z-15 pointer-events-none">
+        {/* Silhouette layer 1 - closest fans */}
+        <div className="flex justify-around items-end h-24 md:h-32">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={`fan1-${i}`}
+              animate={{ y: [0, -3, 0], scale: [1, 1.02, 1] }}
+              transition={{ duration: 2 + Math.random(), repeat: Infinity, delay: i * 0.1 }}
+              className="relative"
+              style={{ height: `${50 + Math.random() * 30}%` }}
+            >
+              <div
+                className="w-3 h-4 md:w-4 md:h-5 rounded-full bg-black/90"
+                style={{ marginTop: '2px' }}
+              />
+              <div
+                className="w-4 h-8 md:w-5 md:h-12 bg-black/90 rounded-t-lg"
+                style={{ marginTop: '-2px' }}
+              />
+            </motion.div>
+          ))}
+        </div>
+        {/* Gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black via-black/80 to-transparent" />
+      </div>
+
+      {/* Stadium Spotlight Beams */}
+      <div className="absolute inset-0 pointer-events-none z-5 overflow-hidden">
+        <motion.div
+          animate={{ opacity: [0.15, 0.3, 0.15], rotate: [-2, 2, -2] }}
+          transition={{ duration: 8, repeat: Infinity }}
+          className="absolute top-0 left-[8%] w-32 h-[70vh] origin-top"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 100%)',
+            clipPath: 'polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)',
+          }}
+        />
+        <motion.div
+          animate={{ opacity: [0.2, 0.35, 0.2], rotate: [2, -2, 2] }}
+          transition={{ duration: 7, repeat: Infinity, delay: 1.5 }}
+          className="absolute top-0 right-[8%] w-32 h-[70vh] origin-top"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 100%)',
+            clipPath: 'polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)',
+          }}
+        />
+        <motion.div
+          animate={{ opacity: [0.1, 0.2, 0.1] }}
+          transition={{ duration: 6, repeat: Infinity, delay: 3 }}
+          className="absolute top-0 left-[35%] w-24 h-[50vh] origin-top"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
+            clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
+          }}
+        />
+        <motion.div
+          animate={{ opacity: [0.1, 0.25, 0.1] }}
+          transition={{ duration: 6, repeat: Infinity, delay: 4.5 }}
+          className="absolute top-0 right-[35%] w-24 h-[50vh] origin-top"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
+            clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
+          }}
+        />
+      </div>
+
       {/* Main Content */}
       <div className="relative z-20 max-w-6xl mx-auto px-4 py-6">
         {/* Header */}
@@ -516,16 +583,23 @@ export function StadiumHome() {
               >
                 <Link href={`/matches?league=${league.code}`}>
                   <motion.div
-                    whileHover={{ scale: 1.05, y: -3 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
                     whileTap={{ scale: 0.95 }}
-                    className="bg-white/95 hover:bg-white rounded-xl px-4 py-3 md:px-5 md:py-4 flex flex-col items-center gap-2 shadow-xl hover:shadow-2xl transition-all cursor-pointer min-w-[90px] md:min-w-[110px]"
+                    className="relative bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-xl rounded-xl px-4 py-3 md:px-5 md:py-4 flex flex-col items-center gap-2 transition-all cursor-pointer min-w-[90px] md:min-w-[110px] border border-white/30 hover:border-indigo-400/50 group overflow-hidden"
+                    style={{
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }}
                   >
+                    {/* Glass highlight */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-50" />
+                    {/* Hover glow */}
+                    <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/10 transition-colors" />
                     <img
                       src={league.logo}
                       alt={league.name}
-                      className="w-10 h-10 md:w-12 md:h-12 object-contain"
+                      className="relative z-10 w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-lg group-hover:scale-110 transition-transform"
                     />
-                    <span className="text-xs font-semibold text-gray-800 text-center">
+                    <span className="relative z-10 text-xs font-semibold text-white text-center drop-shadow-lg">
                       {league.name}
                     </span>
                   </motion.div>
