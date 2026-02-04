@@ -57,13 +57,13 @@ export function MatchCard({ match }: { match: Match }) {
         {/* Teams */}
         <div className="flex items-center justify-between">
           {/* Home Team */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 min-w-0 text-center">
             <TeamEmblem name={match.homeTeam.name} logo={match.homeTeam.logo} />
             <p className="mt-2 font-medium truncate">{match.homeTeam.name}</p>
           </div>
 
           {/* Score or VS */}
-          <div className="px-4">
+          <div className="px-4 flex-shrink-0">
             {isLive || isFinished ? (
               <div className="flex items-center gap-2 text-2xl font-bold">
                 <span className={isLive ? 'text-accent' : ''}>{match.homeScore ?? 0}</span>
@@ -76,7 +76,7 @@ export function MatchCard({ match }: { match: Match }) {
           </div>
 
           {/* Away Team */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 min-w-0 text-center">
             <TeamEmblem name={match.awayTeam.name} logo={match.awayTeam.logo} />
             <p className="mt-2 font-medium truncate">{match.awayTeam.name}</p>
           </div>

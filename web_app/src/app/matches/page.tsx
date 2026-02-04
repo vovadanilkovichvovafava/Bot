@@ -389,7 +389,7 @@ function MatchCard({ match, index, styles, theme }: MatchCardProps) {
         {/* Teams */}
         <div className="flex items-center justify-between">
           {/* Home Team */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 min-w-0 text-center">
             <TeamLogo team={match.homeTeam} />
             <p className="mt-2 text-sm font-medium text-white truncate px-1">
               {match.homeTeam.name}
@@ -397,7 +397,7 @@ function MatchCard({ match, index, styles, theme }: MatchCardProps) {
           </div>
 
           {/* Score or VS */}
-          <div className="px-4 py-2">
+          <div className="px-4 py-2 flex-shrink-0">
             {live || finished ? (
               <div className="flex items-center gap-2">
                 <span className={cn(
@@ -420,7 +420,7 @@ function MatchCard({ match, index, styles, theme }: MatchCardProps) {
           </div>
 
           {/* Away Team */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 min-w-0 text-center">
             <TeamLogo team={match.awayTeam} />
             <p className="mt-2 text-sm font-medium text-white truncate px-1">
               {match.awayTeam.name}
