@@ -102,36 +102,69 @@ class MainScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _calculateSelectedIndex(context),
-        onDestinationSelected: (index) => _onItemTapped(index, context),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+      extendBody: true,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121A),
+          border: Border(
+            top: BorderSide(
+              color: const Color(0xFF00F5FF).withOpacity(0.2),
+              width: 1,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.sports_soccer_outlined),
-            selectedIcon: Icon(Icons.sports_soccer),
-            label: 'Matches',
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00F5FF).withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavItem(
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                  label: 'Home',
+                  isSelected: _calculateSelectedIndex(context) == 0,
+                  onTap: () => _onItemTapped(0, context),
+                ),
+                _NavItem(
+                  icon: Icons.sports_soccer_outlined,
+                  selectedIcon: Icons.sports_soccer,
+                  label: 'Matches',
+                  isSelected: _calculateSelectedIndex(context) == 1,
+                  onTap: () => _onItemTapped(1, context),
+                ),
+                _NavItem(
+                  icon: Icons.bar_chart_outlined,
+                  selectedIcon: Icons.bar_chart,
+                  label: 'Stats',
+                  isSelected: _calculateSelectedIndex(context) == 2,
+                  onTap: () => _onItemTapped(2, context),
+                ),
+                _NavItem(
+                  icon: Icons.star_outline,
+                  selectedIcon: Icons.star,
+                  label: 'Favorites',
+                  isSelected: _calculateSelectedIndex(context) == 3,
+                  onTap: () => _onItemTapped(3, context),
+                ),
+                _NavItem(
+                  icon: Icons.settings_outlined,
+                  selectedIcon: Icons.settings,
+                  label: 'Settings',
+                  isSelected: _calculateSelectedIndex(context) == 4,
+                  onTap: () => _onItemTapped(4, context),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star),
-            label: 'Favorites',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -164,5 +197,63 @@ class MainScaffold extends StatelessWidget {
         context.go('/settings');
         break;
     }
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF00F5FF);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: primaryColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : icon,
+              color: isSelected ? primaryColor : Colors.white.withOpacity(0.4),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? primaryColor : Colors.white.withOpacity(0.4),
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
