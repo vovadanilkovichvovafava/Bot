@@ -8,39 +8,66 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // EPL 2007-2015 Golden Era Theme
+        // Cinematic Theme - Golden broadcast style
+        cinematic: {
+          primary: '#d4af37',
+          secondary: '#1a1a2e',
+          accent: '#c9a227',
+          bg: '#0a0a12',
+        },
+        // Neon Theme - Modern tech style
+        neon: {
+          primary: '#00ff88',
+          secondary: '#0d1117',
+          accent: '#00d4ff',
+          bg: '#0a0e14',
+        },
+        // Stadium Theme - Immersive atmosphere
+        stadium: {
+          primary: '#6366f1',
+          secondary: '#1e1b4b',
+          accent: '#818cf8',
+          bg: '#0f0f23',
+        },
+        // Legacy colors
         gold: {
           DEFAULT: '#d4af37',
           light: '#f4d03f',
           dark: '#996515',
         },
-        purple: {
-          deep: '#1a0a2e',
-          mid: '#2d1b4e',
-          light: '#3d1a5c',
-        },
-        epl: {
-          red: '#e90052',
-          dark: '#0d0d14',
-        },
       },
       fontFamily: {
         oswald: ['Oswald', 'sans-serif'],
         roboto: ['Roboto', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+        rajdhani: ['Rajdhani', 'sans-serif'],
       },
       animation: {
         'flag-wave': 'flag-wave 6s ease-in-out infinite',
-        'pulse-gold': 'pulse-gold 2s infinite',
+        'pulse-glow': 'pulse-glow 2s infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'scan': 'scan 8s linear infinite',
       },
       keyframes: {
         'flag-wave': {
           '0%, 100%': { transform: 'perspective(800px) rotateY(-3deg) skewY(1deg)' },
           '50%': { transform: 'perspective(800px) rotateY(3deg) skewY(-1deg)' },
         },
-        'pulse-gold': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 175, 55, 0.5)' },
-          '50%': { boxShadow: '0 0 40px rgba(212, 175, 55, 0.8)' },
+        'pulse-glow': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
         },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        'scan': {
+          '0%': { transform: 'translateY(-100%)' },
+          '100%': { transform: 'translateY(100vh)' },
+        },
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
     },
   },

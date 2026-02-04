@@ -1,13 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
-import { Navbar } from '@/components/Navbar';
-
-const inter = Inter({ subsets: ['latin'] });
+import { ClientLayout } from '@/components/ClientLayout';
 
 export const metadata: Metadata = {
-  title: 'BetPredict AI - Football Match Predictions',
-  description: 'AI-powered football match analysis and betting predictions',
+  title: 'AI Bet Pro - Football Match Predictions',
+  description: 'AI-powered football match analysis and betting predictions with 70%+ accuracy',
 };
 
 export default function RootLayout({
@@ -17,11 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Navbar />
-        <main className="min-h-screen pt-16">
-          {children}
-        </main>
+      <body>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
