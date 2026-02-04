@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, User, Globe, Palette, Bell, Shield, TrendingDown,
   TrendingUp, LogOut, ChevronRight, X, Crown, Zap, Heart, Trash2,
-  Check, Loader2, Save, Clock
+  Check, Loader2, Save, Clock, Brain
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
@@ -14,6 +14,20 @@ import { useMatchesStore } from '@/store/matchesStore';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+
+// Stadium theme colors
+const STADIUM_COLORS = {
+  bgPrimary: '#080A10',
+  bgSecondary: '#10141E',
+  blue: '#4A7AFF',
+  blueHover: '#5D8AFF',
+  green: '#3DDC84',
+  red: '#FF3B3B',
+  glass: 'rgba(12, 15, 24, 0.85)',
+  glassBorder: 'rgba(255, 255, 255, 0.08)',
+};
+
+const STADIUM_BG = 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1920&q=80';
 
 type ModalType = 'language' | 'theme' | 'minOdds' | 'maxOdds' | 'risk' | 'favorites' | 'timezone' | null;
 
@@ -77,6 +91,16 @@ export default function SettingsPage() {
   };
 
   const styles = selectedTheme ? themeStyles[selectedTheme] : themeStyles.neon;
+  const isStadiumTheme = selectedTheme === 'stadium';
+
+  // Stadium theme tabs
+  const stadiumTabs = [
+    { id: 'profile', label: 'Профиль', icon: User },
+    { id: 'general', label: 'Общие', icon: Globe },
+    { id: 'ai', label: 'AI Настройки', icon: Brain },
+    { id: 'favorites', label: 'Избранное', icon: Heart },
+  ];
+  const [activeTab, setActiveTab] = useState('profile');
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -214,6 +238,64 @@ export default function SettingsPage() {
   const currentRisk = getRiskInfo(settings.riskLevel);
 
   if (!isAuthenticated) {
+    // Stadium theme unauthenticated view
+    if (isStadiumTheme) {
+      return (
+        <div
+          className="min-h-screen flex items-center justify-center py-8 px-4 relative"
+          style={{ backgroundColor: STADIUM_COLORS.bgPrimary }}
+        >
+          <div
+            className="fixed inset-0 z-0"
+            style={{
+              backgroundImage: `url(${STADIUM_BG})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(to bottom,
+                  rgba(8, 10, 16, 0.85) 0%,
+                  rgba(8, 10, 16, 0.95) 100%)`
+              }}
+            />
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative z-10 max-w-md w-full rounded-2xl p-8 text-center"
+            style={{
+              background: STADIUM_COLORS.glass,
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+            }}
+          >
+            <Settings className="w-16 h-16 mx-auto mb-4" style={{ color: STADIUM_COLORS.blue }} />
+            <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              НАСТРОЙКИ
+            </h1>
+            <p className="text-gray-400 mb-6">
+              Войдите, чтобы настроить свой опыт
+            </p>
+            <Link href="/login">
+              <button
+                className="w-full py-3 rounded-xl font-semibold text-white uppercase tracking-wide"
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
+                }}
+              >
+                Войти
+              </button>
+            </Link>
+          </motion.div>
+        </div>
+      );
+    }
+
     return (
       <div className={cn('min-h-screen flex items-center justify-center py-8 px-4', styles.bg)}>
         <motion.div
@@ -239,6 +321,686 @@ export default function SettingsPage() {
     );
   }
 
+  // Stadium Theme - Vertical Tabs Layout
+  if (isStadiumTheme) {
+    return (
+      <div
+        className="min-h-screen relative"
+        style={{ backgroundColor: STADIUM_COLORS.bgPrimary }}
+      >
+        {/* Stadium Background */}
+        <div
+          className="fixed inset-0 z-0"
+          style={{
+            backgroundImage: `url(${STADIUM_BG})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to bottom,
+                rgba(8, 10, 16, 0.9) 0%,
+                rgba(8, 10, 16, 0.95) 100%)`
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 min-h-screen flex">
+          {/* Left Sidebar - Vertical Tabs */}
+          <div
+            className="hidden md:flex w-64 flex-col p-6"
+            style={{
+              background: STADIUM_COLORS.glass,
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderRight: `1px solid ${STADIUM_COLORS.glassBorder}`,
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-8">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
+                }}
+              >
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1
+                  className="text-lg font-bold uppercase tracking-wide text-white"
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
+                >
+                  Настройки
+                </h1>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <nav className="flex-1 space-y-2">
+              {stadiumTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+                  style={{
+                    background: activeTab === tab.id ? `${STADIUM_COLORS.blue}20` : 'transparent',
+                    color: activeTab === tab.id ? STADIUM_COLORS.blue : '#9CA3AF',
+                    borderLeft: activeTab === tab.id ? `3px solid ${STADIUM_COLORS.blue}` : '3px solid transparent',
+                  }}
+                >
+                  <tab.icon size={20} />
+                  <span className="font-medium">{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all mt-4"
+            >
+              <LogOut size={20} />
+              <span className="font-medium">Выйти</span>
+            </button>
+          </div>
+
+          {/* Mobile Header */}
+          <div
+            className="md:hidden fixed top-0 left-0 right-0 z-20 px-4 py-3"
+            style={{
+              background: STADIUM_COLORS.glass,
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderBottom: `1px solid ${STADIUM_COLORS.glassBorder}`,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h1
+                className="text-lg font-bold uppercase text-white"
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                Настройки
+              </h1>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-lg text-red-400"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+            {/* Mobile Tabs */}
+            <div className="flex gap-1 mt-3 overflow-x-auto pb-2">
+              {stadiumTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-all"
+                  style={{
+                    background: activeTab === tab.id ? `${STADIUM_COLORS.blue}20` : 'transparent',
+                    color: activeTab === tab.id ? STADIUM_COLORS.blue : '#9CA3AF',
+                  }}
+                >
+                  <tab.icon size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Content */}
+          <div className="flex-1 p-6 md:p-8 pt-32 md:pt-8 overflow-y-auto">
+            <div className="max-w-2xl mx-auto">
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <div
+                    className="rounded-2xl p-6"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-4 mb-6">
+                      <div
+                        className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
+                        style={{ background: `linear-gradient(135deg, ${STADIUM_COLORS.blue}, #3D6AE8)` }}
+                      >
+                        {(user?.username ?? user?.email)?.[0].toUpperCase() ?? 'U'}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-lg">{user?.username ?? user?.email ?? 'User'}</p>
+                        <p className="text-gray-400 text-sm">{user?.email ?? ''}</p>
+                        {user?.isPremium && (
+                          <div
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs mt-1"
+                            style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }}
+                          >
+                            <Crown size={12} />
+                            <span>PRO</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* AI Limits */}
+                    {user && (
+                      <div
+                        className="p-4 rounded-xl"
+                        style={{ background: 'rgba(255, 255, 255, 0.05)' }}
+                      >
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="text-gray-400">Дневные AI-прогнозы</span>
+                          <span style={{ color: STADIUM_COLORS.blue }}>{user.dailyRequests}/{user.dailyLimit}</span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.1)' }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.min((user.dailyRequests / user.dailyLimit) * 100, 100)}%`,
+                              background: `linear-gradient(90deg, ${STADIUM_COLORS.blue}, #3D6AE8)`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Premium CTA */}
+                  {!user?.isPremium && (
+                    <Link href="/premium">
+                      <div
+                        className="rounded-2xl p-4 flex items-center gap-4 transition-all hover:scale-[1.02]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 146, 60, 0.1))',
+                          border: '2px solid rgba(251, 191, 36, 0.3)',
+                        }}
+                      >
+                        <div className="p-2 rounded-lg" style={{ background: 'rgba(251, 191, 36, 0.2)' }}>
+                          <Crown className="w-6 h-6 text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white font-semibold">Получить Premium</p>
+                          <p className="text-amber-400/70 text-sm">Безлимитные AI-прогнозы</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-amber-400" />
+                      </div>
+                    </Link>
+                  )}
+                </motion.div>
+              )}
+
+              {/* General Tab */}
+              {activeTab === 'general' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <button
+                      onClick={() => setActiveModal('language')}
+                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
+                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
+                    >
+                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                        <Globe className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Язык</p>
+                        <p className="text-gray-500 text-sm">
+                          {languages.find(l => l.code === settings.language)?.flag}{' '}
+                          {languages.find(l => l.code === settings.language)?.name ?? 'English'}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-500" />
+                    </button>
+
+                    <button
+                      onClick={() => setActiveModal('timezone')}
+                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
+                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
+                    >
+                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                        <Clock className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Часовой пояс</p>
+                        <p className="text-gray-500 text-sm">
+                          {timezones.find(t => t.code === settings.timezone)?.name ?? settings.timezone}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-500" />
+                    </button>
+
+                    <button
+                      onClick={() => router.push('/select-style')}
+                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
+                    >
+                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                        <Palette className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Тема</p>
+                        <p className="text-gray-500 text-sm">AI Центр Анализа</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Clear Cache */}
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <button
+                      onClick={handleClearCache}
+                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
+                    >
+                      <div className="p-2 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                        <Trash2 className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Очистить кэш</p>
+                        <p className="text-gray-500 text-sm">Освободить память и обновить данные</p>
+                      </div>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* AI Settings Tab */}
+              {activeTab === 'ai' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  {/* AI Profile Preview */}
+                  <div
+                    className="rounded-2xl p-4"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Brain className="w-5 h-5" style={{ color: STADIUM_COLORS.blue }} />
+                      <span className="font-semibold" style={{ color: STADIUM_COLORS.blue }}>Ваш AI-профиль</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">Диапазон кф:</span>
+                        <span className="text-white ml-2">{settings.minOdds} - {settings.maxOdds}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Риск:</span>
+                        <span className={cn('ml-2', currentRisk.color)}>{currentRisk.label}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settings */}
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <button
+                      onClick={() => setActiveModal('minOdds')}
+                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
+                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
+                    >
+                      <div className="p-2 rounded-lg bg-blue-500/20">
+                        <TrendingDown className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Минимальный кф</p>
+                        <p className="text-gray-500 text-sm">AI не рекомендует ниже {settings.minOdds}</p>
+                      </div>
+                      <span style={{ color: STADIUM_COLORS.blue }} className="font-semibold">{settings.minOdds}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveModal('maxOdds')}
+                      className="w-full p-4 flex items-center gap-4 border-b transition-colors hover:bg-white/5"
+                      style={{ borderColor: STADIUM_COLORS.glassBorder }}
+                    >
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <TrendingUp className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Максимальный кф</p>
+                        <p className="text-gray-500 text-sm">AI не рекомендует выше {settings.maxOdds}</p>
+                      </div>
+                      <span style={{ color: STADIUM_COLORS.blue }} className="font-semibold">{settings.maxOdds}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveModal('risk')}
+                      className="w-full p-4 flex items-center gap-4 transition-colors hover:bg-white/5"
+                    >
+                      <div className={cn('p-2 rounded-lg', currentRisk.bgColor)}>
+                        <currentRisk.icon className={cn('w-5 h-5', currentRisk.color)} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white">Уровень риска</p>
+                        <p className="text-gray-500 text-sm">{currentRisk.subtitle}</p>
+                      </div>
+                      <span className={cn('font-semibold', currentRisk.color)}>{currentRisk.label}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Favorites Tab */}
+              {activeTab === 'favorites' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  <div
+                    className="rounded-2xl p-6"
+                    style={{
+                      background: STADIUM_COLORS.glass,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                    }}
+                  >
+                    <h3 className="text-lg font-semibold text-white mb-4">Избранные команды</h3>
+
+                    {/* Add new team */}
+                    <div className="flex gap-2 mb-4">
+                      <input
+                        type="text"
+                        value={newFavoriteTeam}
+                        onChange={(e) => setNewFavoriteTeam(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddFavoriteTeam()}
+                        placeholder="Введите название команды..."
+                        className="flex-1 px-4 py-2 rounded-lg text-white placeholder-gray-500 outline-none"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                        }}
+                      />
+                      <button
+                        onClick={handleAddFavoriteTeam}
+                        disabled={!newFavoriteTeam.trim()}
+                        className="px-4 py-2 rounded-lg font-medium text-white transition-all disabled:opacity-50"
+                        style={{ background: STADIUM_COLORS.blue }}
+                      >
+                        Добавить
+                      </button>
+                    </div>
+
+                    {/* Teams list */}
+                    {isLoadingFavorites ? (
+                      <div className="text-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
+                      </div>
+                    ) : favoriteTeams.length === 0 ? (
+                      <p className="text-center text-gray-500 py-8">
+                        Нет избранных команд. Добавьте выше!
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {favoriteTeams.map(team => (
+                          <div
+                            key={team}
+                            className="flex items-center justify-between p-3 rounded-lg"
+                            style={{ background: 'rgba(255, 255, 255, 0.05)' }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Heart className="w-4 h-4 text-pink-400" fill="currentColor" />
+                              <span className="text-white">{team}</span>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFavoriteTeam(team)}
+                              className="text-gray-500 hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stadium Theme Modals */}
+        <AnimatePresence>
+          {activeModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+              onClick={() => setActiveModal(null)}
+            >
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl"
+                style={{
+                  background: STADIUM_COLORS.glass,
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: `1px solid ${STADIUM_COLORS.glassBorder}`,
+                }}
+              >
+                {/* Language Modal */}
+                {activeModal === 'language' && (
+                  <>
+                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
+                      <h3 className="text-lg font-semibold text-white">Выберите язык</h3>
+                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="p-2 max-h-[60vh] overflow-y-auto">
+                      {languages.map(lang => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            handleSaveSettings({ language: lang.code });
+                            setActiveModal(null);
+                          }}
+                          className="w-full p-3 rounded-lg text-left flex items-center gap-3 transition-colors"
+                          style={{
+                            background: settings.language === lang.code ? STADIUM_COLORS.blue : 'transparent',
+                            color: settings.language === lang.code ? 'white' : '#D1D5DB',
+                          }}
+                        >
+                          <span className="text-xl">{lang.flag}</span>
+                          <span>{lang.name}</span>
+                          {settings.language === lang.code && <Check className="ml-auto" size={18} />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Timezone Modal */}
+                {activeModal === 'timezone' && (
+                  <>
+                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
+                      <h3 className="text-lg font-semibold text-white">Часовой пояс</h3>
+                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="p-2 max-h-[60vh] overflow-y-auto">
+                      {timezones.map(tz => (
+                        <button
+                          key={tz.code}
+                          onClick={() => {
+                            handleSaveSettings({ timezone: tz.code });
+                            setActiveModal(null);
+                          }}
+                          className="w-full p-3 rounded-lg text-left flex items-center gap-3 transition-colors"
+                          style={{
+                            background: settings.timezone === tz.code ? STADIUM_COLORS.blue : 'transparent',
+                            color: settings.timezone === tz.code ? 'white' : '#D1D5DB',
+                          }}
+                        >
+                          <Clock size={18} className="opacity-50" />
+                          <span>{tz.name}</span>
+                          {settings.timezone === tz.code && <Check className="ml-auto" size={18} />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Min/Max Odds Modal */}
+                {(activeModal === 'minOdds' || activeModal === 'maxOdds') && (
+                  <>
+                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
+                      <h3 className="text-lg font-semibold text-white">
+                        {activeModal === 'minOdds' ? 'Минимальный коэффициент' : 'Максимальный коэффициент'}
+                      </h3>
+                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-gray-400 text-sm mb-4">
+                        {activeModal === 'minOdds'
+                          ? 'AI не будет рекомендовать ставки с кф ниже этого значения'
+                          : 'AI не будет рекомендовать ставки с кф выше этого значения'}
+                      </p>
+                      <div className="grid grid-cols-5 gap-2">
+                        {oddsOptions.map(odds => {
+                          const isSelected = activeModal === 'minOdds'
+                            ? settings.minOdds === odds
+                            : settings.maxOdds === odds;
+                          const isDisabled = activeModal === 'minOdds'
+                            ? odds >= settings.maxOdds
+                            : odds <= settings.minOdds;
+                          return (
+                            <button
+                              key={odds}
+                              disabled={isDisabled}
+                              onClick={() => {
+                                if (activeModal === 'minOdds') {
+                                  handleSaveSettings({ minOdds: odds });
+                                } else {
+                                  handleSaveSettings({ maxOdds: odds });
+                                }
+                                setActiveModal(null);
+                              }}
+                              className="p-3 rounded-lg text-center font-medium transition-all"
+                              style={{
+                                background: isSelected
+                                  ? STADIUM_COLORS.blue
+                                  : isDisabled
+                                    ? 'rgba(255, 255, 255, 0.03)'
+                                    : 'rgba(255, 255, 255, 0.05)',
+                                color: isSelected
+                                  ? 'white'
+                                  : isDisabled
+                                    ? '#4B5563'
+                                    : '#D1D5DB',
+                                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              {odds}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Risk Level Modal */}
+                {activeModal === 'risk' && (
+                  <>
+                    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: STADIUM_COLORS.glassBorder }}>
+                      <h3 className="text-lg font-semibold text-white">Уровень риска</h3>
+                      <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <p className="text-gray-400 text-sm mb-4">
+                        Выберите уровень агрессивности AI-рекомендаций:
+                      </p>
+                      {riskLevels.map(risk => (
+                        <button
+                          key={risk.value}
+                          onClick={() => {
+                            handleSaveSettings({ riskLevel: risk.value });
+                            setActiveModal(null);
+                          }}
+                          className="w-full p-4 rounded-xl border-2 flex items-start gap-3 transition-all"
+                          style={{
+                            background: settings.riskLevel === risk.value ? risk.bgColor.replace('bg-', '').replace('/20', '') : 'transparent',
+                            borderColor: settings.riskLevel === risk.value ? risk.borderColor.replace('border-', '').replace('/50', '') : 'rgba(255, 255, 255, 0.1)',
+                          }}
+                        >
+                          <div className={cn('p-2 rounded-lg', risk.bgColor)}>
+                            <risk.icon className={cn('w-5 h-5', risk.color)} />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <div className="flex items-center gap-2">
+                              <span className={cn('font-bold', risk.color)}>{risk.label}</span>
+                            </div>
+                            <p className="text-gray-500 text-xs mt-1">{risk.description}</p>
+                          </div>
+                          {settings.riskLevel === risk.value && (
+                            <Check className={cn('w-5 h-5', risk.color)} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Default theme rendering
   return (
     <div className={cn('min-h-screen py-6 px-4', styles.bg)}>
       <div className="max-w-2xl mx-auto">
