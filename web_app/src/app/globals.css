@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #ffffff;
+  --background-start: #0a0a0a;
+  --background-end: #1a001d;
+}
+
+body {
+  color: var(--foreground);
+  background: linear-gradient(135deg, var(--background-start), var(--background-end));
+  min-height: 100vh;
+}
+
+/* EPL-style gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, #00ff85, #38003c, #ff4500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Fire glow effect */
+.fire-glow {
+  box-shadow: 0 0 30px rgba(255, 69, 0, 0.6),
+              0 0 60px rgba(255, 69, 0, 0.4),
+              0 0 90px rgba(255, 69, 0, 0.2);
+}
+
+/* Emblem container for falling animation */
+.emblem-container {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.emblem-left {
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.emblem-right {
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Glass morphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+/* Match card hover effect */
+.match-card {
+  transition: all 0.3s ease;
+}
+
+.match-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(0, 255, 133, 0.2);
+}
+
+/* Live pulse indicator */
+.live-pulse {
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 133, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 133, 0.5);
+}
