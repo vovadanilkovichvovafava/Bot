@@ -317,9 +317,9 @@ export function CinematicMatchDetail({ matchId }: CinematicMatchDetailProps) {
                     {/* Messages */}
                     {chatMessages.length > 0 && (
                       <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                        {chatMessages.map((msg, idx) => (
+                        {chatMessages.map((msg) => (
                           <motion.div
-                            key={idx}
+                            key={msg.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={cn(

@@ -63,6 +63,7 @@ export interface Prediction {
 
 // Chat types
 export interface ChatMessage {
+  id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;

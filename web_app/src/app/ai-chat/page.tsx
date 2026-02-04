@@ -201,9 +201,9 @@ export default function AIChatPage() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
             <AnimatePresence>
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <motion.div
-                  key={index}
+                  key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}

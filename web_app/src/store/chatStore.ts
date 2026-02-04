@@ -4,6 +4,9 @@ import { create } from 'zustand';
 import { api } from '@/services/api';
 import { Match, ChatMessage, ChatPreferences, MatchInfo } from '@/types';
 
+// Generate unique ID for messages
+const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
 // Chat history expiration time (30 minutes) - matching mobile app
 const CHAT_HISTORY_EXPIRATION = 30 * 60 * 1000;
 const LOCAL_TOKENS_KEY = 'ai_chat_tokens';
@@ -78,7 +81,8 @@ function loadChatHistory(): { messages: ChatMessage[]; timestamp: Date | null } 
     if (!messagesJson) return { messages: [], timestamp: null };
 
     const messagesData = JSON.parse(messagesJson);
-    const messages: ChatMessage[] = messagesData.map((m: { text: string; isUser: boolean; timestamp: number }) => ({
+    const messages: ChatMessage[] = messagesData.map((m: { id?: string; text: string; isUser: boolean; timestamp: number }) => ({
+      id: m.id || generateMessageId(),
       text: m.text,
       isUser: m.isUser,
       timestamp: new Date(m.timestamp),
@@ -100,6 +104,7 @@ function saveChatHistory(messages: ChatMessage[]) {
     if (!hasUserMessages) return;
 
     const messagesData = messages.map(m => ({
+      id: m.id,
       text: m.text,
       isUser: m.isUser,
       timestamp: m.timestamp.getTime(),
@@ -187,6 +192,7 @@ function generateWelcomeMessage(aiAvailable: boolean): ChatMessage {
     : 'AI analysis **disabled** (server unavailable)';
 
   return {
+    id: generateMessageId(),
     text: `Hello!
 
 I'm your AI assistant for football match analysis.
@@ -492,11 +498,13 @@ export const useChatStore = create<ChatState>((set, get) => {
             messages: [
               ...state.messages,
               {
+                id: generateMessageId(),
                 text: message,
                 isUser: true,
                 timestamp: new Date(),
               },
               {
+                id: generateMessageId(),
                 text: `**Daily Limit Reached**
 
 You've used all your free predictions for today.
@@ -520,9 +528,11 @@ Premium benefits:
       }
 
       // Add user message
+      const userMessageId = generateMessageId();
       const newMessages: ChatMessage[] = [
         ...state.messages,
         {
+          id: userMessageId,
           text: message,
           isUser: true,
           timestamp: new Date(),
@@ -599,6 +609,7 @@ If this persists, please try again later.`;
         messages: [
           ...get().messages,
           {
+            id: generateMessageId(),
             text: response,
             isUser: false,
             timestamp: new Date(),
