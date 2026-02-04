@@ -36,36 +36,7 @@ export function TodayMatches() {
       setMatches(data.slice(0, 6)); // Show only first 6
     } catch (err) {
       setError('Could not load matches');
-      // Use mock data for demo
-      setMatches([
-        {
-          id: 1,
-          homeTeam: { name: 'Arsenal' },
-          awayTeam: { name: 'Chelsea' },
-          league: 'Premier League',
-          leagueCode: 'PL',
-          matchDate: new Date().toISOString(),
-          status: 'SCHEDULED',
-        },
-        {
-          id: 2,
-          homeTeam: { name: 'Real Madrid' },
-          awayTeam: { name: 'Barcelona' },
-          league: 'La Liga',
-          leagueCode: 'PD',
-          matchDate: new Date().toISOString(),
-          status: 'SCHEDULED',
-        },
-        {
-          id: 3,
-          homeTeam: { name: 'Bayern Munich' },
-          awayTeam: { name: 'Dortmund' },
-          league: 'Bundesliga',
-          leagueCode: 'BL1',
-          matchDate: new Date().toISOString(),
-          status: 'SCHEDULED',
-        },
-      ]);
+      setMatches([]);
     } finally {
       setIsLoading(false);
     }

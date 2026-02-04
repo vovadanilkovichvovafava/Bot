@@ -7,7 +7,6 @@ import {
   ChevronRight, Trophy, Zap, Calendar, ArrowRight, Loader2, Brain, BarChart3,
   Swords, Shield, Target, Activity, TrendingUp, Users, Radio
 } from 'lucide-react';
-import { RadarChart } from '@/components/charts/RadarChart';
 import { useMatchesStore } from '@/store/matchesStore';
 import { Match, formatMatchDate, isMatchLive, getShortTeamName } from '@/types';
 
@@ -85,41 +84,8 @@ export function CinematicHome() {
     return TEAM_COLORS[teamName] || { primary: '#D4AF37', secondary: '#FFFFFF', accent: '#1a1a2e' };
   };
 
-  // Generate AI prediction and stats
-  const getAIPrediction = (match: Match | null) => {
-    if (!match) return { homeWin: 40, draw: 30, awayWin: 30, attack: 75, defence: 70, momentum: 65 };
-    const seed = match.id % 100;
-    const homeWin = 35 + (seed % 35);
-    const draw = 15 + ((seed * 3) % 25);
-    const awayWin = 100 - homeWin - draw;
-    return {
-      homeWin,
-      draw,
-      awayWin,
-      attack: 65 + (seed % 25),
-      defence: 60 + ((seed * 2) % 30),
-      momentum: 55 + ((seed * 3) % 35),
-    };
-  };
-
-  // Generate team stats for radar
-  const getTeamStats = (match: Match | null, isHome: boolean) => {
-    if (!match) return { attack: 70, defense: 70, midfield: 70, form: 70, setpieces: 70 };
-    const seed = (match.id + (isHome ? 0 : 50)) % 100;
-    return {
-      attack: 65 + (seed % 25),
-      defense: 60 + ((seed * 2) % 30),
-      midfield: 65 + ((seed * 3) % 25),
-      form: 55 + ((seed * 4) % 35),
-      setpieces: 60 + ((seed * 5) % 30),
-    };
-  };
-
-  const prediction = getAIPrediction(featuredMatch);
   const homeColors = featuredMatch ? getTeamColors(featuredMatch.homeTeam.name) : { primary: '#D4AF37', secondary: '#FFFFFF', accent: '#1a1a2e' };
   const awayColors = featuredMatch ? getTeamColors(featuredMatch.awayTeam.name) : { primary: '#6CABDD', secondary: '#FFFFFF', accent: '#1a1a2e' };
-  const homeStats = getTeamStats(featuredMatch, true);
-  const awayStats = getTeamStats(featuredMatch, false);
   const live = featuredMatch ? isMatchLive(featuredMatch) : false;
 
   return (
@@ -213,7 +179,7 @@ export function CinematicHome() {
         {/* Main Layout */}
         {featuredMatch && (
           <div className="grid lg:grid-cols-3 gap-6 mb-8">
-            {/* Left Column - Tactical Analysis */}
+            {/* Left Column - Match Info */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: isVisible ? 1 : 0, x: isVisible ? 0 : -30 }}
@@ -223,36 +189,45 @@ export function CinematicHome() {
               <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Target className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Tactical Analysis</h3>
+                  <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Match Info</h3>
                 </div>
 
-                {/* Radar Chart */}
-                <div className="h-48 mb-4">
-                  <RadarChart
-                    homeStats={homeStats}
-                    awayStats={awayStats}
-                    theme="cinematic"
-                  />
-                </div>
-
-                {/* Team Legend */}
-                <div className="flex justify-center gap-6 mb-4">
+                {/* Teams */}
+                <div className="flex justify-center gap-6 mb-6">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ background: homeColors.primary }} />
-                    <span className="text-xs text-gray-400">{getShortTeamName(featuredMatch.homeTeam.name)}</span>
+                    <span className="text-sm text-white">{getShortTeamName(featuredMatch.homeTeam.name)}</span>
                   </div>
+                  <span className="text-gray-500">vs</span>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ background: awayColors.primary }} />
-                    <span className="text-xs text-gray-400">{getShortTeamName(featuredMatch.awayTeam.name)}</span>
+                    <span className="text-sm text-white">{getShortTeamName(featuredMatch.awayTeam.name)}</span>
                   </div>
                 </div>
 
-                {/* ATTACK / DEFENCE / MOMENTUM */}
-                <div className="space-y-3">
-                  <StatBar label="ATTACK" value={prediction.attack} icon={Swords} color="from-red-500 to-orange-500" />
-                  <StatBar label="DEFENCE" value={prediction.defence} icon={Shield} color="from-blue-500 to-cyan-500" />
-                  <StatBar label="MOMENTUM" value={prediction.momentum} icon={Activity} color="from-amber-500 to-yellow-500" />
+                {/* League Info */}
+                <div className="p-4 rounded-xl bg-white/5 mb-4">
+                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">League</p>
+                  <p className="text-white font-semibold">{featuredMatch.league}</p>
                 </div>
+
+                {/* Match Date */}
+                <div className="p-4 rounded-xl bg-white/5">
+                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Match Time</p>
+                  <p className="text-white font-semibold">{formatMatchDate(featuredMatch.matchDate)}</p>
+                </div>
+
+                {/* CTA */}
+                <Link href={`/match/${featuredMatch.id}`}>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full mt-4 py-3 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-amber-500/30 transition-all"
+                  >
+                    <Brain className="w-4 h-4" />
+                    Get AI Analysis
+                  </motion.button>
+                </Link>
               </div>
             </motion.div>
 
@@ -308,43 +283,17 @@ export function CinematicHome() {
                 <WavingFlag team={featuredMatch.awayTeam} colors={awayColors} side="right" />
               </div>
 
-              {/* AI Verdict Card */}
+              {/* AI Analysis Card */}
               <div className="bg-black/60 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-5">
                 <div className="flex items-center gap-2 justify-center mb-4">
                   <Brain className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 font-bold uppercase tracking-widest text-sm">AI Prediction</span>
+                  <span className="text-amber-400 font-bold uppercase tracking-widest text-sm">AI Analysis</span>
                 </div>
 
-                {/* Probability Bar */}
-                <div className="mb-4">
-                  <div className="flex gap-1 h-4 rounded-full overflow-hidden bg-gray-800">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.homeWin}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      className="rounded-l-full"
-                      style={{ background: homeColors.primary }}
-                    />
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.draw}%` }}
-                      transition={{ duration: 1, delay: 0.7 }}
-                      className="bg-gray-500"
-                    />
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.awayWin}%` }}
-                      transition={{ duration: 1, delay: 0.9 }}
-                      className="rounded-r-full"
-                      style={{ background: awayColors.primary }}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-2 text-sm">
-                    <span className="text-white">{getShortTeamName(featuredMatch.homeTeam.name)}: {prediction.homeWin}%</span>
-                    <span className="text-gray-400">Draw: {prediction.draw}%</span>
-                    <span className="text-white">{getShortTeamName(featuredMatch.awayTeam.name)}: {prediction.awayWin}%</span>
-                  </div>
-                </div>
+                {/* Info text */}
+                <p className="text-gray-400 text-center text-sm mb-4">
+                  Get detailed AI predictions, statistics, and betting recommendations for this match
+                </p>
 
                 {/* CTA Button */}
                 <Link href={`/match/${featuredMatch.id}`}>
@@ -354,7 +303,7 @@ export function CinematicHome() {
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
                   >
                     <BarChart3 className="w-5 h-5" />
-                    Full Analysis
+                    View Full Analysis
                     <ArrowRight className="w-5 h-5" />
                   </motion.button>
                 </Link>
@@ -499,28 +448,6 @@ export function CinematicHome() {
   );
 }
 
-// Stat Bar Component
-function StatBar({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-amber-400" />
-          <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
-        </div>
-        <span className="text-xs text-white font-bold">{value}%</span>
-      </div>
-      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className={`h-full bg-gradient-to-r ${color} rounded-full`}
-        />
-      </div>
-    </div>
-  );
-}
 
 // Waving Flag Component with CSS 3D Animation
 function WavingFlag({ team, colors, side }: {

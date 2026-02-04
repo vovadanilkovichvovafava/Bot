@@ -119,7 +119,7 @@ export default function PremiumPage() {
           </motion.div>
           <h1 className="text-3xl font-bold text-white mb-2">Premium Access</h1>
           <p className="text-gray-300">
-            Unlimited AI predictions with 70%+ accuracy
+            Unlimited AI predictions and advanced analysis
           </p>
           {isPremium && (
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500 text-black font-medium">

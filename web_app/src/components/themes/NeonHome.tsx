@@ -4,13 +4,12 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Brain, TrendingUp, Zap, ChevronRight, ArrowUpRight,
-  BarChart3, Target, Clock, Flame, Shield, Swords, Calendar,
-  Loader2, Radio, Newspaper, Trophy, Star
+  Brain, Zap, ChevronRight,
+  BarChart3, Calendar,
+  Loader2, Radio
 } from 'lucide-react';
-import { RadarChart } from '@/components/charts/RadarChart';
 import { useMatchesStore } from '@/store/matchesStore';
-import { Match, formatMatchDate, isMatchLive, getShortTeamName } from '@/types';
+import { Match, formatMatchDate, isMatchLive } from '@/types';
 
 // Team colors for fallback
 const TEAM_COLORS: Record<string, string> = {
@@ -30,59 +29,6 @@ const TEAM_COLORS: Record<string, string> = {
   'Inter': '#0068A8',
 };
 
-const AI_INSIGHTS = [
-  {
-    icon: Swords,
-    title: 'Home team pressing advantage',
-    team: 'HOME',
-    confidence: 85,
-  },
-  {
-    icon: Shield,
-    title: 'Counter-attack threat detected',
-    team: 'AWAY',
-    confidence: 78,
-  },
-  {
-    icon: Target,
-    title: 'Key player matchup crucial',
-    team: null,
-    confidence: 92,
-  },
-];
-
-const TRENDING_BETS = [
-  { icon: Flame, name: 'Match Winner', odds: 1.55 },
-  { icon: Flame, name: 'Over 2.5 Goals', odds: 2.00 },
-  { icon: Flame, name: 'Both Teams Score', odds: 1.75 },
-];
-
-const NEWS_FEED = [
-  {
-    title: 'AI Model Updated: New tactical analysis features',
-    category: 'System',
-    time: '2h ago',
-    highlight: true,
-  },
-  {
-    title: 'Champions League Round of 16 predictions live',
-    category: 'Football',
-    time: '4h ago',
-    highlight: false,
-  },
-  {
-    title: 'Weekend Premier League preview available',
-    category: 'Analysis',
-    time: '6h ago',
-    highlight: false,
-  },
-  {
-    title: 'AI accuracy hit 87% last week',
-    category: 'Stats',
-    time: '1d ago',
-    highlight: true,
-  },
-];
 
 export function NeonHome() {
   const [mounted, setMounted] = useState(false);
@@ -110,26 +56,6 @@ export function NeonHome() {
   // Get upcoming matches for display
   const upcomingMatches = todayMatches.slice(0, 5);
 
-  // Generate AI prediction percentages based on match
-  const getAIPrediction = (match: Match | null) => {
-    if (!match) return { homeWin: 50, draw: 25, awayWin: 25 };
-    // Simulate AI prediction based on match id
-    const seed = match.id % 100;
-    const homeWin = 40 + (seed % 30);
-    const draw = 15 + ((seed * 7) % 20);
-    const awayWin = 100 - homeWin - draw;
-    return { homeWin, draw, awayWin };
-  };
-
-  const prediction = getAIPrediction(featuredMatch);
-
-  // Generate mock stats
-  const getStats = () => ({
-    home: { attack: 85 + Math.random() * 10, defense: 80 + Math.random() * 10, midfield: 82 + Math.random() * 10, form: 78 + Math.random() * 15, setpieces: 75 + Math.random() * 10 },
-    away: { attack: 80 + Math.random() * 10, defense: 78 + Math.random() * 10, midfield: 80 + Math.random() * 10, form: 75 + Math.random() * 15, setpieces: 78 + Math.random() * 10 },
-  });
-
-  const stats = getStats();
 
   return (
     <div className="min-h-screen neon-bg neon-grid relative">
@@ -173,7 +99,7 @@ export function NeonHome() {
         {/* Main Grid Layout */}
         {(featuredMatch || !isLoading) && (
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left Column - Team Comparison */}
+            {/* Left Column - Match Info */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -20 }}
@@ -183,88 +109,57 @@ export function NeonHome() {
               <div className="card-neon rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <Brain className="w-5 h-5 text-emerald-400" />
-                  <h3 className="font-bold text-white">TEAM COMPARISON (AI)</h3>
+                  <h3 className="font-bold text-white">MATCH INFO</h3>
                 </div>
 
                 {featuredMatch ? (
                   <>
-                    {/* Team legend */}
-                    <div className="flex items-center gap-6 mb-4">
+                    {/* Teams */}
+                    <div className="flex items-center gap-6 mb-6">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                        <span className="text-sm text-gray-400 truncate max-w-[100px]">
+                        <span className="text-sm text-white truncate max-w-[100px]">
                           {featuredMatch.homeTeam.name}
                         </span>
                       </div>
+                      <span className="text-gray-500">vs</span>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-cyan-400" />
-                        <span className="text-sm text-gray-400 truncate max-w-[100px]">
+                        <span className="text-sm text-white truncate max-w-[100px]">
                           {featuredMatch.awayTeam.name}
                         </span>
                       </div>
                     </div>
 
-                    {/* Radar Chart */}
-                    <div className="h-56 mb-6">
-                      <RadarChart
-                        homeStats={stats.home}
-                        awayStats={stats.away}
-                        theme="neon"
-                      />
+                    {/* League */}
+                    <div className="p-4 rounded-xl bg-white/5 mb-4">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">League</p>
+                      <p className="text-white font-semibold">{featuredMatch.league}</p>
                     </div>
+
+                    {/* Match Time */}
+                    <div className="p-4 rounded-xl bg-white/5 mb-6">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Match Time</p>
+                      <p className="text-white font-semibold">{formatMatchDate(featuredMatch.matchDate)}</p>
+                    </div>
+
+                    {/* CTA */}
+                    <Link href={`/match/${featuredMatch.id}`}>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold flex items-center justify-center gap-2 hover:bg-emerald-500/30 transition-all"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Get AI Analysis
+                      </motion.button>
+                    </Link>
                   </>
                 ) : (
-                  <div className="h-56 mb-6 flex items-center justify-center">
+                  <div className="h-56 flex items-center justify-center">
                     <p className="text-gray-500">No match selected</p>
                   </div>
                 )}
-
-                {/* Key AI Insights */}
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-emerald-400" />
-                    KEY AI INSIGHTS
-                  </h4>
-                  <div className="space-y-3">
-                    {AI_INSIGHTS.map((insight, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.1 }}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        <div className="p-1.5 rounded bg-emerald-500/20">
-                          <insight.icon className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-white">{insight.title}</p>
-                          {insight.team && (
-                            <span className="text-xs text-emerald-400">{insight.team}</span>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500">{insight.confidence}%</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent AI Performance */}
-                <div className="mt-6 pt-6 border-t border-white/10">
-                  <h4 className="text-sm font-semibold text-gray-400 mb-3">RECENT AI PERFORMANCE</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span className="text-emerald-400">82% accuracy last 7 days</span>
-                      <ArrowUpRight className="w-3 h-3 text-emerald-400 ml-auto" />
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span className="text-emerald-400">15 correct predictions streak</span>
-                      <ArrowUpRight className="w-3 h-3 text-emerald-400 ml-auto" />
-                    </div>
-                  </div>
-                </div>
               </div>
             </motion.div>
 
@@ -336,53 +231,11 @@ export function NeonHome() {
                         </motion.div>
                       </div>
 
-                      {/* AI Win Probability */}
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-400">AI WIN PROBABILITY:</span>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xl md:text-2xl font-bold neon-gradient">
-                            {prediction.homeWin}% {getShortTeamName(featuredMatch.homeTeam.name)}
-                          </span>
-                        </div>
-                        <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-gray-800">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${prediction.homeWin}%` }}
-                            transition={{ duration: 1, delay: 0.5 }}
-                            className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-l-full"
-                          />
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${prediction.draw}%` }}
-                            transition={{ duration: 1, delay: 0.7 }}
-                            className="bg-gray-600"
-                          />
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${prediction.awayWin}%` }}
-                            transition={{ duration: 1, delay: 0.9 }}
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-r-full"
-                          />
-                        </div>
-                        <div className="flex justify-between mt-2 text-xs text-gray-500">
-                          <span>DRAW: {prediction.draw}%</span>
-                          <span>{getShortTeamName(featuredMatch.awayTeam.name)}: {prediction.awayWin}%</span>
-                        </div>
-                      </div>
-
-                      {/* Probability chart */}
-                      <div className="h-24 mb-6 rounded-lg bg-white/5 flex items-end justify-around p-2">
-                        {[40, 65, 55, 70, 60, 75, 65].map((height, i) => (
-                          <motion.div
-                            key={i}
-                            initial={{ height: 0 }}
-                            animate={{ height: `${height}%` }}
-                            transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
-                            className="w-6 bg-gradient-to-t from-emerald-500/50 to-emerald-400/80 rounded-t"
-                          />
-                        ))}
+                      {/* AI Analysis Info */}
+                      <div className="mb-6 p-4 rounded-xl bg-white/5">
+                        <p className="text-gray-400 text-center text-sm">
+                          Get detailed AI predictions, statistics, and betting recommendations
+                        </p>
                       </div>
 
                       {/* CTA Button */}
@@ -429,7 +282,7 @@ export function NeonHome() {
               </div>
             </motion.div>
 
-            {/* Right Column - Live Betting Markets */}
+            {/* Right Column - Upcoming Matches */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : 20 }}
@@ -438,7 +291,7 @@ export function NeonHome() {
             >
               <div className="card-neon rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-white">BETTING MARKETS</h3>
+                  <h3 className="font-bold text-white">UPCOMING MATCHES</h3>
                   {liveMatches.length > 0 && (
                     <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs">
                       <Radio size={12} />
@@ -447,69 +300,47 @@ export function NeonHome() {
                   )}
                 </div>
 
-                {/* Markets */}
-                <div className="space-y-4 mb-6">
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-gray-400">Match Winner</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">
-                        <div className="text-xs text-gray-400 mb-1">Home</div>
-                        <div className="text-lg font-bold text-emerald-400">1.85</div>
-                      </button>
-                      <button className="p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <div className="text-xs text-gray-400 mb-1">Draw</div>
-                        <div className="text-lg font-bold text-white">3.60</div>
-                      </button>
-                      <button className="p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <div className="text-xs text-gray-400 mb-1">Away</div>
-                        <div className="text-lg font-bold text-white">4.20</div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {[
-                    { name: 'Over 2.5 Goals', value: 'Total Goals', odds: 1.75, tag: 'POPULAR' },
-                    { name: 'Both Teams Score', value: 'BTTS Yes', odds: 1.65, tag: 'HOT' },
-                    { name: 'First Half Goals', value: 'Over 0.5', odds: 1.30, tag: 'SAFE' },
-                  ].map((market, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                      <div>
-                        <p className="text-sm text-white">{market.name}</p>
-                        <p className="text-xs text-gray-500">{market.value}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-emerald-400">
-                          {market.odds.toFixed(2)}
-                        </span>
-                        <button className="px-3 py-1 text-xs font-semibold bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30 transition-colors">
-                          {market.tag}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Trending Bets */}
-                <div className="pt-6 border-t border-white/10">
-                  <h4 className="text-sm font-semibold text-gray-400 mb-4">TRENDING BETS</h4>
-                  <div className="space-y-3">
-                    {TRENDING_BETS.map((bet, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <bet.icon className="w-4 h-4 text-orange-400" />
-                          <span className="text-sm text-white">{bet.name}</span>
+                {/* Today's Matches */}
+                <div className="space-y-3 mb-6">
+                  {todayMatches.length > 0 ? (
+                    todayMatches.slice(0, 5).map((match) => (
+                      <Link key={match.id} href={`/match/${match.id}`}>
+                        <div className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-transparent hover:border-emerald-500/30">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-white truncate flex-1">{match.homeTeam.name}</span>
+                            <span className="text-gray-500 px-2">vs</span>
+                            <span className="text-white truncate flex-1 text-right">{match.awayTeam.name}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-gray-500">{match.league}</span>
+                            <span className="text-xs text-emerald-400">{formatMatchDate(match.matchDate)}</span>
+                          </div>
                         </div>
-                        <span className="text-emerald-400 font-bold">{bet.odds.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No matches today</p>
+                    </div>
+                  )}
                 </div>
+
+                {/* View All Button */}
+                <Link href="/matches">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    View All Matches
+                  </motion.button>
+                </Link>
 
                 {/* Live Matches Quick Access */}
                 {liveMatches.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="mt-4">
                     <Link href="/live">
                       <motion.div
                         whileHover={{ scale: 1.02 }}
@@ -522,7 +353,7 @@ export function NeonHome() {
                           </div>
                           <div>
                             <p className="text-white font-medium">{liveMatches.length} Live Matches</p>
-                            <p className="text-red-400 text-xs">Watch & bet now</p>
+                            <p className="text-red-400 text-xs">Watch now</p>
                           </div>
                         </div>
                         <ChevronRight className="w-5 h-5 text-red-400" />
@@ -569,108 +400,6 @@ export function NeonHome() {
           ))}
         </motion.div>
 
-        {/* News Feed Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-8 grid md:grid-cols-2 gap-6"
-        >
-          {/* News Feed */}
-          <div className="card-neon rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Newspaper className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-bold text-white">NEWS FEED</h3>
-            </div>
-            <div className="space-y-3">
-              {NEWS_FEED.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                  className={`p-3 rounded-xl transition-all cursor-pointer ${
-                    item.highlight
-                      ? 'bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50'
-                      : 'bg-white/5 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
-                      item.highlight ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-400'
-                    }`}>
-                      {item.category}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-white">{item.title}</p>
-                      <span className="text-xs text-gray-500 mt-1">{item.time}</span>
-                    </div>
-                    {item.highlight && <Star className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Extended AI Performance Stats */}
-          <div className="card-neon rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-bold text-white">AI PERFORMANCE</h3>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-                <div className="text-3xl font-bold text-emerald-400">82%</div>
-                <div className="text-xs text-gray-400 mt-1">Weekly Accuracy</div>
-              </div>
-              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-center">
-                <div className="text-3xl font-bold text-cyan-400">15</div>
-                <div className="text-xs text-gray-400 mt-1">Win Streak</div>
-              </div>
-              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
-                <div className="text-3xl font-bold text-purple-400">247</div>
-                <div className="text-xs text-gray-400 mt-1">Total Predictions</div>
-              </div>
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-                <div className="text-3xl font-bold text-amber-400">+12%</div>
-                <div className="text-xs text-gray-400 mt-1">ROI This Month</div>
-              </div>
-            </div>
-
-            {/* Performance Trend */}
-            <div className="p-4 rounded-xl bg-white/5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400">Last 7 Days Performance</span>
-                <span className="flex items-center gap-1 text-emerald-400 text-sm">
-                  <ArrowUpRight className="w-4 h-4" />
-                  +5.2%
-                </span>
-              </div>
-              <div className="flex items-end justify-between h-16 gap-1">
-                {[65, 72, 68, 81, 75, 78, 82].map((value, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${value}%` }}
-                    transition={{ duration: 0.5, delay: 0.7 + i * 0.1 }}
-                    className="flex-1 rounded-t bg-gradient-to-t from-emerald-500/40 to-emerald-400/80"
-                  />
-                ))}
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </div>
   );

@@ -71,25 +71,6 @@ export function StadiumHome() {
     return TEAM_COLORS[teamName] || { primary: '#6366f1', secondary: '#FFFFFF', tifo: '#6366f1' };
   };
 
-  // Generate AI prediction
-  const getAIPrediction = (match: Match | null) => {
-    if (!match) return { homeWin: 40, draw: 30, awayWin: 30, score: '2-1', confidence: 65 };
-    const seed = match.id % 100;
-    const homeWin = 35 + (seed % 35);
-    const draw = 15 + ((seed * 3) % 25);
-    const awayWin = 100 - homeWin - draw;
-    const homeGoals = Math.floor(seed / 30) + 1;
-    const awayGoals = Math.floor((seed % 30) / 15);
-    return {
-      homeWin,
-      draw,
-      awayWin,
-      score: `${homeGoals}-${awayGoals}`,
-      confidence: Math.max(homeWin, awayWin),
-    };
-  };
-
-  const prediction = getAIPrediction(featuredMatch);
   const homeColors = featuredMatch ? getTeamColors(featuredMatch.homeTeam.name) : { primary: '#6366f1', secondary: '#FFFFFF', tifo: '#6366f1' };
   const awayColors = featuredMatch ? getTeamColors(featuredMatch.awayTeam.name) : { primary: '#f59e0b', secondary: '#000000', tifo: '#f59e0b' };
   const live = featuredMatch ? isMatchLive(featuredMatch) : false;
@@ -497,7 +478,7 @@ export function StadiumHome() {
               </motion.div>
             </div>
 
-            {/* AI Verdict Box */}
+            {/* AI Analysis Box */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -507,45 +488,13 @@ export function StadiumHome() {
               <div className="bg-black/60 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-5">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Brain className="w-5 h-5 text-indigo-400" />
-                  <span className="text-indigo-400 font-bold uppercase tracking-widest text-sm">AI прогноз</span>
+                  <span className="text-indigo-400 font-bold uppercase tracking-widest text-sm">AI Анализ</span>
                 </div>
 
-                {/* Probability bar */}
-                <div className="mb-4">
-                  <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-gray-800">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.homeWin}%` }}
-                      transition={{ duration: 1, delay: 1.1 }}
-                      className="rounded-l-full"
-                      style={{ background: homeColors.primary }}
-                    />
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.draw}%` }}
-                      transition={{ duration: 1, delay: 1.3 }}
-                      className="bg-gray-500"
-                    />
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${prediction.awayWin}%` }}
-                      transition={{ duration: 1, delay: 1.5 }}
-                      className="rounded-r-full"
-                      style={{ background: awayColors.primary }}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-2 text-sm">
-                    <span className="text-white">{prediction.homeWin}%</span>
-                    <span className="text-gray-400">Ничья {prediction.draw}%</span>
-                    <span className="text-white">{prediction.awayWin}%</span>
-                  </div>
-                </div>
-
-                {/* Predicted score */}
-                <div className="text-center mb-4">
-                  <span className="text-gray-400 text-sm">Прогноз счета: </span>
-                  <span className="text-2xl font-bold text-indigo-400">{prediction.score}</span>
-                </div>
+                {/* Info text */}
+                <p className="text-gray-400 text-center text-sm mb-4">
+                  Получите детальный AI-анализ, статистику и рекомендации по ставкам
+                </p>
 
                 <Link href={`/match/${featuredMatch.id}`}>
                   <motion.button
@@ -554,7 +503,7 @@ export function StadiumHome() {
                     className="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 transition-all"
                   >
                     <BarChart3 className="w-5 h-5" />
-                    Полный анализ
+                    Получить анализ
                   </motion.button>
                 </Link>
               </div>
