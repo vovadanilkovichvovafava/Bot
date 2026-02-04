@@ -34,7 +34,7 @@ export default function MatchDetailPage({ params }: PageParams) {
   // Find match
   useEffect(() => {
     const allMatches = [...currentRoundMatches, ...nextRoundMatches, ...dateTodayMatches, ...dateTomorrowMatches];
-    const found = allMatches.find(m => m.id === matchId);
+    const found = allMatches.find(m => m.id === Number(matchId));
     if (found) {
       setMatch(found);
       setLoading(false);
@@ -47,7 +47,7 @@ export default function MatchDetailPage({ params }: PageParams) {
   useEffect(() => {
     if (!loading && !match) {
       const allMatches = [...currentRoundMatches, ...nextRoundMatches, ...dateTodayMatches, ...dateTomorrowMatches];
-      const found = allMatches.find(m => m.id === matchId);
+      const found = allMatches.find(m => m.id === Number(matchId));
       if (found) setMatch(found);
     }
   }, [loading, match, matchId, currentRoundMatches, nextRoundMatches, dateTodayMatches, dateTomorrowMatches]);
