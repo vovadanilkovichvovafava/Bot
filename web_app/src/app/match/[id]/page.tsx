@@ -70,7 +70,6 @@ export default function MatchDetailPage({ params }: PageParams) {
     const loadMatch = async () => {
       setIsLoading(true);
       setError(null);
-      clearChat();
 
       try {
         const matchData = await api.getMatchDetail(parseInt(matchId));
@@ -99,7 +98,7 @@ export default function MatchDetailPage({ params }: PageParams) {
     };
 
     loadMatch();
-  }, [matchId, clearChat]);
+  }, [matchId]);
 
   // Quick questions for AI
   const quickQuestions = [
