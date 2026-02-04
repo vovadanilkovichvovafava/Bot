@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Brain, TrendingUp, Zap, ChevronRight, ArrowUpRight,
   BarChart3, Target, Clock, Flame, Shield, Swords, Calendar,
-  Loader2, Radio
+  Loader2, Radio, Newspaper, Trophy, Star
 } from 'lucide-react';
 import { RadarChart } from '@/components/charts/RadarChart';
 import { useMatchesStore } from '@/store/matchesStore';
@@ -55,6 +55,33 @@ const TRENDING_BETS = [
   { icon: Flame, name: 'Match Winner', odds: 1.55 },
   { icon: Flame, name: 'Over 2.5 Goals', odds: 2.00 },
   { icon: Flame, name: 'Both Teams Score', odds: 1.75 },
+];
+
+const NEWS_FEED = [
+  {
+    title: 'AI Model Updated: New tactical analysis features',
+    category: 'System',
+    time: '2h ago',
+    highlight: true,
+  },
+  {
+    title: 'Champions League Round of 16 predictions live',
+    category: 'Football',
+    time: '4h ago',
+    highlight: false,
+  },
+  {
+    title: 'Weekend Premier League preview available',
+    category: 'Analysis',
+    time: '6h ago',
+    highlight: false,
+  },
+  {
+    title: 'AI accuracy hit 87% last week',
+    category: 'Stats',
+    time: '1d ago',
+    highlight: true,
+  },
 ];
 
 export function NeonHome() {
@@ -540,6 +567,109 @@ export function NeonHome() {
               </motion.div>
             </Link>
           ))}
+        </motion.div>
+
+        {/* News Feed Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-8 grid md:grid-cols-2 gap-6"
+        >
+          {/* News Feed */}
+          <div className="card-neon rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Newspaper className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-bold text-white">NEWS FEED</h3>
+            </div>
+            <div className="space-y-3">
+              {NEWS_FEED.map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  className={`p-3 rounded-xl transition-all cursor-pointer ${
+                    item.highlight
+                      ? 'bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50'
+                      : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
+                      item.highlight ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-400'
+                    }`}>
+                      {item.category}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-white">{item.title}</p>
+                      <span className="text-xs text-gray-500 mt-1">{item.time}</span>
+                    </div>
+                    {item.highlight && <Star className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Extended AI Performance Stats */}
+          <div className="card-neon rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-bold text-white">AI PERFORMANCE</h3>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <div className="text-3xl font-bold text-emerald-400">82%</div>
+                <div className="text-xs text-gray-400 mt-1">Weekly Accuracy</div>
+              </div>
+              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-center">
+                <div className="text-3xl font-bold text-cyan-400">15</div>
+                <div className="text-xs text-gray-400 mt-1">Win Streak</div>
+              </div>
+              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+                <div className="text-3xl font-bold text-purple-400">247</div>
+                <div className="text-xs text-gray-400 mt-1">Total Predictions</div>
+              </div>
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+                <div className="text-3xl font-bold text-amber-400">+12%</div>
+                <div className="text-xs text-gray-400 mt-1">ROI This Month</div>
+              </div>
+            </div>
+
+            {/* Performance Trend */}
+            <div className="p-4 rounded-xl bg-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-gray-400">Last 7 Days Performance</span>
+                <span className="flex items-center gap-1 text-emerald-400 text-sm">
+                  <ArrowUpRight className="w-4 h-4" />
+                  +5.2%
+                </span>
+              </div>
+              <div className="flex items-end justify-between h-16 gap-1">
+                {[65, 72, 68, 81, 75, 78, 82].map((value, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${value}%` }}
+                    transition={{ duration: 0.5, delay: 0.7 + i * 0.1 }}
+                    className="flex-1 rounded-t bg-gradient-to-t from-emerald-500/40 to-emerald-400/80"
+                  />
+                ))}
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-gray-500">
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+                <span>Sun</span>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>
