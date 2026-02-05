@@ -1,4 +1,5 @@
 import httpx
+import asyncio
 import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
@@ -46,8 +47,51 @@ def _set_cache(key: str, value: any):
     }
 
 
+async def _fetch_league_matches(client: httpx.AsyncClient, lg_code: str, headers: dict, params: dict) -> List[Dict]:
+    """Fetch matches for a single league"""
+    try:
+        url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+        response = await client.get(url, headers=headers, params=params, timeout=10.0)
+
+        if response.status_code != 200:
+            logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
+            return []
+
+        data = response.json()
+        matches = []
+
+        for match in data.get("matches", []):
+            try:
+                matches.append({
+                    "id": match["id"],
+                    "home_team": {
+                        "name": match["homeTeam"]["name"],
+                        "logo": match["homeTeam"].get("crest")
+                    },
+                    "away_team": {
+                        "name": match["awayTeam"]["name"],
+                        "logo": match["awayTeam"].get("crest")
+                    },
+                    "league": match["competition"]["name"],
+                    "league_code": match["competition"].get("code", lg_code),
+                    "match_date": match["utcDate"],
+                    "matchday": match.get("matchday"),
+                    "status": match["status"].lower(),
+                    "home_score": match["score"]["fullTime"]["home"],
+                    "away_score": match["score"]["fullTime"]["away"],
+                })
+            except (KeyError, TypeError):
+                continue
+
+        return matches
+
+    except Exception as e:
+        logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
+        return []
+
+
 async def fetch_matches(date_from: str = None, date_to: str = None, league: str = None) -> List[Dict]:
-    """Fetch matches from Football-Data.org API"""
+    """Fetch matches from Football-Data.org API - PARALLEL requests"""
 
     if not FOOTBALL_API_KEY:
         logger.warning("FOOTBALL_API_KEY not set, returning empty list")
@@ -60,59 +104,32 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         return cached
 
     headers = {"X-Auth-Token": FOOTBALL_API_KEY}
-    all_matches = []
+    params = {}
+    if date_from:
+        params["dateFrom"] = date_from
+    if date_to:
+        params["dateTo"] = date_to
 
     # Determine which leagues to fetch
     if league and league in LEAGUE_IDS:
         leagues_to_fetch = [league]
     else:
-        # Free tier: fetch from top leagues individually
+        # Free tier: fetch from top leagues
         leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1"]
 
+    # Fetch all leagues in PARALLEL
     async with httpx.AsyncClient() as client:
-        for lg_code in leagues_to_fetch:
-            try:
-                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
-                params = {}
+        tasks = [
+            _fetch_league_matches(client, lg_code, headers, params)
+            for lg_code in leagues_to_fetch
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-                if date_from:
-                    params["dateFrom"] = date_from
-                if date_to:
-                    params["dateTo"] = date_to
-
-                response = await client.get(url, headers=headers, params=params, timeout=15.0)
-
-                if response.status_code != 200:
-                    logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
-                    continue
-
-                data = response.json()
-
-                for match in data.get("matches", []):
-                    try:
-                        all_matches.append({
-                            "id": match["id"],
-                            "home_team": {
-                                "name": match["homeTeam"]["name"],
-                                "logo": match["homeTeam"].get("crest")
-                            },
-                            "away_team": {
-                                "name": match["awayTeam"]["name"],
-                                "logo": match["awayTeam"].get("crest")
-                            },
-                            "league": match["competition"]["name"],
-                            "league_code": match["competition"].get("code", lg_code),
-                            "match_date": match["utcDate"],
-                            "status": match["status"].lower(),
-                            "home_score": match["score"]["fullTime"]["home"],
-                            "away_score": match["score"]["fullTime"]["away"],
-                        })
-                    except (KeyError, TypeError) as e:
-                        continue
-
-            except Exception as e:
-                logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
-                continue
+    # Combine results
+    all_matches = []
+    for result in results:
+        if isinstance(result, list):
+            all_matches.extend(result)
 
     # Sort by match date
     all_matches.sort(key=lambda x: x["match_date"])
@@ -259,3 +276,127 @@ async def fetch_leagues() -> List[Dict]:
 
     _set_cache(cache_key, leagues)
     return leagues
+
+
+async def get_match_result(match_id: str) -> Optional[Dict]:
+    """Get final result for a finished match"""
+
+    if not FOOTBALL_API_KEY:
+        return None
+
+    try:
+        # Convert string match_id to int if needed
+        match_id_int = int(match_id) if isinstance(match_id, str) else match_id
+
+        headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{FOOTBALL_DATA_BASE_URL}/matches/{match_id_int}",
+                headers=headers,
+                timeout=10.0
+            )
+
+            if response.status_code != 200:
+                return None
+
+            match = response.json()
+
+            # Only return result if match is finished
+            if match.get("status") != "FINISHED":
+                return None
+
+            return {
+                "home_team": match["homeTeam"]["name"],
+                "away_team": match["awayTeam"]["name"],
+                "home_goals": match["score"]["fullTime"]["home"],
+                "away_goals": match["score"]["fullTime"]["away"],
+                "home_ht": match["score"]["halfTime"]["home"],
+                "away_ht": match["score"]["halfTime"]["away"],
+                "status": "finished",
+            }
+
+    except Exception as e:
+        logger.error(f"Error fetching result for match {match_id}: {e}")
+        return None
+
+
+async def fetch_team_form(team_name: str, league_code: str = None) -> Optional[Dict]:
+    """Fetch recent form for a team"""
+
+    if not FOOTBALL_API_KEY:
+        return None
+
+    # Get recent finished matches
+    today = datetime.utcnow()
+    date_from = (today - timedelta(days=60)).strftime("%Y-%m-%d")
+    date_to = today.strftime("%Y-%m-%d")
+
+    try:
+        matches = await fetch_matches(date_from=date_from, date_to=date_to, league=league_code)
+
+        # Filter matches for this team
+        team_matches = [
+            m for m in matches
+            if (m["home_team"]["name"] == team_name or m["away_team"]["name"] == team_name)
+            and m["status"] == "finished"
+        ][-10:]  # Last 10 matches
+
+        if not team_matches:
+            return None
+
+        # Calculate form statistics
+        wins, draws, losses = 0, 0, 0
+        goals_scored, goals_conceded = 0, 0
+        home_wins, home_matches = 0, 0
+        btts_count, over25_count = 0, 0
+
+        for m in team_matches:
+            is_home = m["home_team"]["name"] == team_name
+            home_score = m["home_score"] or 0
+            away_score = m["away_score"] or 0
+            total = home_score + away_score
+
+            if is_home:
+                home_matches += 1
+                goals_scored += home_score
+                goals_conceded += away_score
+                if home_score > away_score:
+                    wins += 1
+                    home_wins += 1
+                elif home_score == away_score:
+                    draws += 1
+                else:
+                    losses += 1
+            else:
+                goals_scored += away_score
+                goals_conceded += home_score
+                if away_score > home_score:
+                    wins += 1
+                elif home_score == away_score:
+                    draws += 1
+                else:
+                    losses += 1
+
+            if home_score > 0 and away_score > 0:
+                btts_count += 1
+            if total > 2.5:
+                over25_count += 1
+
+        n = len(team_matches)
+        return {
+            "wins": wins,
+            "draws": draws,
+            "losses": losses,
+            "goals_scored": round(goals_scored / n, 2) if n else 0,
+            "goals_conceded": round(goals_conceded / n, 2) if n else 0,
+            "home_win_rate": round(home_wins / home_matches * 100, 1) if home_matches else 50,
+            "away_win_rate": round((wins - home_wins) / (n - home_matches) * 100, 1) if (n - home_matches) > 0 else 50,
+            "btts_pct": round(btts_count / n * 100, 1) if n else 50,
+            "over25_pct": round(over25_count / n * 100, 1) if n else 50,
+            "matches_analyzed": n,
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching form for {team_name}: {e}")
+        return None

@@ -168,7 +168,7 @@ const app = {
         <div class="feat-icon"><span class="material-symbols-outlined">smart_toy</span></div>
         <div class="feat-info">
           <div class="feat-title">AI Chat</div>
-          <div class="feat-desc">Ask about matches, tips & standings</div>
+          <div class="feat-desc">Claude AI + ML-powered match analysis</div>
         </div>
         <span class="material-symbols-outlined feat-arrow">chevron_right</span>
       </div>
@@ -176,7 +176,7 @@ const app = {
         <div class="feat-icon" style="background:linear-gradient(135deg,var(--cyan),#0097A7)"><span class="material-symbols-outlined">sports_soccer</span></div>
         <div class="feat-info">
           <div class="feat-title">Match Analysis</div>
-          <div class="feat-desc">H2H stats, odds & AI predictions</div>
+          <div class="feat-desc">H2H stats, real odds & ensemble ML predictions</div>
         </div>
         <span class="material-symbols-outlined feat-arrow">chevron_right</span>
       </div>
@@ -381,8 +381,8 @@ const app = {
       messagesHtml = `
         <div class="chat-welcome">
           <div class="chat-welcome-icon"><span class="material-symbols-outlined">smart_toy</span></div>
-          <div class="chat-welcome-title">AI Assistant</div>
-          <div class="chat-welcome-desc">Ask me about matches, tips, standings or anything football!</div>
+          <div class="chat-welcome-title">AI Football Analyst</div>
+          <div class="chat-welcome-desc">Powered by Claude AI + ML predictions. Ask me about matches, get analysis, tips, or any football question!</div>
         </div>`;
     } else {
       messagesHtml = history.map((m) => this._renderChatBubble(m)).join('');
@@ -417,10 +417,18 @@ const app = {
     if (msg.role === 'user') {
       return `<div class="chat-bubble chat-user"><div class="chat-text">${esc(msg.text)}</div></div>`;
     }
-    // Bot message - render markdown-like (bold, newlines, bullets)
+    // Bot message - render markdown from Claude AI response
     let html = msg.text || '';
     html = esc(html);
+    // Markdown rendering: bold, italic, headers, bullets, code
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/^### (.*?)$/gm, '<div style="font-weight:700;font-size:13px;margin:8px 0 4px;color:var(--green)">$1</div>');
+    html = html.replace(/^## (.*?)$/gm, '<div style="font-weight:800;font-size:14px;margin:10px 0 4px;color:var(--green)">$1</div>');
+    html = html.replace(/^• (.*?)$/gm, '<div style="padding-left:12px">• $1</div>');
+    html = html.replace(/^- (.*?)$/gm, '<div style="padding-left:12px">• $1</div>');
+    html = html.replace(/`(.*?)`/g, '<code style="background:rgba(0,230,118,0.1);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+    html = html.replace(/---/g, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0">');
     html = html.replace(/\n/g, '<br>');
     return `<div class="chat-bubble chat-bot">
       <div class="chat-bot-avatar"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">smart_toy</span></div>
@@ -472,15 +480,16 @@ const app = {
     const typing = document.getElementById('chat-typing');
     if (typing) typing.remove();
 
-    if (resp && resp.reply) {
-      chatStorage.add({ role: 'bot', text: resp.reply, ts: Date.now() });
-      msgEl.insertAdjacentHTML('beforeend', this._renderChatBubble({ role: 'bot', text: resp.reply }));
+    if (resp && resp.response) {
+      chatStorage.add({ role: 'bot', text: resp.response, ts: Date.now() });
+      msgEl.insertAdjacentHTML('beforeend', this._renderChatBubble({ role: 'bot', text: resp.response }));
 
-      // Update suggestions
-      if (resp.suggestions && resp.suggestions.length > 0) {
-        sugEl.innerHTML = resp.suggestions.map((s) =>
-          `<div class="chat-sug" onclick="app.sendChatSuggestion('${esc(s)}')">${esc(s)}</div>`
-        ).join('');
+      // If matches context returned, show match suggestion chips
+      if (resp.matches_context && resp.matches_context.length > 0) {
+        sugEl.innerHTML = resp.matches_context.slice(0, 4).map((m) => {
+          const name = `${m.home_team || m.homeTeam || ''} vs ${m.away_team || m.awayTeam || ''}`;
+          return `<div class="chat-sug" onclick="app.sendChatSuggestion('Analyze ${esc(name)}')">${esc(name)}</div>`;
+        }).join('');
       }
     } else {
       const errMsg = "Sorry, I couldn't process that. Please try again.";
