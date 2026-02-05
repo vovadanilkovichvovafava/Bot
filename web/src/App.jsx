@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import Statistics from './pages/Statistics';
 import Favourites from './pages/Favourites';
 import LeagueMatches from './pages/LeagueMatches';
+import Premium from './pages/Premium';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -59,6 +60,9 @@ export default function App() {
       </Route>
       <Route path="/match/:id" element={
         <ProtectedRoute><MatchDetail /></ProtectedRoute>
+      } />
+      <Route path="/premium" element={
+        <ProtectedRoute><Premium /></ProtectedRoute>
       } />
       <Route path="/league/:code" element={
         <ProtectedRoute><LeagueMatches /></ProtectedRoute>

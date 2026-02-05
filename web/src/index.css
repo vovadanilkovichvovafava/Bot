@@ -71,3 +71,12 @@ input, select, textarea {
     @apply animate-pulse bg-gray-200 rounded-lg;
   }
 }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}

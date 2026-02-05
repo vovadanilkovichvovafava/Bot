@@ -1,13 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
 
 export default function ProTools() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('tools');
+  const [modal, setModal] = useState(null); // null | 'valueFinder' | 'betSlip' | 'bankroll' | 'predictions'
   const isPremium = user?.is_premium;
+
+  const handleToolClick = (toolName) => {
+    if (isPremium) return; // TODO: open tool
+    setModal(toolName);
+  };
+
+  const MODAL_INFO = {
+    valueFinder: { title: 'Value Finder is a Pro Feature', desc: 'Unlock Value Finder and all other Pro tools with Premium subscription.' },
+    betSlip: { title: 'Bet Slip Builder is a Pro Feature', desc: 'Unlock Bet Slip Builder and all other Pro tools with Premium subscription.' },
+    bankroll: { title: 'Bankroll Tracker is a Pro Feature', desc: 'Unlock Bankroll Tracker and all other Pro tools with Premium subscription.' },
+    predictions: { title: 'Prediction History is a Pro Feature', desc: 'Unlock Prediction History and all other Pro tools with Premium subscription.' },
+    kelly: { title: 'Kelly Calculator is a Pro Feature', desc: 'Unlock Kelly Calculator and all other Pro tools with Premium subscription.' },
+  };
 
   return (
     <div>
@@ -16,21 +28,20 @@ export default function ProTools() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold">Pro Tools</h1>
           {!isPremium && (
-            <button className="flex items-center gap-1 text-accent-gold text-sm font-semibold">
+            <button onClick={() => navigate('/premium')} className="flex items-center gap-1 text-accent-gold text-sm font-semibold">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497"/>
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
               </svg>
               Upgrade
             </button>
           )}
         </div>
 
-        {/* Plan Banner */}
         {isPremium ? (
-          <div className="bg-gradient-to-r from-amber-400 to-amber-500 rounded-2xl p-4 mb-4 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-amber-400 to-amber-500 rounded-2xl p-4 mb-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497"/>
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
               </svg>
               <div className="text-white">
                 <p className="font-bold">Premium Active</p>
@@ -42,13 +53,13 @@ export default function ProTools() {
             </svg>
           </div>
         ) : (
-          <div className="border-2 border-amber-200 bg-amber-50 rounded-2xl p-4 mb-4">
+          <div className="border-2 border-amber-200 bg-amber-50 rounded-2xl p-4 mb-2">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-gray-900">Free Plan</p>
                 <p className="text-sm text-gray-500">Upgrade to unlock all pro tools</p>
               </div>
-              <button className="bg-accent-gold text-white font-semibold px-4 py-2 rounded-lg text-sm">
+              <button onClick={() => navigate('/premium')} className="bg-accent-gold text-white font-semibold px-4 py-2 rounded-lg text-sm">
                 Upgrade
               </button>
             </div>
@@ -57,16 +68,7 @@ export default function ProTools() {
       </div>
 
       <div className="px-5 pt-2 pb-4 space-y-4">
-        {/* Betting Tools */}
         <h2 className="section-title">Betting Tools</h2>
-
-        <ToolCard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5v2.25h-7.5V6zM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0012 2.25z"/></svg>}
-          title="Kelly Calculator"
-          subtitle="Calculate optimal bet size based on edge and bankroll"
-          pro={!isPremium}
-          locked={!isPremium}
-        />
 
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>}
@@ -74,64 +76,108 @@ export default function ProTools() {
           subtitle="AI-powered analysis to find valuable betting opportunities"
           pro={!isPremium}
           locked={!isPremium}
+          onClick={() => handleToolClick('valueFinder')}
         />
-
-        <ToolCard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>}
-          title="Odds Converter"
-          subtitle="Convert between decimal, fractional, and American odds"
-          onClick={() => {}}
-        />
-
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>}
+          title="Bet Slip Builder"
+          subtitle="Build and manage your betting slips"
+          pro={!isPremium}
+          locked={!isPremium}
+          onClick={() => handleToolClick('betSlip')}
+        />
+        <ToolCard
+          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>}
           title="Bankroll Tracker"
           subtitle="Track your betting bankroll and performance"
           pro={!isPremium}
           locked={!isPremium}
+          onClick={() => handleToolClick('bankroll')}
         />
-
+        <ToolCard
+          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>}
+          title="Odds Converter"
+          subtitle="Convert between decimal, fractional, and American odds"
+        />
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           title="Prediction History"
           subtitle="View all your past AI predictions and their results"
           pro={!isPremium}
           locked={!isPremium}
-          onClick={() => navigate('/statistics')}
+          onClick={() => handleToolClick('predictions')}
         />
-
-        {/* Premium Benefits */}
-        <h2 className="section-title pt-4">Premium Benefits</h2>
-
-        <div className="space-y-3">
-          <BenefitItem
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.07-9.07l-1.757 1.757a4.5 4.5 0 010 6.364 4.5 4.5 0 01-6.364 0"/></svg>}
-            title="Unlimited AI Predictions"
-            subtitle="No daily limits on AI queries"
-          />
-          <BenefitItem
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>}
-            title="Priority Response"
-            subtitle="Faster AI response times"
-          />
-          <BenefitItem
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
-            title="Advanced Analytics"
-            subtitle="Detailed stats and performance tracking"
-          />
-          <BenefitItem
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>}
-            title="Priority Support"
-            subtitle="24/7 premium customer support"
-          />
-        </div>
-
-        <button className="w-full bg-gradient-to-r from-amber-400 to-amber-500 text-white font-bold py-4 rounded-2xl mt-4">
-          Upgrade to Premium
-        </button>
 
         <div className="h-4"/>
       </div>
+
+      {/* Bottom Sheet Modal */}
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setModal(null)}>
+          <div className="absolute inset-0 bg-black/40"/>
+          <div
+            className="relative bg-white rounded-t-3xl w-full max-w-lg px-6 pt-3 pb-8 animate-slideUp"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-6"/>
+
+            {/* Lock icon */}
+            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5">
+              <svg className="w-10 h-10 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd"/>
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+              {MODAL_INFO[modal]?.title}
+            </h2>
+            <p className="text-gray-500 text-center mb-6">
+              {MODAL_INFO[modal]?.desc}
+            </p>
+
+            {/* Features list */}
+            <div className="bg-amber-50 rounded-2xl p-4 space-y-3 mb-6">
+              <FeatureRow label="AI Value Finder"/>
+              <FeatureRow label="Bet Slip Builder"/>
+              <FeatureRow label="Bankroll Tracker"/>
+              <FeatureRow label="Unlimited AI Predictions"/>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={() => { setModal(null); navigate('/premium'); }}
+              className="w-full bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+              </svg>
+              Unlock Premium
+            </button>
+
+            <button onClick={() => setModal(null)} className="w-full text-primary-600 font-semibold py-3 mt-2">
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FeatureRow({ label }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+        </svg>
+        <span className="font-medium text-gray-900">{label}</span>
+      </div>
+      <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd"/>
+      </svg>
     </div>
   );
 }
@@ -139,8 +185,8 @@ export default function ProTools() {
 function ToolCard({ icon, title, subtitle, pro, locked, onClick }) {
   return (
     <div
-      onClick={!locked ? onClick : undefined}
-      className={`card flex items-center gap-4 ${locked ? 'opacity-70' : 'cursor-pointer hover:shadow-md'} transition-shadow`}
+      onClick={onClick}
+      className={`card flex items-center gap-4 ${locked ? 'cursor-pointer' : onClick ? 'cursor-pointer hover:shadow-md' : ''} transition-shadow`}
     >
       <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
         {icon}
@@ -161,20 +207,6 @@ function ToolCard({ icon, title, subtitle, pro, locked, onClick }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
         </svg>
       )}
-    </div>
-  );
-}
-
-function BenefitItem({ icon, title, subtitle }) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 shrink-0">
-        {icon}
-      </div>
-      <div>
-        <p className="font-semibold text-gray-900">{title}</p>
-        <p className="text-sm text-gray-500">{subtitle}</p>
-      </div>
     </div>
   );
 }
