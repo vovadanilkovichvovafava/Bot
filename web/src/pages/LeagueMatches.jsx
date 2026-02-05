@@ -42,7 +42,7 @@ export default function LeagueMatches() {
 
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
-     <div className="flex-1 overflow-y-auto">
+     <div className="flex-1 min-h-0 overflow-y-auto">
       <div className="bg-white px-5 pt-4 pb-4">
         <div className="flex items-center gap-3 mb-2">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -54,7 +54,7 @@ export default function LeagueMatches() {
         </div>
       </div>
 
-      <div className="px-5 pt-4 space-y-4">
+      <div className="px-5 pt-4 pb-8 space-y-4">
         {loading ? (
           <div className="space-y-3">
             {[1,2,3,4].map(i => (

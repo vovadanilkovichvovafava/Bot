@@ -53,7 +53,7 @@ export default function MatchDetail() {
   if (loading) {
     return (
       <div className="h-screen flex flex-col bg-[#F0F2F5]">
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="bg-white px-5 pt-4 pb-6">
             <div className="shimmer h-6 w-48 mx-auto mb-4"/>
             <div className="shimmer h-32 w-full rounded-xl"/>
@@ -73,7 +73,7 @@ export default function MatchDetail() {
 
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
-     <div className="flex-1 overflow-y-auto">
+     <div className="flex-1 min-h-0 overflow-y-auto">
       {/* Header */}
       <div className="bg-white px-5 pt-4 pb-6">
         <div className="flex items-center justify-between mb-4">
