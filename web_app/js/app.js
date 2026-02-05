@@ -714,6 +714,9 @@ const app = {
       return;
     }
 
+    // Store match data for AI analysis
+    this._currentMatch = match;
+
     const h2h = match.head_to_head;
 
     content.innerHTML = `
@@ -754,7 +757,7 @@ const app = {
         </div>
       </div>` : ''}
 
-      <div class="section-label">AI PREDICTION</div>
+      <div class="section-label">AI ANALYSIS</div>
       <div id="detail-prediction">
         ${api.isLoggedIn()
           ? `<button class="btn btn-ai" onclick="app.getMatchPrediction(${matchId})">
@@ -770,66 +773,66 @@ const app = {
 
   async getMatchPrediction(matchId) {
     const c = document.getElementById('detail-prediction');
-    c.innerHTML = '<div class="loader"><div class="spinner"></div>AI analyzing match data...</div>';
+    c.innerHTML = '<div class="loader"><div class="spinner"></div><div style="margin-top:8px;color:var(--green);font-size:13px">Claude AI analyzing match...</div></div>';
 
-    const pred = await api.getPrediction(matchId);
-    if (!pred) {
+    const match = this._currentMatch;
+    const homeName = match?.home_team?.name || 'Home';
+    const awayName = match?.away_team?.name || 'Away';
+    const leagueCode = match?.league_code || match?.competition?.code || '';
+    const matchDate = match?.match_date || '';
+
+    // Call real Claude AI via /chat/send with match context
+    const matchInfo = {
+      match_id: String(matchId),
+      home_team: homeName,
+      away_team: awayName,
+      league_code: leagueCode,
+      match_date: matchDate,
+    };
+
+    const message = `Analyze the match ${homeName} vs ${awayName}`;
+    const resp = await api.sendChat(message, matchInfo);
+
+    if (!resp || !resp.response) {
       c.innerHTML = `<div class="card" style="text-align:center;padding:20px">
-        <p style="color:var(--red)">Failed to get prediction</p>
+        <p style="color:var(--red)">Failed to get AI analysis</p>
         <button class="btn btn-outline" style="margin-top:10px;max-width:200px;margin:10px auto 0" onclick="app.getMatchPrediction(${matchId})">Retry</button>
       </div>`;
       return;
     }
 
-    predStorage.save(pred);
+    // Save to local prediction storage
+    predStorage.save({
+      id: matchId,
+      match_id: matchId,
+      home_team: homeName,
+      away_team: awayName,
+      league: match?.league || '',
+      analysis: resp.response,
+      created_at: new Date().toISOString(),
+    });
 
-    const betName = BET_NAMES[pred.bet_type] || pred.bet_name || pred.bet_type;
-    const confCls = confClass(pred.confidence);
-    const factors = pred.factors || {};
+    // Render Claude AI response with markdown
+    let html = esc(resp.response);
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/^### (.*?)$/gm, '<div style="font-weight:700;font-size:13px;margin:8px 0 4px;color:var(--green)">$1</div>');
+    html = html.replace(/^## (.*?)$/gm, '<div style="font-weight:800;font-size:14px;margin:10px 0 4px;color:var(--green)">$1</div>');
+    html = html.replace(/^• (.*?)$/gm, '<div style="padding-left:12px">• $1</div>');
+    html = html.replace(/^- (.*?)$/gm, '<div style="padding-left:12px">• $1</div>');
+    html = html.replace(/`(.*?)`/g, '<code style="background:rgba(0,230,118,0.1);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+    html = html.replace(/---/g, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0">');
+    html = html.replace(/\n/g, '<br>');
 
     c.innerHTML = `
-      <div class="card-glow ai-prediction-card">
-        <div class="ai-pick-label">AI PICK</div>
-        <div class="ai-pick-bet">${betName}</div>
-        <div class="ai-pick-conf ${confCls}">${Math.round(pred.confidence)}%</div>
-        <div class="ai-pick-prob-label">PROBABILITY</div>
-        ${pred.odds ? `<div class="ai-pick-odds">Odds: ${parseFloat(pred.odds).toFixed(2)}</div>` : ''}
+      <div class="card-glow ai-prediction-card" style="padding:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="material-symbols-outlined" style="font-size:20px;color:var(--green)">smart_toy</span>
+          <span style="font-weight:700;font-size:15px;color:var(--green)">AI Analysis</span>
+          <span style="margin-left:auto;font-size:11px;padding:3px 8px;background:rgba(0,230,118,0.15);border-radius:10px;color:var(--green);font-weight:600">Claude AI</span>
+        </div>
+        <div class="ai-response-text" style="font-size:13px;line-height:1.6;color:var(--text)">${html}</div>
       </div>
-
-      ${factors.home_strength ? `
-      <div class="card factor-card">
-        <div class="factor-title">ANALYSIS BREAKDOWN</div>
-        <div class="factor-row">
-          <span class="factor-label">Home Strength</span>
-          <div class="factor-bar"><div class="factor-fill" style="width:${factors.home_strength}%;background:var(--green)"></div></div>
-          <span class="factor-pct">${factors.home_strength}%</span>
-        </div>
-        <div class="factor-row">
-          <span class="factor-label">Away Strength</span>
-          <div class="factor-bar"><div class="factor-fill" style="width:${factors.away_strength}%;background:var(--cyan)"></div></div>
-          <span class="factor-pct">${factors.away_strength}%</span>
-        </div>
-        <div class="factor-row">
-          <span class="factor-label">Draw Chance</span>
-          <div class="factor-bar"><div class="factor-fill" style="width:${factors.draw_chance}%;background:var(--gold)"></div></div>
-          <span class="factor-pct">${factors.draw_chance}%</span>
-        </div>
-        <div class="factor-row">
-          <span class="factor-label">Goals Potential</span>
-          <div class="factor-bar"><div class="factor-fill" style="width:${factors.goals_potential}%;background:var(--orange)"></div></div>
-          <span class="factor-pct">${factors.goals_potential}%</span>
-        </div>
-        ${factors.data_points > 0 ? `<div class="factor-data">Based on ${factors.data_points} historical matches</div>` : ''}
-      </div>` : ''}
-
-      ${pred.reasoning ? `
-      <div class="card reasoning-card">
-        <div class="reasoning-title">
-          <span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">auto_awesome</span>
-          AI REASONING
-        </div>
-        <div class="reasoning-text">${esc(pred.reasoning)}</div>
-      </div>` : ''}
 
       <button class="btn btn-outline" style="margin-top:12px" onclick="app.getMatchPrediction(${matchId})">
         <span class="material-symbols-outlined">refresh</span> New Analysis
@@ -870,6 +873,22 @@ const app = {
   },
 
   renderPredictionCard(p) {
+    // New Claude AI analysis format
+    if (p.analysis) {
+      let preview = p.analysis.substring(0, 150).replace(/\*\*/g, '').replace(/\n/g, ' ');
+      if (p.analysis.length > 150) preview += '...';
+      return `
+        <div class="card ai-card">
+          <div class="ai-card-header">
+            <span class="ai-card-match">${esc(p.home_team)} vs ${esc(p.away_team)}</span>
+            <span class="badge-sm" style="background:rgba(0,230,118,0.15);color:var(--green)">Claude AI</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-sec);line-height:1.5;padding:8px 0">${esc(preview)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${new Date(p.created_at).toLocaleDateString()}</div>
+        </div>
+      `;
+    }
+    // Legacy structured prediction format
     return `
       <div class="card ai-card">
         <div class="ai-card-header">
