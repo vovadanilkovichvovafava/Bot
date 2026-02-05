@@ -52,10 +52,12 @@ export default function MatchDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F0F2F5]">
-        <div className="bg-white px-5 pt-4 pb-6">
-          <div className="shimmer h-6 w-48 mx-auto mb-4"/>
-          <div className="shimmer h-32 w-full rounded-xl"/>
+      <div className="h-screen flex flex-col bg-[#F0F2F5]">
+        <div className="flex-1 overflow-y-auto">
+          <div className="bg-white px-5 pt-4 pb-6">
+            <div className="shimmer h-6 w-48 mx-auto mb-4"/>
+            <div className="shimmer h-32 w-full rounded-xl"/>
+          </div>
         </div>
       </div>
     );
@@ -63,14 +65,15 @@ export default function MatchDetail() {
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-[#F0F2F5]">
         <p className="text-gray-500">Match not found</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] pb-8">
+    <div className="h-screen flex flex-col bg-[#F0F2F5]">
+     <div className="flex-1 overflow-y-auto">
       {/* Header */}
       <div className="bg-white px-5 pt-4 pb-6">
         <div className="flex items-center justify-between mb-4">
@@ -96,7 +99,6 @@ export default function MatchDetail() {
 
         {/* Match Info Card */}
         <div className="card border border-gray-100">
-          <p className="text-primary-600 font-semibold text-center text-sm">{match.league}</p>
           <p className="text-gray-500 text-center text-sm">{formatDate(match.match_date)} &bull; {formatTime(match.match_date)}</p>
 
           <div className="flex items-center justify-between mt-4 px-2">
@@ -213,10 +215,11 @@ export default function MatchDetail() {
           )}
         </div>
 
-        <p className="text-center text-gray-400 text-xs px-4">
+        <p className="text-center text-gray-400 text-xs px-4 pb-6">
           Please bet responsibly. Predictions do not guarantee results.
         </p>
       </div>
+     </div>
     </div>
   );
 }

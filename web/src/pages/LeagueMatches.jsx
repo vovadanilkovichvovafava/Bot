@@ -41,7 +41,8 @@ export default function LeagueMatches() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] pb-8">
+    <div className="h-screen flex flex-col bg-[#F0F2F5]">
+     <div className="flex-1 overflow-y-auto">
       <div className="bg-white px-5 pt-4 pb-4">
         <div className="flex items-center gap-3 mb-2">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -77,6 +78,7 @@ export default function LeagueMatches() {
           ))
         )}
       </div>
+     </div>
     </div>
   );
 }
