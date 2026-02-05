@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import footballApi from '../api/footballApi';
 import MatchCard from '../components/MatchCard';
 
 const LEAGUES = [
@@ -16,13 +17,20 @@ const LEAGUES = [
 export default function Matches() {
   const [tab, setTab] = useState('today');
   const [matches, setMatches] = useState([]);
+  const [liveFixtures, setLiveFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [liveLoading, setLiveLoading] = useState(true);
   const navigate = useNavigate();
+  const liveInterval = useRef(null);
 
   useEffect(() => {
-    if (tab === 'today' || tab === 'live') {
-      loadMatches();
-    }
+    if (tab === 'today') loadMatches();
+    if (tab === 'live') loadLive();
+
+    // Cleanup interval on tab change
+    return () => {
+      if (liveInterval.current) clearInterval(liveInterval.current);
+    };
   }, [tab]);
 
   const loadMatches = async () => {
@@ -37,13 +45,38 @@ export default function Matches() {
     }
   };
 
-  const liveMatches = matches.filter(m =>
-    ['in_play', 'live', 'paused', 'halftime'].includes(m.status?.toLowerCase())
-  );
+  const loadLive = async () => {
+    setLiveLoading(true);
+    try {
+      const data = await footballApi.getLiveFixtures();
+      setLiveFixtures(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLiveLoading(false);
+    }
+
+    // Auto-refresh every 30 seconds
+    if (liveInterval.current) clearInterval(liveInterval.current);
+    liveInterval.current = setInterval(async () => {
+      try {
+        const data = await footballApi.getLiveFixtures();
+        setLiveFixtures(data);
+      } catch (_) {}
+    }, 30000);
+  };
+
+  // Group live fixtures by league
+  const liveByLeague = liveFixtures.reduce((acc, f) => {
+    const key = f.league.name;
+    if (!acc[key]) acc[key] = { league: f.league, fixtures: [] };
+    acc[key].fixtures.push(f);
+    return acc;
+  }, {});
 
   const tabs = [
     { key: 'today', label: 'Today' },
-    { key: 'live', label: 'Live' },
+    { key: 'live', label: 'Live', count: liveFixtures.length },
     { key: 'leagues', label: 'Leagues' },
   ];
 
@@ -57,11 +90,16 @@ export default function Matches() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-3 text-sm font-medium relative ${
+              className={`flex-1 py-3 text-sm font-medium relative flex items-center justify-center gap-1.5 ${
                 tab === t.key ? 'text-primary-600' : 'text-gray-400'
               }`}
             >
               {t.label}
+              {t.count > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {t.count}
+                </span>
+              )}
               {tab === t.key && (
                 <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-600 rounded-full"/>
               )}
@@ -80,7 +118,7 @@ export default function Matches() {
                 ))}
               </div>
             ) : matches.length === 0 ? (
-              <EmptyState icon="ball" title="No Matches Today" subtitle="Check back later for upcoming matches"/>
+              <EmptyState title="No Matches Today" subtitle="Check back later for upcoming matches"/>
             ) : (
               <div className="space-y-3">
                 {matches.map(match => (
@@ -93,18 +131,36 @@ export default function Matches() {
 
         {tab === 'live' && (
           <>
-            {loading ? (
+            {liveLoading ? (
               <div className="space-y-3">
-                {[1,2].map(i => (
+                {[1,2,3].map(i => (
                   <div key={i} className="card"><div className="shimmer h-16 w-full"/></div>
                 ))}
+                <p className="text-center text-gray-400 text-sm">Loading live matches...</p>
               </div>
-            ) : liveMatches.length === 0 ? (
-              <EmptyState icon="ball" title="No Live Matches" subtitle="There are no matches currently in play"/>
+            ) : liveFixtures.length === 0 ? (
+              <EmptyState title="No Live Matches" subtitle="There are no matches currently in play"/>
             ) : (
-              <div className="space-y-3">
-                {liveMatches.map(match => (
-                  <MatchCard key={match.id} match={match} compact/>
+              <div className="space-y-4">
+                {/* Auto-refresh indicator */}
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
+                  Live &bull; updates every 30s
+                </div>
+
+                {Object.values(liveByLeague).map(({ league, fixtures }) => (
+                  <div key={league.id}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <img src={league.logo} alt="" className="w-5 h-5 object-contain"/>
+                      <span className="text-xs font-semibold text-gray-500 uppercase">{league.name}</span>
+                      <img src={league.flag} alt="" className="w-4 h-3 object-contain ml-auto"/>
+                    </div>
+                    <div className="space-y-2">
+                      {fixtures.map(f => (
+                        <LiveMatchCard key={f.fixture.id} fixture={f}/>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -136,7 +192,71 @@ export default function Matches() {
   );
 }
 
-function EmptyState({ icon, title, subtitle }) {
+function LiveMatchCard({ fixture }) {
+  const f = fixture;
+  const elapsed = f.fixture.status.elapsed;
+  const statusShort = f.fixture.status.short;
+
+  const minuteDisplay = statusShort === 'HT' ? 'HT' : elapsed ? `${elapsed}'` : statusShort;
+
+  return (
+    <div className="card border border-red-100">
+      <div className="flex items-center gap-3">
+        {/* Home */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <img src={f.teams.home.logo} alt="" className="w-6 h-6 object-contain"/>
+            <span className={`text-sm font-medium ${f.teams.home.winner ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
+              {f.teams.home.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <img src={f.teams.away.logo} alt="" className="w-6 h-6 object-contain"/>
+            <span className={`text-sm font-medium ${f.teams.away.winner ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
+              {f.teams.away.name}
+            </span>
+          </div>
+        </div>
+
+        {/* Score */}
+        <div className="text-right">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-gray-900">{f.goals.home ?? 0}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-lg font-bold text-gray-900">{f.goals.away ?? 0}</span>
+          </div>
+        </div>
+
+        {/* Minute */}
+        <div className="w-12 text-center">
+          <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center justify-center gap-1">
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"/>
+            {minuteDisplay}
+          </div>
+        </div>
+      </div>
+
+      {/* Events (last 3) */}
+      {f.events && f.events.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-50 flex gap-2 overflow-x-auto">
+          {f.events.slice(-3).map((ev, i) => (
+            <span key={i} className="text-[10px] text-gray-400 whitespace-nowrap flex items-center gap-1">
+              <span className="font-semibold">{ev.time.elapsed}'</span>
+              {ev.type === 'Goal' && <span>&#9917;</span>}
+              {ev.type === 'Card' && ev.detail === 'Yellow Card' && <span className="w-2 h-2.5 bg-yellow-400 rounded-sm inline-block"/>}
+              {ev.type === 'Card' && ev.detail === 'Red Card' && <span className="w-2 h-2.5 bg-red-500 rounded-sm inline-block"/>}
+              {ev.type === 'subst' && <span>&#8644;</span>}
+              {ev.player?.name?.split(' ').pop()}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ title, subtitle }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
