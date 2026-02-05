@@ -45,25 +45,20 @@ class SettingsState {
 
 // Settings notifier
 class SettingsNotifier extends StateNotifier<SettingsState> {
-  final SharedPreferences? _prefs;
+  final SharedPreferences _prefs;
 
-  SettingsNotifier(SharedPreferences prefs) : _prefs = prefs, super(const SettingsState()) {
+  SettingsNotifier(this._prefs) : super(const SettingsState()) {
     _loadSettings();
   }
 
-  // Factory for when SharedPreferences is not yet available
-  SettingsNotifier.withDefaults() : _prefs = null, super(const SettingsState());
-
   void _loadSettings() {
-    if (_prefs == null) return;
-
-    final language = _prefs!.getString('language') ?? 'en';
-    final timezone = _prefs!.getString('timezone') ?? 'UTC';
-    final themeModeIndex = _prefs!.getInt('themeMode') ?? 0;
-    final notificationsEnabled = _prefs!.getBool('notificationsEnabled') ?? true;
-    final minOdds = _prefs!.getDouble('minOdds') ?? 1.5;
-    final maxOdds = _prefs!.getDouble('maxOdds') ?? 3.0;
-    final riskLevel = _prefs!.getString('riskLevel') ?? 'medium';
+    final language = _prefs.getString('language') ?? 'en';
+    final timezone = _prefs.getString('timezone') ?? 'UTC';
+    final themeModeIndex = _prefs.getInt('themeMode') ?? 0;
+    final notificationsEnabled = _prefs.getBool('notificationsEnabled') ?? true;
+    final minOdds = _prefs.getDouble('minOdds') ?? 1.5;
+    final maxOdds = _prefs.getDouble('maxOdds') ?? 3.0;
+    final riskLevel = _prefs.getString('riskLevel') ?? 'medium';
 
     state = SettingsState(
       language: language,
@@ -77,37 +72,37 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> setLanguage(String language) async {
-    await _prefs?.setString('language', language);
+    await _prefs.setString('language', language);
     state = state.copyWith(language: language);
   }
 
   Future<void> setTimezone(String timezone) async {
-    await _prefs?.setString('timezone', timezone);
+    await _prefs.setString('timezone', timezone);
     state = state.copyWith(timezone: timezone);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
-    await _prefs?.setInt('themeMode', mode.index);
+    await _prefs.setInt('themeMode', mode.index);
     state = state.copyWith(themeMode: mode);
   }
 
   Future<void> setNotificationsEnabled(bool enabled) async {
-    await _prefs?.setBool('notificationsEnabled', enabled);
+    await _prefs.setBool('notificationsEnabled', enabled);
     state = state.copyWith(notificationsEnabled: enabled);
   }
 
   Future<void> setMinOdds(double odds) async {
-    await _prefs?.setDouble('minOdds', odds);
+    await _prefs.setDouble('minOdds', odds);
     state = state.copyWith(minOdds: odds);
   }
 
   Future<void> setMaxOdds(double odds) async {
-    await _prefs?.setDouble('maxOdds', odds);
+    await _prefs.setDouble('maxOdds', odds);
     state = state.copyWith(maxOdds: odds);
   }
 
   Future<void> setRiskLevel(String level) async {
-    await _prefs?.setString('riskLevel', level);
+    await _prefs.setString('riskLevel', level);
     state = state.copyWith(riskLevel: level);
   }
 }
@@ -117,11 +112,11 @@ final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async 
   return await SharedPreferences.getInstance();
 });
 
-// Async settings provider that properly handles loading/error states
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
   final prefsAsync = ref.watch(sharedPreferencesProvider);
-  return prefsAsync.maybeWhen(
+  return prefsAsync.when(
     data: (prefs) => SettingsNotifier(prefs),
-    orElse: () => SettingsNotifier.withDefaults(),
+    loading: () => SettingsNotifier(throw UnimplementedError()),
+    error: (_, __) => SettingsNotifier(throw UnimplementedError()),
   );
 });

@@ -1,110 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/api_service.dart';
-
-// Favorites state
-class FavoritesState {
-  final List<String> teams;
-  final List<Map<String, dynamic>> leagues;
-  final bool isLoading;
-  final String? error;
-
-  const FavoritesState({
-    this.teams = const [],
-    this.leagues = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  FavoritesState copyWith({
-    List<String>? teams,
-    List<Map<String, dynamic>>? leagues,
-    bool? isLoading,
-    String? error,
-  }) {
-    return FavoritesState(
-      teams: teams ?? this.teams,
-      leagues: leagues ?? this.leagues,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
-
-// Favorites notifier
-class FavoritesNotifier extends StateNotifier<FavoritesState> {
-  final ApiService _api;
-
-  FavoritesNotifier(this._api) : super(const FavoritesState()) {
-    loadFavorites();
-  }
-
-  Future<void> loadFavorites() async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final teams = await _api.getFavoriteTeams();
-      final leagues = await _api.getFavoriteLeagues();
-      state = state.copyWith(
-        teams: teams,
-        leagues: leagues,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> addTeam(String teamName) async {
-    try {
-      await _api.addFavoriteTeam(teamName);
-      state = state.copyWith(teams: [...state.teams, teamName]);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> removeTeam(String teamName) async {
-    try {
-      await _api.removeFavoriteTeam(teamName);
-      state = state.copyWith(
-        teams: state.teams.where((t) => t != teamName).toList(),
-      );
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> addLeague(String leagueCode) async {
-    try {
-      await _api.addFavoriteLeague(leagueCode);
-      await loadFavorites(); // Reload to get full league info
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
-  Future<void> removeLeague(String leagueCode) async {
-    try {
-      await _api.removeFavoriteLeague(leagueCode);
-      state = state.copyWith(
-        leagues: state.leagues.where((l) => l['code'] != leagueCode).toList(),
-      );
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-}
-
-// Provider
-final favoritesProvider = StateNotifierProvider<FavoritesNotifier, FavoritesState>((ref) {
-  final api = ref.watch(apiServiceProvider);
-  return FavoritesNotifier(api);
-});
-
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 
@@ -114,7 +10,7 @@ class FavoritesScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Favourites'),
+          title: const Text('Favorites'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Teams'),
@@ -133,18 +29,19 @@ class FavoritesScreen extends ConsumerWidget {
   }
 }
 
-class _FavoriteTeamsTab extends ConsumerWidget {
+class _FavoriteTeamsTab extends StatelessWidget {
   const _FavoriteTeamsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(favoritesProvider);
+  Widget build(BuildContext context) {
+    // TODO: Fetch from API
+    final teams = [
+      'Manchester City',
+      'Real Madrid',
+      'Barcelona',
+    ];
 
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.teams.isEmpty) {
+    if (teams.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -156,153 +53,105 @@ class _FavoriteTeamsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No favourite teams',
+              'No favorite teams yet',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'Add teams for quick access',
+              'Add teams to get personalized predictions',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _showAddTeamDialog(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Add team'),
             ),
           ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => ref.read(favoritesProvider.notifier).loadFavorites(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: state.teams.length + 1,
-        itemBuilder: (context, index) {
-          if (index == state.teams.length) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: OutlinedButton.icon(
-                onPressed: () => _showAddTeamDialog(context, ref),
-                icon: const Icon(Icons.add),
-                label: const Text('Add team'),
-              ),
-            );
-          }
-
-          final team = state.teams[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.sports_soccer),
-              ),
-              title: Text(team),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () {
-                  ref.read(favoritesProvider.notifier).removeTeam(team);
-                },
-              ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: teams.length,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(
+              child: Icon(Icons.sports_soccer),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showAddTeamDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add team'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Team name',
-            border: OutlineInputBorder(),
+            title: Text(teams[index]),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () {
+                // TODO: Remove from favorites
+              },
+            ),
           ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref.read(favoritesProvider.notifier).addTeam(controller.text.trim());
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class _FavoriteLeaguesTab extends ConsumerWidget {
+class _FavoriteLeaguesTab extends StatelessWidget {
   const _FavoriteLeaguesTab();
 
-  static const _availableLeagues = [
-    ('PL', 'Premier League', '🏴󠁧󠁢󠁥󠁮󠁧󠁿'),
-    ('PD', 'La Liga', '🇪🇸'),
-    ('BL1', 'Bundesliga', '🇩🇪'),
-    ('SA', 'Serie A', '🇮🇹'),
-    ('FL1', 'Ligue 1', '🇫🇷'),
-    ('CL', 'Champions League', '🏆'),
-    ('EL', 'Europa League', '🥈'),
-  ];
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(favoritesProvider);
-    final favoriteCodes = state.leagues.map((l) => l['code'] as String?).toSet();
+  Widget build(BuildContext context) {
+    // TODO: Fetch from API
+    final leagues = [
+      ('PL', 'Premier League'),
+      ('CL', 'Champions League'),
+    ];
 
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => ref.read(favoritesProvider.notifier).loadFavorites(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _availableLeagues.length,
-        itemBuilder: (context, index) {
-          final league = _availableLeagues[index];
-          final isFavorite = favoriteCodes.contains(league.$1);
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Text(league.$3, style: const TextStyle(fontSize: 28)),
-              title: Text(league.$2),
-              subtitle: Text(league.$1),
-              trailing: IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.star : Icons.star_outline,
-                  color: isFavorite ? Colors.amber : Colors.grey,
-                ),
-                onPressed: () {
-                  if (isFavorite) {
-                    ref.read(favoritesProvider.notifier).removeLeague(league.$1);
-                  } else {
-                    ref.read(favoritesProvider.notifier).addLeague(league.$1);
-                  }
-                },
+    if (leagues.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No favorite leagues yet',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add leagues to filter predictions',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-          );
-        },
-      ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: leagues.length,
+      itemBuilder: (context, index) {
+        final league = leagues[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(
+              child: Icon(Icons.emoji_events),
+            ),
+            title: Text(league.$2),
+            subtitle: Text(league.$1),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () {
+                // TODO: Remove from favorites
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

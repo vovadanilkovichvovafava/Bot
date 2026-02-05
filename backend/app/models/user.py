@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -20,7 +20,6 @@ class User(Base):
     daily_requests = Column(Integer, default=0)
     daily_limit = Column(Integer, default=10)
     bonus_predictions = Column(Integer, default=3)
-    last_request_date = Column(Date, nullable=True)  # For daily limit reset
 
     min_odds = Column(Float, default=1.5)
     max_odds = Column(Float, default=3.0)

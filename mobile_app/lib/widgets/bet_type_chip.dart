@@ -108,7 +108,7 @@ class BetTypeSelector extends StatelessWidget {
     super.key,
     this.selectedType,
     this.onSelected,
-    this.betTypes = const ['1', 'X', '2', 'OVER', 'UNDER', 'BTTS'],
+    this.betTypes = const ['П1', 'Х', 'П2', 'ТБ2.5', 'ТМ2.5', 'BTTS'],
   });
 
   @override
