@@ -12,7 +12,7 @@ export default function MatchDetail() {
   const { user } = useAuth();
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
-  const [prediction, setPrediction] = useState(null);
+  const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
   const [loading, setLoading] = useState(true);
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
@@ -97,12 +97,24 @@ export default function MatchDetail() {
   const getAnalysis = async () => {
     setPredicting(true);
     try {
+      // If enriched data hasn't loaded yet, try to fetch prediction directly
+      let apiPred = enriched?.prediction || null;
+      if (!apiPred && enriched?.fixtureId) {
+        try {
+          apiPred = await footballApi.getPrediction(enriched.fixtureId);
+        } catch (_) {}
+      }
+
       const prompt = buildAIPrompt();
       const data = await api.aiChat(prompt);
-      setPrediction({ analysis: data.response });
+      setPrediction({ apiPrediction: apiPred, claudeAnalysis: data.response });
     } catch (e) {
       console.error(e);
-      setPrediction({ analysis: 'Failed to get AI analysis. Please try again.' });
+      // Still show API-Football prediction even if Claude fails
+      setPrediction({
+        apiPrediction: enriched?.prediction || null,
+        claudeAnalysis: 'Failed to get AI analysis. Please try again.',
+      });
     } finally {
       setPredicting(false);
     }
@@ -152,7 +164,6 @@ export default function MatchDetail() {
   }
 
   const odds1x2 = getOdds1x2();
-  const pred = enriched?.prediction;
 
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
@@ -246,8 +257,6 @@ export default function MatchDetail() {
             predicting={predicting}
             getAnalysis={getAnalysis}
             user={user}
-            odds1x2={odds1x2}
-            pred={pred}
             formatDate={formatDate}
             formatTime={formatTime}
             statusLabel={statusLabel}
@@ -268,71 +277,60 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, odds1x2, pred, formatDate, formatTime, statusLabel }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel }) {
+  const pred = prediction?.apiPrediction;
+
   return (
     <>
-      {/* API-Football Prediction */}
-      {pred && (
+      {/* Combined AI Analysis - shown only after button click */}
+      {prediction ? (
         <div className="card border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 1l2.928 6.472L20 8.417l-5.12 4.602L16.18 20 10 16.333 3.82 20l1.3-6.981L0 8.417l7.072-.945z"/>
-              </svg>
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+            </svg>
+            <h3 className="font-bold text-gray-900">AI Analysis</h3>
+            <div className="ml-auto flex gap-1.5">
+              {pred && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">Data</span>}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-medium">Claude AI</span>
             </div>
-            <h3 className="font-bold text-gray-900">AI Prediction</h3>
-            <span className="ml-auto badge bg-amber-50 text-amber-700 text-[10px]">API-Football</span>
           </div>
 
-          {/* Win probability bars */}
-          {pred.predictions?.percent && (
-            <div className="space-y-2 mb-3">
-              <ProbBar label={match.home_team?.name} pct={parseInt(pred.predictions.percent.home)} color="bg-blue-500"/>
-              <ProbBar label="Draw" pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
-              <ProbBar label={match.away_team?.name} pct={parseInt(pred.predictions.percent.away)} color="bg-red-500"/>
+          {/* API-Football Prediction - win probability */}
+          {pred?.predictions?.percent && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Win Probability</p>
+              <div className="space-y-2">
+                <ProbBar label={match.home_team?.name} pct={parseInt(pred.predictions.percent.home)} color="bg-blue-500"/>
+                <ProbBar label="Draw" pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
+                <ProbBar label={match.away_team?.name} pct={parseInt(pred.predictions.percent.away)} color="bg-red-500"/>
+              </div>
             </div>
           )}
 
-          {pred.predictions?.advice && (
-            <div className="bg-amber-50 rounded-xl px-4 py-2.5 text-sm text-amber-800 font-medium">
+          {/* API-Football advice */}
+          {pred?.predictions?.advice && (
+            <div className="bg-amber-50 rounded-xl px-4 py-2.5 text-sm text-amber-800 font-medium mb-4">
               {pred.predictions.advice}
             </div>
           )}
 
           {/* Team comparison */}
-          {pred.comparison && (
-            <div className="mt-3 space-y-2">
+          {pred?.comparison && (
+            <div className="mb-4 space-y-2">
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Team Comparison</p>
               <CompareBar label="Form" home={pred.comparison.form?.home} away={pred.comparison.form?.away}/>
               <CompareBar label="Attack" home={pred.comparison.att?.home} away={pred.comparison.att?.away}/>
               <CompareBar label="Defense" home={pred.comparison.def?.home} away={pred.comparison.def?.away}/>
               <CompareBar label="Overall" home={pred.comparison.total?.home} away={pred.comparison.total?.away}/>
             </div>
           )}
-        </div>
-      )}
 
-      {enrichedLoading && !pred && (
-        <div className="card border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="shimmer h-5 w-5 rounded-full"/>
-            <div className="shimmer h-4 w-32"/>
-          </div>
-          <div className="shimmer h-20 w-full rounded-xl"/>
-        </div>
-      )}
-
-      {/* AI Analysis Section */}
-      {prediction ? (
-        <div className="card border border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            </svg>
-            <h3 className="font-bold text-gray-900">Claude AI Analysis</h3>
-            <span className="ml-auto badge bg-primary-100 text-primary-700 text-[10px]">Claude AI</span>
-          </div>
+          {/* Claude AI Analysis text */}
+          {(pred?.predictions || pred?.comparison) && <div className="border-t border-gray-100 my-4"/>}
+          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Expert Analysis</p>
           <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {prediction.analysis?.split('\n').map((line, i) => {
+            {prediction.claudeAnalysis?.split('\n').map((line, i) => {
               const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
               return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
             })}
@@ -345,9 +343,9 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
             </svg>
           </div>
-          <h3 className="font-bold text-lg mb-1">Claude AI Analysis</h3>
+          <h3 className="font-bold text-lg mb-1">AI Analysis</h3>
           <p className="text-gray-500 text-sm mb-1">
-            {enriched ? 'Powered by real match data & statistics' : 'Get detailed prediction & betting recommendation'}
+            {enriched ? 'Win probabilities, team comparison & expert analysis' : 'Get detailed prediction & betting recommendation'}
           </p>
           <div className="bg-blue-50 text-primary-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -357,7 +355,10 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
           </div>
           <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
             {predicting ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                Analyzing...
+              </>
             ) : (
               <>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
