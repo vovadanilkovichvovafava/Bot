@@ -15,7 +15,7 @@ class ApiConstants {
 /// App Constants
 class AppConstants {
   static const String appName = 'AI Betting Bot';
-  static const String version = '1.0.0';
+  static const String version = '1.1.0'; // Updated with real Football API
 
   // Cache durations
   static const Duration matchesCacheDuration = Duration(minutes: 2);
@@ -28,11 +28,11 @@ class AppConstants {
 /// Bet Types
 class BetTypes {
   static const Map<String, String> names = {
-    'П1': 'Home Win',
-    'П2': 'Away Win',
-    'Х': 'Draw',
-    'ТБ2.5': 'Over 2.5',
-    'ТМ2.5': 'Under 2.5',
+    '1': 'Home Win',
+    '2': 'Away Win',
+    'X': 'Draw',
+    'OVER': 'Over 2.5',
+    'UNDER': 'Under 2.5',
     'BTTS': 'Both Teams Score',
     '1X': 'Home or Draw',
     'X2': 'Away or Draw',

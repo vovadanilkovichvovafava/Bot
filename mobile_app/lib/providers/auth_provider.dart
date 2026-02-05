@@ -5,9 +5,6 @@ import '../services/api_service.dart';
 import '../models/user.dart';
 import '../utils/error_handler.dart';
 
-// Demo mode flag
-const bool kDemoMode = true;
-
 // Auth state
 class AuthState {
   final bool isAuthenticated;
@@ -65,11 +62,50 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       } else if (token != null) {
         _api.setToken(token);
-        final user = await _api.getCurrentUser();
-        state = AuthState(
-          isAuthenticated: true,
-          user: user,
-        );
+        try {
+          final user = await _api.getCurrentUser();
+          state = AuthState(
+            isAuthenticated: true,
+            user: user,
+          );
+        } catch (e) {
+          // Check if it's an authentication error (401)
+          final isAuthError = e.toString().contains('401') ||
+                              e.toString().contains('Unauthorized') ||
+                              e.toString().contains('Token');
+
+          if (isAuthError) {
+            // Token is invalid, clear it
+            await _storage.delete(key: 'access_token');
+            await _storage.delete(key: 'refresh_token');
+            _api.clearToken();
+            state = const AuthState();
+          } else {
+            // Network error - keep user logged in with cached token
+            // Create a placeholder user until we can refresh
+            state = AuthState(
+              isAuthenticated: true,
+              user: User(
+                id: -1,
+                email: '',
+                username: 'User',
+                language: 'en',
+                timezone: 'UTC',
+                isPremium: false,
+                dailyRequests: 0,
+                dailyLimit: 10,
+                bonusPredictions: 0,
+                minOdds: 1.5,
+                maxOdds: 3.0,
+                riskLevel: 'medium',
+                totalPredictions: 0,
+                correctPredictions: 0,
+                accuracy: 0,
+                createdAt: DateTime.now(),
+              ),
+            );
+          }
+        }
       } else {
         state = const AuthState();
       }
@@ -194,6 +230,60 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  // For testing purposes - activate premium locally
+  void activatePremiumForTesting() {
+    if (state.user == null) return;
+
+    final premiumUser = User(
+      id: state.user!.id,
+      email: state.user!.email,
+      username: state.user!.username,
+      language: state.user!.language,
+      timezone: state.user!.timezone,
+      isPremium: true,
+      premiumUntil: DateTime.now().add(const Duration(days: 30)),
+      dailyRequests: state.user!.dailyRequests,
+      dailyLimit: 999,
+      bonusPredictions: 999,
+      minOdds: state.user!.minOdds,
+      maxOdds: state.user!.maxOdds,
+      riskLevel: state.user!.riskLevel,
+      totalPredictions: state.user!.totalPredictions,
+      correctPredictions: state.user!.correctPredictions,
+      accuracy: state.user!.accuracy,
+      createdAt: state.user!.createdAt,
+    );
+
+    state = state.copyWith(user: premiumUser);
+  }
+
+  // For testing purposes - deactivate premium locally
+  void deactivatePremiumForTesting() {
+    if (state.user == null) return;
+
+    final freeUser = User(
+      id: state.user!.id,
+      email: state.user!.email,
+      username: state.user!.username,
+      language: state.user!.language,
+      timezone: state.user!.timezone,
+      isPremium: false,
+      premiumUntil: null,
+      dailyRequests: state.user!.dailyRequests,
+      dailyLimit: 3,
+      bonusPredictions: 0,
+      minOdds: state.user!.minOdds,
+      maxOdds: state.user!.maxOdds,
+      riskLevel: state.user!.riskLevel,
+      totalPredictions: state.user!.totalPredictions,
+      correctPredictions: state.user!.correctPredictions,
+      accuracy: state.user!.accuracy,
+      createdAt: state.user!.createdAt,
+    );
+
+    state = state.copyWith(user: freeUser);
   }
 }
 

@@ -1,34 +1,21 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
-    branches: [ main, master, claude/* ]
-    paths:
-      - 'mobile_app/**'
-      - '.github/workflows/build-apk.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'mobile_app/**'
+    branches: [ main, claude/* ]
   workflow_dispatch:
 
 jobs:
-  build-android:
-    name: Build Android
+  build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: mobile_app
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Flutter
@@ -36,38 +23,17 @@ jobs:
         with:
           flutter-version: '3.16.0'
           channel: 'stable'
-          cache: true
-
-      - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
-          echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
 
       - name: Get dependencies
+        working-directory: mobile_app
         run: flutter pub get
 
-      - name: Build APK (Debug)
-        run: flutter build apk --debug
-
-      - name: Build APK (Release)
+      - name: Build APK
+        working-directory: mobile_app
         run: flutter build apk --release
 
-      - name: Prepare artifacts
-        run: |
-          mkdir -p ../artifacts
-          cp build/app/outputs/flutter-apk/app-debug.apk ../artifacts/AI-Betting-Bot-debug.apk
-          cp build/app/outputs/flutter-apk/app-release.apk ../artifacts/AI-Betting-Bot-release.apk
-
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Android-Debug-APK
-          path: artifacts/AI-Betting-Bot-debug.apk
-          retention-days: 30
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-Release-APK
-          path: artifacts/AI-Betting-Bot-release.apk
-          retention-days: 30
+          name: app-release
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk

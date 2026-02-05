@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,11 +8,17 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/matches_screen.dart';
-import '../screens/match_detail_screen.dart';
-import '../screens/stats_screen.dart';
+import '../screens/live_matches_screen.dart';
+import '../screens/ai_chat_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/premium_screen.dart';
+import '../screens/calculators_screen.dart';
+import '../screens/bankroll_screen.dart';
+import '../screens/pro_tools_screen.dart';
+import '../screens/social_screen.dart';
+import '../screens/onboarding_screen.dart';
+import '../screens/stats_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -25,8 +32,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
 
-      // Allow splash screen
-      if (isSplash) return null;
+      // Allow splash screen and onboarding
+      if (isSplash || state.matchedLocation == '/onboarding') return null;
 
       // If not logged in and not on auth route, redirect to login
       if (!isLoggedIn && !isAuthRoute) {
@@ -44,6 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -65,8 +76,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MatchesScreen(),
           ),
           GoRoute(
-            path: '/stats',
-            builder: (context, state) => const StatsScreen(),
+            path: '/chat',
+            builder: (context, state) => const AiChatScreen(),
+          ),
+          GoRoute(
+            path: '/pro-tools',
+            builder: (context, state) => const ProToolsScreen(),
           ),
           GoRoute(
             path: '/favorites',
@@ -79,15 +94,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/match/:id',
-        builder: (context, state) {
-          final matchId = int.parse(state.pathParameters['id']!);
-          return MatchDetailScreen(matchId: matchId);
-        },
-      ),
-      GoRoute(
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/calculators',
+        builder: (context, state) => const CalculatorsScreen(),
+      ),
+      GoRoute(
+        path: '/bankroll',
+        builder: (context, state) => const BankrollScreen(),
+      ),
+      GoRoute(
+        path: '/social',
+        builder: (context, state) => const SocialScreen(),
+      ),
+      GoRoute(
+        path: '/stats',
+        builder: (context, state) => const StatsScreen(),
+      ),
+      GoRoute(
+        path: '/live',
+        builder: (context, state) => const LiveMatchesScreen(),
       ),
     ],
   );
@@ -100,9 +128,24 @@ class MainScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: NavigationBar(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+
+        final location = GoRouterState.of(context).matchedLocation;
+
+        // If not on home, go to home
+        if (!location.startsWith('/home')) {
+          context.go('/home');
+        } else {
+          // On home - show exit confirmation
+          _showExitDialog(context);
+        }
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: NavigationBar(
         selectedIndex: _calculateSelectedIndex(context),
         onDestinationSelected: (index) => _onItemTapped(index, context),
         destinations: const [
@@ -117,19 +160,44 @@ class MainScaffold extends StatelessWidget {
             label: 'Matches',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
+            icon: Icon(Icons.smart_toy_outlined),
+            selectedIcon: Icon(Icons.smart_toy),
+            label: 'AI Chat',
           ),
           NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star),
-            label: 'Favorites',
+            icon: Icon(Icons.workspace_premium_outlined),
+            selectedIcon: Icon(Icons.workspace_premium),
+            label: 'Pro Tools',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Settings',
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
+  void _showExitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App?'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Use SystemNavigator to exit properly
+              SystemNavigator.pop();
+            },
+            child: const Text('Exit'),
           ),
         ],
       ),
@@ -140,8 +208,8 @@ class MainScaffold extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/matches')) return 1;
-    if (location.startsWith('/stats')) return 2;
-    if (location.startsWith('/favorites')) return 3;
+    if (location.startsWith('/chat')) return 2;
+    if (location.startsWith('/pro-tools')) return 3;
     if (location.startsWith('/settings')) return 4;
     return 0;
   }
@@ -155,10 +223,10 @@ class MainScaffold extends StatelessWidget {
         context.go('/matches');
         break;
       case 2:
-        context.go('/stats');
+        context.go('/chat');
         break;
       case 3:
-        context.go('/favorites');
+        context.go('/pro-tools');
         break;
       case 4:
         context.go('/settings');

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user.dart';
@@ -6,22 +8,98 @@ import '../models/match.dart';
 import '../models/prediction.dart';
 import '../utils/constants.dart';
 
+/// Interceptor for automatic retry with exponential backoff
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  final int maxRetries;
+  final List<Duration> retryDelays;
+
+  RetryInterceptor({
+    required this.dio,
+    this.maxRetries = 3,
+    this.retryDelays = const [
+      Duration(seconds: 2),
+      Duration(seconds: 4),
+      Duration(seconds: 8),
+    ],
+  });
+
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    final retryCount = err.requestOptions.extra['retryCount'] ?? 0;
+
+    // Only retry on connection errors, timeouts, or 5xx server errors
+    final shouldRetry = _shouldRetry(err) && retryCount < maxRetries;
+
+    if (shouldRetry) {
+      final delay = retryDelays[retryCount < retryDelays.length ? retryCount : retryDelays.length - 1];
+      if (kDebugMode) debugPrint('Retry ${retryCount + 1}/$maxRetries after ${delay.inSeconds}s for ${err.requestOptions.path}');
+
+      await Future.delayed(delay);
+
+      // Clone request with updated retry count
+      final options = err.requestOptions;
+      options.extra['retryCount'] = retryCount + 1;
+
+      try {
+        final response = await dio.fetch(options);
+        return handler.resolve(response);
+      } catch (e) {
+        if (e is DioException) {
+          return handler.reject(e);
+        }
+        return handler.reject(DioException(
+          requestOptions: options,
+          error: e,
+          type: DioExceptionType.unknown,
+        ));
+      }
+    }
+
+    return handler.next(err);
+  }
+
+  bool _shouldRetry(DioException err) {
+    // Retry on connection errors
+    if (err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout) {
+      return true;
+    }
+
+    // Retry on 5xx server errors (Railway waking up often returns 502/503)
+    final statusCode = err.response?.statusCode;
+    if (statusCode != null && statusCode >= 500 && statusCode < 600) {
+      return true;
+    }
+
+    return false;
+  }
+}
+
 class ApiService {
   final Dio _dio;
   String? _token;
 
   ApiService() : _dio = Dio(BaseOptions(
     baseUrl: ApiConstants.baseUrl,
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
     headers: {
       'Content-Type': 'application/json',
     },
   )) {
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-    ));
+    // Add retry interceptor first
+    _dio.interceptors.add(RetryInterceptor(dio: _dio));
+
+    // Add logging in debug mode
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+      ));
+    }
   }
 
   void setToken(String token) {
@@ -90,10 +168,10 @@ class ApiService {
   // Matches
   Future<List<Match>> getMatches({String? date, String? league}) async {
     final params = <String, dynamic>{};
-    if (date != null) params['date'] = date;
     if (league != null) params['league'] = league;
+    params['days'] = 14; // Get matches for next 14 days
 
-    final response = await _dio.get('/matches', queryParameters: params);
+    final response = await _dio.get('/matches/upcoming', queryParameters: params);
     return (response.data as List).map((m) => Match.fromJson(m)).toList();
   }
 
@@ -104,6 +182,11 @@ class ApiService {
 
   Future<List<Match>> getTomorrowMatches() async {
     final response = await _dio.get('/matches/tomorrow');
+    return (response.data as List).map((m) => Match.fromJson(m)).toList();
+  }
+
+  Future<List<Match>> getLiveMatches() async {
+    final response = await _dio.get('/matches/live');
     return (response.data as List).map((m) => Match.fromJson(m)).toList();
   }
 
@@ -139,12 +222,12 @@ class ApiService {
 
   // Leagues
   Future<List<Map<String, dynamic>>> getLeagues() async {
-    final response = await _dio.get('/leagues');
+    final response = await _dio.get('/matches/leagues');
     return List<Map<String, dynamic>>.from(response.data);
   }
 
   Future<List<Map<String, dynamic>>> getStandings(String leagueCode) async {
-    final response = await _dio.get('/leagues/$leagueCode/standings');
+    final response = await _dio.get('/matches/standings/$leagueCode');
     return List<Map<String, dynamic>>.from(response.data);
   }
 
@@ -173,6 +256,79 @@ class ApiService {
 
   Future<void> removeFavoriteLeague(String leagueCode) async {
     await _dio.delete('/favorites/leagues/$leagueCode');
+  }
+
+  // Match Results (for auto-results feature)
+  Future<List<Map<String, dynamic>>> getMatchResults(List<int> matchIds) async {
+    if (matchIds.isEmpty) return [];
+
+    final response = await _dio.post('/matches/results', data: {
+      'match_ids': matchIds,
+    });
+    return List<Map<String, dynamic>>.from(response.data);
+  }
+
+  // AI Chat
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String message,
+    List<Map<String, String>> history = const [],
+    double? minOdds,
+    double? maxOdds,
+    String? riskLevel,
+    // Match info for ML data collection
+    String? matchId,
+    String? homeTeam,
+    String? awayTeam,
+    String? leagueCode,
+    String? matchDate,
+  }) async {
+    final data = <String, dynamic>{
+      'message': message,
+      'history': history,
+    };
+
+    // Add user preferences if provided
+    if (minOdds != null || maxOdds != null || riskLevel != null) {
+      data['preferences'] = {
+        'min_odds': minOdds ?? 1.5,
+        'max_odds': maxOdds ?? 3.0,
+        'risk_level': riskLevel ?? 'medium',
+      };
+    }
+
+    // Add match info for ML data collection (from match detail page)
+    if (homeTeam != null && awayTeam != null) {
+      data['match_info'] = {
+        'match_id': matchId,
+        'home_team': homeTeam,
+        'away_team': awayTeam,
+        'league_code': leagueCode,
+        'match_date': matchDate,
+      };
+    }
+
+    final response = await _dio.post('/chat/send', data: data);
+    return response.data;
+  }
+
+  Future<bool> isChatAvailable() async {
+    try {
+      final response = await _dio.get('/chat/status');
+      return response.data['available'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get AI request limits for current user
+  Future<Map<String, dynamic>> getAiLimits() async {
+    final response = await _dio.get('/users/me/ai-limits');
+    return response.data;
+  }
+
+  /// Reset own daily AI limit (for testing)
+  Future<void> resetAiLimit() async {
+    await _dio.post('/users/me/reset-limit');
   }
 }
 

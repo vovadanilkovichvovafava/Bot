@@ -1,18 +1,177 @@
 from contextlib import asynccontextmanager
+import asyncio
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users
+from app.api import auth, matches, predictions, users, chat, social, ml
 from app.core.database import init_db
+
+# Import all models to register them with SQLAlchemy metadata
+from app.models import (  # noqa: F401
+    User, MLTrainingData, MLModel, EnsembleModel,
+    ConfidenceCalibration, ROIAnalytics, LearningPattern,
+    FeatureErrorPattern, LeagueLearning, LearningLog, Prediction,
+    CachedAIResponse
+)
+
+logger = logging.getLogger(__name__)
+
+# Background task handles
+_training_task = None
+_verification_task = None
+_daily_reset_task = None
+
+
+async def daily_limit_reset_loop():
+    """Background task to reset daily AI limits at midnight UTC"""
+    from app.core.database import async_session_maker
+    from sqlalchemy import update
+    from datetime import datetime, timedelta
+
+    # Calculate time until next midnight (UTC)
+    def get_seconds_until_midnight_utc():
+        now = datetime.utcnow()
+        # Next midnight UTC
+        tomorrow_midnight = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        return (tomorrow_midnight - now).total_seconds()
+
+    while True:
+        try:
+            # Wait until midnight UTC
+            wait_seconds = get_seconds_until_midnight_utc()
+            logger.info(f"Daily reset scheduled in {wait_seconds/3600:.1f} hours (at 00:00 UTC)")
+            await asyncio.sleep(wait_seconds)
+
+            # Reset all users' daily limits using UTC date
+            async with async_session_maker() as db:
+                today_utc = datetime.utcnow().date()
+                result = await db.execute(
+                    update(User)
+                    .where(User.last_request_date != today_utc)
+                    .values(daily_requests=0, last_request_date=today_utc)
+                )
+                await db.commit()
+                logger.info(f"Daily AI limits reset for {result.rowcount} users at {datetime.utcnow()} UTC")
+
+            # Wait a bit before next check to avoid double execution
+            await asyncio.sleep(60)
+
+        except Exception as e:
+            logger.error(f"Daily limit reset error: {e}")
+            # Wait 1 hour before retrying on error
+            await asyncio.sleep(3600)
+
+
+async def ml_training_loop():
+    """Background task to periodically check and retrain ML models"""
+    from app.core.database import async_session_maker
+    from app.ml import MLTrainingService, BET_CATEGORIES
+
+    # Wait for initial startup
+    await asyncio.sleep(60)
+
+    while True:
+        try:
+            async with async_session_maker() as db:
+                service = MLTrainingService(db)
+
+                # Check each category for retraining
+                for category in BET_CATEGORIES:
+                    try:
+                        if await service.should_retrain(category):
+                            logger.info(f"Retraining ML model for {category}")
+                            result = await service.train_ensemble(category)
+                            logger.info(f"Training result for {category}: {result}")
+                    except Exception as e:
+                        logger.error(f"Error checking/training {category}: {e}")
+
+        except Exception as e:
+            logger.error(f"ML training loop error: {e}")
+
+        # Check every 6 hours
+        await asyncio.sleep(6 * 60 * 60)
+
+
+async def result_verification_loop():
+    """Background task to periodically verify prediction results"""
+    from app.core.database import async_session_maker
+    from app.ml import MLDataCollector
+
+    # Wait for initial startup (2 minutes after training task)
+    await asyncio.sleep(120)
+
+    while True:
+        try:
+            async with async_session_maker() as db:
+                collector = MLDataCollector(db)
+                verified_count = await collector.check_pending_results()
+
+                if verified_count > 0:
+                    logger.info(f"Verified {verified_count} prediction results")
+
+        except Exception as e:
+            logger.error(f"Result verification loop error: {e}")
+
+        # Check every 2 hours
+        await asyncio.sleep(2 * 60 * 60)
+
+
+async def reset_stale_daily_limits():
+    """Reset daily limits for users whose last_request_date is not today UTC (on server startup)"""
+    from app.core.database import async_session_maker
+    from sqlalchemy import update
+    from datetime import datetime
+
+    try:
+        async with async_session_maker() as db:
+            today_utc = datetime.utcnow().date()
+            result = await db.execute(
+                update(User)
+                .where((User.last_request_date != today_utc) | (User.last_request_date == None))
+                .values(daily_requests=0, last_request_date=today_utc)
+            )
+            await db.commit()
+            if result.rowcount > 0:
+                logger.info(f"Reset daily AI limits for {result.rowcount} users on startup (UTC date: {today_utc})")
+    except Exception as e:
+        logger.error(f"Failed to reset stale daily limits: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _training_task, _verification_task, _daily_reset_task
+
     # Startup: Initialize database tables
     await init_db()
+    logger.info("Database tables initialized")
+
+    # Reset daily limits for users who haven't been reset today
+    await reset_stale_daily_limits()
+
+    # Start background ML training task
+    _training_task = asyncio.create_task(ml_training_loop())
+    logger.info("ML background training task started")
+
+    # Start background result verification task
+    _verification_task = asyncio.create_task(result_verification_loop())
+    logger.info("ML result verification task started")
+
+    # Start daily limit reset task
+    _daily_reset_task = asyncio.create_task(daily_limit_reset_loop())
+    logger.info("Daily AI limit reset task started")
+
     yield
-    # Shutdown: cleanup if needed
+
+    # Shutdown: cancel background tasks
+    for task in [_training_task, _verification_task, _daily_reset_task]:
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(
@@ -36,6 +195,9 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(matches.router, prefix="/api/v1/matches", tags=["matches"])
 app.include_router(predictions.router, prefix="/api/v1/predictions", tags=["predictions"])
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
+app.include_router(social.router, prefix="/api/v1/social", tags=["social"])
+app.include_router(ml.router, prefix="/api/v1/ml", tags=["ml"])
 
 
 @app.get("/")

@@ -16,13 +16,14 @@ class Settings(BaseSettings):
     FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
     FOOTBALL_API_URL: str = "https://api.football-data.org/v4"
     CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY", "")
 
     # Limits
     FREE_DAILY_LIMIT: int = 10
     HTTP_TIMEOUT: int = 15
 
     # CORS
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
 
     class Config:
         env_file = ".env"
