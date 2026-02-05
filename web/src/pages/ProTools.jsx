@@ -11,6 +11,7 @@ export default function ProTools() {
   const handleToolClick = (toolName) => {
     if (isPremium) {
       if (toolName === 'valueFinder') return navigate('/value-finder');
+      if (toolName === 'predictions') return navigate('/prediction-history');
       return;
     }
     setModal(toolName);

@@ -1,32 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api';
+import { getPredictions, getStats, verifyPredictions } from '../services/predictionStore';
 
 export default function Statistics() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [predictions, setPredictions] = useState([]);
+  const [recentPreds, setRecentPreds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setLocalStats] = useState(null);
 
-  const total = user?.total_predictions || 0;
-  const correct = user?.correct_predictions || 0;
-  const wrong = total - correct;
-  const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0.0';
+  // Use local prediction store stats (real data) with fallback to user profile
+  const localStats = stats || { total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 };
+  const total = localStats.total || user?.total_predictions || 0;
+  const correct = localStats.correct || user?.correct_predictions || 0;
+  const wrong = localStats.wrong || (total - correct);
+  const accuracy = localStats.total > 0 ? localStats.accuracy.toFixed(1) : (total > 0 ? ((correct / total) * 100).toFixed(1) : '0.0');
 
   useEffect(() => {
-    loadHistory();
+    loadData();
   }, []);
 
-  const loadHistory = async () => {
+  const loadData = async () => {
     try {
-      const data = await api.getPredictionHistory(20);
-      setPredictions(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+      await verifyPredictions();
+    } catch (_) {}
+    setLocalStats(getStats());
+    setRecentPreds(getPredictions().slice(0, 5));
+    setLoading(false);
   };
 
   // Calculate circle progress
@@ -92,39 +93,88 @@ export default function Statistics() {
           </div>
         </div>
 
-        {/* Saved Predictions */}
+        {/* Recent Predictions */}
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"/>
-            </svg>
-            <h3 className="font-bold">Saved Predictions</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <h3 className="font-bold">Recent Predictions</h3>
+            </div>
+            {recentPreds.length > 0 && (
+              <button onClick={() => navigate('/prediction-history')} className="text-primary-600 text-sm font-semibold">
+                View All
+              </button>
+            )}
           </div>
-          <div className="bg-gray-50 rounded-xl p-6 text-center">
-            <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"/>
-            </svg>
-            <p className="font-semibold text-gray-700">No saved predictions</p>
-            <p className="text-sm text-gray-400">Save predictions from match details to track your personal picks</p>
-          </div>
+
+          {recentPreds.length === 0 ? (
+            <div className="bg-gray-50 rounded-xl p-6 text-center">
+              <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <p className="font-semibold text-gray-700">No predictions yet</p>
+              <p className="text-sm text-gray-400">Get AI analysis on a match to start tracking</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentPreds.map(p => (
+                <div
+                  key={p.id}
+                  onClick={() => navigate(`/match/${p.matchId}`)}
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <div className="shrink-0">
+                    {p.result ? (
+                      p.result.isCorrect ? (
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+                          </svg>
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {p.homeTeam.name} vs {p.awayTeam.name}
+                    </p>
+                    <p className="text-xs text-gray-500">{p.prediction.winnerName} ({p.prediction.confidence}%)</p>
+                  </div>
+                  {p.result && (
+                    <span className="text-sm font-bold text-gray-700">{p.result.homeGoals}-{p.result.awayGoals}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Saved Bet Slips */}
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+        {/* Pending stats */}
+        {localStats.pending > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+            <svg className="w-5 h-5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd"/>
             </svg>
-            <h3 className="font-bold">Saved Bet Slips</h3>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">{localStats.pending} prediction{localStats.pending !== 1 ? 's' : ''} awaiting results</p>
+              <p className="text-xs text-amber-600">Results are verified automatically after matches finish</p>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-6 text-center">
-            <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-            </svg>
-            <p className="font-semibold text-gray-700">No saved bet slips</p>
-            <p className="text-sm text-gray-400">Save bet slips from Betting Tools to track your accumulators</p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

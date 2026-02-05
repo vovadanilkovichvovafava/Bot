@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
+import { savePrediction } from '../services/predictionStore';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 
@@ -107,7 +108,22 @@ export default function MatchDetail() {
 
       const prompt = buildAIPrompt();
       const data = await api.aiChat(prompt);
-      setPrediction({ apiPrediction: apiPred, claudeAnalysis: data.response });
+      const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
+      setPrediction(result);
+
+      // Auto-save prediction for history tracking
+      try {
+        savePrediction({
+          matchId: id,
+          homeTeam: match.home_team || { name: 'Home' },
+          awayTeam: match.away_team || { name: 'Away' },
+          league: match.league || '',
+          matchDate: match.match_date,
+          apiPrediction: apiPred,
+          claudeAnalysis: data.response,
+          odds: getOdds1x2(),
+        });
+      } catch (_) {}
     } catch (e) {
       console.error(e);
       // Still show API-Football prediction even if Claude fails

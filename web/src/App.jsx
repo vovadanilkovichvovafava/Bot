@@ -14,6 +14,7 @@ import Favourites from './pages/Favourites';
 import LeagueMatches from './pages/LeagueMatches';
 import Premium from './pages/Premium';
 import ValueFinder from './pages/ValueFinder';
+import PredictionHistory from './pages/PredictionHistory';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -67,6 +68,9 @@ export default function App() {
       } />
       <Route path="/value-finder" element={
         <ProtectedRoute><ValueFinder /></ProtectedRoute>
+      } />
+      <Route path="/prediction-history" element={
+        <ProtectedRoute><PredictionHistory /></ProtectedRoute>
       } />
       <Route path="/league/:code" element={
         <ProtectedRoute><LeagueMatches /></ProtectedRoute>
