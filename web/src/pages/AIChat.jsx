@@ -41,7 +41,14 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const data = await api.aiChat(text);
+      // Build history from previous messages (exclude welcome)
+      const history = messages
+        .filter(m => m.id !== 'welcome')
+        .map(m => ({ role: m.role, content: m.content }));
+      // Add the current user message to history
+      history.push({ role: 'user', content: text });
+
+      const data = await api.aiChat(text, history);
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
