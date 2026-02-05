@@ -9,7 +9,10 @@ export default function ProTools() {
   const isPremium = user?.is_premium;
 
   const handleToolClick = (toolName) => {
-    if (isPremium) return; // TODO: open tool
+    if (isPremium) {
+      if (toolName === 'valueFinder') return navigate('/value-finder');
+      return;
+    }
     setModal(toolName);
   };
 

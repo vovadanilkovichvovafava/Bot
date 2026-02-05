@@ -142,8 +142,8 @@ export default function Home() {
               </div>
               <p className="text-xs font-medium text-gray-700">Matches</p>
             </div>
-            <div onClick={() => navigate('/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              <span className="badge-pro absolute -top-2 right-1">PRO</span>
+            <div onClick={() => navigate(user?.is_premium ? '/value-finder' : '/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
+              {!user?.is_premium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>

@@ -13,6 +13,7 @@ import Statistics from './pages/Statistics';
 import Favourites from './pages/Favourites';
 import LeagueMatches from './pages/LeagueMatches';
 import Premium from './pages/Premium';
+import ValueFinder from './pages/ValueFinder';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -63,6 +64,9 @@ export default function App() {
       } />
       <Route path="/premium" element={
         <ProtectedRoute><Premium /></ProtectedRoute>
+      } />
+      <Route path="/value-finder" element={
+        <ProtectedRoute><ValueFinder /></ProtectedRoute>
       } />
       <Route path="/league/:code" element={
         <ProtectedRoute><LeagueMatches /></ProtectedRoute>
