@@ -15,6 +15,8 @@ import LeagueMatches from './pages/LeagueMatches';
 import Premium from './pages/Premium';
 import ValueFinder from './pages/ValueFinder';
 import PredictionHistory from './pages/PredictionHistory';
+import OddsConverter from './pages/OddsConverter';
+import YourStats from './pages/YourStats';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -71,6 +73,12 @@ export default function App() {
       } />
       <Route path="/prediction-history" element={
         <ProtectedRoute><PredictionHistory /></ProtectedRoute>
+      } />
+      <Route path="/odds-converter" element={
+        <ProtectedRoute><OddsConverter /></ProtectedRoute>
+      } />
+      <Route path="/your-stats" element={
+        <ProtectedRoute><YourStats /></ProtectedRoute>
       } />
       <Route path="/league/:code" element={
         <ProtectedRoute><LeagueMatches /></ProtectedRoute>
