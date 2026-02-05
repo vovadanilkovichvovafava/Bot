@@ -135,11 +135,38 @@ export default function MatchDetail() {
               <h3 className="font-bold text-gray-900">AI Analysis</h3>
               <span className="ml-auto badge bg-primary-100 text-primary-700">Claude AI</span>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
-              <p className="mb-3">{prediction.reasoning}</p>
-              <p className="font-semibold">Bet Type: {prediction.bet_name}</p>
-              <p className="font-semibold">Confidence: {prediction.confidence}%</p>
-              <p className="font-semibold">Odds: {prediction.odds}</p>
+            {prediction.analysis && (
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed mb-3">
+                {prediction.analysis}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-primary-50 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-1">Prediction</p>
+                <p className="font-bold text-primary-700">{prediction.bet_name}</p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-1">Confidence</p>
+                <p className="font-bold text-green-700">{prediction.confidence}%</p>
+              </div>
+              {prediction.odds && (
+                <div className="bg-amber-50 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Est. Odds</p>
+                  <p className="font-bold text-amber-700">{prediction.odds}</p>
+                </div>
+              )}
+              {prediction.alt_bet_type && (
+                <div className="bg-purple-50 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-500 mb-1">Alt. Bet</p>
+                  <p className="font-bold text-purple-700">{prediction.alt_bet_type} ({prediction.alt_confidence}%)</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-blue-50 rounded-xl p-3 text-sm text-gray-700">
+              <p className="font-semibold text-primary-700 mb-1">Reasoning</p>
+              {prediction.reasoning}
             </div>
           </div>
         ) : (

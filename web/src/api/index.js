@@ -126,6 +126,14 @@ class ApiService {
   async getPredictionHistory(limit = 10) {
     return this.request(`/predictions/history?limit=${limit}`);
   }
+
+  // AI Chat
+  async aiChat(message, matchContext) {
+    return this.request('/predictions/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, match_context: matchContext }),
+    });
+  }
 }
 
 export const api = new ApiService();

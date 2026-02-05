@@ -12,8 +12,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    # External APIs (optional)
+    # External APIs
     FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
+    FOOTBALL_API_URL: str = "https://api.football-data.org/v4"
+    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+
+    # Limits
+    FREE_DAILY_LIMIT: int = 10
+    HTTP_TIMEOUT: int = 15
 
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
@@ -24,3 +30,11 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+TOP_CLUBS = [
+    "Real Madrid", "Barcelona", "Bayern Munich", "Bayern München",
+    "Manchester City", "Liverpool", "Arsenal", "Chelsea",
+    "Manchester United", "Paris Saint-Germain", "PSG",
+    "Juventus", "Inter Milan", "AC Milan", "Borussia Dortmund",
+    "Atlético Madrid", "Napoli",
+]

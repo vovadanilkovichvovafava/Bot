@@ -41,57 +41,11 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      // Use prediction API to simulate chat responses
-      const todayMatches = await api.getTodayMatches();
-      let response = '';
-
-      const lower = text.toLowerCase();
-      if (lower.includes('today') || lower.includes('match')) {
-        response = `Here are today's matches:\n\n`;
-        todayMatches.slice(0, 5).forEach(m => {
-          response += `\u26BD **${m.home_team.name} vs ${m.away_team.name}**\n`;
-          response += `\uD83C\uDFC6 ${m.league} \u2022 ${new Date(m.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n\n`;
-        });
-        if (todayMatches.length === 0) {
-          response = 'No matches scheduled for today. Check back later!';
-        }
-      } else if (lower.includes('premier') || lower.includes('pl')) {
-        const plMatches = todayMatches.filter(m => m.league_code === 'PL');
-        if (plMatches.length > 0) {
-          response = `**Premier League matches:**\n\n`;
-          plMatches.forEach(m => {
-            response += `\u26BD ${m.home_team.name} vs ${m.away_team.name}\n`;
-            response += `\u23F0 ${new Date(m.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n\n`;
-          });
-        } else {
-          response = 'No Premier League matches today.';
-        }
-      } else if (lower.includes('predict') || lower.includes('analy') || lower.includes('best bet')) {
-        if (todayMatches.length > 0) {
-          const m = todayMatches[0];
-          try {
-            const pred = await api.createPrediction(m.id);
-            response = `\uD83C\uDFAF **${m.home_team.name} vs ${m.away_team.name}**\n`;
-            response += `\uD83C\uDFC6 ${m.league}\n\n`;
-            response += `**Prediction:** ${pred.bet_name}\n`;
-            response += `**Confidence:** ${pred.confidence}%\n`;
-            response += `**Odds:** ${pred.odds}\n\n`;
-            response += `${pred.reasoning}\n\n`;
-            response += `\u26A0\uFE0F Betting involves risk. Please gamble responsibly.`;
-          } catch {
-            response = 'Unable to generate prediction at this time.';
-          }
-        } else {
-          response = 'No matches available for predictions today.';
-        }
-      } else {
-        response = `I can help you with match analysis and predictions. Try asking about:\n\n\u2022 Today's matches\n\u2022 Specific league matches\n\u2022 Match predictions\n\u2022 Best bets for today`;
-      }
-
+      const data = await api.aiChat(text);
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: response,
+        content: data.response,
       }]);
     } catch (e) {
       setMessages(prev => [...prev, {
