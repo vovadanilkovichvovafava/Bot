@@ -21,10 +21,76 @@ const LEAGUE_KEYWORDS = {
   'championship': 40,
 };
 
-// Match query patterns
-const MATCH_PATTERNS = [
-  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—|-)\s+(.+)/i,
-  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ)\s+(.+?)\s+(?:vs\.?|v\.?|—|-)\s+(.+)/i,
+// Match query patterns — with "vs" separator
+const MATCH_PATTERNS_VS = [
+  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—)\s+(.+)/i,
+  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ)\s+(.+?)\s+(?:vs\.?|v\.?|—)\s+(.+)/i,
+];
+
+// Well-known team names for detection without "vs" separator
+const KNOWN_TEAMS = [
+  'manchester united', 'man united', 'man utd', 'манчестер юнайтед', 'ман юнайтед',
+  'manchester city', 'man city', 'манчестер сити', 'ман сити',
+  'arsenal', 'арсенал',
+  'chelsea', 'челси',
+  'liverpool', 'ливерпуль',
+  'tottenham', 'tottenham hotspur', 'spurs', 'тоттенхем', 'тоттенхэм', 'тотнем',
+  'newcastle', 'newcastle united', 'ньюкасл',
+  'aston villa', 'астон вилла',
+  'west ham', 'вест хэм', 'вест хам',
+  'brighton', 'брайтон',
+  'crystal palace', 'кристал пэлас',
+  'everton', 'эвертон',
+  'fulham', 'фулхэм', 'фулхем',
+  'wolves', 'wolverhampton', 'вулверхэмптон',
+  'bournemouth', 'борнмут',
+  'nottingham forest', 'ноттингем',
+  'brentford', 'брентфорд',
+  'burnley', 'бёрнли',
+  'luton', 'лутон',
+  'sheffield united', 'шеффилд',
+  'real madrid', 'реал мадрид', 'реал',
+  'barcelona', 'барселона', 'барса',
+  'atletico madrid', 'атлетико',
+  'sevilla', 'севилья',
+  'real sociedad', 'сосьедад',
+  'villarreal', 'вильярреал',
+  'athletic bilbao', 'атлетик бильбао',
+  'real betis', 'бетис',
+  'valencia', 'валенсия',
+  'bayern munich', 'bayern', 'бавария',
+  'borussia dortmund', 'dortmund', 'дортмунд', 'боруссия',
+  'rb leipzig', 'лейпциг',
+  'bayer leverkusen', 'leverkusen', 'леверкузен',
+  'juventus', 'ювентус',
+  'inter milan', 'inter', 'интер',
+  'ac milan', 'milan', 'милан',
+  'napoli', 'наполи',
+  'roma', 'рома',
+  'lazio', 'лацио',
+  'atalanta', 'аталанта',
+  'fiorentina', 'фиорентина',
+  'psg', 'paris saint-germain', 'paris saint germain', 'пари сен-жермен', 'псж',
+  'marseille', 'марсель',
+  'lyon', 'лион',
+  'monaco', 'монако',
+  'lille', 'лилль',
+  'benfica', 'бенфика',
+  'porto', 'порту',
+  'sporting', 'спортинг',
+  'ajax', 'аякс',
+  'psv', 'псв',
+  'feyenoord', 'фейеноорд',
+  'galatasaray', 'галатасарай',
+  'fenerbahce', 'фенербахче',
+  'besiktas', 'бешикташ',
+  'celtic', 'селтик',
+  'rangers', 'рейнджерс',
+  'zenit', 'зенит',
+  'spartak', 'спартак',
+  'cska', 'цска',
+  'dynamo', 'динамо',
+  'shakhtar', 'шахтёр', 'шахтер',
 ];
 
 const TODAY_KEYWORDS = ['today', 'сегодня', 'tonight', 'вечером', 'сейчас', 'now'];
@@ -70,59 +136,131 @@ export async function enrichMessage(message) {
 
 /**
  * Detect if the message is asking about a specific match.
+ * Handles both "Team A vs Team B" and "матч Команда1 Команда2" patterns.
  */
 function detectMatchQuery(lower, original) {
-  for (const pattern of MATCH_PATTERNS) {
+  // 1. Try explicit "vs" / "—" patterns first
+  for (const pattern of MATCH_PATTERNS_VS) {
     const match = original.match(pattern);
     if (match) {
       const home = (match[1] || '').trim();
       const away = (match[2] || '').trim();
       if (home.length > 1 && away.length > 1) {
-        return { home, away };
+        return { home: cleanTeamName(home), away: cleanTeamName(away) };
       }
     }
   }
+
+  // 2. Try detecting two known team names in the message (no separator needed)
+  // Sort by length descending so longer names match first ("manchester united" before "inter")
+  const sortedTeams = [...KNOWN_TEAMS].sort((a, b) => b.length - a.length);
+  const found = [];
+
+  let remaining = lower;
+  for (const team of sortedTeams) {
+    const idx = remaining.indexOf(team);
+    if (idx !== -1) {
+      found.push({ team, pos: idx });
+      // Remove matched team from remaining to avoid overlap
+      remaining = remaining.substring(0, idx) + ' '.repeat(team.length) + remaining.substring(idx + team.length);
+      if (found.length === 2) break;
+    }
+  }
+
+  if (found.length === 2) {
+    // Sort by position in message — first mentioned = home
+    found.sort((a, b) => a.pos - b.pos);
+    return { home: found[0].team, away: found[1].team };
+  }
+
+  // 3. Single team detected — return it as both (will search for upcoming fixtures)
+  if (found.length === 1) {
+    return { home: found[0].team, away: null };
+  }
+
   return null;
 }
 
 /**
+ * Remove noise words from team name extracted via "vs" pattern
+ */
+function cleanTeamName(name) {
+  return name
+    .replace(/^(матч|match|game|predict|прогноз|анализ|ставка|ставку|bet on)\s+/i, '')
+    .replace(/\s+(какую|какой|ставку|ставка|прогноз|prediction|bet|odds|коэффициент|кеф).*$/i, '')
+    .trim();
+}
+
+/**
  * Fetch enriched data for a specific match.
+ * Searches across 7 days (today + 6 days ahead) to find the fixture.
+ * Also handles single team queries (away=null).
  */
 async function enrichMatchQuery(homeTeam, awayTeam) {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-
-  // Try to find the fixture today or tomorrow
-  let enriched = null;
-  try {
-    enriched = await footballApi.getMatchEnrichedData(homeTeam, awayTeam, today);
-    if (!enriched) {
-      enriched = await footballApi.getMatchEnrichedData(homeTeam, awayTeam, tomorrow);
-    }
-  } catch (e) {
-    console.error('Match enrichment failed:', e);
+  // If only one team detected, search for their upcoming fixtures
+  if (!awayTeam) {
+    return await enrichSingleTeam(homeTeam);
   }
 
+  // Strategy 1: Search fixtures day-by-day for the next 7 days
+  let enriched = null;
+  try {
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(Date.now() + i * 86400000).toISOString().split('T')[0];
+      enriched = await footballApi.getMatchEnrichedData(homeTeam, awayTeam, date);
+      if (enriched) break;
+    }
+  } catch (e) {
+    console.error('Match enrichment (day scan) failed:', e);
+  }
+
+  // Strategy 2: If not found by date scan, search by team name via API
   if (!enriched) {
-    // No fixture found — try search for upcoming fixture
     try {
       const results = await footballApi.searchTeam(homeTeam);
       if (results?.length > 0) {
         const teamId = results[0].team.id;
         const season = new Date().getFullYear();
-        const fixtures = await footballApi.getFixturesByTeam(teamId, season, 3);
+        const fixtures = await footballApi.getFixturesByTeam(teamId, season, 10);
         if (fixtures?.length > 0) {
-          const parts = [`Upcoming fixtures for ${results[0].team.name}:`];
-          for (const f of fixtures) {
-            const date = new Date(f.fixture.date).toLocaleDateString('en-GB');
-            parts.push(`- ${f.teams.home.name} vs ${f.teams.away.name} (${date}, ${f.league.name})`);
+          // Try to find the specific opponent
+          const normalize = n => (n || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+          const awayNorm = normalize(awayTeam);
+          const matched = fixtures.find(f => {
+            const h = normalize(f.teams.home.name);
+            const a = normalize(f.teams.away.name);
+            return h.includes(awayNorm) || a.includes(awayNorm) || awayNorm.includes(h) || awayNorm.includes(a);
+          });
+
+          if (matched) {
+            // Found the fixture — get enriched data by fixture ID
+            const fixtureId = matched.fixture.id;
+            const [prediction, odds, stats, injuries, lineups] = await Promise.allSettled([
+              footballApi.getPrediction(fixtureId),
+              footballApi.getOdds(fixtureId),
+              footballApi.getFixtureStatistics(fixtureId),
+              footballApi.getInjuries(fixtureId),
+              footballApi.getFixtureLineups(fixtureId),
+            ]);
+            enriched = {
+              fixture: matched,
+              fixtureId,
+              prediction: prediction.status === 'fulfilled' ? prediction.value : null,
+              odds: odds.status === 'fulfilled' ? odds.value : [],
+              stats: stats.status === 'fulfilled' ? stats.value : [],
+              injuries: injuries.status === 'fulfilled' ? injuries.value : [],
+              lineups: lineups.status === 'fulfilled' ? lineups.value : [],
+            };
+          } else {
+            // Opponent not found in upcoming, show all upcoming
+            return buildUpcomingContext(results[0].team.name, fixtures);
           }
-          return parts.join('\n');
         }
       }
     } catch (_) {}
-    return null;
   }
+
+  if (!enriched) return null;
 
   // Build rich context from enriched data
   const parts = [];
@@ -296,29 +434,67 @@ async function enrichDayOverview(day) {
 }
 
 /**
- * Fetch data for a specific league query.
+ * Fetch upcoming fixtures for a single team.
+ */
+async function enrichSingleTeam(teamName) {
+  try {
+    const results = await footballApi.searchTeam(teamName);
+    if (!results?.length) return null;
+
+    const team = results[0].team;
+    const teamId = team.id;
+    const season = new Date().getFullYear();
+    const fixtures = await footballApi.getFixturesByTeam(teamId, season, 5);
+    if (!fixtures?.length) return `No upcoming fixtures found for ${team.name}.`;
+
+    return buildUpcomingContext(team.name, fixtures);
+  } catch (e) {
+    console.error('Single team enrichment failed:', e);
+    return null;
+  }
+}
+
+/**
+ * Build context string for upcoming fixtures list.
+ */
+function buildUpcomingContext(teamName, fixtures) {
+  const parts = [`Upcoming fixtures for ${teamName}:`];
+  parts.push('');
+
+  for (const f of fixtures) {
+    const date = new Date(f.fixture.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const status = f.fixture.status.short;
+    let line = `${date} ${time} | ${f.teams.home.name} vs ${f.teams.away.name} (${f.league.name})`;
+    if (status === 'FT') {
+      line += ` [FT ${f.goals.home}-${f.goals.away}]`;
+    } else if (['1H', '2H', 'HT'].includes(status)) {
+      line += ` [LIVE ${f.goals.home}-${f.goals.away}]`;
+    }
+    parts.push(line);
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Fetch data for a specific league query. Searches up to 7 days to find matches.
  */
 async function enrichLeagueQuery(leagueId, keyword) {
-  const today = new Date().toISOString().split('T')[0];
-
   try {
-    const fixtures = await footballApi.getFixturesByDate(today);
-    const leagueFixtures = fixtures.filter(f => f.league.id === leagueId);
+    // Search up to 7 days to find league fixtures
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(Date.now() + i * 86400000).toISOString().split('T')[0];
+      const fixtures = await footballApi.getFixturesByDate(date);
+      const leagueFixtures = fixtures.filter(f => f.league.id === leagueId);
 
-    if (leagueFixtures.length === 0) {
-      // Try tomorrow
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const tFixtures = await footballApi.getFixturesByDate(tomorrow);
-      const tLeague = tFixtures.filter(f => f.league.id === leagueId);
-
-      if (tLeague.length === 0) {
-        return `No ${keyword} fixtures found today or tomorrow.`;
+      if (leagueFixtures.length > 0) {
+        const dayLabel = i === 0 ? 'today' : i === 1 ? 'tomorrow' : date;
+        return buildLeagueContext(leagueFixtures, `${keyword} fixtures for ${dayLabel}`);
       }
-
-      return buildLeagueContext(tLeague, `${keyword} fixtures for tomorrow`);
     }
 
-    return buildLeagueContext(leagueFixtures, `${keyword} fixtures for today`);
+    return `No ${keyword} fixtures found in the next 7 days.`;
   } catch (e) {
     console.error('League enrichment failed:', e);
     return null;
