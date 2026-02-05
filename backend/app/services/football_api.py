@@ -27,16 +27,45 @@ LEAGUE_IDS = {
     "BSA": 2013,   # Brasileirão
 }
 
-# Cache for matches (simple in-memory cache)
+# Smart in-memory cache with per-type TTL
 _cache: Dict[str, Dict] = {}
-CACHE_TTL = 300  # 5 minutes
+
+# TTL per data type (seconds)
+CACHE_TTLS = {
+    "matches":    900,   # 15 min — scheduled matches don't change often
+    "match":      1800,  # 30 min — single match + H2H is mostly static
+    "standings":  7200,  # 2 hours — only changes after matches finish
+    "leagues":    86400, # 24 hours — static list
+    "form":       1800,  # 30 min — team form changes rarely
+    "result":     3600,  # 1 hour — finished match result is final
+}
+DEFAULT_TTL = 300  # 5 min fallback
+
+_cache_hits = 0
+_cache_misses = 0
 
 
-def _get_cache(key: str) -> Optional[Dict]:
+def _get_ttl(key: str) -> int:
+    """Get TTL based on cache key prefix"""
+    for prefix, ttl in CACHE_TTLS.items():
+        if key.startswith(prefix):
+            return ttl
+    return DEFAULT_TTL
+
+
+def _get_cache(key: str) -> Optional[any]:
+    global _cache_hits, _cache_misses
     if key in _cache:
         data = _cache[key]
-        if datetime.utcnow().timestamp() - data["timestamp"] < CACHE_TTL:
+        ttl = _get_ttl(key)
+        age = datetime.utcnow().timestamp() - data["timestamp"]
+        if age < ttl:
+            _cache_hits += 1
             return data["value"]
+        else:
+            # Expired — remove
+            del _cache[key]
+    _cache_misses += 1
     return None
 
 
@@ -44,6 +73,32 @@ def _set_cache(key: str, value: any):
     _cache[key] = {
         "value": value,
         "timestamp": datetime.utcnow().timestamp()
+    }
+    # Periodic cleanup: every 50 writes, purge expired entries
+    if len(_cache) % 50 == 0:
+        _cleanup_cache()
+
+
+def _cleanup_cache():
+    """Remove expired entries to prevent memory leaks"""
+    now = datetime.utcnow().timestamp()
+    expired = [
+        k for k, v in _cache.items()
+        if now - v["timestamp"] > _get_ttl(k)
+    ]
+    for k in expired:
+        del _cache[k]
+    if expired:
+        logger.info(f"Cache cleanup: removed {len(expired)} expired entries, {len(_cache)} remaining")
+
+
+def get_cache_stats() -> Dict:
+    """Get cache statistics for monitoring"""
+    return {
+        "entries": len(_cache),
+        "hits": _cache_hits,
+        "misses": _cache_misses,
+        "hit_rate": round(_cache_hits / max(_cache_hits + _cache_misses, 1) * 100, 1),
     }
 
 
@@ -284,6 +339,11 @@ async def get_match_result(match_id: str) -> Optional[Dict]:
     if not FOOTBALL_API_KEY:
         return None
 
+    cache_key = f"result_{match_id}"
+    cached = _get_cache(cache_key)
+    if cached is not None:
+        return cached
+
     try:
         # Convert string match_id to int if needed
         match_id_int = int(match_id) if isinstance(match_id, str) else match_id
@@ -306,7 +366,7 @@ async def get_match_result(match_id: str) -> Optional[Dict]:
             if match.get("status") != "FINISHED":
                 return None
 
-            return {
+            result = {
                 "home_team": match["homeTeam"]["name"],
                 "away_team": match["awayTeam"]["name"],
                 "home_goals": match["score"]["fullTime"]["home"],
@@ -315,6 +375,9 @@ async def get_match_result(match_id: str) -> Optional[Dict]:
                 "away_ht": match["score"]["halfTime"]["away"],
                 "status": "finished",
             }
+
+            _set_cache(cache_key, result)
+            return result
 
     except Exception as e:
         logger.error(f"Error fetching result for match {match_id}: {e}")
@@ -326,6 +389,12 @@ async def fetch_team_form(team_name: str, league_code: str = None) -> Optional[D
 
     if not FOOTBALL_API_KEY:
         return None
+
+    # Check form cache first (keyed by team+league)
+    form_cache_key = f"form_{team_name}_{league_code}"
+    cached = _get_cache(form_cache_key)
+    if cached is not None:
+        return cached
 
     # Get recent finished matches
     today = datetime.utcnow()
@@ -384,7 +453,7 @@ async def fetch_team_form(team_name: str, league_code: str = None) -> Optional[D
                 over25_count += 1
 
         n = len(team_matches)
-        return {
+        result = {
             "wins": wins,
             "draws": draws,
             "losses": losses,
@@ -396,6 +465,9 @@ async def fetch_team_form(team_name: str, league_code: str = None) -> Optional[D
             "over25_pct": round(over25_count / n * 100, 1) if n else 50,
             "matches_analyzed": n,
         }
+
+        _set_cache(form_cache_key, result)
+        return result
 
     except Exception as e:
         logger.error(f"Error fetching form for {team_name}: {e}")

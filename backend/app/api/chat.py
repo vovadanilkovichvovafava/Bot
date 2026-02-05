@@ -494,12 +494,23 @@ async def send_message(
             # Get odds
             if settings.ODDS_API_KEY:
                 try:
-                    odds_info = await get_odds_summary(home_team, away_team, league_code)
-                    # Parse odds for ML
-                    if odds_info:
-                        # Simple parsing - could be improved
-                        odds_data = {"home": 2.5, "draw": 3.5, "away": 3.0}
-                except Exception:
+                    from app.services.odds_api import get_match_odds
+                    raw_odds = await get_match_odds(home_team, away_team, league_code)
+                    if raw_odds and raw_odds.get("bookmakers"):
+                        # Extract real odds from first bookmaker
+                        bm = raw_odds["bookmakers"][0]
+                        h2h_market = bm.get("markets", {}).get("h2h", {})
+                        if h2h_market:
+                            odds_data = {
+                                "home": h2h_market.get(raw_odds["home_team"], 2.5),
+                                "draw": h2h_market.get("Draw", 3.5),
+                                "away": h2h_market.get(raw_odds["away_team"], 3.0),
+                            }
+                        odds_info = await get_odds_summary(home_team, away_team, league_code)
+                    else:
+                        odds_info = ""
+                except Exception as e:
+                    logger.warning(f"Odds fetch failed: {e}")
                     pass
 
             # Get ML predictions and ALWAYS collect training data

@@ -222,10 +222,13 @@ async def health_check():
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
 
+    from app.services.football_api import get_cache_stats
+
     return {
         "status": "healthy",
         "version": "1.0.0",
-        "database": db_status
+        "database": db_status,
+        "cache": get_cache_stats(),
     }
 
 

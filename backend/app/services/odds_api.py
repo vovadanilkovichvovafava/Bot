@@ -3,10 +3,12 @@ Service for fetching betting odds from The Odds API
 https://the-odds-api.com/
 """
 import httpx
+import logging
 from typing import List, Optional, Dict
 from datetime import datetime
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 
 # Map football-data.org league codes to odds-api sport keys
 LEAGUE_TO_SPORT = {
@@ -18,6 +20,30 @@ LEAGUE_TO_SPORT = {
     "CL": "soccer_uefa_champs_league",
 }
 
+# Odds cache — 10 min TTL (odds change, but not every second)
+_odds_cache: Dict[str, Dict] = {}
+ODDS_CACHE_TTL = 600  # 10 minutes
+
+
+def _get_odds_cache(key: str) -> Optional[any]:
+    if key in _odds_cache:
+        data = _odds_cache[key]
+        if datetime.utcnow().timestamp() - data["ts"] < ODDS_CACHE_TTL:
+            logger.debug(f"Odds cache HIT: {key}")
+            return data["value"]
+        del _odds_cache[key]
+    return None
+
+
+def _set_odds_cache(key: str, value: any):
+    _odds_cache[key] = {"value": value, "ts": datetime.utcnow().timestamp()}
+    # Cleanup every 20 writes
+    if len(_odds_cache) % 20 == 0:
+        now = datetime.utcnow().timestamp()
+        expired = [k for k, v in _odds_cache.items() if now - v["ts"] > ODDS_CACHE_TTL]
+        for k in expired:
+            del _odds_cache[k]
+
 
 async def fetch_odds(
     sport_key: str = "soccer_epl",
@@ -25,18 +51,16 @@ async def fetch_odds(
     markets: str = "h2h,totals",
 ) -> Optional[List[Dict]]:
     """
-    Fetch odds for a specific sport/league
-
-    Args:
-        sport_key: The sport key (e.g., soccer_epl)
-        regions: Regions for odds (eu, uk, us)
-        markets: Markets to fetch (h2h, spreads, totals)
-
-    Returns:
-        List of matches with odds
+    Fetch odds for a specific sport/league.
+    Cached for 10 minutes to save API quota.
     """
     if not settings.ODDS_API_KEY:
         return None
+
+    cache_key = f"odds_{sport_key}_{regions}_{markets}"
+    cached = _get_odds_cache(cache_key)
+    if cached is not None:
+        return cached
 
     try:
         async with httpx.AsyncClient() as client:
@@ -52,13 +76,18 @@ async def fetch_odds(
             )
 
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                # Log remaining API quota
+                remaining = response.headers.get("x-requests-remaining", "?")
+                logger.info(f"Odds API OK for {sport_key}, quota remaining: {remaining}")
+                _set_odds_cache(cache_key, data)
+                return data
             else:
-                print(f"Odds API error: {response.status_code} - {response.text}")
+                logger.warning(f"Odds API error: {response.status_code} - {response.text[:200]}")
                 return None
 
     except Exception as e:
-        print(f"Odds API fetch error: {e}")
+        logger.error(f"Odds API fetch error: {e}")
         return None
 
 
