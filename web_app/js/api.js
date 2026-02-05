@@ -110,67 +110,93 @@ const api = {
     return await this.request('GET', `/predictions/history?limit=${limit}`);
   },
 
-  // Chat — try backend, fallback to local
-  async sendChat(message, matchId = null) {
-    const body = { message };
-    if (matchId) body.match_id = matchId;
-    const resp = await this.request('POST', '/chat/', body);
+  // Chat (Claude AI + ML predictions)
+  async sendChat(message, matchInfo = null) {
+    // Build chat history from local storage for context
+    const stored = JSON.parse(localStorage.getItem('ai_chat_history') || '[]');
+    const history = stored.slice(-10).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.text
+    }));
+
+    const body = {
+      message,
+      history,
+      preferences: this._getUserPrefs(),
+    };
+    if (matchInfo) body.match_info = matchInfo;
+
+    const resp = await this.request('POST', '/chat/send', body);
     if (resp) return resp;
-    // Fallback: local chat when backend unavailable
+
+    // Local fallback when backend unavailable
     return this._localChat(message);
   },
 
-  _localChat(msg) {
-    const t = msg.toLowerCase();
-    const w = new Set(t.split(/\s+/));
+  _getUserPrefs() {
+    try {
+      const u = window.app?.user;
+      if (u) {
+        return {
+          min_odds: u.min_odds || 1.5,
+          max_odds: u.max_odds || 3.0,
+          risk_level: u.risk_level || 'medium'
+        };
+      }
+    } catch (e) {}
+    return { min_odds: 1.5, max_odds: 3.0, risk_level: 'medium' };
+  },
 
-    // Greeting
-    if (['hi','hello','hey','привет','хай'].some(g => w.has(g))) {
-      return { reply: "Hey! 👋 I'm your AI Bet Analyst assistant. I can help with:\n\n⚽ Today's & upcoming matches\n💡 Betting tips & analysis\n📊 League standings\n🎯 Match predictions\n\nWhat would you like to know?", suggestions: ["Today's matches","Give me tips","PL standings","Upcoming matches"] };
+  _localChat(message) {
+    const msg = message.toLowerCase();
+    let reply = '';
+
+    if (msg.match(/^(hi|hello|hey|привет|здравствуй)/)) {
+      reply = "Hello! I'm your AI Football Analyst. Ask me about today's matches, tips, standings, or any football question!";
+    } else if (msg.includes('today') || msg.includes('сегодня')) {
+      reply = "Let me check today's matches for you. Go to the **Matches** tab to see all scheduled games and get AI analysis for each one!";
+    } else if (msg.includes('tomorrow') || msg.includes('завтра')) {
+      reply = "Check the **Matches** tab and switch to 'Tomorrow' to see upcoming games!";
+    } else if (msg.includes('tip') || msg.includes('совет') || msg.includes('pick')) {
+      reply = "For AI-powered tips, open any match from the **Matches** tab and tap **Get AI Analysis**. The AI will analyze H2H data, form, and odds to give you a prediction.";
+    } else if (msg.includes('standing') || msg.includes('table') || msg.includes('таблиц')) {
+      reply = "League standings are available through the matches section. I can analyze any league for you!";
+    } else if (msg.includes('help') || msg.includes('помощь')) {
+      reply = "Here's what I can help with:\n\n**Match Analysis** — Ask about any specific match\n**Tips** — Get AI-powered betting recommendations\n**Standings** — League tables and stats\n**General** — Any football question!";
+    } else {
+      reply = "I'm currently running in offline mode. When connected to the server, I use **Claude AI** with **ML predictions** to give you detailed match analysis. For now, check the **Matches** tab for available games!";
     }
 
-    // Today
-    if (t.includes('today') || t.includes('сегодня')) {
-      return { reply: "📅 To see today's matches, go to the **Matches** tab and select **Today**.\n\nI can show you detailed AI analysis for any match — just open it and tap \"Get AI Analysis\"!", suggestions: ["Give me tips","Upcoming matches","PL standings"] };
-    }
+    return { response: reply, matches_context: null };
+  },
 
-    // Tomorrow
-    if (t.includes('tomorrow') || t.includes('завтра')) {
-      return { reply: "📅 Tomorrow's matches are available in the **Matches** tab → **Tomorrow**.\n\nYou can get AI predictions for any upcoming match!", suggestions: ["Today's matches","Tips","Standings"] };
-    }
+  // Chat status
+  async getChatStatus() {
+    return await this.request('GET', '/chat/status');
+  },
 
-    // Upcoming
-    if (t.includes('upcoming') || t.includes('week') || t.includes('ближайш') || t.includes('недел')) {
-      return { reply: "📅 Check **Matches** → **Upcoming** for all matches in the next 14 days.\n\nEach match has H2H stats and AI-powered analysis available!", suggestions: ["Today's matches","Tips","PL standings"] };
-    }
+  // ML Predictions
+  async getMLPrediction(matchId, homeTeam, awayTeam, leagueCode, matchDate) {
+    return await this.request('POST', '/ml/predict', {
+      match_id: matchId,
+      home_team: homeTeam,
+      away_team: awayTeam,
+      league_code: leagueCode,
+      match_date: matchDate
+    });
+  },
 
-    // Tips
-    if (['tip','tips','совет','советы','ставк','pick','best','лучш'].some(k => t.includes(k))) {
-      const tips = [
-        "🔥 **Tip #1**: Always check the H2H record before betting. Teams with a dominant H2H history tend to maintain that edge.\n\n💡 **Tip #2**: Under 2.5 goals is often safer in derby matches where teams play cautiously.\n\n🎯 **Tip #3**: Home advantage matters most in leagues like Serie A and Ligue 1.",
-        "📊 **Smart Betting Tips**:\n\n1. Don't chase losses — set a daily budget\n2. Value bets > favorites — look for odds that don't match actual probability\n3. BTTS is great for matches between mid-table teams\n4. Use the AI Analysis for each match to see factor breakdowns",
-        "🎯 **Today's Strategy**:\n\n• Look for matches where one team has 70%+ H2H win rate\n• Over 2.5 works well in Premier League\n• Double Chance (1X) is the safest bet type\n• Open any match for AI-powered analysis with confidence scores"
-      ];
-      return { reply: tips[Math.floor(Math.random() * tips.length)] + "\n\n⚠️ Always bet responsibly!", suggestions: ["Today's matches","More tips","Standings"] };
-    }
+  async getMLStatus() {
+    return await this.request('GET', '/ml/status');
+  },
 
-    // Standings
-    if (t.includes('standing') || t.includes('table') || t.includes('таблиц') || t.includes('турнир')) {
-      return { reply: "📊 League standings are available in the app!\n\nPopular leagues:\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League\n🇪🇸 La Liga\n🇩🇪 Bundesliga\n🇮🇹 Serie A\n🇫🇷 Ligue 1\n\nUse the Matches tab to browse by league, and open any match for detailed stats.", suggestions: ["Today's matches","Tips","Upcoming"] };
-    }
+  // Social
+  async getLeaderboard(period = 'weekly', limit = 20) {
+    return await this.request('GET', `/social/leaderboard?period=${period}&limit=${limit}`);
+  },
 
-    // Help
-    if (['help','помощь','что умеешь','how','как'].some(k => t.includes(k))) {
-      return { reply: "Here's what I can help with:\n\n⚽ **Matches** — Ask about today's, tomorrow's or upcoming matches\n💡 **Tips** — Get betting suggestions and strategies\n📊 **Standings** — League table information\n🎯 **Analysis** — Open any match for AI prediction\n🏆 **Leagues** — PL, LaLiga, Bundesliga, Serie A, Ligue 1\n\nTry: \"Give me tips\" or \"PL standings\"", suggestions: ["Today's matches","Tips","Standings","Upcoming"] };
-    }
-
-    // Leagues
-    if (['league','лига','premier','laliga','bundesliga','serie','ligue'].some(k => t.includes(k))) {
-      return { reply: "🏆 **Available Leagues:**\n\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League\n🇪🇸 La Liga\n🇩🇪 Bundesliga\n🇮🇹 Serie A\n🇫🇷 Ligue 1\n🇪🇺 Champions League\n🇪🇺 Europa League\n\nGo to Matches tab and use league filters to browse!", suggestions: ["PL standings","Today's matches","Tips"] };
-    }
-
-    // Default
-    return { reply: "I'm your AI football assistant! I can help with:\n\n• Match schedules (today/tomorrow/upcoming)\n• Betting tips and strategies\n• League standings\n• AI-powered match analysis\n\nTry asking: \"Give me tips\" or \"Today's matches\"", suggestions: ["Today's matches","Tips","PL standings","Help"] };
+  async getSocialFeed(limit = 20) {
+    return await this.request('GET', `/social/feed?limit=${limit}`);
   },
 };
 
