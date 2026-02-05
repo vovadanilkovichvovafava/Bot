@@ -33,9 +33,15 @@ class PredictionResponse(BaseModel):
     created_at: datetime
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str
     match_context: Optional[str] = None
+    history: Optional[List[ChatMessage]] = None
 
 
 class ChatResponse(BaseModel):
@@ -46,7 +52,8 @@ class ChatResponse(BaseModel):
 async def ai_chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
     """AI chat for football questions and analysis"""
     analyzer = MatchAnalyzer()
-    response = await analyzer.ai_chat(req.message, req.match_context or "")
+    history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
+    response = await analyzer.ai_chat(req.message, req.match_context or "", history)
     return ChatResponse(response=response)
 
 

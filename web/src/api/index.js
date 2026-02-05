@@ -128,10 +128,12 @@ class ApiService {
   }
 
   // AI Chat (uses backend /chat/send endpoint with Claude AI)
-  async aiChat(message, history = []) {
+  async aiChat(message, history = [], matchContext = null) {
+    const body = { message, history };
+    if (matchContext) body.match_context = matchContext;
     return this.request('/chat/send', {
       method: 'POST',
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify(body),
     });
   }
 }

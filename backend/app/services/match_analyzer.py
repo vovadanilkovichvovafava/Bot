@@ -63,27 +63,48 @@ class MatchAnalyzer:
             **analysis,
         }
 
-    async def ai_chat(self, message: str, match_context: str = "") -> str:
+    async def ai_chat(self, message: str, match_context: str = "", history: list = None) -> str:
         """AI chat for general football questions"""
         if not self.claude_client:
             return "AI assistant is not available. Please set CLAUDE_API_KEY."
 
         system = (
-            "You are an expert football/soccer analyst and betting advisor. "
-            "Provide insightful analysis based on statistics, form, and tactical knowledge. "
-            "Be concise but thorough. Always mention key factors behind your reasoning."
+            "You are an expert football/soccer analyst and betting advisor for the AI Betting Bot app. "
+            "You have deep knowledge of all football leagues, teams, players, tactics, and betting markets.\n\n"
+            "Guidelines:\n"
+            "- When real-time match data is provided in the context, ALWAYS use it as the primary basis for your analysis. "
+            "Do not guess or hallucinate statistics — use only the data provided.\n"
+            "- Structure predictions clearly: predicted outcome, confidence level, key factors, and a specific betting recommendation.\n"
+            "- For match analysis, cover: current form, head-to-head, injuries, tactical matchup, and market value.\n"
+            "- Use **bold** for key points and team names.\n"
+            "- Be honest about uncertainty. If you lack data, say so rather than fabricate.\n"
+            "- Keep responses focused and well-structured. Use bullet points for clarity.\n"
+            "- Respond in the same language the user writes in.\n"
+            "- Always end match predictions with a responsible gambling reminder."
         )
 
+        # Build messages array with conversation history
+        messages = []
+        if history:
+            # Include last 6 messages for context (3 turns)
+            for msg in history[-6:]:
+                role = msg.get("role", "user")
+                if role in ("user", "assistant"):
+                    messages.append({"role": role, "content": msg["content"]})
+
+        # Build current message with optional context
         prompt = message
         if match_context:
-            prompt = f"Context: {match_context}\n\nQuestion: {message}"
+            prompt = f"[Real-time match data]\n{match_context}\n\n[User question]\n{message}"
+
+        messages.append({"role": "user", "content": prompt})
 
         try:
             response = self.claude_client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=800,
+                max_tokens=1500,
                 system=system,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
             )
             return response.content[0].text
         except Exception as e:
