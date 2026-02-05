@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import MatchCard from '../components/MatchCard';
+import { getStats } from '../services/predictionStore';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -16,9 +17,11 @@ export default function Home() {
   const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
 
   useEffect(() => {
     loadMatches();
+    setLocalStats(getStats());
   }, []);
 
   const loadMatches = async () => {
@@ -97,8 +100,13 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="card">
-          <h3 className="font-bold text-gray-900 mb-3">Your Stats</h3>
+        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900">Your Stats</h3>
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="w-8 h-8 mx-auto mb-1 text-primary-500 flex items-center justify-center">
@@ -106,7 +114,7 @@ export default function Home() {
                   <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
                 </svg>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{user?.total_predictions || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{localStats.total}</p>
               <p className="text-xs text-gray-500">Predictions</p>
             </div>
             <div>
@@ -115,7 +123,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
-              <p className="text-2xl font-bold text-green-500">{user?.correct_predictions || 0}</p>
+              <p className="text-2xl font-bold text-green-500">{localStats.correct}</p>
               <p className="text-xs text-gray-500">Wins</p>
             </div>
             <div>
@@ -124,10 +132,13 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
                 </svg>
               </div>
-              <p className="text-2xl font-bold text-red-500">{user?.accuracy?.toFixed(0) || 0}%</p>
+              <p className="text-2xl font-bold text-red-500">{localStats.accuracy}%</p>
               <p className="text-xs text-gray-500">Accuracy</p>
             </div>
           </div>
+          {localStats.pending > 0 && (
+            <p className="text-xs text-amber-600 text-center mt-2">{localStats.pending} pending verification</p>
+          )}
         </div>
 
         {/* Pro Tools */}
