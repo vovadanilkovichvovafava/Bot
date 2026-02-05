@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-bet-analyst-v5';
+const CACHE_NAME = 'ai-bet-analyst-v6';
 const ASSETS = [
   '/',
   '/index.html',

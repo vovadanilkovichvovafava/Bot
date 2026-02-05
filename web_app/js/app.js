@@ -85,14 +85,59 @@ const app = {
   // ===== HOME PAGE — SLIDER + FEATURES ====
   // ========================================
   async loadHome() {
+    const limitsEl = document.getElementById('home-limits');
     const slider = document.getElementById('home-slider');
     const dots = document.getElementById('home-slider-dots');
-    const statsEl = document.getElementById('home-stats');
     const featEl = document.getElementById('home-features');
     const recentEl = document.getElementById('home-recent');
+    const compareEl = document.getElementById('home-compare');
     const proEl = document.getElementById('home-pro');
 
-    // 1) Load slider - top match per league
+    // 1) AI Requests counter — live from server
+    if (api.isLoggedIn()) {
+      const limits = await api.getAILimits();
+      if (limits) {
+        this._aiLimits = limits;
+        if (limits.unlimited) {
+          limitsEl.innerHTML = `
+            <div class="limits-bar limits-pro">
+              <span class="material-symbols-outlined" style="font-size:18px">all_inclusive</span>
+              <span class="limits-text">PRO — Unlimited AI analyses</span>
+              <span class="limits-badge-pro">ACTIVE</span>
+            </div>`;
+        } else {
+          const used = limits.daily_used || 0;
+          const max = limits.daily_limit || 5;
+          const bonus = limits.bonus_remaining || 0;
+          const remaining = limits.remaining || 0;
+          const pctUsed = Math.min(100, Math.round((used / max) * 100));
+          const low = remaining <= 1;
+          limitsEl.innerHTML = `
+            <div class="limits-bar ${low ? 'limits-low' : ''}">
+              <div class="limits-top">
+                <span class="material-symbols-outlined" style="font-size:16px">psychology</span>
+                <span class="limits-text">${remaining} AI ${remaining === 1 ? 'analysis' : 'analyses'} left today</span>
+                ${low ? `<span class="limits-badge-warn" onclick="app.showPro()">Get PRO</span>` : ''}
+              </div>
+              <div class="limits-progress">
+                <div class="limits-fill" style="width:${pctUsed}%"></div>
+              </div>
+              <div class="limits-sub">${used} of ${max} daily used${bonus > 0 ? ` + ${bonus} bonus` : ''}</div>
+            </div>`;
+        }
+      } else {
+        limitsEl.innerHTML = '';
+      }
+    } else {
+      limitsEl.innerHTML = `
+        <div class="limits-bar limits-guest" onclick="app.showLogin()">
+          <span class="material-symbols-outlined" style="font-size:18px">lock</span>
+          <span class="limits-text">Sign in to get 5 free AI analyses daily</span>
+          <span class="limits-badge-cta">Sign In</span>
+        </div>`;
+    }
+
+    // 2) Load slider - top match per league
     slider.innerHTML = '<div class="slide"><div class="loader"><div class="spinner"></div></div></div>';
     dots.innerHTML = '';
 
@@ -123,7 +168,7 @@ const app = {
           </div>
           <div class="slide-cta" onclick="app.showMatchDetail(${m.id})">
             <span class="material-symbols-outlined" style="font-size:16px">psychology</span>
-            Get AI Analysis
+            Get AI Analysis — FREE
           </div>
         </div>
       `).join('');
@@ -132,7 +177,6 @@ const app = {
         `<div class="slider-dot ${i === 0 ? 'active' : ''}" onclick="app.goSlide(${i})"></div>`
       ).join('');
 
-      // Auto-rotate every 8 seconds
       if (this.homeSlideTimer) clearInterval(this.homeSlideTimer);
       if (topMatches.length > 1) {
         this.homeSlideTimer = setInterval(() => this.slideHome(1), 8000);
@@ -146,84 +190,139 @@ const app = {
       </div>`;
     }
 
-    // 2) Quick stats
-    if (api.isLoggedIn() && this.user) {
-      const localPreds = predStorage.getAll();
-      const totalP = Math.max(this.user.total_predictions || 0, localPreds.length);
-      const acc = totalP > 0 ? Math.round(((this.user.correct_predictions || 0) / totalP) * 100) : 0;
-      statsEl.innerHTML = `
-        <div class="section-label">YOUR STATS</div>
-        <div class="stats-grid">
-          <div class="card stat-box"><div class="stat-val" style="color:var(--green)">${totalP}</div><div class="stat-lbl">Predictions</div></div>
-          <div class="card stat-box"><div class="stat-val" style="color:var(--cyan)">${this.user.correct_predictions || 0}</div><div class="stat-lbl">Correct</div></div>
-          <div class="card stat-box"><div class="stat-val" style="color:var(--gold)">${acc}%</div><div class="stat-lbl">Accuracy</div></div>
-        </div>`;
-    } else {
-      statsEl.innerHTML = '';
-    }
-
-    // 3) Features
+    // 3) Free feature cards with CTAs
     featEl.innerHTML = `
+      <div class="feat-card" onclick="router.go('matches')">
+        <div class="feat-icon" style="background:linear-gradient(135deg,var(--cyan),#0097A7)"><span class="material-symbols-outlined">sports_soccer</span></div>
+        <div class="feat-info">
+          <div class="feat-title">AI Match Analysis</div>
+          <div class="feat-desc">Real-time form, H2H, odds — powered by Claude AI</div>
+        </div>
+        <span class="feat-try">Try it</span>
+      </div>
       <div class="feat-card" onclick="router.go('ai')">
         <div class="feat-icon"><span class="material-symbols-outlined">smart_toy</span></div>
         <div class="feat-info">
           <div class="feat-title">AI Chat</div>
-          <div class="feat-desc">Claude AI + ML-powered match analysis</div>
+          <div class="feat-desc">Ask anything about football — the AI knows it all</div>
         </div>
-        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
-      </div>
-      <div class="feat-card" onclick="router.go('matches')">
-        <div class="feat-icon" style="background:linear-gradient(135deg,var(--cyan),#0097A7)"><span class="material-symbols-outlined">sports_soccer</span></div>
-        <div class="feat-info">
-          <div class="feat-title">Match Analysis</div>
-          <div class="feat-desc">H2H stats, real odds & ensemble ML predictions</div>
-        </div>
-        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
-      </div>
-      <div class="feat-card" onclick="app.showPro()">
-        <div class="feat-icon" style="background:linear-gradient(135deg,var(--gold),var(--orange))"><span class="material-symbols-outlined">star</span></div>
-        <div class="feat-info">
-          <div class="feat-title">PRO Features</div>
-          <div class="feat-desc">Unlimited picks, BTTS, Over/Under & more</div>
-        </div>
-        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+        <span class="feat-try">Try it</span>
       </div>
       <div class="feat-card" onclick="router.go('bets')">
         <div class="feat-icon" style="background:linear-gradient(135deg,#7C4DFF,#651FFF)"><span class="material-symbols-outlined">receipt_long</span></div>
         <div class="feat-info">
-          <div class="feat-title">Bet Tracker</div>
-          <div class="feat-desc">Track predictions & results</div>
+          <div class="feat-title">Prediction History</div>
+          <div class="feat-desc">Track all your AI analyses and results</div>
         </div>
-        <span class="material-symbols-outlined feat-arrow">chevron_right</span>
+        <span class="feat-try">View</span>
       </div>
     `;
 
-    // 4) Recent AI picks (last 3)
+    // 4) Recent AI picks
     const recentPreds = predStorage.getAll().slice(0, 3);
     if (recentPreds.length > 0) {
-      recentEl.innerHTML = `<div class="section-label">RECENT AI PICKS</div>` +
+      recentEl.innerHTML = `<div class="section-label">YOUR RECENT ANALYSES</div>` +
         recentPreds.map((p) => this.renderPredictionCard(p)).join('') +
         `<div style="text-align:center;margin-top:4px">
-          <span style="font-size:12px;color:var(--green);cursor:pointer;font-weight:600" onclick="router.go('bets')">View all predictions &rarr;</span>
+          <span style="font-size:12px;color:var(--green);cursor:pointer;font-weight:600" onclick="router.go('bets')">View all &rarr;</span>
         </div>`;
     } else {
       recentEl.innerHTML = '';
     }
 
-    // 5) PRO banner (if not premium)
+    // 5) FREE vs PRO comparison (if not premium)
+    if (!this.user?.is_premium) {
+      compareEl.innerHTML = `
+        <div class="section-label">FREE vs PRO</div>
+        <div class="compare-table">
+          <div class="compare-header">
+            <div class="compare-feat-h">Feature</div>
+            <div class="compare-free-h">Free</div>
+            <div class="compare-pro-h">PRO</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">AI analyses per day</div>
+            <div class="compare-free">5</div>
+            <div class="compare-pro">Unlimited</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">AI Chat</div>
+            <div class="compare-free">5 msg/day</div>
+            <div class="compare-pro">Unlimited</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">Match H2H & Stats</div>
+            <div class="compare-free"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+            <div class="compare-pro"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">Real Bookmaker Odds</div>
+            <div class="compare-free"><span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">close</span></div>
+            <div class="compare-pro"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">BTTS / Over-Under</div>
+            <div class="compare-free"><span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">close</span></div>
+            <div class="compare-pro"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">Stake & Risk Suggestions</div>
+            <div class="compare-free"><span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">close</span></div>
+            <div class="compare-pro"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-feat">Priority AI Processing</div>
+            <div class="compare-free"><span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted)">close</span></div>
+            <div class="compare-pro"><span class="material-symbols-outlined" style="font-size:16px;color:var(--green)">check</span></div>
+          </div>
+        </div>
+        <button class="btn btn-pro-full" onclick="app.showPro()">
+          <span class="material-symbols-outlined">star</span> Upgrade to PRO
+        </button>`;
+    } else {
+      compareEl.innerHTML = '';
+    }
+
+    // 6) PRO banner
     if (!this.user?.is_premium) {
       proEl.innerHTML = `
         <div class="home-pro-banner" onclick="app.showPro()">
-          <div class="pro-banner-icon"><span class="material-symbols-outlined" style="font-size:28px;color:#000">star</span></div>
-          <div class="pro-banner-text">
-            <div style="font-weight:800;font-size:14px;color:#000">Upgrade to PRO</div>
-            <div style="font-size:11px;color:rgba(0,0,0,0.6)">Unlimited AI predictions & advanced analysis</div>
+          <div class="pro-banner-glow"></div>
+          <div class="pro-banner-content">
+            <div style="font-weight:900;font-size:18px;color:#000">Go PRO</div>
+            <div style="font-size:12px;color:rgba(0,0,0,0.7);margin-top:2px">Unlimited AI analyses + all premium features</div>
+            <div style="margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#000;background:rgba(0,0,0,0.1);padding:4px 12px;border-radius:20px">
+              <span class="material-symbols-outlined" style="font-size:14px">arrow_forward</span> View Plans
+            </div>
           </div>
-          <span class="material-symbols-outlined" style="color:#000;font-size:20px">chevron_right</span>
         </div>`;
     } else {
       proEl.innerHTML = '';
     }
+  },
+
+  _updateLimitsBar() {
+    const el = document.getElementById('home-limits');
+    if (!el || !this._aiLimits) return;
+    const l = this._aiLimits;
+    if (l.unlimited) return; // PRO doesn't change
+    const used = l.daily_used || 0;
+    const max = l.daily_limit || 5;
+    const remaining = l.remaining || 0;
+    const pctUsed = Math.min(100, Math.round((used / max) * 100));
+    const low = remaining <= 1;
+    el.innerHTML = `
+      <div class="limits-bar ${low ? 'limits-low' : ''}">
+        <div class="limits-top">
+          <span class="material-symbols-outlined" style="font-size:16px">psychology</span>
+          <span class="limits-text">${remaining} AI ${remaining === 1 ? 'analysis' : 'analyses'} left today</span>
+          ${low ? `<span class="limits-badge-warn" onclick="app.showPro()">Get PRO</span>` : ''}
+        </div>
+        <div class="limits-progress">
+          <div class="limits-fill" style="width:${pctUsed}%"></div>
+        </div>
+        <div class="limits-sub">${used} of ${max} daily used${l.bonus_remaining > 0 ? ` + ${l.bonus_remaining} bonus` : ''}</div>
+      </div>`;
   },
 
   _pickTopMatches(matches) {
@@ -800,6 +899,9 @@ const app = {
       </div>`;
       return;
     }
+
+    // Refresh limits counter (async, non-blocking)
+    api.getAILimits().then(l => { if (l) this._aiLimits = l; this._updateLimitsBar(); });
 
     // Save to local prediction storage
     predStorage.save({

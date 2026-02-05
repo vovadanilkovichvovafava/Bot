@@ -72,6 +72,10 @@ const api = {
     return await this.request('PATCH', '/users/me', data);
   },
 
+  async getAILimits() {
+    return await this.request('GET', '/users/me/ai-limits');
+  },
+
   // Matches
   async getTodayMatches(league) {
     const q = league ? `?league=${league}` : '';
