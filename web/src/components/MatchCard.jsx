@@ -41,9 +41,6 @@ export default function MatchCard({ match, showLeague = true, compact = false })
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {match.home_team?.logo && (
-            <img src={match.home_team.logo} alt="" className="w-6 h-6 object-contain" onError={(e) => e.target.style.display='none'}/>
-          )}
           <div className="flex-1">
             <p className="font-medium text-gray-900">{match.home_team?.name}</p>
             <p className="font-medium text-gray-900">{match.away_team?.name}</p>
