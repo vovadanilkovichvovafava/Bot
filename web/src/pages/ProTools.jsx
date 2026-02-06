@@ -3,14 +3,25 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SupportChatModal, { BOOKMAKER } from '../components/SupportChat';
 
+// Tools that are not yet implemented
+const COMING_SOON_TOOLS = ['betSlip', 'bankroll', 'kelly'];
+
 export default function ProTools() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
   const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
   const isPremium = user?.is_premium;
 
   const handleToolClick = (toolName) => {
+    // Check if tool is coming soon
+    if (COMING_SOON_TOOLS.includes(toolName)) {
+      setShowComingSoon(true);
+      setTimeout(() => setShowComingSoon(false), 2000);
+      return;
+    }
+
     if (isPremium) {
       if (toolName === 'valueFinder') return navigate('/value-finder');
       if (toolName === 'predictions') return navigate('/prediction-history');
@@ -88,16 +99,14 @@ export default function ProTools() {
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>}
           title="Bet Slip Builder"
           subtitle="Build and manage your betting slips"
-          pro={!isPremium}
-          locked={!isPremium}
+          comingSoon
           onClick={() => handleToolClick('betSlip')}
         />
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>}
           title="Bankroll Tracker"
           subtitle="Track your betting bankroll and performance"
-          pro={!isPremium}
-          locked={!isPremium}
+          comingSoon
           onClick={() => handleToolClick('bankroll')}
         />
         <ToolCard
@@ -192,6 +201,18 @@ export default function ProTools() {
           initialMessage="Хочу PRO доступ"
         />
       )}
+
+      {/* Coming Soon Toast */}
+      {showComingSoon && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span className="text-sm font-medium">Coming Soon!</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -212,23 +233,32 @@ function FeatureRow({ label }) {
   );
 }
 
-function ToolCard({ icon, title, subtitle, pro, locked, onClick }) {
+function ToolCard({ icon, title, subtitle, pro, locked, comingSoon, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`card flex items-center gap-4 ${locked ? 'cursor-pointer' : onClick ? 'cursor-pointer hover:shadow-md' : ''} transition-shadow`}
+      className={`card flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow ${comingSoon ? 'opacity-70' : ''}`}
     >
-      <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${comingSoon ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'}`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-gray-900">{title}</p>
-          {pro && <span className="badge-pro text-[10px]">PRO</span>}
+          <p className={`font-semibold ${comingSoon ? 'text-gray-500' : 'text-gray-900'}`}>{title}</p>
+          {comingSoon && (
+            <span className="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
+              SOON
+            </span>
+          )}
+          {pro && !comingSoon && <span className="badge-pro text-[10px]">PRO</span>}
         </div>
         <p className="text-sm text-gray-500 truncate">{subtitle}</p>
       </div>
-      {locked ? (
+      {comingSoon ? (
+        <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      ) : locked ? (
         <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
         </svg>
