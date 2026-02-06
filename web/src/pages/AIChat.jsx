@@ -39,6 +39,19 @@ export default function AIChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Build user preferences string
+  const getUserPreferencesPrompt = () => {
+    const minOdds = user?.min_odds || 1.5;
+    const maxOdds = user?.max_odds || 3.0;
+    const riskLevel = user?.risk_level || 'medium';
+    const riskDesc = {
+      low: 'Conservative - safer bets, favorites, double chance. 1-2% stakes.',
+      medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
+      high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
+    };
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range.]`;
+  };
+
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return;
     const userMsg = { id: Date.now(), role: 'user', content: text };
@@ -52,7 +65,10 @@ export default function AIChat() {
       const history = messages
         .filter(m => m.id !== 'welcome')
         .map(m => ({ role: m.role, content: m.content }));
-      history.push({ role: 'user', content: text });
+
+      // Add user preferences to the message
+      const textWithPrefs = text + getUserPreferencesPrompt();
+      history.push({ role: 'user', content: textWithPrefs });
 
       // Enrich with real-time football data from API-Football
       setEnriching(true);
@@ -64,7 +80,7 @@ export default function AIChat() {
       }
       setEnriching(false);
 
-      const data = await api.aiChat(text, history, matchContext);
+      const data = await api.aiChat(textWithPrefs, history, matchContext);
       const newCount = responseCount + 1;
       setResponseCount(newCount);
       setMessages(prev => [...prev, {

@@ -87,7 +87,21 @@ export default function LiveMatchDetail() {
         });
       }
 
-      prompt += '\nProvide LIVE analysis: current momentum, which team is dominating, prediction for remaining time, recommended live bets with reasoning. Be specific about the current match state.';
+      // Add user betting preferences
+      const minOdds = user?.min_odds || 1.5;
+      const maxOdds = user?.max_odds || 3.0;
+      const riskLevel = user?.risk_level || 'medium';
+      const riskDesc = {
+        low: 'Conservative - safer live bets, cash out recommendations. 1-2% stakes.',
+        medium: 'Balanced - standard live bets, next goal, over/under. 2-5% stakes.',
+        high: 'Aggressive - value live picks, correct score, comeback bets. 5-10% stakes.'
+      };
+
+      prompt += `\n\n**USER PREFERENCES:**`;
+      prompt += `\n- Odds range: ${minOdds} - ${maxOdds}`;
+      prompt += `\n- Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]})`;
+
+      prompt += '\n\nProvide LIVE analysis: current momentum, which team is dominating, prediction for remaining time. Recommend live bets matching user preferences (odds between ' + minOdds + '-' + maxOdds + ', ' + riskLevel + ' risk). Be specific about the current match state.';
 
       const data = await api.aiChat(prompt);
       setAiAnalysis(data.response);

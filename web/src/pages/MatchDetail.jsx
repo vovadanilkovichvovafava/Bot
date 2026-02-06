@@ -159,7 +159,24 @@ export default function MatchDetail() {
       prompt += `\nH2H (${h.total_matches} matches): Home ${h.home_wins}W, ${h.draws}D, Away ${h.away_wins}W`;
     }
 
-    prompt += `\n\nProvide a detailed prediction with probabilities, key factors, and a specific betting recommendation with suggested stake.`;
+    // Add user betting preferences
+    const minOdds = user?.min_odds || 1.5;
+    const maxOdds = user?.max_odds || 3.0;
+    const riskLevel = user?.risk_level || 'medium';
+    const riskDesc = {
+      low: 'Conservative approach - focus on safer bets like double chance, under goals, favorites. Suggest 1-2% of bankroll per bet.',
+      medium: 'Balanced approach - standard 1X2, over/under, BTTS bets. Suggest 2-5% of bankroll per bet.',
+      high: 'Aggressive approach - value picks, accumulators, correct scores allowed. Suggest 5-10% of bankroll per bet.'
+    };
+
+    prompt += `\n\n**USER BETTING PREFERENCES (IMPORTANT - FOLLOW THESE):**`;
+    prompt += `\n- Minimum acceptable odds: ${minOdds}`;
+    prompt += `\n- Maximum acceptable odds: ${maxOdds}`;
+    prompt += `\n- Risk level: ${riskLevel.toUpperCase()}`;
+    prompt += `\n- Strategy: ${riskDesc[riskLevel]}`;
+    prompt += `\n\nONLY recommend bets with odds between ${minOdds} and ${maxOdds}. Adjust your recommendations based on the ${riskLevel} risk profile.`;
+
+    prompt += `\n\nProvide a detailed prediction with probabilities, key factors, and a specific betting recommendation with suggested stake that matches the user's preferences.`;
     return prompt;
   };
 
