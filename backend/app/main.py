@@ -5,6 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api import auth, matches, predictions, users, football
 from app.core.database import init_db
+from app.middleware import (
+    SecurityHeadersMiddleware,
+    RateLimitMiddleware,
+    InjectionDetectionMiddleware,
+)
 
 
 @asynccontextmanager
@@ -30,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security middleware (order matters: first added = last executed)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(InjectionDetectionMiddleware)
 
 # Routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Don't auto-error, we'll check cookies too
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -38,7 +38,33 @@ def verify_token(token: str) -> dict:
         )
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    token = credentials.credentials
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> dict:
+    """
+    Get current user from JWT token.
+    Checks in order:
+    1. Authorization header (Bearer token)
+    2. access_token cookie (httpOnly)
+    """
+    token = None
+
+    # First, try Authorization header
+    if credentials:
+        token = credentials.credentials
+
+    # If no header, try cookie
+    if not token:
+        token = request.cookies.get("access_token")
+
+    # If still no token, unauthorized
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = verify_token(token)
     return payload
