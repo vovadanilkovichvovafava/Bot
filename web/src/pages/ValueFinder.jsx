@@ -196,67 +196,109 @@ function ValueBetCard({ item, navigate }) {
   const time = new Date(fixture.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const league = fixture.league.name;
 
-  const valueColor = bestBet.value >= 10 ? 'text-green-600 bg-green-50' : 'text-amber-600 bg-amber-50';
-  const valueBg = bestBet.value >= 10 ? 'border-green-200' : 'border-amber-200';
+  const isHighValue = bestBet.value >= 10;
 
   return (
-    <div className={`card border ${valueBg}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] text-gray-400 font-medium uppercase">{league}</span>
-        <span className="text-xs text-gray-500">{time}</span>
-      </div>
+    <div
+      className="bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => navigate(`/match/${fixture.fixture.id}`)}
+    >
+      {/* Top gradient bar */}
+      <div className={`h-1 ${isHighValue ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`}/>
 
-      {/* Teams */}
-      <div className="flex items-center gap-3 mb-3">
-        <img src={fixture.teams.home.logo} alt="" className="w-8 h-8 object-contain"/>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{fixture.teams.home.name}</p>
-          <p className="text-sm font-semibold text-gray-900 truncate">{fixture.teams.away.name}</p>
-        </div>
-        <img src={fixture.teams.away.logo} alt="" className="w-8 h-8 object-contain"/>
-      </div>
-
-      {/* Value highlight */}
-      <div className={`rounded-xl p-3 mb-3 ${bestBet.value >= 10 ? 'bg-green-50' : 'bg-amber-50'}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500">Best Value Bet</p>
-            <p className="font-bold text-gray-900">{bestBet.team}</p>
+      <div className="p-4">
+        {/* Header with league and time */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <img src={fixture.league.logo} alt="" className="w-4 h-4 object-contain"/>
+            <span className="text-xs text-gray-500 font-medium">{league}</span>
           </div>
-          <div className="text-right">
-            <p className={`text-lg font-bold ${bestBet.value >= 10 ? 'text-green-600' : 'text-amber-600'}`}>
-              +{bestBet.value.toFixed(1)}%
-            </p>
-            <p className="text-[10px] text-gray-400">value edge</p>
+          <span className="text-xs font-medium text-gray-900 bg-gray-100 px-2 py-0.5 rounded">{time}</span>
+        </div>
+
+        {/* Teams - horizontal layout with VS */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <img src={fixture.teams.home.logo} alt="" className="w-8 h-8 object-contain shrink-0"/>
+            <p className="text-sm font-semibold text-gray-900 truncate">{fixture.teams.home.name}</p>
+          </div>
+          <span className="text-xs text-gray-400 font-medium px-3">VS</span>
+          <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+            <p className="text-sm font-semibold text-gray-900 truncate text-right">{fixture.teams.away.name}</p>
+            <img src={fixture.teams.away.logo} alt="" className="w-8 h-8 object-contain shrink-0"/>
           </div>
         </div>
-        <div className="flex items-center gap-4 mt-2 text-xs">
-          <span className="text-gray-600">AI: <strong>{bestBet.pred}%</strong></span>
-          <span className="text-gray-400">vs</span>
-          <span className="text-gray-600">Odds: <strong>{bestBet.odd}</strong> ({impliedProb(bestBet.odd).toFixed(0)}%)</span>
+
+        {/* Value highlight - more prominent */}
+        <div className={`rounded-xl p-3 mb-3 ${isHighValue ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200' : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-500 font-medium">Best Value Bet</p>
+              <p className="font-bold text-gray-900 text-lg">{bestBet.team}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-gray-600">AI: <strong className="text-gray-900">{bestBet.pred}%</strong></span>
+                <span className="text-gray-300">|</span>
+                <span className="text-xs text-gray-600">Odds: <strong className="text-gray-900">{bestBet.odd}</strong></span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-2xl font-bold ${isHighValue ? 'text-green-600' : 'text-amber-600'}`}>
+                +{bestBet.value.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">value edge</p>
+            </div>
+          </div>
+        </div>
+
+        {/* All 3 outcomes - improved grid */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {bets.map((b, i) => {
+            const isPositive = b.value > 0;
+            const isBest = b.type === bestBet.type;
+            return (
+              <div
+                key={i}
+                className={`rounded-xl py-2.5 px-2 text-center transition-all ${
+                  isBest
+                    ? (isHighValue ? 'bg-green-100 border-2 border-green-400' : 'bg-amber-100 border-2 border-amber-400')
+                    : isPositive
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-gray-50 border border-gray-100'
+                }`}
+              >
+                <p className="text-[10px] text-gray-500 font-medium">{b.type}</p>
+                <p className="text-base font-bold text-gray-900">{b.odd}</p>
+                <p className={`text-xs font-semibold ${
+                  isPositive ? (isBest ? (isHighValue ? 'text-green-700' : 'text-amber-700') : 'text-green-600') : 'text-gray-400'
+                }`}>
+                  {isPositive ? `+${b.value.toFixed(1)}%` : `${b.value.toFixed(1)}%`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Advice */}
+        {prediction?.predictions?.advice && (
+          <div className="flex items-start gap-2 bg-blue-50 rounded-lg p-2.5 mb-2">
+            <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            <p className="text-xs text-blue-800">{prediction.predictions.advice}</p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <p className="text-[10px] text-gray-400">Source: {bookmaker}</p>
+          <div className="flex items-center gap-1 text-primary-600">
+            <span className="text-xs font-medium">View details</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
         </div>
       </div>
-
-      {/* All 3 outcomes */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {bets.map((b, i) => (
-          <div key={i} className={`rounded-lg py-2 px-2 text-center ${b.value > 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-            <p className="text-[10px] text-gray-400">{b.type}</p>
-            <p className="text-sm font-bold text-gray-900">{b.odd}</p>
-            <p className={`text-[10px] font-semibold ${b.value > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-              {b.value > 0 ? `+${b.value.toFixed(1)}%` : `${b.value.toFixed(1)}%`}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Advice */}
-      {prediction?.predictions?.advice && (
-        <p className="text-xs text-gray-500 mb-2">{prediction.predictions.advice}</p>
-      )}
-
-      <p className="text-[10px] text-gray-400">{bookmaker}</p>
     </div>
   );
 }
