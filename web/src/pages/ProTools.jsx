@@ -124,85 +124,62 @@ export default function ProTools() {
         <div className="h-4"/>
       </div>
 
-      {/* PRO Lock Screen Modal - 2 paths */}
+      {/* PRO Lock Modal - Compact version */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setModal(null)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setModal(null)}>
+          <div className="absolute inset-0 bg-black/40"/>
           <div
-            className="relative bg-white rounded-t-3xl w-full max-w-lg px-6 pt-3 pb-8 animate-slideUp"
+            className="relative bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Handle */}
-            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"/>
-
-            {/* Star icon */}
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
-              </svg>
-            </div>
-
-            {/* Title */}
-            <h2 className="text-xl font-bold text-gray-900 text-center mb-1">
-              Открой {modal === 'valueFinder' ? 'Value Finder' : modal === 'bankroll' ? 'Bankroll Tracker' : modal === 'betSlip' ? 'Bet Slip Builder' : 'PRO'} бесплатно!
-            </h2>
-            <p className="text-gray-500 text-center text-sm mb-5">
-              Зарегистрируйся в {BOOKMAKER.name} и получи полный PRO-доступ на 30 дней
-            </p>
-
-            {/* 3 Steps */}
-            <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                <span className="text-sm text-gray-700">Зарегистрируйся в {BOOKMAKER.name} по ссылке</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                <span className="text-sm text-gray-700">Внеси первый депозит от {BOOKMAKER.minDeposit}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">✓</span>
-                <span className="text-sm text-gray-700">PRO откроется автоматически!</span>
-              </div>
-            </div>
-
-            {/* Bonus badge */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 mb-5 flex items-center gap-3">
-              <span className="text-2xl">🎁</span>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Бонус {BOOKMAKER.bonus} для новых игроков</p>
-                <p className="text-xs text-gray-500">+ бесплатный PRO-доступ на 30 дней</p>
-              </div>
-            </div>
-
-            {/* Path A: Register button */}
-            <a
-              href={BOOKMAKER.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg"
-            >
-              <span>Зарегистрироваться в {BOOKMAKER.name}</span>
+            {/* Close button */}
+            <button onClick={() => setModal(null)} className="absolute top-3 right-3 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
-            </a>
-
-            {/* Path B: Contact support */}
-            <button
-              onClick={() => { setModal(null); setShowSupportChat(true); }}
-              className="w-full text-primary-600 font-semibold py-3 mt-2 flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
-              </svg>
-              Нужна помощь? Напиши нам
             </button>
 
-            {/* Already registered note */}
-            <p className="text-center text-xs text-gray-400 mt-3">
-              Уже зарегистрирован? Доступ откроется автоматически
-            </p>
+            {/* Icon + Title */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">PRO функция</h3>
+                <p className="text-xs text-gray-500">Доступна с подпиской</p>
+              </div>
+            </div>
+
+            {/* Free unlock option */}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+              <p className="text-sm font-medium text-green-800 mb-1">🎁 Получи бесплатно!</p>
+              <p className="text-xs text-green-600">
+                Зарегистрируйся в {BOOKMAKER.name} → PRO на 30 дней
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-2">
+              <a
+                href={BOOKMAKER.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+              >
+                Открыть бесплатно
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                </svg>
+              </a>
+              <button
+                onClick={() => setModal(null)}
+                className="w-full text-gray-500 text-sm py-2"
+              >
+                Закрыть
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -198,17 +198,21 @@ export default function MatchDetail() {
 
       // Auto-save prediction for history tracking
       try {
-        savePrediction({
+        const matchDate = match.match_date || enriched?.fixture?.fixture?.date || new Date().toISOString();
+        const saved = savePrediction({
           matchId: id,
           homeTeam: match.home_team || { name: 'Home' },
           awayTeam: match.away_team || { name: 'Away' },
-          league: match.league || '',
-          matchDate: match.match_date,
+          league: match.league || enriched?.fixture?.league?.name || '',
+          matchDate,
           apiPrediction: apiPred,
           claudeAnalysis: data.response,
           odds: getOdds1x2(),
         });
-      } catch (_) {}
+        console.log('Prediction saved:', saved);
+      } catch (e) {
+        console.error('Failed to save prediction:', e);
+      }
     } catch (e) {
       console.error(e);
       // Still show API-Football prediction even if Claude fails

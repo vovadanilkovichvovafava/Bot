@@ -28,27 +28,41 @@ export function savePrediction({
   claudeAnalysis,
   odds,
 }) {
+  if (!matchId) {
+    console.warn('savePrediction: no matchId provided');
+    return null;
+  }
+
   const predictions = getAll();
 
   // Don't duplicate — one prediction per match
-  if (predictions.find(p => p.matchId === matchId)) return;
+  if (predictions.find(p => String(p.matchId) === String(matchId))) {
+    console.log('savePrediction: prediction already exists for matchId', matchId);
+    return null;
+  }
 
   // Extract prediction info from API-Football
   const pred = apiPrediction?.predictions;
   const winner = pred?.winner;
   const percent = pred?.percent;
 
-  // Determine betType from winner prediction
+  // Determine betType from winner prediction or Claude analysis
   let betType = 'Unknown';
-  if (winner?.name && winner?.comment) {
+  if (winner?.name) {
     betType = winner.name;
   } else if (percent) {
     const h = parseInt(percent.home) || 0;
     const d = parseInt(percent.draw) || 0;
     const a = parseInt(percent.away) || 0;
-    if (h >= d && h >= a) betType = homeTeam.name;
-    else if (a >= d && a >= h) betType = awayTeam.name;
+    if (h >= d && h >= a) betType = homeTeam?.name || 'Home';
+    else if (a >= d && a >= h) betType = awayTeam?.name || 'Away';
     else betType = 'Draw';
+  } else if (claudeAnalysis) {
+    // Try to extract bet recommendation from Claude's response
+    const lower = claudeAnalysis.toLowerCase();
+    if (lower.includes(homeTeam?.name?.toLowerCase())) betType = homeTeam.name;
+    else if (lower.includes(awayTeam?.name?.toLowerCase())) betType = awayTeam.name;
+    else if (lower.includes('draw') || lower.includes('ничья')) betType = 'Draw';
   }
 
   // Determine confidence from percentages
@@ -60,11 +74,11 @@ export function savePrediction({
 
   const entry = {
     id: Date.now().toString(),
-    matchId,
-    homeTeam: { name: homeTeam.name, logo: homeTeam.logo },
-    awayTeam: { name: awayTeam.name, logo: awayTeam.logo },
-    league,
-    matchDate,
+    matchId: String(matchId),
+    homeTeam: { name: homeTeam?.name || 'Home', logo: homeTeam?.logo || null },
+    awayTeam: { name: awayTeam?.name || 'Away', logo: awayTeam?.logo || null },
+    league: league || 'Unknown',
+    matchDate: matchDate || new Date().toISOString(),
     prediction: {
       betType,
       confidence,
@@ -80,6 +94,8 @@ export function savePrediction({
     createdAt: new Date().toISOString(),
     verifiedAt: null,
   };
+
+  console.log('savePrediction: saving entry', entry);
 
   predictions.unshift(entry);
 
