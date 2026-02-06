@@ -17,6 +17,7 @@ import ValueFinder from './pages/ValueFinder';
 import PredictionHistory from './pages/PredictionHistory';
 import OddsConverter from './pages/OddsConverter';
 import YourStats from './pages/YourStats';
+import LiveMatchDetail from './pages/LiveMatchDetail';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -64,6 +65,9 @@ export default function App() {
       </Route>
       <Route path="/match/:id" element={
         <ProtectedRoute><MatchDetail /></ProtectedRoute>
+      } />
+      <Route path="/live/:id" element={
+        <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
       } />
       <Route path="/premium" element={
         <ProtectedRoute><Premium /></ProtectedRoute>

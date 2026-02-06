@@ -157,7 +157,7 @@ export default function Matches() {
                     </div>
                     <div className="space-y-2">
                       {fixtures.map(f => (
-                        <LiveMatchCard key={f.fixture.id} fixture={f}/>
+                        <LiveMatchCard key={f.fixture.id} fixture={f} onClick={() => navigate(`/live/${f.fixture.id}`)}/>
                       ))}
                     </div>
                   </div>
@@ -192,7 +192,7 @@ export default function Matches() {
   );
 }
 
-function LiveMatchCard({ fixture }) {
+function LiveMatchCard({ fixture, onClick }) {
   const f = fixture;
   const elapsed = f.fixture.status.elapsed;
   const statusShort = f.fixture.status.short;
@@ -200,7 +200,7 @@ function LiveMatchCard({ fixture }) {
   const minuteDisplay = statusShort === 'HT' ? 'HT' : elapsed ? `${elapsed}'` : statusShort;
 
   return (
-    <div className="card border border-red-100">
+    <div className="card border border-red-100 cursor-pointer hover:shadow-lg hover:border-red-200 transition-all" onClick={onClick}>
       <div className="flex items-center gap-3">
         {/* Home */}
         <div className="flex-1">
