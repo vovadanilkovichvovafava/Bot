@@ -213,20 +213,20 @@ export default function Matches() {
                 {/* Popular leagues */}
                 {Object.keys(todayGrouped.popular).length > 0 && (
                   <LeagueSection
-                    title="⭐ Топ лиги"
                     leagues={todayGrouped.popular}
                     navigate={navigate}
                     isLive={false}
+                    isPopular={true}
                   />
                 )}
 
                 {/* Other leagues */}
                 {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
                   <LeagueSection
-                    title="🌍 Другие лиги"
                     leagues={todayGrouped.other}
                     navigate={navigate}
                     isLive={false}
+                    isPopular={false}
                     collapsed
                   />
                 )}
@@ -261,20 +261,20 @@ export default function Matches() {
                 {/* Popular leagues */}
                 {Object.keys(liveGrouped.popular).length > 0 && (
                   <LeagueSection
-                    title="⭐ Топ лиги"
                     leagues={liveGrouped.popular}
                     navigate={navigate}
                     isLive={true}
+                    isPopular={true}
                   />
                 )}
 
                 {/* Other leagues */}
                 {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
                   <LeagueSection
-                    title="🌍 Другие лиги"
                     leagues={liveGrouped.other}
                     navigate={navigate}
                     isLive={true}
+                    isPopular={false}
                     collapsed
                   />
                 )}
@@ -368,21 +368,32 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount }) {
   );
 }
 
-function LeagueSection({ title, leagues, navigate, isLive, collapsed }) {
+function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular }) {
   const [isExpanded, setIsExpanded] = useState(!collapsed);
   const leagueList = Object.values(leagues);
 
   if (leagueList.length === 0) return null;
 
+  const matchCount = leagueList.reduce((acc, l) => acc + l.fixtures.length, 0);
+
   return (
-    <div className="mb-6">
+    <div className={`mb-6 rounded-2xl overflow-hidden ${isPopular ? 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200' : 'bg-gray-50 border border-gray-200'}`}>
+      {/* Section Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full mb-3"
+        className={`flex items-center justify-between w-full px-4 py-3 ${isPopular ? 'bg-gradient-to-r from-amber-100 to-orange-100' : 'bg-gray-100'}`}
       >
-        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
+          <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
+            {isPopular ? 'Топ лиги' : 'Другие лиги'}
+          </h3>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
+            {matchCount} матчей
+          </span>
+        </div>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 transition-transform ${isPopular ? 'text-amber-600' : 'text-gray-500'} ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
@@ -390,12 +401,12 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed }) {
       </button>
 
       {isExpanded && (
-        <div className="space-y-4">
+        <div className="p-4 space-y-4">
           {leagueList.map(({ league, fixtures }) => (
             <div key={league.id}>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200/50">
                 <img src={league.logo} alt="" className="w-5 h-5 object-contain"/>
-                <span className="text-xs font-medium text-gray-500">{league.name}</span>
+                <span className="text-sm font-semibold text-gray-700">{league.name}</span>
                 <span className="text-[10px] text-gray-400 ml-auto">{league.country}</span>
               </div>
               <div className="space-y-2">
