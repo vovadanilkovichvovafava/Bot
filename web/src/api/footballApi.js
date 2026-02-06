@@ -117,6 +117,11 @@ class FootballApiService {
 
   // === Fixtures ===
 
+  async getTodayFixtures() {
+    const today = new Date().toISOString().split('T')[0];
+    return this.getFixturesByDate(today);
+  }
+
   async getFixturesByDate(date) {
     return this.request(`/fixtures/date/${date}`, '/fixtures', { date });
   }
