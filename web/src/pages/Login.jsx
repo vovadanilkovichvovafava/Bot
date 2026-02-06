@@ -40,13 +40,11 @@ export default function Login() {
         <div className="relative text-center">
           {/* Logo */}
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-6 shadow-lg shadow-primary-500/30">
-            <svg viewBox="0 0 40 40" className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="20" cy="20" r="16"/>
-              <circle cx="20" cy="20" r="5"/>
-              <line x1="20" y1="4" x2="20" y2="12"/>
-              <line x1="20" y1="28" x2="20" y2="36"/>
-              <line x1="4" y1="20" x2="12" y2="20"/>
-              <line x1="28" y1="20" x2="36" y2="20"/>
+            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
 
@@ -64,9 +62,9 @@ export default function Login() {
               <p className="text-green-600 font-bold text-lg">73%</p>
               <p className="text-green-600/70 text-[10px] uppercase font-medium">Win Rate</p>
             </div>
-            <div className="bg-primary-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-primary-600 font-bold text-lg">900+</p>
-              <p className="text-primary-600/70 text-[10px] uppercase font-medium">Лиг</p>
+            <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
+              <p className="text-amber-600 font-bold text-lg">PRO</p>
+              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Доступ</p>
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
               <p className="text-purple-600 font-bold text-lg">AI</p>
