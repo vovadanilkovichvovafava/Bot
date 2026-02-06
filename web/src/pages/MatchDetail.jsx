@@ -246,10 +246,10 @@ export default function MatchDetail() {
   if (loading) {
     return (
       <div className="h-screen flex flex-col bg-[#F0F2F5]">
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="bg-white px-5 pt-4 pb-6">
-            <div className="shimmer h-6 w-48 mx-auto mb-4"/>
-            <div className="shimmer h-32 w-full rounded-xl"/>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"/>
+            <p className="text-gray-500 text-sm">Загрузка матча...</p>
           </div>
         </div>
       </div>
@@ -258,8 +258,32 @@ export default function MatchDetail() {
 
   if (!match) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#F0F2F5]">
-        <p className="text-gray-500">Match not found</p>
+      <div className="h-screen flex flex-col bg-[#F0F2F5]">
+        <div className="bg-white px-5 py-4">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+            Назад
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center px-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Матч не найден</h2>
+            <p className="text-gray-500 text-sm mb-6">Возможно, матч уже завершился или данные недоступны</p>
+            <button
+              onClick={() => navigate('/matches')}
+              className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl"
+            >
+              К списку матчей
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
