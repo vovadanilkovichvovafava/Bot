@@ -127,12 +127,12 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-[60] flex flex-col">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
 
       {/* Chat Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col animate-slide-up">
+      <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col animate-slide-up pb-safe">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="relative">
@@ -220,7 +220,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
         </div>
 
         {/* Input */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-white">
+        <div className="px-5 pt-4 pb-6 border-t border-gray-100 bg-white">
           <div className="flex items-center gap-3">
             <input
               ref={inputRef}
@@ -234,7 +234,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
             <button
               onClick={sendMessage}
               disabled={!input.trim()}
-              className="w-12 h-12 bg-primary-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-12 h-12 bg-primary-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
