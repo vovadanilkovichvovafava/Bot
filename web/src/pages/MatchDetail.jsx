@@ -25,15 +25,49 @@ export default function MatchDetail() {
 
   const loadMatch = async () => {
     try {
+      // First try backend (Football-Data.org)
       const data = await api.getMatchDetail(id);
-      setMatch(data);
-      // Load enriched data from API-Football
-      loadEnrichedData(data);
+      if (data) {
+        setMatch(data);
+        // Load enriched data from API-Football
+        loadEnrichedData(data);
+        return;
+      }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      console.warn('Backend match not found, trying API-Football:', e);
     }
+
+    // Fallback: Load directly from API-Football (for Today tab matches)
+    try {
+      const fixture = await footballApi.getFixture(id);
+      if (fixture) {
+        // Convert API-Football format to our format
+        const converted = {
+          id: fixture.fixture.id,
+          league: fixture.league?.name || '',
+          match_date: fixture.fixture.date,
+          status: fixture.fixture.status?.long || 'Upcoming',
+          home_team: {
+            name: fixture.teams?.home?.name,
+            logo: fixture.teams?.home?.logo,
+          },
+          away_team: {
+            name: fixture.teams?.away?.name,
+            logo: fixture.teams?.away?.logo,
+          },
+          home_score: fixture.goals?.home,
+          away_score: fixture.goals?.away,
+        };
+        setMatch(converted);
+        // Load enriched data
+        loadEnrichedDataFromFixture(fixture);
+        return;
+      }
+    } catch (e) {
+      console.error('API-Football fixture not found:', e);
+    }
+
+    setLoading(false);
   };
 
   const loadEnrichedData = async (m) => {
@@ -49,6 +83,40 @@ export default function MatchDetail() {
       console.error('API-Football enrichment failed:', e);
     } finally {
       setEnrichedLoading(false);
+    }
+  };
+
+  // For API-Football fixtures - load enriched data directly
+  const loadEnrichedDataFromFixture = async (fixture) => {
+    const fixtureId = fixture.fixture.id;
+    try {
+      // Fetch all enriched data in parallel
+      const [prediction, odds, stats, events, lineups, injuries] = await Promise.allSettled([
+        footballApi.getPrediction(fixtureId),
+        footballApi.getOdds(fixtureId),
+        footballApi.getFixtureStatistics(fixtureId),
+        footballApi.getFixtureEvents(fixtureId),
+        footballApi.getFixtureLineups(fixtureId),
+        footballApi.getInjuries(fixtureId),
+      ]);
+
+      setEnriched({
+        fixture,
+        fixtureId,
+        homeId: fixture.teams?.home?.id,
+        awayId: fixture.teams?.away?.id,
+        prediction: prediction.status === 'fulfilled' ? prediction.value : null,
+        odds: odds.status === 'fulfilled' ? odds.value : [],
+        stats: stats.status === 'fulfilled' ? stats.value : [],
+        events: events.status === 'fulfilled' ? events.value : [],
+        lineups: lineups.status === 'fulfilled' ? lineups.value : [],
+        injuries: injuries.status === 'fulfilled' ? injuries.value : [],
+      });
+    } catch (e) {
+      console.error('Failed to load enriched data:', e);
+    } finally {
+      setEnrichedLoading(false);
+      setLoading(false);
     }
   };
 
