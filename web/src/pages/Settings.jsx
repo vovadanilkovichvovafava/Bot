@@ -52,7 +52,7 @@ const RISK_OPTIONS = [
 ];
 
 export default function Settings() {
-  const { user, logout, isDemo } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
@@ -64,7 +64,6 @@ export default function Settings() {
   const riskInfo = RISK_OPTIONS.find(r => r.key === riskLevel) || RISK_OPTIONS[1];
 
   const handleUpdate = async (data) => {
-    if (isDemo) return;
     try {
       await api.updateMe(data);
     } catch (e) {
