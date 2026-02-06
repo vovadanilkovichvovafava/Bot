@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
+import SupportChat, { BOOKMAKER } from '../components/SupportChat';
 
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
@@ -55,6 +56,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
+  const [showSupportChat, setShowSupportChat] = useState(false);
   const [minOdds, setMinOdds] = useState(user?.min_odds || 1.5);
   const [maxOdds, setMaxOdds] = useState(user?.max_odds || 3.0);
   const [riskLevel, setRiskLevel] = useState(user?.risk_level || 'medium');
@@ -96,6 +98,69 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        {/* Bookmaker Status */}
+        <div className="mb-3">
+          <p className="text-primary-600 font-semibold text-sm mb-1">Партнёр</p>
+          <p className="text-xs text-gray-500 mb-3">Статус регистрации в {BOOKMAKER.name}</p>
+        </div>
+
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-lg">🎁</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              {user?.is_premium ? (
+                <>
+                  <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    Зарегистрирован
+                  </p>
+                  <p className="text-xs text-gray-600">PRO-доступ активен</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-gray-900">Бонус {BOOKMAKER.bonus}</p>
+                  <p className="text-xs text-gray-600">Зарегистрируйся и получи PRO</p>
+                </>
+              )}
+            </div>
+            {!user?.is_premium && (
+              <a
+                href={BOOKMAKER.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
+              >
+                Получить
+              </a>
+            )}
+          </div>
+        </div>
+
+        <SettingsItem
+          icon={<span className="text-lg">💬</span>}
+          label="Написать менеджеру"
+          value="Помощь с регистрацией и PRO"
+          onClick={() => setShowSupportChat(true)}
+        />
+
+        <SettingsItem
+          icon={<span className="text-lg">📚</span>}
+          label="Гайд для новичков"
+          value="10 карточек для старта"
+          onClick={() => navigate('/guide')}
+        />
+
+        <SettingsItem
+          icon={<span className="text-lg">🎁</span>}
+          label="Промо-страница"
+          value={`Бонусы ${BOOKMAKER.name}`}
+          onClick={() => navigate('/promo')}
+        />
 
         <div className="h-3"/>
 
@@ -223,6 +288,9 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Support Chat */}
+      <SupportChat isOpen={showSupportChat} onClose={() => setShowSupportChat(false)} />
     </div>
   );
 }

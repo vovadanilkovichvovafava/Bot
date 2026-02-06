@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import MatchCard from '../components/MatchCard';
 import { getStats } from '../services/predictionStore';
+import { BOOKMAKER } from '../components/SupportChat';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -99,6 +100,30 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Promo Banner */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"/>
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <span className="text-2xl">🎁</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">Получи бонус {BOOKMAKER.bonus}!</p>
+              <p className="text-white/80 text-xs">Регистрируйся и делай ставки по AI-прогнозам</p>
+            </div>
+            <a
+              href={BOOKMAKER.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white text-amber-600 font-bold text-xs px-3 py-2 rounded-lg shrink-0"
+            >
+              Получить
+            </a>
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
           <div className="flex items-center justify-between mb-3">
@@ -139,6 +164,23 @@ export default function Home() {
           {localStats.pending > 0 && (
             <p className="text-xs text-amber-600 text-center mt-2">{localStats.pending} pending verification</p>
           )}
+        </div>
+
+        {/* Beginner Guide */}
+        <div
+          onClick={() => navigate('/guide')}
+          className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
+        >
+          <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
+            <span className="text-xl">📚</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-sm">Гайд для новичков</p>
+            <p className="text-xs text-gray-500">10 карточек для успешного старта</p>
+          </div>
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
         </div>
 
         {/* Pro Tools */}

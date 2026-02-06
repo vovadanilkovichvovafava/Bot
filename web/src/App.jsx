@@ -19,6 +19,7 @@ import OddsConverter from './pages/OddsConverter';
 import YourStats from './pages/YourStats';
 import LiveMatchDetail from './pages/LiveMatchDetail';
 import BookmakerPromo from './pages/BookmakerPromo';
+import BeginnerGuide from './pages/BeginnerGuide';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -96,6 +97,9 @@ export default function App() {
       } />
       <Route path="/promo" element={
         <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
+      } />
+      <Route path="/guide" element={
+        <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
       } />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
