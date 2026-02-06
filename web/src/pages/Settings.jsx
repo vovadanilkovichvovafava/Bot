@@ -52,7 +52,7 @@ const RISK_OPTIONS = [
 ];
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, togglePremium } = useAuth();
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
@@ -204,6 +204,33 @@ export default function Settings() {
         />
 
         <div className="h-3"/>
+
+        {/* Developer Testing */}
+        <div className="mb-3">
+          <p className="text-gray-400 font-semibold text-xs mb-1">DEV / TEST</p>
+        </div>
+
+        <button
+          onClick={togglePremium}
+          className={`w-full flex items-center gap-4 px-4 py-3.5 border-2 border-dashed rounded-xl text-left mb-3 ${
+            user?.is_premium
+              ? 'bg-green-50 border-green-300'
+              : 'bg-gray-50 border-gray-300'
+          }`}
+        >
+          <span className="text-lg">{user?.is_premium ? '✅' : '🔒'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900">Toggle Premium (Test)</p>
+            <p className={`text-sm ${user?.is_premium ? 'text-green-600' : 'text-gray-500'}`}>
+              {user?.is_premium ? 'PRO активен' : 'PRO выключен'}
+            </p>
+          </div>
+          <div className={`px-2 py-1 rounded text-xs font-bold ${
+            user?.is_premium ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+          }`}>
+            {user?.is_premium ? 'ON' : 'OFF'}
+          </div>
+        </button>
 
         <button
           onClick={handleLogout}

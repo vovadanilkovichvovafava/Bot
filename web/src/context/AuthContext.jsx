@@ -55,10 +55,17 @@ export function AuthProvider({ children }) {
     } catch (e) { /* ignore */ }
   };
 
+  // For testing: toggle premium status locally
+  const togglePremium = () => {
+    if (user) {
+      setUser({ ...user, is_premium: !user.is_premium });
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading,
-      login, register, logout, refreshUser,
+      login, register, logout, refreshUser, togglePremium,
       isAuthenticated: !!user,
     }}>
       {children}
