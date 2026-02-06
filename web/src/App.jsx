@@ -18,6 +18,7 @@ import PredictionHistory from './pages/PredictionHistory';
 import OddsConverter from './pages/OddsConverter';
 import YourStats from './pages/YourStats';
 import LiveMatchDetail from './pages/LiveMatchDetail';
+import BookmakerPromo from './pages/BookmakerPromo';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -92,6 +93,9 @@ export default function App() {
       } />
       <Route path="/favourites" element={
         <ProtectedRoute><Favourites /></ProtectedRoute>
+      } />
+      <Route path="/promo" element={
+        <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
       } />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
