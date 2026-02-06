@@ -1,21 +1,31 @@
+/**
+ * Football API Service
+ *
+ * Calls go through our backend proxy for server-side caching.
+ * This saves API requests by sharing cache between all users.
+ *
+ * Fallback to direct API-Football calls if backend is unavailable.
+ */
+
+const BACKEND_BASE = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
 const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const API_KEY = import.meta.env.VITE_API_FOOTBALL_KEY || '';
 
-// In-memory cache to save API requests (100/day free plan)
-const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Local cache for fallback mode (when backend is down)
+const localCache = new Map();
+const LOCAL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-function getCached(key) {
-  const entry = cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+function getLocalCache(key) {
+  const entry = localCache.get(key);
+  if (entry && Date.now() - entry.ts < LOCAL_CACHE_TTL) return entry.data;
   return null;
 }
 
-function setCache(key, data) {
-  cache.set(key, { data, ts: Date.now() });
+function setLocalCache(key, data) {
+  localCache.set(key, { data, ts: Date.now() });
 }
 
-// Normalize team name for fuzzy matching between APIs
+// Normalize team name for fuzzy matching
 function normalize(name) {
   return (name || '')
     .toLowerCase()
@@ -29,18 +39,46 @@ function teamMatch(apiName, ourName) {
   const b = normalize(ourName);
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
-  // Check first significant word match (e.g. "Arsenal" in "Arsenal London")
   const aWords = a.match(/[a-z]{3,}/g) || [];
   const bWords = b.match(/[a-z]{3,}/g) || [];
   return aWords.some(w => bWords.includes(w));
 }
 
 class FootballApiService {
-  async request(endpoint, params = {}) {
+  constructor() {
+    this.useBackend = true; // Try backend first
+  }
+
+  // === Backend Proxy Requests ===
+
+  async backendRequest(endpoint) {
+    try {
+      const response = await fetch(`${BACKEND_BASE}/football${endpoint}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend HTTP ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (e) {
+      console.warn(`Backend request failed: ${e.message}, falling back to direct API`);
+      this.useBackend = false;
+      // Reset backend availability after 30 seconds
+      setTimeout(() => { this.useBackend = true; }, 30000);
+      throw e;
+    }
+  }
+
+  // === Direct API-Football Requests (fallback) ===
+
+  async directRequest(endpoint, params = {}) {
     if (!API_KEY) return [];
 
     const cacheKey = endpoint + JSON.stringify(params);
-    const cached = getCached(cacheKey);
+    const cached = getLocalCache(cacheKey);
     if (cached) return cached;
 
     const query = new URLSearchParams(params).toString();
@@ -57,38 +95,92 @@ class FootballApiService {
 
     const data = await response.json();
     const result = data.response || [];
-    setCache(cacheKey, result);
+    setLocalCache(cacheKey, result);
     return result;
   }
 
-  // --- Fixture Lookup (maps our backend match to API-Football fixture) ---
+  // === Unified Request Method ===
+
+  async request(backendEndpoint, directEndpoint, directParams = {}) {
+    // Try backend first (has server-side shared cache)
+    if (this.useBackend) {
+      try {
+        return await this.backendRequest(backendEndpoint);
+      } catch {
+        // Fall through to direct request
+      }
+    }
+
+    // Fallback to direct API-Football call
+    return await this.directRequest(directEndpoint, directParams);
+  }
+
+  // === Fixtures ===
+
+  async getFixturesByDate(date) {
+    return this.request(`/fixtures/date/${date}`, '/fixtures', { date });
+  }
+
+  async getLiveFixtures() {
+    return this.request('/fixtures/live', '/fixtures', { live: 'all' });
+  }
+
+  async getFixture(fixtureId) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/fixtures/${fixtureId}`);
+      }
+    } catch {}
+
+    const res = await this.directRequest('/fixtures', { id: fixtureId });
+    return res[0] || null;
+  }
+
+  // === Find Fixture by Team Names ===
 
   async findFixture(homeTeam, awayTeam, date) {
-    // date = 'YYYY-MM-DD'
     const cacheKey = `find_${homeTeam}_${awayTeam}_${date}`;
-    const cached = getCached(cacheKey);
+    const cached = getLocalCache(cacheKey);
     if (cached) return cached;
 
     const fixtures = await this.getFixturesByDate(date);
     const match = fixtures.find(f =>
-      teamMatch(f.teams.home.name, homeTeam) &&
-      teamMatch(f.teams.away.name, awayTeam)
+      teamMatch(f.teams?.home?.name, homeTeam) &&
+      teamMatch(f.teams?.away?.name, awayTeam)
     );
 
-    if (match) setCache(cacheKey, match);
+    if (match) setLocalCache(cacheKey, match);
     return match || null;
   }
 
-  // Load all enriched data for a match in minimal API calls
+  // === Enriched Data (all in one call through backend) ===
+
   async getMatchEnrichedData(homeTeam, awayTeam, date) {
     const fixture = await this.findFixture(homeTeam, awayTeam, date);
     if (!fixture) return null;
 
     const fixtureId = fixture.fixture.id;
-    const homeId = fixture.teams.home.id;
-    const awayId = fixture.teams.away.id;
 
-    // Parallel fetch: prediction + odds + stats + events + lineups + injuries
+    // Try to get all enriched data from backend in one call
+    if (this.useBackend) {
+      try {
+        const enriched = await this.backendRequest(`/fixtures/${fixtureId}/enriched`);
+        return {
+          fixture: enriched.fixture || fixture,
+          fixtureId,
+          homeId: fixture.teams.home.id,
+          awayId: fixture.teams.away.id,
+          prediction: enriched.prediction,
+          odds: enriched.odds || [],
+          stats: enriched.statistics || [],
+          events: enriched.events || [],
+          lineups: enriched.lineups || [],
+          injuries: enriched.injuries || [],
+        };
+      } catch {}
+    }
+
+    // Fallback: parallel fetch from API-Football directly
     const [prediction, odds, stats, events, lineups, injuries] = await Promise.allSettled([
       this.getPrediction(fixtureId),
       this.getOdds(fixtureId),
@@ -101,8 +193,8 @@ class FootballApiService {
     return {
       fixture,
       fixtureId,
-      homeId,
-      awayId,
+      homeId: fixture.teams.home.id,
+      awayId: fixture.teams.away.id,
       prediction: prediction.status === 'fulfilled' ? prediction.value : null,
       odds: odds.status === 'fulfilled' ? odds.value : [],
       stats: stats.status === 'fulfilled' ? stats.value : [],
@@ -112,15 +204,140 @@ class FootballApiService {
     };
   }
 
-  // Get all fixtures+odds for a date (for match cards) - single API call
+  // === Statistics ===
+
+  async getFixtureStatistics(fixtureId) {
+    return this.request(`/fixtures/${fixtureId}/statistics`, '/fixtures/statistics', { fixture: fixtureId });
+  }
+
+  async getFixtureEvents(fixtureId) {
+    return this.request(`/fixtures/${fixtureId}/events`, '/fixtures/events', { fixture: fixtureId });
+  }
+
+  async getFixtureLineups(fixtureId) {
+    return this.request(`/fixtures/${fixtureId}/lineups`, '/fixtures/lineups', { fixture: fixtureId });
+  }
+
+  // === Predictions & Odds ===
+
+  async getPrediction(fixtureId) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/fixtures/${fixtureId}/prediction`);
+      }
+    } catch {}
+
+    const res = await this.directRequest('/predictions', { fixture: fixtureId });
+    return res[0] || null;
+  }
+
+  async getOdds(fixtureId) {
+    return this.request(`/fixtures/${fixtureId}/odds`, '/odds', { fixture: fixtureId });
+  }
+
+  async getLiveOdds(fixtureId) {
+    // Live odds only from direct API
+    return this.directRequest('/odds/live', { fixture: fixtureId });
+  }
+
+  // === Teams ===
+
+  async getTeam(teamId) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/teams/${teamId}`);
+      }
+    } catch {}
+
+    const res = await this.directRequest('/teams', { id: teamId });
+    return res[0] || null;
+  }
+
+  async searchTeam(name) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/teams/search?name=${encodeURIComponent(name)}`);
+      }
+    } catch {}
+
+    return this.directRequest('/teams', { search: name });
+  }
+
+  async getTeamStatistics(teamId, season, leagueId) {
+    // Complex query - direct API
+    return this.directRequest('/teams/statistics', {
+      team: teamId,
+      season,
+      league: leagueId,
+    });
+  }
+
+  // === Injuries ===
+
+  async getInjuries(fixtureId) {
+    return this.request(`/fixtures/${fixtureId}/injuries`, '/injuries', { fixture: fixtureId });
+  }
+
+  // === Standings ===
+
+  async getStandings(leagueId, season) {
+    try {
+      if (this.useBackend) {
+        const res = await this.backendRequest(`/standings/${leagueId}/${season}`);
+        return res[0]?.league?.standings?.[0] || [];
+      }
+    } catch {}
+
+    const res = await this.directRequest('/standings', { league: leagueId, season });
+    return res[0]?.league?.standings?.[0] || [];
+  }
+
+  // === Head to Head ===
+
+  async getHeadToHead(team1Id, team2Id, last = 10) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/h2h/${team1Id}/${team2Id}?last=${last}`);
+      }
+    } catch {}
+
+    return this.directRequest('/fixtures/headtohead', {
+      h2h: `${team1Id}-${team2Id}`,
+      last,
+    });
+  }
+
+  // === Players ===
+
+  async getTopScorers(leagueId, season) {
+    return this.directRequest('/players/topscorers', { league: leagueId, season });
+  }
+
+  // === Leagues ===
+
+  async getLeagues(country) {
+    const params = country ? { country } : {};
+    return this.directRequest('/leagues', params);
+  }
+
+  async getLeagueById(leagueId) {
+    const res = await this.directRequest('/leagues', { id: leagueId });
+    return res[0] || null;
+  }
+
+  async searchLeague(name) {
+    return this.directRequest('/leagues', { search: name });
+  }
+
+  // === Fixtures with Odds (optimized) ===
+
   async getFixturesWithOddsForDate(date) {
     const cacheKey = `fixtures_odds_${date}`;
-    const cached = getCached(cacheKey);
+    const cached = getLocalCache(cacheKey);
     if (cached) return cached;
 
     const fixtures = await this.getFixturesByDate(date);
 
-    // Build lookup map by normalized team names
     const map = {};
     for (const f of fixtures) {
       const key = normalize(f.teams.home.name) + '_' + normalize(f.teams.away.name);
@@ -134,123 +351,9 @@ class FootballApiService {
       };
     }
 
-    setCache(cacheKey, { fixtures, map });
-    return { fixtures, map };
-  }
-
-  // --- Fixtures ---
-
-  async getFixturesByDate(date) {
-    return this.request('/fixtures', { date });
-  }
-
-  async getLiveFixtures() {
-    return this.request('/fixtures', { live: 'all' });
-  }
-
-  async getFixture(fixtureId) {
-    const res = await this.request('/fixtures', { id: fixtureId });
-    return res[0] || null;
-  }
-
-  async getFixturesByTeam(teamId, season, last = 5) {
-    return this.request('/fixtures', { team: teamId, season, last });
-  }
-
-  // --- Statistics ---
-
-  async getFixtureStatistics(fixtureId) {
-    return this.request('/fixtures/statistics', { fixture: fixtureId });
-  }
-
-  async getFixtureEvents(fixtureId) {
-    return this.request('/fixtures/events', { fixture: fixtureId });
-  }
-
-  async getFixtureLineups(fixtureId) {
-    return this.request('/fixtures/lineups', { fixture: fixtureId });
-  }
-
-  // --- Head to Head ---
-
-  async getHeadToHead(team1Id, team2Id, last = 10) {
-    return this.request('/fixtures/headtohead', {
-      h2h: `${team1Id}-${team2Id}`,
-      last,
-    });
-  }
-
-  // --- Predictions ---
-
-  async getPrediction(fixtureId) {
-    const res = await this.request('/predictions', { fixture: fixtureId });
-    return res[0] || null;
-  }
-
-  // --- Odds ---
-
-  async getOdds(fixtureId) {
-    return this.request('/odds', { fixture: fixtureId });
-  }
-
-  async getLiveOdds(fixtureId) {
-    return this.request('/odds/live', { fixture: fixtureId });
-  }
-
-  // --- Teams ---
-
-  async getTeam(teamId) {
-    const res = await this.request('/teams', { id: teamId });
-    return res[0] || null;
-  }
-
-  async getTeamStatistics(teamId, season, leagueId) {
-    return this.request('/teams/statistics', {
-      team: teamId,
-      season,
-      league: leagueId,
-    });
-  }
-
-  // --- Standings ---
-
-  async getStandings(leagueId, season) {
-    const res = await this.request('/standings', { league: leagueId, season });
-    return res[0]?.league?.standings?.[0] || [];
-  }
-
-  // --- Players ---
-
-  async getTopScorers(leagueId, season) {
-    return this.request('/players/topscorers', { league: leagueId, season });
-  }
-
-  // --- Injuries ---
-
-  async getInjuries(fixtureId) {
-    return this.request('/injuries', { fixture: fixtureId });
-  }
-
-  // --- Leagues ---
-
-  async getLeagues(country) {
-    const params = country ? { country } : {};
-    return this.request('/leagues', params);
-  }
-
-  async getLeagueById(leagueId) {
-    const res = await this.request('/leagues', { id: leagueId });
-    return res[0] || null;
-  }
-
-  // --- Search ---
-
-  async searchTeam(name) {
-    return this.request('/teams', { search: name });
-  }
-
-  async searchLeague(name) {
-    return this.request('/leagues', { search: name });
+    const result = { fixtures, map };
+    setLocalCache(cacheKey, result);
+    return result;
   }
 }
 
