@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useBookmaker } from '../context/BookmakerContext';
-import { useGeetest } from './GeetestCaptcha';
 
 // Bookmaker info
 export const BOOKMAKER = {
@@ -21,7 +20,6 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login: bkLogin, register: bkRegister, loading, error, clearError } = useBookmaker();
-  const { ready: captchaReady, verify: verifyCaptcha, reset: resetCaptcha } = useGeetest();
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -48,26 +46,16 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // First, verify captcha
-      const captchaResponse = await verifyCaptcha();
-
-      if (!captchaResponse) {
-        setLocalError('Please complete the captcha verification');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Login with captcha response
-      await bkLogin(login, password, captchaResponse);
+      // Try login without captcha first
+      await bkLogin(login, password);
       onSuccess?.();
       onClose();
     } catch (err) {
       const msg = err.message || 'Login failed';
 
-      // If captcha required error, show better message
+      // If captcha required, show helpful message
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification failed. Please try again.');
-        resetCaptcha();
+        setLocalError('Captcha verification required. Server-side captcha is being configured. Please try again later or use the 1Win app directly.');
       } else {
         setLocalError(msg);
       }
@@ -92,22 +80,12 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // First, verify captcha
-      const captchaResponse = await verifyCaptcha();
-
-      if (!captchaResponse) {
-        setLocalError('Please complete the captcha verification');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Register with captcha response
+      // Try register without captcha
       await bkRegister({
         email: email || undefined,
         phone: phone || undefined,
         password,
         currency: 'USD',
-        captchaResponseV4: captchaResponse,
       });
       onSuccess?.();
       onClose();
@@ -115,8 +93,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
       const msg = err.message || 'Registration failed';
 
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification failed. Please try again.');
-        resetCaptcha();
+        setLocalError('Captcha verification required. Please register directly at 1Win website and then login here.');
       } else {
         setLocalError(msg);
       }
@@ -180,14 +157,6 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* Captcha loading indicator */}
-        {!captchaReady && (
-          <div className="bg-blue-50 text-blue-600 text-sm p-3 rounded-xl mb-4 flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"/>
-            Loading security verification...
-          </div>
-        )}
-
         {/* Error */}
         {displayError && (
           <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4 flex items-center gap-2">
@@ -249,7 +218,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={isLoading || !captchaReady}
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-200 disabled:opacity-70 flex items-center justify-center gap-2"
             >
               {isLoading ? (
@@ -267,9 +236,6 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
               )}
             </button>
 
-            <p className="text-xs text-gray-400 text-center">
-              Captcha verification will appear after clicking
-            </p>
           </form>
         )}
 
@@ -347,7 +313,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={isLoading || !captchaReady}
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-200 disabled:opacity-70 flex items-center justify-center gap-2"
             >
               {isLoading ? (
