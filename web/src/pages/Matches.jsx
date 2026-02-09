@@ -172,19 +172,19 @@ export default function Matches() {
       </div>
 
       <div className="px-5 pt-4">
-        {/* Partner Tip */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 px-1">
-          <span>💡</span>
-          <span>Делай ставки у партнёра</span>
-          <a
-            href={BOOKMAKER.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-600 font-medium"
-          >
-            {BOOKMAKER.name} — {BOOKMAKER.bonus}
-          </a>
-        </div>
+        {/* Partner Banner */}
+        <a
+          href={BOOKMAKER.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4"
+        >
+          <span className="text-lg">🎯</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-xs font-medium">Бонус {BOOKMAKER.bonus} в {BOOKMAKER.name}</p>
+          </div>
+          <span className="text-slate-400 text-xs">Получить →</span>
+        </a>
 
         {/* TODAY TAB */}
         {tab === 'today' && (

@@ -113,28 +113,26 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Partner Tip - Subtle promo */}
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+        {/* Partner Banner - Balanced promo */}
+        <a
+          href={BOOKMAKER.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-3.5 text-white"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-sm">💡</span>
+            <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-xl">🎯</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium text-gray-800">Совет:</span> Делай ставки у партнёра {BOOKMAKER.name} — бонус {BOOKMAKER.bonus}
-              </p>
+              <p className="font-semibold text-sm">Бонус {BOOKMAKER.bonus}</p>
+              <p className="text-white/60 text-xs">Ставь по AI-прогнозам в {BOOKMAKER.name}</p>
             </div>
-            <a
-              href={BOOKMAKER.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-primary-600 text-xs font-medium shrink-0"
-            >
-              Подробнее →
-            </a>
+            <svg className="w-5 h-5 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
           </div>
-        </div>
+        </a>
 
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
