@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api';
-import MatchCard from '../components/MatchCard';
+import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { BOOKMAKER } from '../components/SupportChat';
+
+// Top leagues to show on home
+const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -27,8 +29,19 @@ export default function Home() {
 
   const loadMatches = async () => {
     try {
-      const data = await api.getTodayMatches();
-      setMatches(data.slice(0, 5));
+      const fixtures = await footballApi.getTodayFixtures();
+      // Prioritize top leagues and upcoming matches
+      const upcoming = fixtures
+        .filter(f => ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
+        .sort((a, b) => {
+          // Top leagues first
+          const aTop = TOP_LEAGUE_IDS.includes(a.league.id) ? 0 : 1;
+          const bTop = TOP_LEAGUE_IDS.includes(b.league.id) ? 0 : 1;
+          if (aTop !== bTop) return aTop - bTop;
+          // Then by time
+          return new Date(a.fixture.date) - new Date(b.fixture.date);
+        });
+      setMatches(upcoming.slice(0, 5));
     } catch (e) {
       console.error('Failed to load matches', e);
     } finally {
@@ -100,26 +113,25 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Promo Banner */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"/>
-          <div className="relative flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-              <span className="text-2xl">🎁</span>
+        {/* Partner Tip - Subtle promo */}
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-sm">💡</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm">Получи бонус {BOOKMAKER.bonus}!</p>
-              <p className="text-white/80 text-xs">Регистрируйся и делай ставки по AI-прогнозам</p>
+              <p className="text-xs text-gray-600">
+                <span className="font-medium text-gray-800">Совет:</span> Делай ставки у партнёра {BOOKMAKER.name} — бонус {BOOKMAKER.bonus}
+              </p>
             </div>
             <a
               href={BOOKMAKER.link}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="bg-white text-amber-600 font-bold text-xs px-3 py-2 rounded-lg shrink-0"
+              className="text-primary-600 text-xs font-medium shrink-0"
             >
-              Получить
+              Подробнее →
             </a>
           </div>
         </div>
@@ -247,8 +259,8 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-3">
-              {matches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+              {matches.map((f) => (
+                <HomeMatchCard key={f.fixture.id} fixture={f} navigate={navigate} />
               ))}
             </div>
           )}
@@ -256,6 +268,62 @@ export default function Home() {
 
         <div className="h-4"/>
       </div>
+    </div>
+  );
+}
+
+function HomeMatchCard({ fixture, navigate }) {
+  const f = fixture;
+  const time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const isLive = ['1H', '2H', 'HT'].includes(f.fixture.status.short);
+
+  return (
+    <div
+      onClick={() => navigate(`/match/${f.fixture.id}`)}
+      className="card cursor-pointer hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <img src={f.league.logo} alt="" className="w-4 h-4 object-contain"/>
+          <span className="badge-league text-[10px]">{f.league.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isLive && <span className="badge-live">Live</span>}
+          <span className="text-sm text-gray-500">{time}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-center">
+          <img src={f.teams.home.logo} alt="" className="w-10 h-10 mx-auto mb-1 object-contain"/>
+          <p className="font-medium text-xs text-gray-900 leading-tight truncate px-1">{f.teams.home.name}</p>
+        </div>
+
+        <div className="px-3 text-center">
+          {isLive ? (
+            <span className="text-lg font-bold text-gray-900">
+              {f.goals?.home ?? 0} - {f.goals?.away ?? 0}
+            </span>
+          ) : (
+            <span className="text-gray-400 font-semibold">VS</span>
+          )}
+        </div>
+
+        <div className="flex-1 text-center">
+          <img src={f.teams.away.logo} alt="" className="w-10 h-10 mx-auto mb-1 object-contain"/>
+          <p className="font-medium text-xs text-gray-900 leading-tight truncate px-1">{f.teams.away.name}</p>
+        </div>
+      </div>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); navigate(`/match/${f.fixture.id}`); }}
+        className="mt-3 w-full py-2 text-primary-600 text-sm font-medium bg-primary-50 rounded-xl flex items-center justify-center gap-1"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+        </svg>
+        AI Analysis
+      </button>
     </div>
   );
 }

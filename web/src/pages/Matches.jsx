@@ -172,25 +172,18 @@ export default function Matches() {
       </div>
 
       <div className="px-5 pt-4">
-        {/* Promo Banner */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-lg">🎁</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900">Бонус {BOOKMAKER.bonus}</p>
-              <p className="text-[11px] text-gray-600">Регистрируйся в {BOOKMAKER.name}</p>
-            </div>
-            <a
-              href={BOOKMAKER.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
-            >
-              Получить
-            </a>
-          </div>
+        {/* Partner Tip */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 px-1">
+          <span>💡</span>
+          <span>Делай ставки у партнёра</span>
+          <a
+            href={BOOKMAKER.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-600 font-medium"
+          >
+            {BOOKMAKER.name} — {BOOKMAKER.bonus}
+          </a>
         </div>
 
         {/* TODAY TAB */}
