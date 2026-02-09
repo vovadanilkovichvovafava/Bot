@@ -40,7 +40,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
     }, 2000);
   };
 
-  const quickAmounts = [100, 500, 1000, 5000];
+  const quickAmounts = [10, 50, 100, 300];
 
   if (!bookmakerAccount) {
     return (
@@ -55,15 +55,15 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Подключите аккаунт</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Your Account</h3>
             <p className="text-gray-500 text-sm mb-6">
-              Для размещения ставок необходимо подключить аккаунт букмекера в настройках
+              Connect your bookmaker account in Settings to place bets directly from the app
             </p>
             <button
               onClick={() => { onClose(); navigate('/settings'); }}
               className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl"
             >
-              Перейти в настройки
+              Go to Settings
             </button>
           </div>
         </div>
@@ -81,9 +81,9 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Ставка размещена!</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Bet Placed!</h3>
             <p className="text-gray-500 text-sm">
-              {stake} RUB на {bet.type} @ {odds.toFixed(2)}
+              ${stake} on {bet.type} @ {odds.toFixed(2)}
             </p>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
         {/* Header */}
         <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Поставить</h3>
+            <h3 className="text-lg font-bold text-gray-900">Place Bet</h3>
             <button onClick={onClose} className="text-gray-400 p-1">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -128,7 +128,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Ваша ставка</p>
+                <p className="text-sm text-gray-600">Your Bet</p>
                 <p className="font-bold text-gray-900">{bet.type}</p>
               </div>
               <div className="bg-primary-600 text-white font-bold text-lg px-4 py-2 rounded-lg">
@@ -139,16 +139,16 @@ export default function BetModal({ isOpen, onClose, bet }) {
 
           {/* Stake Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Сумма ставки</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Stake Amount</label>
             <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xl">$</span>
               <input
                 type="number"
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 placeholder="0"
-                className="w-full px-4 py-4 pr-16 text-xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+                className="w-full pl-10 pr-4 py-4 text-xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">RUB</span>
             </div>
 
             {/* Quick amounts */}
@@ -163,7 +163,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {amount}
+                  ${amount}
                 </button>
               ))}
             </div>
@@ -172,16 +172,16 @@ export default function BetModal({ isOpen, onClose, bet }) {
           {/* Potential Win */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Возможный выигрыш</span>
-              <span className="text-xl font-bold text-green-600">{potentialWin} RUB</span>
+              <span className="text-sm text-gray-600">Potential Win</span>
+              <span className="text-xl font-bold text-green-600">${potentialWin}</span>
             </div>
           </div>
 
           {/* Balance Info */}
           {bookmakerBalance && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Баланс аккаунта:</span>
-              <span className="font-medium text-gray-700">{bookmakerBalance.amount} {bookmakerBalance.currency}</span>
+              <span className="text-gray-500">Account Balance:</span>
+              <span className="font-medium text-gray-700">${bookmakerBalance.amount}</span>
             </div>
           )}
 
@@ -194,14 +194,14 @@ export default function BetModal({ isOpen, onClose, bet }) {
             {placing ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                Размещение...
+                Placing Bet...
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
-                Поставить {stake ? `${stake} RUB` : ''}
+                Place Bet {stake ? `$${stake}` : ''}
               </>
             )}
           </button>

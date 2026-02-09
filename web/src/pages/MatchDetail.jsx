@@ -179,7 +179,12 @@ export default function MatchDetail() {
     prompt += `\n- Strategy: ${riskDesc[riskLevel]}`;
     prompt += `\n\nONLY recommend bets with odds between ${minOdds} and ${maxOdds}. Adjust your recommendations based on the ${riskLevel} risk profile.`;
 
-    prompt += `\n\nProvide a detailed prediction with probabilities, key factors, and a specific betting recommendation with suggested stake that matches the user's preferences.`;
+    prompt += `\n\nProvide a detailed prediction with probabilities and key factors.`;
+    prompt += `\n\n**IMPORTANT: End your analysis with exactly this format:**`;
+    prompt += `\n[BET] Bet Type Here @ Odds Here`;
+    prompt += `\nExample: [BET] Over 2.5 Goals @ 1.85`;
+    prompt += `\nExample: [BET] ${home} Win @ 2.10`;
+    prompt += `\nExample: [BET] Both Teams to Score @ 1.75`;
     return prompt;
   };
 
@@ -425,6 +430,25 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
+  // Parse AI recommended bet from analysis
+  const parseRecommendedBet = () => {
+    if (!prediction?.claudeAnalysis) return null;
+    const betMatch = prediction.claudeAnalysis.match(/\[BET\]\s*(.+?)\s*@\s*([\d.]+)/i);
+    if (betMatch) {
+      return {
+        type: betMatch[1].trim(),
+        odds: parseFloat(betMatch[2]),
+        homeTeam: match.home_team?.name,
+        awayTeam: match.away_team?.name,
+        league: match.league,
+        date: formatDate(match.match_date),
+      };
+    }
+    return null;
+  };
+
+  const recommendedBet = parseRecommendedBet();
+
   return (
     <>
       {/* Combined AI Analysis - shown only after button click */}
@@ -481,54 +505,34 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             })}
           </div>
 
-          {/* Quick Bet Buttons */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">Быстрая ставка</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => onPlaceBet({
-                  type: `Победа ${match.home_team?.name}`,
-                  odds: parseFloat(odds1x2?.home) || 1.5,
-                  homeTeam: match.home_team?.name,
-                  awayTeam: match.away_team?.name,
-                  league: match.league,
-                  date: formatDate(match.match_date),
-                })}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <p className="text-[10px] text-white/80 mb-0.5">1</p>
-                <p className="font-bold">{odds1x2?.home || '—'}</p>
-              </button>
-              <button
-                onClick={() => onPlaceBet({
-                  type: 'Ничья',
-                  odds: parseFloat(odds1x2?.draw) || 3.0,
-                  homeTeam: match.home_team?.name,
-                  awayTeam: match.away_team?.name,
-                  league: match.league,
-                  date: formatDate(match.match_date),
-                })}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <p className="text-[10px] text-white/80 mb-0.5">X</p>
-                <p className="font-bold">{odds1x2?.draw || '—'}</p>
-              </button>
-              <button
-                onClick={() => onPlaceBet({
-                  type: `Победа ${match.away_team?.name}`,
-                  odds: parseFloat(odds1x2?.away) || 2.0,
-                  homeTeam: match.home_team?.name,
-                  awayTeam: match.away_team?.name,
-                  league: match.league,
-                  date: formatDate(match.match_date),
-                })}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
-              >
-                <p className="text-[10px] text-white/80 mb-0.5">2</p>
-                <p className="font-bold">{odds1x2?.away || '—'}</p>
-              </button>
+          {/* AI Recommended Bet */}
+          {recommendedBet && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                  </svg>
+                  <p className="text-xs text-green-700 font-semibold uppercase">AI Recommended Bet</p>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-bold text-gray-900">{recommendedBet.type}</p>
+                  <div className="bg-green-600 text-white font-bold text-lg px-3 py-1 rounded-lg">
+                    {recommendedBet.odds.toFixed(2)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onPlaceBet(recommendedBet)}
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/25 hover:shadow-xl transition-shadow"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                  Place Bet
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="card border border-gray-100 text-center py-6">

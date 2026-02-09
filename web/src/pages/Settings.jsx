@@ -117,10 +117,10 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Bookmaker Status */}
+        {/* Bookmaker Partner Status */}
         <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">Партнёр</p>
-          <p className="text-xs text-gray-500 mb-3">Статус регистрации в {BOOKMAKER.name}</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">Partner</p>
+          <p className="text-xs text-gray-500 mb-3">{BOOKMAKER.name} registration status</p>
         </div>
 
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
@@ -135,14 +135,14 @@ export default function Settings() {
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
-                    Зарегистрирован
+                    Registered
                   </p>
-                  <p className="text-xs text-gray-600">PRO-доступ активен</p>
+                  <p className="text-xs text-gray-600">PRO access active</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">Бонус {BOOKMAKER.bonus}</p>
-                  <p className="text-xs text-gray-600">Зарегистрируйся и получи PRO</p>
+                  <p className="text-sm font-semibold text-gray-900">Bonus {BOOKMAKER.bonus}</p>
+                  <p className="text-xs text-gray-600">Register to get PRO access</p>
                 </>
               )}
             </div>
@@ -153,7 +153,7 @@ export default function Settings() {
                 rel="noopener noreferrer"
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
               >
-                Получить
+                Get It
               </a>
             )}
           </div>
@@ -161,8 +161,8 @@ export default function Settings() {
 
         {/* One-Click Betting */}
         <div className="mb-3 mt-4">
-          <p className="text-primary-600 font-semibold text-sm mb-1">Быстрые ставки</p>
-          <p className="text-xs text-gray-500 mb-3">Подключите аккаунт для ставок в один клик</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">One-Click Betting</p>
+          <p className="text-xs text-gray-500 mb-3">Connect your account to place bets instantly</p>
         </div>
 
         {bookmakerAccount ? (
@@ -174,11 +174,11 @@ export default function Settings() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-green-700">Аккаунт подключён</p>
+                <p className="text-sm font-semibold text-green-700">Account Connected</p>
                 <p className="text-xs text-gray-600">{bookmakerAccount.login}</p>
                 {bookmakerBalance && (
                   <p className="text-xs text-green-600 font-medium mt-0.5">
-                    Баланс: {bookmakerBalance.amount} {bookmakerBalance.currency}
+                    Balance: ${bookmakerBalance.amount}
                   </p>
                 )}
               </div>
@@ -186,7 +186,7 @@ export default function Settings() {
                 onClick={disconnectBookmaker}
                 className="text-red-500 text-xs font-medium px-2 py-1"
               >
-                Отключить
+                Disconnect
               </button>
             </div>
           </div>
@@ -201,8 +201,8 @@ export default function Settings() {
               </svg>
             </div>
             <div className="flex-1 text-left">
-              <p className="font-semibold">Подключить аккаунт</p>
-              <p className="text-xs text-white/80">Ставки в один клик из приложения</p>
+              <p className="font-semibold">Connect Account</p>
+              <p className="text-xs text-white/80">Place bets directly from the app</p>
             </div>
             <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -214,22 +214,22 @@ export default function Settings() {
 
         <SettingsItem
           icon={<span className="text-lg">💬</span>}
-          label="Написать менеджеру"
-          value="Помощь с регистрацией и PRO"
+          label="Contact Support"
+          value="Help with registration & PRO"
           onClick={() => setShowSupportChat(true)}
         />
 
         <SettingsItem
           icon={<span className="text-lg">📚</span>}
-          label="Гайд для новичков"
-          value="10 карточек для старта"
+          label="Beginner's Guide"
+          value="10 tips to get started"
           onClick={() => navigate('/guide')}
         />
 
         <SettingsItem
           icon={<span className="text-lg">🎁</span>}
-          label="Промо-страница"
-          value={`Бонусы ${BOOKMAKER.name}`}
+          label="Promo Page"
+          value={`${BOOKMAKER.name} bonuses`}
           onClick={() => navigate('/promo')}
         />
 
@@ -294,7 +294,7 @@ export default function Settings() {
           <div className="flex-1 min-w-0">
             <p className="font-medium text-gray-900">Toggle Premium (Test)</p>
             <p className={`text-sm ${user?.is_premium ? 'text-green-600' : 'text-gray-500'}`}>
-              {user?.is_premium ? 'PRO активен' : 'PRO выключен'}
+              {user?.is_premium ? 'PRO active' : 'PRO disabled'}
             </p>
           </div>
           <div className={`px-2 py-1 rounded text-xs font-bold ${
@@ -398,7 +398,7 @@ export default function Settings() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Подключить аккаунт</h3>
+              <h3 className="text-xl font-bold text-gray-900">Connect Account</h3>
               <button onClick={() => setShowBookmakerModal(false)} className="text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -408,29 +408,29 @@ export default function Settings() {
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
               <p className="text-xs text-amber-700">
-                <span className="font-semibold">Внимание:</span> Введите данные от аккаунта {BOOKMAKER.name}.
-                Данные хранятся локально и используются только для размещения ставок.
+                <span className="font-semibold">Note:</span> Enter your {BOOKMAKER.name} credentials.
+                Data is stored locally and used only for placing bets.
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Логин / Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Login / Email</label>
                 <input
                   type="text"
                   value={bookmakerLogin}
                   onChange={(e) => setBookmakerLogin(e.target.value)}
-                  placeholder="Введите логин"
+                  placeholder="Enter login"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input
                   type="password"
                   value={bookmakerPassword}
                   onChange={(e) => setBookmakerPassword(e.target.value)}
-                  placeholder="Введите пароль"
+                  placeholder="Enter password"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -444,14 +444,14 @@ export default function Settings() {
               {connectingBookmaker ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                  Подключение...
+                  Connecting...
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                   </svg>
-                  Подключить
+                  Connect
                 </>
               )}
             </button>

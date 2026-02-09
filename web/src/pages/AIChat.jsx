@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
 import { BOOKMAKER } from '../components/SupportChat';
+import BetModal from '../components/BetModal';
 
 const QUICK_QUESTIONS = [
   { label: "Today's best bets", emoji: '\uD83C\uDFAF' },
@@ -23,6 +24,8 @@ export default function AIChat() {
   const [enriching, setEnriching] = useState(false);
   const [showQuick, setShowQuick] = useState(true);
   const [responseCount, setResponseCount] = useState(0);
+  const [showBetModal, setShowBetModal] = useState(false);
+  const [selectedBet, setSelectedBet] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const remaining = user ? (user.daily_limit - user.daily_requests + user.bonus_predictions) : 10;
@@ -49,7 +52,29 @@ export default function AIChat() {
       medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
       high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
     };
-    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range.]`;
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT: If you recommend a bet, end with exactly this format: [BET] Bet Type @ Odds. Example: [BET] Over 2.5 Goals @ 1.85]`;
+  };
+
+  // Parse bet from AI response
+  const parseBetFromMessage = (content) => {
+    if (!content) return null;
+    const betMatch = content.match(/\[BET\]\s*(.+?)\s*@\s*([\d.]+)/i);
+    if (betMatch) {
+      return {
+        type: betMatch[1].trim(),
+        odds: parseFloat(betMatch[2]),
+        homeTeam: 'Match',
+        awayTeam: '',
+        league: '',
+        date: new Date().toLocaleDateString('en-GB'),
+      };
+    }
+    return null;
+  };
+
+  const handlePlaceBet = (bet) => {
+    setSelectedBet(bet);
+    setShowBetModal(true);
   };
 
   const sendMessage = async (text) => {
@@ -83,12 +108,17 @@ export default function AIChat() {
       const data = await api.aiChat(textWithPrefs, history, matchContext);
       const newCount = responseCount + 1;
       setResponseCount(newCount);
+
+      // Parse bet from response
+      const parsedBet = parseBetFromMessage(data.response);
+
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
         content: data.response,
         hasData: !!matchContext,
-        showAd: newCount % 2 === 0, // Show ad every 2nd response
+        showAd: newCount % 2 === 0,
+        bet: parsedBet,
       }]);
     } catch (e) {
       const errorMsg = e.message?.includes('402') || e.message?.includes('limit')
@@ -167,6 +197,35 @@ export default function AIChat() {
                   </div>
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
+
+                {/* Place Bet button if AI recommended a bet */}
+                {msg.bet && msg.role === 'assistant' && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                          </svg>
+                          <span className="text-xs font-semibold text-green-700">Recommended</span>
+                        </div>
+                        <span className="bg-green-600 text-white text-sm font-bold px-2 py-0.5 rounded">
+                          {msg.bet.odds.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 mb-2">{msg.bet.type}</p>
+                      <button
+                        onClick={() => handlePlaceBet(msg.bet)}
+                        className="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-1.5"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                        Place Bet
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {/* Ad block after certain responses */}
@@ -177,8 +236,8 @@ export default function AIChat() {
                     <span className="text-lg">🎁</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">Ставь по AI-прогнозам!</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Бонус {BOOKMAKER.bonus} при регистрации в {BOOKMAKER.name}</p>
+                    <p className="text-sm font-semibold text-gray-900">Bet on AI predictions!</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Get {BOOKMAKER.bonus} bonus at {BOOKMAKER.name}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -188,13 +247,13 @@ export default function AIChat() {
                     rel="noopener noreferrer"
                     className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                   >
-                    Получить бонус
+                    Get Bonus
                   </a>
                   <button
                     onClick={() => navigate('/promo')}
                     className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
                   >
-                    Подробнее
+                    Learn More
                   </button>
                 </div>
               </div>
@@ -257,13 +316,13 @@ export default function AIChat() {
               className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
             >
               <span>🎁</span>
-              Бонус {BOOKMAKER.bonus}
+              Bonus {BOOKMAKER.bonus}
             </a>
             <button
               onClick={() => navigate('/promo')}
               className="inline-flex items-center gap-1 text-xs text-gray-500"
             >
-              Как получить?
+              How to get it?
               <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
               </svg>
@@ -300,6 +359,13 @@ export default function AIChat() {
           </button>
         </div>
       </div>
+
+      {/* Bet Modal */}
+      <BetModal
+        isOpen={showBetModal}
+        onClose={() => setShowBetModal(false)}
+        bet={selectedBet}
+      />
     </div>
   );
 }
@@ -311,9 +377,12 @@ export default function AIChat() {
 function MessageContent({ content, isUser }) {
   if (!content) return null;
 
+  // Remove the [BET] line from display
+  const cleanContent = content.replace(/\[BET\]\s*.+?@\s*[\d.]+/gi, '').trim();
+
   return (
     <div className="space-y-0.5">
-      {content.split('\n').map((line, i) => {
+      {cleanContent.split('\n').map((line, i) => {
         if (line === '') return <div key={i} className="h-1.5"/>;
 
         // Horizontal rule
