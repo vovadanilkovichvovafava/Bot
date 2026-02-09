@@ -3,9 +3,16 @@ import api from '../api';
 
 const AuthContext = createContext(null);
 
+const BOOKMAKER_STORAGE_KEY = 'bookmaker_credentials';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [bookmakerAccount, setBookmakerAccount] = useState(() => {
+    const stored = localStorage.getItem(BOOKMAKER_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [bookmakerBalance, setBookmakerBalance] = useState(null);
 
   const checkAuth = useCallback(async () => {
     const token = api.getToken();
@@ -62,11 +69,43 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Bookmaker account management
+  const connectBookmaker = async (login, password) => {
+    const credentials = { login, password, connectedAt: new Date().toISOString() };
+    localStorage.setItem(BOOKMAKER_STORAGE_KEY, JSON.stringify(credentials));
+    setBookmakerAccount(credentials);
+    // TODO: Call backend to sync balance
+    // For now, simulate a balance
+    setBookmakerBalance({ amount: 0, currency: 'RUB', lastSync: new Date().toISOString() });
+    return credentials;
+  };
+
+  const disconnectBookmaker = () => {
+    localStorage.removeItem(BOOKMAKER_STORAGE_KEY);
+    setBookmakerAccount(null);
+    setBookmakerBalance(null);
+  };
+
+  const syncBookmakerBalance = async () => {
+    if (!bookmakerAccount) return null;
+    // TODO: Call backend API to fetch actual balance
+    // For now, return simulated balance
+    const balance = { amount: 0, currency: 'RUB', lastSync: new Date().toISOString() };
+    setBookmakerBalance(balance);
+    return balance;
+  };
+
   return (
     <AuthContext.Provider value={{
       user, loading,
       login, register, logout, refreshUser, togglePremium,
       isAuthenticated: !!user,
+      // Bookmaker
+      bookmakerAccount,
+      bookmakerBalance,
+      connectBookmaker,
+      disconnectBookmaker,
+      syncBookmakerBalance,
     }}>
       {children}
     </AuthContext.Provider>

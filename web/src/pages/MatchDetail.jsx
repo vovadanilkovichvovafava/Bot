@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
+import BetModal from '../components/BetModal';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 
@@ -18,6 +19,8 @@ export default function MatchDetail() {
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
+  const [showBetModal, setShowBetModal] = useState(false);
+  const [selectedBet, setSelectedBet] = useState(null);
 
   useEffect(() => {
     loadMatch();
@@ -389,6 +392,11 @@ export default function MatchDetail() {
             formatDate={formatDate}
             formatTime={formatTime}
             statusLabel={statusLabel}
+            onPlaceBet={(betInfo) => {
+              setSelectedBet(betInfo);
+              setShowBetModal(true);
+            }}
+            getOdds1x2={() => getOdds1x2()}
           />
         )}
         {activeTab === 'Stats' && (
@@ -399,6 +407,13 @@ export default function MatchDetail() {
         )}
       </div>
      </div>
+
+      {/* Bet Modal */}
+      <BetModal
+        isOpen={showBetModal}
+        onClose={() => setShowBetModal(false)}
+        bet={selectedBet}
+      />
     </div>
   );
 }
@@ -406,8 +421,9 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, onPlaceBet, getOdds1x2 }) {
   const pred = prediction?.apiPrediction;
+  const odds1x2 = getOdds1x2();
 
   return (
     <>
@@ -463,6 +479,55 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
               return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
             })}
+          </div>
+
+          {/* Quick Bet Buttons */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">Быстрая ставка</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => onPlaceBet({
+                  type: `Победа ${match.home_team?.name}`,
+                  odds: parseFloat(odds1x2?.home) || 1.5,
+                  homeTeam: match.home_team?.name,
+                  awayTeam: match.away_team?.name,
+                  league: match.league,
+                  date: formatDate(match.match_date),
+                })}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
+              >
+                <p className="text-[10px] text-white/80 mb-0.5">1</p>
+                <p className="font-bold">{odds1x2?.home || '—'}</p>
+              </button>
+              <button
+                onClick={() => onPlaceBet({
+                  type: 'Ничья',
+                  odds: parseFloat(odds1x2?.draw) || 3.0,
+                  homeTeam: match.home_team?.name,
+                  awayTeam: match.away_team?.name,
+                  league: match.league,
+                  date: formatDate(match.match_date),
+                })}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
+              >
+                <p className="text-[10px] text-white/80 mb-0.5">X</p>
+                <p className="font-bold">{odds1x2?.draw || '—'}</p>
+              </button>
+              <button
+                onClick={() => onPlaceBet({
+                  type: `Победа ${match.away_team?.name}`,
+                  odds: parseFloat(odds1x2?.away) || 2.0,
+                  homeTeam: match.home_team?.name,
+                  awayTeam: match.away_team?.name,
+                  league: match.league,
+                  date: formatDate(match.match_date),
+                })}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl py-3 px-2 text-center shadow-sm hover:shadow-md transition-shadow"
+              >
+                <p className="text-[10px] text-white/80 mb-0.5">2</p>
+                <p className="font-bold">{odds1x2?.away || '—'}</p>
+              </button>
+            </div>
           </div>
         </div>
       ) : (

@@ -52,11 +52,15 @@ const RISK_OPTIONS = [
 ];
 
 export default function Settings() {
-  const { user, logout, togglePremium } = useAuth();
+  const { user, logout, togglePremium, bookmakerAccount, bookmakerBalance, connectBookmaker, disconnectBookmaker } = useAuth();
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showBookmakerModal, setShowBookmakerModal] = useState(false);
+  const [bookmakerLogin, setBookmakerLogin] = useState('');
+  const [bookmakerPassword, setBookmakerPassword] = useState('');
+  const [connectingBookmaker, setConnectingBookmaker] = useState(false);
   const [minOdds, setMinOdds] = useState(user?.min_odds || 1.5);
   const [maxOdds, setMaxOdds] = useState(user?.max_odds || 3.0);
   const [riskLevel, setRiskLevel] = useState(user?.risk_level || 'medium');
@@ -74,6 +78,21 @@ export default function Settings() {
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
+  };
+
+  const handleConnectBookmaker = async () => {
+    if (!bookmakerLogin || !bookmakerPassword) return;
+    setConnectingBookmaker(true);
+    try {
+      await connectBookmaker(bookmakerLogin, bookmakerPassword);
+      setShowBookmakerModal(false);
+      setBookmakerLogin('');
+      setBookmakerPassword('');
+    } catch (e) {
+      console.error('Failed to connect bookmaker:', e);
+    } finally {
+      setConnectingBookmaker(false);
+    }
   };
 
   return (
@@ -139,6 +158,59 @@ export default function Settings() {
             )}
           </div>
         </div>
+
+        {/* One-Click Betting */}
+        <div className="mb-3 mt-4">
+          <p className="text-primary-600 font-semibold text-sm mb-1">Быстрые ставки</p>
+          <p className="text-xs text-gray-500 mb-3">Подключите аккаунт для ставок в один клик</p>
+        </div>
+
+        {bookmakerAccount ? (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-700">Аккаунт подключён</p>
+                <p className="text-xs text-gray-600">{bookmakerAccount.login}</p>
+                {bookmakerBalance && (
+                  <p className="text-xs text-green-600 font-medium mt-0.5">
+                    Баланс: {bookmakerBalance.amount} {bookmakerBalance.currency}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={disconnectBookmaker}
+                className="text-red-500 text-xs font-medium px-2 py-1"
+              >
+                Отключить
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowBookmakerModal(true)}
+            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl p-4 mb-3 flex items-center gap-3"
+          >
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold">Подключить аккаунт</p>
+              <p className="text-xs text-white/80">Ставки в один клик из приложения</p>
+            </div>
+            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </button>
+        )}
+
+        <div className="h-3"/>
 
         <SettingsItem
           icon={<span className="text-lg">💬</span>}
@@ -317,6 +389,75 @@ export default function Settings() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showSupportChat} onClose={() => setShowSupportChat(false)} />
+
+      {/* Bookmaker Connection Modal */}
+      {showBookmakerModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowBookmakerModal(false)}>
+          <div
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl animate-slideUp"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Подключить аккаунт</h3>
+              <button onClick={() => setShowBookmakerModal(false)} className="text-gray-400">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
+              <p className="text-xs text-amber-700">
+                <span className="font-semibold">Внимание:</span> Введите данные от аккаунта {BOOKMAKER.name}.
+                Данные хранятся локально и используются только для размещения ставок.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Логин / Email</label>
+                <input
+                  type="text"
+                  value={bookmakerLogin}
+                  onChange={(e) => setBookmakerLogin(e.target.value)}
+                  placeholder="Введите логин"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                <input
+                  type="password"
+                  value={bookmakerPassword}
+                  onChange={(e) => setBookmakerPassword(e.target.value)}
+                  placeholder="Введите пароль"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleConnectBookmaker}
+              disabled={!bookmakerLogin || !bookmakerPassword || connectingBookmaker}
+              className="w-full mt-6 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {connectingBookmaker ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  Подключение...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                  Подключить
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
