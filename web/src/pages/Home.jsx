@@ -125,8 +125,8 @@ export default function Home() {
               <span className="text-xl">🎯</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Бонус {BOOKMAKER.bonus}</p>
-              <p className="text-white/60 text-xs">Ставь по AI-прогнозам в {BOOKMAKER.name}</p>
+              <p className="font-semibold text-sm">Bonus {BOOKMAKER.bonus}</p>
+              <p className="text-white/60 text-xs">Bet on AI predictions at {BOOKMAKER.name}</p>
             </div>
             <svg className="w-5 h-5 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -185,8 +185,8 @@ export default function Home() {
             <span className="text-xl">📚</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm">Гайд для новичков</p>
-            <p className="text-xs text-gray-500">10 карточек для успешного старта</p>
+            <p className="font-semibold text-gray-900 text-sm">Beginner's Guide</p>
+            <p className="text-xs text-gray-500">10 tips to get started</p>
           </div>
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
