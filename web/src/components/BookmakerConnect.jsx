@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBookmaker } from '../context/BookmakerContext';
+import { useGeetest } from './GeetestCaptcha';
 
 // Bookmaker info
 export const BOOKMAKER = {
@@ -17,8 +18,23 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login: bkLogin, register: bkRegister, loading, error } = useBookmaker();
+  const { login: bkLogin, register: bkRegister, loading, error, clearError } = useBookmaker();
+  const { ready: captchaReady, verify: verifyCaptcha, reset: resetCaptcha } = useGeetest();
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setLogin('');
+      setPassword('');
+      setEmail('');
+      setPhone('');
+      setLocalError('');
+      setIsSubmitting(false);
+      clearError?.();
+    }
+  }, [isOpen]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -29,12 +45,34 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      await bkLogin(login, password);
+      // First, verify captcha
+      const captchaResponse = await verifyCaptcha();
+
+      if (!captchaResponse) {
+        setLocalError('Please complete the captcha verification');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Login with captcha response
+      await bkLogin(login, password, captchaResponse);
       onSuccess?.();
       onClose();
     } catch (err) {
-      setLocalError(err.message || 'Login failed');
+      const msg = err.message || 'Login failed';
+
+      // If captcha required error, show better message
+      if (msg.toLowerCase().includes('captcha')) {
+        setLocalError('Captcha verification failed. Please try again.');
+        resetCaptcha();
+      } else {
+        setLocalError(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -51,23 +89,46 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
+      // First, verify captcha
+      const captchaResponse = await verifyCaptcha();
+
+      if (!captchaResponse) {
+        setLocalError('Please complete the captcha verification');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Register with captcha response
       await bkRegister({
         email: email || undefined,
         phone: phone || undefined,
         password,
         currency: 'USD',
+        captchaResponseV4: captchaResponse,
       });
       onSuccess?.();
       onClose();
     } catch (err) {
-      setLocalError(err.message || 'Registration failed');
+      const msg = err.message || 'Registration failed';
+
+      if (msg.toLowerCase().includes('captcha')) {
+        setLocalError('Captcha verification failed. Please try again.');
+        resetCaptcha();
+      } else {
+        setLocalError(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (!isOpen) return null;
 
   const displayError = localError || error;
+  const isLoading = loading || isSubmitting;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -98,7 +159,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
         {/* Mode tabs */}
         <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
           <button
-            onClick={() => setMode('login')}
+            onClick={() => { setMode('login'); setLocalError(''); }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
               mode === 'login'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -108,7 +169,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             Login
           </button>
           <button
-            onClick={() => setMode('register')}
+            onClick={() => { setMode('register'); setLocalError(''); }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
               mode === 'register'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -118,6 +179,14 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             Register
           </button>
         </div>
+
+        {/* Captcha loading indicator */}
+        {!captchaReady && (
+          <div className="bg-blue-50 text-blue-600 text-sm p-3 rounded-xl mb-4 flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"/>
+            Loading security verification...
+          </div>
+        )}
 
         {/* Error */}
         {displayError && (
@@ -141,7 +210,8 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 placeholder="example@email.com"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                disabled={isLoading}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
             </div>
 
@@ -154,8 +224,9 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Your password"
+                  disabled={isLoading}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
                 />
                 <button
                   type="button"
@@ -178,11 +249,14 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading || !captchaReady}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-200 disabled:opacity-70 flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  Connecting...
+                </>
               ) : (
                 <>
                   Connect Account
@@ -192,6 +266,10 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 </>
               )}
             </button>
+
+            <p className="text-xs text-gray-400 text-center">
+              Captcha verification will appear after clicking
+            </p>
           </form>
         )}
 
@@ -216,7 +294,8 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                disabled={isLoading}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
             </div>
 
@@ -229,7 +308,8 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+1234567890"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                disabled={isLoading}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
             </div>
 
@@ -243,7 +323,8 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  disabled={isLoading}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
                 />
                 <button
                   type="button"
@@ -266,11 +347,14 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading || !captchaReady}
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-200 disabled:opacity-70 flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  Creating Account...
+                </>
               ) : (
                 <>
                   Create Account
