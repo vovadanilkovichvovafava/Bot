@@ -24,10 +24,10 @@ export default function NotFound() {
 
       {/* Text */}
       <h2 className="text-2xl font-bold text-white mb-2">
-        Страница не найдена
+        Page Not Found
       </h2>
       <p className="text-gray-400 mb-8 max-w-sm">
-        Упс! Похоже, эта страница ушла на перерыв. Попробуй вернуться на главную.
+        Oops! Looks like this page is on a break. Try going back to the home page.
       </p>
 
       {/* Actions */}
@@ -36,13 +36,13 @@ export default function NotFound() {
           onClick={() => navigate('/')}
           className="w-full bg-gradient-to-r from-primary-500 to-purple-500 text-white font-semibold py-3.5 rounded-xl"
         >
-          На главную
+          Go Home
         </button>
         <button
           onClick={() => navigate(-1)}
           className="w-full bg-gray-800 text-gray-300 font-medium py-3.5 rounded-xl border border-gray-700"
         >
-          Назад
+          Go Back
         </button>
       </div>
 
@@ -50,11 +50,11 @@ export default function NotFound() {
       <div className="mt-12 flex gap-8 text-center">
         <div>
           <p className="text-3xl font-bold text-primary-400">99%</p>
-          <p className="text-xs text-gray-500">страниц работает</p>
+          <p className="text-xs text-gray-500">pages work</p>
         </div>
         <div>
           <p className="text-3xl font-bold text-purple-400">1</p>
-          <p className="text-xs text-gray-500">не повезло</p>
+          <p className="text-xs text-gray-500">unlucky</p>
         </div>
       </div>
     </div>

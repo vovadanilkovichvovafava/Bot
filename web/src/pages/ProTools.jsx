@@ -156,16 +156,16 @@ export default function ProTools() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">PRO функция</h3>
-                <p className="text-xs text-gray-500">Доступна с подпиской</p>
+                <h3 className="font-bold text-gray-900">PRO Feature</h3>
+                <p className="text-xs text-gray-500">Available with subscription</p>
               </div>
             </div>
 
             {/* Free unlock option */}
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-              <p className="text-sm font-medium text-green-800 mb-1">🎁 Получи бесплатно!</p>
+              <p className="text-sm font-medium text-green-800 mb-1">🎁 Get it for FREE!</p>
               <p className="text-xs text-green-600">
-                Зарегистрируйся в {BOOKMAKER.name} → PRO на 30 дней
+                Register at {BOOKMAKER.name} → PRO for 30 days
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function ProTools() {
                 rel="noopener noreferrer"
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
               >
-                Открыть бесплатно
+                Unlock for FREE
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                 </svg>
@@ -186,7 +186,7 @@ export default function ProTools() {
                 onClick={() => setModal(null)}
                 className="w-full text-gray-500 text-sm py-2"
               >
-                Закрыть
+                Close
               </button>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function ProTools() {
         <SupportChatModal
           isOpen={showSupportChat}
           onClose={() => setShowSupportChat(false)}
-          initialMessage="Хочу PRO доступ"
+          initialMessage="I want PRO access"
         />
       )}
 

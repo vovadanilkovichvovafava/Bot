@@ -47,7 +47,7 @@ export default function ValueFinder() {
 
   const loadValueBets = async () => {
     try {
-      setProgress({ current: 0, total: 0, phase: 'Загрузка матчей...' });
+      setProgress({ current: 0, total: 0, phase: 'Loading matches...' });
 
       const today = new Date().toISOString().split('T')[0];
       const fixtures = await footballApi.getFixturesByDate(today);
@@ -68,7 +68,7 @@ export default function ValueFinder() {
         ...otherMatches.slice(0, 15),
       ];
 
-      setProgress({ current: 0, total: prioritized.length, phase: 'Анализ матчей...' });
+      setProgress({ current: 0, total: prioritized.length, phase: 'Analyzing matches...' });
 
       // Process in smaller batches to show progress
       const allResults = [];
@@ -129,7 +129,7 @@ export default function ValueFinder() {
         );
 
         allResults.push(...batchResults);
-        setProgress({ current: Math.min(i + BATCH_SIZE, prioritized.length), total: prioritized.length, phase: 'Анализ матчей...' });
+        setProgress({ current: Math.min(i + BATCH_SIZE, prioritized.length), total: prioritized.length, phase: 'Analyzing matches...' });
       }
 
       const valid = allResults
@@ -223,7 +223,7 @@ export default function ValueFinder() {
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{progress.phase}</p>
                     {progress.total > 0 && (
-                      <p className="text-sm text-gray-500">{progress.current} / {progress.total} матчей</p>
+                      <p className="text-sm text-gray-500">{progress.current} / {progress.total} matches</p>
                     )}
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export default function ValueFinder() {
               ))}
 
               <p className="text-center text-gray-400 text-xs mt-4">
-                Приоритет: топ-лиги (EPL, La Liga, Serie A...) → остальные
+                Priority: Top leagues (EPL, La Liga, Serie A...) → Others
               </p>
             </>
           ) : filtered.length === 0 ? (
@@ -266,7 +266,7 @@ export default function ValueFinder() {
                 <p className="text-xs text-gray-400">{filtered.length} value bet{filtered.length !== 1 ? 's' : ''} found</p>
                 {filtered.some(v => v.isTopLeague) && (
                   <p className="text-xs text-amber-600 font-medium">
-                    {filtered.filter(v => v.isTopLeague).length} из топ-лиг
+                    {filtered.filter(v => v.isTopLeague).length} from top leagues
                   </p>
                 )}
               </div>

@@ -261,7 +261,7 @@ export default function MatchDetail() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"/>
-            <p className="text-gray-500 text-sm">Загрузка матча...</p>
+            <p className="text-gray-500 text-sm">Loading match...</p>
           </div>
         </div>
       </div>
@@ -276,7 +276,7 @@ export default function MatchDetail() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
-            Назад
+            Back
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -286,13 +286,13 @@ export default function MatchDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Матч не найден</h2>
-            <p className="text-gray-500 text-sm mb-6">Возможно, матч уже завершился или данные недоступны</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Match Not Found</h2>
+            <p className="text-gray-500 text-sm mb-6">The match may have ended or data is unavailable</p>
             <button
               onClick={() => navigate('/matches')}
               className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl"
             >
-              К списку матчей
+              Back to Matches
             </button>
           </div>
         </div>

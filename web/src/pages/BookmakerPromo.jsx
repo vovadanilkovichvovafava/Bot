@@ -1,33 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SupportChat, { BOOKMAKER } from '../components/SupportChat';
+import geoService from '../services/geoService';
 
 export default function BookmakerPromo() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showChat, setShowChat] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
+  const [geoInfo, setGeoInfo] = useState(null);
+  const [bookmakerLink, setBookmakerLink] = useState(BOOKMAKER.link);
+  const [loadingLink, setLoadingLink] = useState(false);
+
+  // Fetch geo info and appropriate bookmaker link on mount
+  useEffect(() => {
+    async function fetchGeoAndLink() {
+      setLoadingLink(true);
+      try {
+        const geo = await geoService.getGeoInfo();
+        setGeoInfo(geo);
+
+        // Get tracked bookmaker link with cloaking support
+        const linkData = await geoService.getBookmakerLink(user?.id || 'anonymous', 'promo_page');
+        if (linkData.success) {
+          setBookmakerLink(linkData.link);
+        }
+      } catch (error) {
+        console.error('Failed to fetch geo/link:', error);
+      } finally {
+        setLoadingLink(false);
+      }
+    }
+
+    fetchGeoAndLink();
+  }, [user?.id]);
 
   const advantages = [
-    { icon: '⚡', title: 'Быстрые выплаты', desc: 'Вывод до 24 часов' },
-    { icon: '📱', title: 'Моб. приложение', desc: 'iOS и Android' },
-    { icon: '🔴', title: 'Live-ставки', desc: 'Ставь во время матча' },
-    { icon: '📊', title: 'Широкая линия', desc: '1000+ событий в день' },
-    { icon: '📈', title: 'Высокие коэфф.', desc: 'Маржа от 2%' },
-    { icon: '🎁', title: 'Бонусы', desc: 'Регулярные акции' },
+    { icon: '⚡', title: 'Fast Payouts', desc: 'Withdrawal within 24h' },
+    { icon: '📱', title: 'Mobile App', desc: 'iOS and Android' },
+    { icon: '🔴', title: 'Live Betting', desc: 'Bet during matches' },
+    { icon: '📊', title: 'Wide Markets', desc: '1000+ events daily' },
+    { icon: '📈', title: 'High Odds', desc: 'Margin from 2%' },
+    { icon: '🎁', title: 'Bonuses', desc: 'Regular promotions' },
   ];
 
   const reviews = [
-    { name: 'Алексей М.', text: 'Пользуюсь уже год, выплаты всегда вовремя. Коэффициенты выше чем у конкурентов.', rating: 5 },
-    { name: 'Дмитрий К.', text: 'Приложение удобное, ставки делаю прямо с телефона. Бонус на первый депозит реально дали!', rating: 5 },
-    { name: 'Сергей В.', text: 'Раньше ставил в других БК, но здесь линия шире и лайв лучше работает.', rating: 4 },
+    { name: 'Alex M.', text: 'Been using it for a year, payouts always on time. Odds are higher than competitors.', rating: 5 },
+    { name: 'David K.', text: 'Convenient app, I place bets right from my phone. First deposit bonus was real!', rating: 5 },
+    { name: 'Steve V.', text: 'Used to bet at other bookmakers, but here the market is wider and live works better.', rating: 4 },
   ];
 
   const faqs = [
-    { q: 'Как зарегистрироваться?', a: 'Перейдите по нашей ссылке, заполните форму регистрации (займёт 2 минуты), подтвердите email или телефон.' },
-    { q: 'Какой минимальный депозит?', a: `Минимальный депозит — ${BOOKMAKER.minDeposit}. Этого достаточно для начала.` },
-    { q: 'Как получить бонус?', a: `Бонус ${BOOKMAKER.bonus} зачисляется автоматически после первого депозита при регистрации по нашей ссылке.` },
-    { q: 'Как получить PRO-доступ?', a: 'После регистрации и первого депозита PRO-доступ откроется автоматически в течение нескольких минут.' },
-    { q: 'Как вывести выигрыш?', a: 'Вывод доступен на банковские карты, электронные кошельки и криптовалюту. Обработка до 24 часов.' },
+    { q: 'How to register?', a: 'Click our link, fill out the registration form (takes 2 minutes), confirm your email or phone.' },
+    { q: 'What is the minimum deposit?', a: `Minimum deposit is ${BOOKMAKER.minDeposit}. That's enough to get started.` },
+    { q: 'How to get the bonus?', a: `Bonus ${BOOKMAKER.bonus} is credited automatically after your first deposit when registering through our link.` },
+    { q: 'How to get PRO access?', a: 'After registration and first deposit, PRO access will open automatically within a few minutes.' },
+    { q: 'How to withdraw winnings?', a: 'Withdrawal is available to bank cards, e-wallets, and cryptocurrency. Processing up to 24 hours.' },
   ];
 
   return (
@@ -41,6 +70,20 @@ export default function BookmakerPromo() {
         </button>
       </div>
 
+      {/* Geo Warning Banner (for blocked countries) */}
+      {geoInfo?.isBlocked && (
+        <div className="mx-5 mb-4 bg-amber-500/20 border border-amber-500/30 rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+            </svg>
+            <p className="text-amber-200 text-sm">
+              Using alternative link for your region ({geoInfo.country})
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="relative px-5 pt-4 pb-8 overflow-hidden">
         {/* Background effects */}
@@ -53,25 +96,34 @@ export default function BookmakerPromo() {
           </div>
 
           <h1 className="text-3xl font-black text-white mb-2">
-            Получи бонус {BOOKMAKER.bonus}
+            Get bonus {BOOKMAKER.bonus}
           </h1>
           <p className="text-lg text-amber-400 font-semibold mb-1">
-            + PRO-доступ бесплатно!
+            + FREE PRO access!
           </p>
           <p className="text-white/60 text-sm mb-6">
-            Зарегистрируйся в {BOOKMAKER.name} и делай ставки по AI-прогнозам
+            Register at {BOOKMAKER.name} and bet on AI predictions
           </p>
 
           <a
-            href={BOOKMAKER.link}
+            href={bookmakerLink}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all"
           >
-            Зарегистрироваться
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
-            </svg>
+            {loadingLink ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                Loading...
+              </>
+            ) : (
+              <>
+                Register Now
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                </svg>
+              </>
+            )}
           </a>
         </div>
       </div>
@@ -81,7 +133,7 @@ export default function BookmakerPromo() {
 
         {/* Advantages */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Почему {BOOKMAKER.name}?</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Why {BOOKMAKER.name}?</h2>
           <div className="grid grid-cols-3 gap-3">
             {advantages.map((adv, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
@@ -95,11 +147,11 @@ export default function BookmakerPromo() {
 
         {/* How to start */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Как начать?</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">How to Start?</h2>
           <div className="space-y-3">
-            <StepCard number={1} title="Зарегистрируйся по ссылке" desc="Перейди на сайт и заполни форму регистрации (2 минуты)" />
-            <StepCard number={2} title={`Пополни счёт от ${BOOKMAKER.minDeposit}`} desc="Выбери удобный способ оплаты и внеси депозит" />
-            <StepCard number={3} title="Получи бонус + PRO" desc={`Бонус ${BOOKMAKER.bonus} зачислится, PRO откроется автоматически!`} done />
+            <StepCard number={1} title="Register via the link" desc="Go to the site and fill out the registration form (2 minutes)" />
+            <StepCard number={2} title={`Deposit from ${BOOKMAKER.minDeposit}`} desc="Choose a convenient payment method and make a deposit" />
+            <StepCard number={3} title="Get bonus + PRO" desc={`Bonus ${BOOKMAKER.bonus} will be credited, PRO opens automatically!`} done />
           </div>
         </section>
 
@@ -112,21 +164,21 @@ export default function BookmakerPromo() {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-gray-900">Нужна помощь с регистрацией?</h3>
-              <p className="text-sm text-gray-600">Наш менеджер поможет пошагово!</p>
+              <h3 className="font-bold text-gray-900">Need help with registration?</h3>
+              <p className="text-sm text-gray-600">Our manager will guide you step by step!</p>
             </div>
           </div>
           <button
             onClick={() => setShowChat(true)}
             className="w-full mt-4 py-3 bg-primary-600 text-white font-semibold rounded-xl"
           >
-            Написать в поддержку
+            Contact Support
           </button>
         </section>
 
         {/* Reviews */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Отзывы пользователей</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">User Reviews</h2>
           <div className="space-y-3">
             {reviews.map((review, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4">
@@ -149,7 +201,7 @@ export default function BookmakerPromo() {
 
         {/* FAQ */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Частые вопросы</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Frequently Asked Questions</h2>
           <div className="space-y-2">
             {faqs.map((faq, i) => (
               <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
@@ -174,27 +226,27 @@ export default function BookmakerPromo() {
             ))}
           </div>
           <p className="text-center text-sm text-gray-500 mt-4">
-            Не нашёл ответ?{' '}
+            Didn't find an answer?{' '}
             <button onClick={() => setShowChat(true)} className="text-primary-600 font-semibold">
-              Спроси в поддержке
+              Ask support
             </button>
           </p>
         </section>
 
         {/* Final CTA */}
         <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Готов начать?</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to Start?</h2>
           <p className="text-sm text-gray-600 mb-5">
-            Зарегистрируйся сейчас и получи бонус {BOOKMAKER.bonus} + PRO-доступ бесплатно
+            Register now and get bonus {BOOKMAKER.bonus} + FREE PRO access
           </p>
 
           <a
-            href={BOOKMAKER.link}
+            href={bookmakerLink}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg mb-3"
           >
-            Зарегистрироваться в {BOOKMAKER.name}
+            Register at {BOOKMAKER.name}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
             </svg>
@@ -207,7 +259,7 @@ export default function BookmakerPromo() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
             </svg>
-            Написать менеджеру
+            Contact Manager
           </button>
         </section>
 

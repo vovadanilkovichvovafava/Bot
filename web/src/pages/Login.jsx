@@ -14,7 +14,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Заполните все поля');
+      setError('Please fill in all fields');
       return;
     }
     setError('');
@@ -23,7 +23,7 @@ export default function Login() {
       await login(email, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Ошибка входа');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function Login() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-2">AI Betting Bot</h1>
-          <p className="text-gray-400">Войдите, чтобы продолжить</p>
+          <p className="text-gray-400">Sign in to continue</p>
         </div>
       </div>
 
@@ -64,11 +64,11 @@ export default function Login() {
             </div>
             <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
               <p className="text-amber-600 font-bold text-lg">PRO</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Доступ</p>
+              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Access</p>
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
               <p className="text-purple-600 font-bold text-lg">AI</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">Прогнозы</p>
+              <p className="text-purple-600/70 text-[10px] uppercase font-medium">Predictions</p>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Пароль</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -143,7 +143,7 @@ export default function Login() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
               ) : (
                 <>
-                  Войти
+                  Sign In
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -153,9 +153,9 @@ export default function Login() {
           </form>
 
           <p className="text-center text-gray-500 text-sm mt-8">
-            Нет аккаунта?{' '}
+            Don't have an account?{' '}
             <Link to="/register" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-              Зарегистрироваться
+              Sign Up
             </Link>
           </p>
 
@@ -165,14 +165,14 @@ export default function Login() {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd"/>
               </svg>
-              Безопасно
+              Secure
             </div>
             <div className="w-1 h-1 bg-gray-300 rounded-full"/>
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
               </svg>
-              Проверено
+              Verified
             </div>
             <div className="w-1 h-1 bg-gray-300 rounded-full"/>
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">

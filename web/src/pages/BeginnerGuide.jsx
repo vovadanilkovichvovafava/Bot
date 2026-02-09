@@ -5,72 +5,72 @@ import { BOOKMAKER } from '../components/SupportChat';
 const GUIDE_CARDS = [
   {
     icon: '👋',
-    title: 'Добро пожаловать!',
-    subtitle: 'Как пользоваться AI Betting Bot',
-    content: 'Наш бот анализирует матчи с помощью искусственного интеллекта и даёт точные прогнозы. Листай дальше, чтобы узнать больше!',
+    title: 'Welcome!',
+    subtitle: 'How to use AI Betting Bot',
+    content: 'Our bot analyzes matches using artificial intelligence and provides accurate predictions. Swipe to learn more!',
     color: 'from-primary-500 to-indigo-600',
   },
   {
     icon: '🤖',
-    title: 'Как работает AI',
-    subtitle: 'Машинное обучение + большие данные',
-    content: 'AI анализирует статистику команд, форму игроков, историю встреч и десятки других факторов для каждого прогноза.',
+    title: 'How AI Works',
+    subtitle: 'Machine learning + big data',
+    content: 'AI analyzes team statistics, player form, head-to-head history, and dozens of other factors for each prediction.',
     color: 'from-purple-500 to-pink-500',
   },
   {
     icon: '📊',
-    title: 'Понимание коэффициентов',
-    subtitle: 'Что значат эти числа?',
-    content: 'Коэффициент показывает, сколько вы выиграете. Коэф 2.0 означает: ставка 100₽ → выигрыш 200₽ (включая ставку). Чем выше коэф — тем менее вероятно событие.',
+    title: 'Understanding Odds',
+    subtitle: 'What do these numbers mean?',
+    content: 'Odds show how much you can win. Odds of 2.0 mean: $100 bet → $200 return (including stake). Higher odds = less likely outcome.',
     color: 'from-green-500 to-emerald-600',
   },
   {
     icon: '🎯',
-    title: 'Как делать ставки',
-    subtitle: '3 простых шага',
-    content: '1. Выбери матч в разделе Matches\n2. Посмотри AI-прогноз и рекомендацию\n3. Сделай ставку в букмекерской конторе на рекомендованный исход',
+    title: 'How to Place Bets',
+    subtitle: '3 simple steps',
+    content: '1. Choose a match in the Matches section\n2. Check the AI prediction and recommendation\n3. Place a bet at the bookmaker on the recommended outcome',
     color: 'from-blue-500 to-cyan-500',
   },
   {
     icon: '💬',
-    title: 'AI-ассистент',
-    subtitle: 'Спрашивай что угодно!',
-    content: 'В разделе AI Chat ты можешь спросить про любой матч, команду или игрока. AI даст прогноз с реальными данными в реальном времени.',
+    title: 'AI Assistant',
+    subtitle: 'Ask anything!',
+    content: 'In the AI Chat section, you can ask about any match, team, or player. AI will give a prediction with real-time data.',
     color: 'from-violet-500 to-purple-600',
   },
   {
     icon: '⚡',
-    title: 'PRO-инструменты',
-    subtitle: 'Для серьёзных игроков',
-    content: 'Value Finder находит недооценённые ставки. Bankroll Manager помогает управлять банком. История прогнозов показывает твою статистику.',
+    title: 'PRO Tools',
+    subtitle: 'For serious bettors',
+    content: 'Value Finder finds undervalued bets. Bankroll Manager helps manage your bankroll. Prediction History shows your stats.',
     color: 'from-amber-500 to-orange-500',
   },
   {
     icon: '💎',
-    title: 'Что такое Value Bet?',
-    subtitle: 'Ставки с перевесом',
-    content: 'Value Bet — это когда реальная вероятность выше, чем показывает коэффициент букмекера. AI находит такие ставки автоматически!',
+    title: 'What is Value Bet?',
+    subtitle: 'Bets with an edge',
+    content: "Value Bet is when the real probability is higher than the bookmaker's odds imply. AI finds such bets automatically!",
     color: 'from-teal-500 to-green-500',
   },
   {
     icon: '💰',
-    title: 'Управление банком',
-    subtitle: 'Не ставь больше 5%',
-    content: 'Золотое правило: одна ставка = 1-5% от банка. Так ты защитишь себя от проигрышей и будешь в плюсе на дистанции.',
+    title: 'Bankroll Management',
+    subtitle: "Don't bet more than 5%",
+    content: 'Golden rule: one bet = 1-5% of your bankroll. This protects you from losses and keeps you profitable long-term.',
     color: 'from-rose-500 to-red-500',
   },
   {
     icon: '🔴',
-    title: 'Live-ставки',
-    subtitle: 'Ставки во время матча',
-    content: 'В разделе Live ты видишь матчи в реальном времени. AI анализирует ход игры и может дать live-прогноз на основе текущей ситуации.',
+    title: 'Live Betting',
+    subtitle: 'Bet during matches',
+    content: 'In the Live section, you see matches in real-time. AI analyzes the game flow and can give live predictions based on the current situation.',
     color: 'from-red-500 to-pink-600',
   },
   {
     icon: '🎁',
-    title: 'Начни с бонуса!',
-    subtitle: `${BOOKMAKER.bonus} на первый депозит`,
-    content: `Зарегистрируйся в ${BOOKMAKER.name} и получи бонус ${BOOKMAKER.bonus}. Это отличный старт для применения AI-прогнозов!`,
+    title: 'Start with a Bonus!',
+    subtitle: `${BOOKMAKER.bonus} on first deposit`,
+    content: `Register at ${BOOKMAKER.name} and get a bonus of ${BOOKMAKER.bonus}. Great start for using AI predictions!`,
     color: 'from-amber-400 to-orange-500',
     cta: true,
   },
@@ -127,7 +127,7 @@ export default function BeginnerGuide() {
           onClick={() => navigate('/')}
           className="text-white/60 text-sm"
         >
-          Пропустить
+          Skip
         </button>
       </div>
 
@@ -180,7 +180,7 @@ export default function BeginnerGuide() {
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"
                 >
-                  Зарегистрироваться
+                  Register Now
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                   </svg>
@@ -189,7 +189,7 @@ export default function BeginnerGuide() {
                   onClick={() => navigate('/')}
                   className="w-full text-white/80 font-medium py-3"
                 >
-                  Начать пользоваться ботом
+                  Start using the bot
                 </button>
               </div>
             )}
@@ -215,7 +215,7 @@ export default function BeginnerGuide() {
             onClick={nextCard}
             className="flex-1 bg-white text-gray-900 font-bold py-4 rounded-2xl text-lg"
           >
-            {isLast ? 'Готово!' : 'Далее'}
+            {isLast ? 'Done!' : 'Next'}
           </button>
         </div>
       )}

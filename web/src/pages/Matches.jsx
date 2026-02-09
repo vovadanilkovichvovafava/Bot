@@ -22,23 +22,23 @@ const POPULAR_LEAGUE_IDS = [
 // League info for display
 const LEAGUES_INFO = {
   popular: [
-    { id: 39, code: 'PL', name: 'Premier League', country: 'Англия', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-    { id: 140, code: 'PD', name: 'La Liga', country: 'Испания', flag: '🇪🇸' },
-    { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Германия', flag: '🇩🇪' },
-    { id: 135, code: 'SA', name: 'Serie A', country: 'Италия', flag: '🇮🇹' },
-    { id: 61, code: 'FL1', name: 'Ligue 1', country: 'Франция', flag: '🇫🇷' },
+    { id: 39, code: 'PL', name: 'Premier League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { id: 140, code: 'PD', name: 'La Liga', country: 'Spain', flag: '🇪🇸' },
+    { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Germany', flag: '🇩🇪' },
+    { id: 135, code: 'SA', name: 'Serie A', country: 'Italy', flag: '🇮🇹' },
+    { id: 61, code: 'FL1', name: 'Ligue 1', country: 'France', flag: '🇫🇷' },
   ],
   euro: [
-    { id: 2, code: 'CL', name: 'Champions League', country: 'Европа', flag: '🏆' },
-    { id: 3, code: 'EL', name: 'Europa League', country: 'Европа', flag: '🏅' },
-    { id: 848, code: 'ECL', name: 'Conference League', country: 'Европа', flag: '🎖️' },
+    { id: 2, code: 'CL', name: 'Champions League', country: 'Europe', flag: '🏆' },
+    { id: 3, code: 'EL', name: 'Europa League', country: 'Europe', flag: '🏅' },
+    { id: 848, code: 'ECL', name: 'Conference League', country: 'Europe', flag: '🎖️' },
   ],
   other: [
-    { id: 88, code: 'ERE', name: 'Eredivisie', country: 'Нидерланды', flag: '🇳🇱' },
-    { id: 94, code: 'PPL', name: 'Primeira Liga', country: 'Португалия', flag: '🇵🇹' },
-    { id: 203, code: 'TUR', name: 'Süper Lig', country: 'Турция', flag: '🇹🇷' },
-    { id: 307, code: 'SAU', name: 'Saudi Pro League', country: 'Саудовская Аравия', flag: '🇸🇦' },
-    { id: 253, code: 'MLS', name: 'MLS', country: 'США', flag: '🇺🇸' },
+    { id: 88, code: 'ERE', name: 'Eredivisie', country: 'Netherlands', flag: '🇳🇱' },
+    { id: 94, code: 'PPL', name: 'Primeira Liga', country: 'Portugal', flag: '🇵🇹' },
+    { id: 203, code: 'TUR', name: 'Süper Lig', country: 'Turkey', flag: '🇹🇷' },
+    { id: 307, code: 'SAU', name: 'Saudi Pro League', country: 'Saudi Arabia', flag: '🇸🇦' },
+    { id: 253, code: 'MLS', name: 'MLS', country: 'USA', flag: '🇺🇸' },
   ],
 };
 
@@ -136,16 +136,16 @@ export default function Matches() {
   const liveGrouped = groupFixtures(liveFixtures);
 
   const tabs = [
-    { key: 'today', label: 'Сегодня', count: todayFixtures.length },
+    { key: 'today', label: 'Today', count: todayFixtures.length },
     { key: 'live', label: 'Live', count: liveFixtures.length, isLive: true },
-    { key: 'leagues', label: 'Лиги' },
+    { key: 'leagues', label: 'Leagues' },
   ];
 
   return (
     <div className="pb-4">
       {/* Header */}
       <div className="bg-white px-5 pt-6 pb-0 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-center mb-4">Матчи</h1>
+        <h1 className="text-xl font-bold text-center mb-4">Matches</h1>
         <div className="flex border-b border-gray-100">
           {tabs.map(t => (
             <button
@@ -181,9 +181,9 @@ export default function Matches() {
         >
           <span className="text-lg">🎯</span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-medium">Бонус {BOOKMAKER.bonus} в {BOOKMAKER.name}</p>
+            <p className="text-white text-xs font-medium">Bonus {BOOKMAKER.bonus} at {BOOKMAKER.name}</p>
           </div>
-          <span className="text-slate-400 text-xs">Получить →</span>
+          <span className="text-slate-400 text-xs">Get It →</span>
         </a>
 
         {/* TODAY TAB */}
@@ -192,7 +192,7 @@ export default function Matches() {
             {loading ? (
               <LoadingSkeleton />
             ) : todayFixtures.length === 0 ? (
-              <EmptyState title="Нет матчей сегодня" subtitle="Загляни позже"/>
+              <EmptyState title="No matches today" subtitle="Check back later"/>
             ) : (
               <>
                 {/* Filter toggle */}
@@ -234,13 +234,13 @@ export default function Matches() {
             {liveLoading ? (
               <LoadingSkeleton />
             ) : liveFixtures.length === 0 ? (
-              <EmptyState title="Нет live матчей" subtitle="Сейчас нет матчей в прямом эфире"/>
+              <EmptyState title="No live matches" subtitle="No matches are being played right now"/>
             ) : (
               <>
                 {/* Live indicator */}
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-4">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
-                  Обновляется каждые 30 сек
+                  Updates every 30 sec
                 </div>
 
                 {/* Filter toggle */}
@@ -275,12 +275,12 @@ export default function Matches() {
                 {/* No popular leagues live */}
                 {Object.keys(liveGrouped.popular).length === 0 && !showAllLeagues && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 text-sm mb-3">Нет матчей в топ лигах</p>
+                    <p className="text-gray-500 text-sm mb-3">No matches in top leagues</p>
                     <button
                       onClick={() => setShowAllLeagues(true)}
                       className="text-primary-600 text-sm font-medium"
                     >
-                      Показать все {liveGrouped.otherCount} матчей →
+                      Show all {liveGrouped.otherCount} matches →
                     </button>
                   </div>
                 )}
@@ -295,7 +295,7 @@ export default function Matches() {
             {/* Popular */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                ⭐ Топ-5 лиг
+                ⭐ Top 5 Leagues
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.popular.map(league => (
@@ -307,7 +307,7 @@ export default function Matches() {
             {/* Euro */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                🏆 Еврокубки
+                🏆 European Cups
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.euro.map(league => (
@@ -319,7 +319,7 @@ export default function Matches() {
             {/* Other popular */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                🌍 Другие популярные
+                🌍 Other Popular
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.other.map(league => (
@@ -345,7 +345,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount }) {
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        Топ лиги ({popularCount})
+        Top Leagues ({popularCount})
       </button>
       <button
         onClick={() => setShowAll(true)}
@@ -355,7 +355,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount }) {
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        Все матчи ({popularCount + otherCount})
+        All Matches ({popularCount + otherCount})
       </button>
     </div>
   );
@@ -379,10 +379,10 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular 
         <div className="flex items-center gap-2">
           <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
           <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
-            {isPopular ? 'Топ лиги' : 'Другие лиги'}
+            {isPopular ? 'Top Leagues' : 'Other Leagues'}
           </h3>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
-            {matchCount} матчей
+            {matchCount} matches
           </span>
         </div>
         <svg
@@ -455,7 +455,7 @@ function FixtureCard({ fixture, onClick }) {
           ) : status === 'FT' ? (
             <div>
               <span className="text-lg font-bold text-gray-900">{f.goals.home} - {f.goals.away}</span>
-              <p className="text-[10px] text-gray-400">Завершён</p>
+              <p className="text-[10px] text-gray-400">Finished</p>
             </div>
           ) : (
             <span className="text-xs text-gray-500">{status}</span>

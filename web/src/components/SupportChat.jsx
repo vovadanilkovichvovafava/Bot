@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 
 // Manager info (configurable)
 const MANAGER = {
-  name: 'Алекс',
+  name: 'Alex',
   avatar: null, // Can add URL
-  role: 'Менеджер поддержки',
+  role: 'Support Manager',
 };
 
 // Bookmaker info (configurable)
@@ -30,7 +30,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
       setMessages([{
         id: 1,
         from: 'manager',
-        text: `👋 Привет! Я ${MANAGER.name}, на связи!\n\nЯ помогу тебе:\n\n• Открыть PRO-доступ к Value Bet Finder, Bankroll Tracker и другим инструментам\n• Зарегистрироваться у проверенного букмекера и получить бонус\n• Разобраться с любыми вопросами по приложению\n\nНапиши мне, и я всё расскажу! 😉`,
+        text: `Hi! I'm ${MANAGER.name}, here to help!\n\nI can assist you with:\n\n• Getting PRO access to Value Bet Finder, Bankroll Tracker, and other tools\n• Registering with a trusted bookmaker and getting your bonus\n• Any questions about the app\n\nSend me a message and I'll help you out!`,
         time: new Date(),
       }]);
     }
@@ -53,37 +53,37 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     const lower = userMessage.toLowerCase();
 
     // PRO access questions
-    if (lower.includes('pro') || lower.includes('про') || lower.includes('доступ') || lower.includes('unlock') || lower.includes('разблокир')) {
-      return `Отлично! PRO-доступ включает:\n\n✅ Value Bet Finder — AI находит ставки с завышенными коэффициентами\n✅ Bankroll Tracker — учёт банка и ставок\n✅ Неограниченные AI-прогнозы\n✅ Приоритетная поддержка\n\n🎁 И хорошая новость — ты можешь получить PRO **бесплатно**!\n\nДля этого зарегистрируйся у нашего партнёра ${BOOKMAKER.name} и пополни счёт от ${BOOKMAKER.minDeposit}.\n\nЭто надёжный букмекер с быстрыми выплатами. После регистрации напиши мне — я проверю и сразу открою PRO на 30 дней! 🚀`;
+    if (lower.includes('pro') || lower.includes('access') || lower.includes('unlock') || lower.includes('premium')) {
+      return `Great! PRO access includes:\n\n✅ Value Bet Finder — AI finds bets with inflated odds\n✅ Bankroll Tracker — track your bankroll and bets\n✅ Unlimited AI predictions\n✅ Priority support\n\n🎁 Good news — you can get PRO for **FREE**!\n\nJust register with our partner ${BOOKMAKER.name} and deposit at least ${BOOKMAKER.minDeposit}.\n\nThey're a reliable bookmaker with fast payouts. After registration, message me — I'll verify and activate your PRO for 30 days! 🚀`;
     }
 
     // Registration questions
-    if (lower.includes('регистр') || lower.includes('зарег') || lower.includes('как начать') || lower.includes('новичок') || lower.includes('начинающ')) {
-      return `Круто, что решил начать! 💪\n\nРекомендую ${BOOKMAKER.name} — мы с ними сотрудничаем, и для наших пользователей есть бонус **${BOOKMAKER.bonus}**!\n\nПошагово:\n1️⃣ Перейди по ссылке и зарегистрируйся\n2️⃣ Пополни счёт от ${BOOKMAKER.minDeposit}\n3️⃣ Напиши мне — я открою тебе PRO!\n\n👉 Нажми кнопку ниже для регистрации`;
+    if (lower.includes('register') || lower.includes('sign up') || lower.includes('start') || lower.includes('beginner') || lower.includes('new')) {
+      return `Great that you decided to start! 💪\n\nI recommend ${BOOKMAKER.name} — we partner with them, and for our users there's a bonus of **${BOOKMAKER.bonus}**!\n\nStep by step:\n1️⃣ Click the link and register\n2️⃣ Deposit at least ${BOOKMAKER.minDeposit}\n3️⃣ Message me — I'll activate your PRO!\n\n👉 Click the button below to register`;
     }
 
     // Bonus questions
-    if (lower.includes('бонус') || lower.includes('bonus') || lower.includes('фрибет') || lower.includes('промо')) {
-      return `🎁 Сейчас в ${BOOKMAKER.name} отличный бонус для новых игроков — **${BOOKMAKER.bonus}** на первый депозит!\n\nЧтобы получить:\n1. Зарегистрируйся по нашей ссылке\n2. Пополни счёт от ${BOOKMAKER.minDeposit}\n3. Бонус зачислится автоматически\n\n+ Я открою тебе PRO-доступ бесплатно! 🔓`;
+    if (lower.includes('bonus') || lower.includes('free bet') || lower.includes('promo') || lower.includes('offer')) {
+      return `🎁 Right now ${BOOKMAKER.name} has a great bonus for new players — **${BOOKMAKER.bonus}** on first deposit!\n\nTo get it:\n1. Register via our link\n2. Deposit at least ${BOOKMAKER.minDeposit}\n3. Bonus is credited automatically\n\n+ I'll unlock PRO access for you for free! 🔓`;
     }
 
     // Bookmaker questions
-    if (lower.includes('букмекер') || lower.includes('где ставить') || lower.includes('какой бк') || lower.includes('1xbet') || lower.includes('1хбет')) {
-      return `Мы рекомендуем ${BOOKMAKER.name} — наш официальный партнёр.\n\n✅ Лицензированный букмекер\n✅ Быстрые выплаты (до 24 часов)\n✅ Широкая линия и высокие коэффициенты\n✅ Бонус ${BOOKMAKER.bonus} для новых\n\nПлюс — при регистрации через нас ты получаешь PRO-доступ к нашим инструментам бесплатно! 🎉`;
+    if (lower.includes('bookmaker') || lower.includes('where to bet') || lower.includes('which bk') || lower.includes('1xbet') || lower.includes('betting site')) {
+      return `We recommend ${BOOKMAKER.name} — our official partner.\n\n✅ Licensed bookmaker\n✅ Fast payouts (up to 24 hours)\n✅ Wide markets and high odds\n✅ Bonus ${BOOKMAKER.bonus} for new users\n\nPlus — when you register through us, you get PRO access to our tools for free! 🎉`;
     }
 
     // Withdrawal/payout questions
-    if (lower.includes('вывод') || lower.includes('выплат') || lower.includes('деньги') || lower.includes('withdrawal')) {
-      return `В ${BOOKMAKER.name} выплаты обычно происходят в течение 24 часов.\n\nДоступные способы:\n• Банковские карты\n• Электронные кошельки\n• Криптовалюта\n\nПервый вывод может потребовать верификации (загрузить документы). Это стандартная процедура для безопасности.\n\nЕсли будут вопросы — пиши, помогу! 🤝`;
+    if (lower.includes('withdraw') || lower.includes('payout') || lower.includes('cash out') || lower.includes('money')) {
+      return `At ${BOOKMAKER.name}, payouts usually take up to 24 hours.\n\nAvailable methods:\n• Bank cards\n• E-wallets\n• Cryptocurrency\n\nFirst withdrawal may require verification (upload documents). This is a standard security procedure.\n\nIf you have questions — message me, happy to help! 🤝`;
     }
 
     // Gratitude
-    if (lower.includes('спасибо') || lower.includes('благодар') || lower.includes('thanks')) {
-      return `Всегда рад помочь! 😊\n\nЕсли будут ещё вопросы — пиши в любое время.\n\nУдачных ставок! 🍀⚽`;
+    if (lower.includes('thank') || lower.includes('appreciate') || lower.includes('helpful')) {
+      return `Always happy to help! 😊\n\nIf you have more questions — message me anytime.\n\nGood luck with your bets! 🍀⚽`;
     }
 
     // Default response
-    return `Понял тебя! 👍\n\nЕсли тебя интересует PRO-доступ или регистрация у букмекера — я помогу с этим.\n\nПросто напиши:\n• "Хочу PRO" — расскажу как получить бесплатно\n• "Как зарегистрироваться" — помогу пошагово\n• "Расскажи про бонус" — расскажу про акции\n\nИли задай свой вопрос! 💬`;
+    return `Got it! 👍\n\nIf you're interested in PRO access or bookmaker registration — I can help with that.\n\nJust write:\n• "I want PRO" — I'll explain how to get it free\n• "How to register" — I'll guide you step by step\n• "Tell me about the bonus" — I'll share current offers\n\nOr ask any question! 💬`;
   };
 
   const sendMessage = async () => {
@@ -149,7 +149,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
             <h3 className="font-bold text-gray-900">{MANAGER.name}</h3>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full"/>
-              Онлайн
+              Online
             </p>
           </div>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600">
@@ -202,19 +202,19 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
             >
               <span>🎁</span>
-              Зарегистрироваться в {BOOKMAKER.name}
+              Register at {BOOKMAKER.name}
             </button>
             <button
-              onClick={() => setInput('Хочу PRO доступ')}
+              onClick={() => setInput('I want PRO access')}
               className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
             >
-              Хочу PRO
+              I want PRO
             </button>
             <button
-              onClick={() => setInput('Как начать?')}
+              onClick={() => setInput('How to start?')}
               className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
             >
-              Как начать?
+              How to start?
             </button>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Напишите сообщение..."
+              placeholder="Type a message..."
               className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button

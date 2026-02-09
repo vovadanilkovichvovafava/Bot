@@ -16,15 +16,15 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Заполните все обязательные поля');
+      setError('Please fill in all required fields');
       return;
     }
     if (password !== confirmPassword) {
-      setError('Пароли не совпадают');
+      setError('Passwords do not match');
       return;
     }
     if (password.length < 6) {
-      setError('Пароль должен быть минимум 6 символов');
+      setError('Password must be at least 6 characters');
       return;
     }
     setError('');
@@ -33,7 +33,7 @@ export default function Register() {
       await register(email, password, username || undefined);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Ошибка регистрации');
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -58,8 +58,8 @@ export default function Register() {
             </svg>
           </div>
 
-          <h1 className="text-3xl font-bold text-white mb-2">Создать аккаунт</h1>
-          <p className="text-gray-400">Зарегистрируйтесь для начала</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
+          <p className="text-gray-400">Sign up to get started</p>
         </div>
       </div>
 
@@ -72,13 +72,13 @@ export default function Register() {
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
               </svg>
-              Бесплатно
+              Free
             </div>
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
               </svg>
-              AI прогнозы
+              AI Predictions
             </div>
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -117,7 +117,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Имя пользователя</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@ export default function Register() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Необязательно"
+                  placeholder="Optional"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -135,7 +135,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Пароль *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password *</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -144,7 +144,7 @@ export default function Register() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Минимум 6 символов"
+                  placeholder="At least 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -169,7 +169,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Подтвердите пароль *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password *</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@ export default function Register() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Повторите пароль"
+                  placeholder="Repeat password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -195,7 +195,7 @@ export default function Register() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
               ) : (
                 <>
-                  Создать аккаунт
+                  Create Account
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -205,13 +205,13 @@ export default function Register() {
           </form>
 
           <p className="text-center text-gray-400 text-xs mt-4">
-            Регистрируясь, вы соглашаетесь с условиями использования
+            By registering, you agree to the terms of service
           </p>
 
           <p className="text-center text-gray-500 text-sm mt-6">
-            Уже есть аккаунт?{' '}
+            Already have an account?{' '}
             <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-              Войти
+              Sign In
             </Link>
           </p>
         </div>
