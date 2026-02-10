@@ -3,14 +3,10 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime, timedelta
-from collections import defaultdict
-import time
 
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.database import get_db
 from app.models.user import User
-from app.config import settings
 
 router = APIRouter()
 
@@ -20,11 +16,6 @@ COOKIE_HTTPONLY = True
 COOKIE_SAMESITE = "lax"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 
-# Rate limiting storage (in production use Redis)
-rate_limit_storage = defaultdict(list)
-RATE_LIMIT_REQUESTS = 1  # Max 1 registration per IP
-RATE_LIMIT_WINDOW = 365 * 24 * 3600  # 1 year (effectively forever)
-
 
 def get_client_ip(request: Request) -> str:
     """Get client IP from request, considering proxies"""
@@ -32,19 +23,6 @@ def get_client_ip(request: Request) -> str:
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
-
-
-def check_rate_limit(ip: str) -> bool:
-    """Check if IP is rate limited. Returns True if allowed, False if blocked."""
-    now = time.time()
-    # Clean old entries
-    rate_limit_storage[ip] = [t for t in rate_limit_storage[ip] if now - t < RATE_LIMIT_WINDOW]
-    # Check limit
-    if len(rate_limit_storage[ip]) >= RATE_LIMIT_REQUESTS:
-        return False
-    # Record this request
-    rate_limit_storage[ip].append(now)
-    return True
 
 
 class UserRegister(BaseModel):
@@ -93,29 +71,30 @@ async def register(
     response: Response,
     db: AsyncSession = Depends(get_db)
 ):
-    # Rate limiting by IP
     client_ip = get_client_ip(request)
-    if not check_rate_limit(client_ip):
+
+    # Check if IP already registered
+    ip_check = await db.execute(select(User).where(User.registration_ip == client_ip))
+    if ip_check.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many registration attempts. Please try again later."
+            detail="Registration limit reached"
         )
 
-    # Check if user exists
+    # Check if email exists
     result = await db.execute(select(User).where(User.email == user.email))
-    existing_user = result.scalar_one_or_none()
-
-    if existing_user:
+    if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered"
         )
 
-    # Create new user
+    # Create new user with IP
     new_user = User(
         email=user.email,
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
+        registration_ip=client_ip,
     )
     db.add(new_user)
     await db.commit()
