@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
-import { BOOKMAKER } from '../components/SupportChat';
-import BetModal from '../components/BetModal';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -21,14 +20,13 @@ const QUICK_QUESTIONS = [
 export default function AIChat() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [showQuick, setShowQuick] = useState(true);
   const [responseCount, setResponseCount] = useState(0);
-  const [showBetModal, setShowBetModal] = useState(false);
-  const [selectedBet, setSelectedBet] = useState(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -90,11 +88,6 @@ export default function AIChat() {
       };
     }
     return null;
-  };
-
-  const handlePlaceBet = (bet) => {
-    setSelectedBet(bet);
-    setShowBetModal(true);
   };
 
   const sendMessage = async (text) => {
@@ -230,7 +223,7 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* Place Bet button if AI recommended a bet */}
+                {/* AI Recommended Bet - Display only */}
                 {msg.bet && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
@@ -245,16 +238,7 @@ export default function AIChat() {
                           {msg.bet.odds.toFixed(2)}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-gray-900 mb-2">{msg.bet.type}</p>
-                      <button
-                        onClick={() => handlePlaceBet(msg.bet)}
-                        className="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-1.5"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                        </svg>
-                        Place Bet
-                      </button>
+                      <p className="text-sm font-medium text-gray-900">{msg.bet.type}</p>
                     </div>
                   </div>
                 )}
@@ -269,12 +253,12 @@ export default function AIChat() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Bet on AI predictions!</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Get {BOOKMAKER.bonus} bonus at {BOOKMAKER.name}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Get {advertiser.bonus} bonus at {advertiser.name}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
                   <a
-                    href={BOOKMAKER.link}
+                    href={user?.id ? trackClick(user.id) : advertiser.link}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
@@ -342,13 +326,13 @@ export default function AIChat() {
           {/* Promo chip */}
           <div className="mt-3 flex items-center gap-2">
             <a
-              href={BOOKMAKER.link}
+              href={user?.id ? trackClick(user.id) : advertiser.link}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
             >
               <span>🎁</span>
-              Bonus {BOOKMAKER.bonus}
+              Bonus {advertiser.bonus}
             </a>
             <button
               onClick={() => navigate('/promo')}
@@ -392,13 +376,6 @@ export default function AIChat() {
         </div>
       </div>
 
-      {/* Bet Modal */}
-      <BetModal
-        isOpen={showBetModal}
-        onClose={() => setShowBetModal(false)}
-        bet={selectedBet}
-      />
-
       {/* Limit Reached Modal */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setShowLimitModal(false)}>
@@ -428,13 +405,13 @@ export default function AIChat() {
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <p className="text-sm font-medium text-green-800 mb-1">Unlock Unlimited AI</p>
               <p className="text-xs text-green-600">
-                Make a deposit at {BOOKMAKER.name} → Unlimited AI requests
+                Make a deposit at {advertiser.name} → Unlimited AI requests
               </p>
             </div>
 
             <div className="space-y-2">
               <a
-                href={BOOKMAKER.link}
+                href={user?.id ? trackClick(user.id) : advertiser.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"

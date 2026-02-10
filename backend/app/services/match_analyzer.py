@@ -1,9 +1,11 @@
 """
 AI Match Analyzer service using Claude API
 Restored from original bot_secure.py implementation
+With response caching to save API costs
 """
 import json
 import logging
+import time
 from typing import Optional, Dict, Any
 
 import anthropic
@@ -12,6 +14,45 @@ from app.config import settings, TOP_CLUBS
 from app.services.football_api import fetch_match_details, fetch_standings
 
 logger = logging.getLogger(__name__)
+
+# AI Analysis Cache - shared between all users
+# Key: match_id, Value: {data: analysis_result, timestamp: unix_time}
+_ai_cache: Dict[int, Dict] = {}
+AI_CACHE_TTL = 7200  # 2 hours - same analysis for all users
+
+
+def _get_cached_analysis(match_id: int) -> Optional[Dict]:
+    """Get cached AI analysis if not expired"""
+    if match_id in _ai_cache:
+        entry = _ai_cache[match_id]
+        if time.time() - entry["timestamp"] < AI_CACHE_TTL:
+            logger.info(f"AI Cache HIT for match {match_id}")
+            return entry["data"]
+        else:
+            del _ai_cache[match_id]
+    return None
+
+
+def _set_cached_analysis(match_id: int, data: Dict):
+    """Cache AI analysis result"""
+    _ai_cache[match_id] = {
+        "data": data,
+        "timestamp": time.time()
+    }
+    logger.info(f"AI Cache SET for match {match_id}")
+
+
+def get_ai_cache_stats() -> Dict:
+    """Get AI cache statistics"""
+    now = time.time()
+    total = len(_ai_cache)
+    expired = sum(1 for v in _ai_cache.values() if now - v["timestamp"] >= AI_CACHE_TTL)
+    return {
+        "total_entries": total,
+        "active_entries": total - expired,
+        "expired_entries": expired,
+        "ttl_seconds": AI_CACHE_TTL,
+    }
 
 
 class MatchAnalyzer:
@@ -23,7 +64,13 @@ class MatchAnalyzer:
             self.claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
 
     async def analyze_match(self, match_id: int) -> Optional[Dict[str, Any]]:
-        """Analyze a match and return AI prediction"""
+        """Analyze a match and return AI prediction (with caching)"""
+
+        # Check cache first - same analysis for all users saves API costs!
+        cached = _get_cached_analysis(match_id)
+        if cached:
+            return cached
+
         details = await fetch_match_details(match_id)
         if not details:
             return None
@@ -54,7 +101,7 @@ class MatchAnalyzer:
             # Fallback to simple stats-based analysis
             analysis = self._simple_analysis(home_team, away_team, standings)
 
-        return {
+        result = {
             "match_id": match_id,
             "home_team": home_team,
             "away_team": away_team,
@@ -62,6 +109,11 @@ class MatchAnalyzer:
             "match_date": match_date,
             **analysis,
         }
+
+        # Cache the result for other users
+        _set_cached_analysis(match_id, result)
+
+        return result
 
     async def ai_chat(self, message: str, match_context: str = "", history: list = None) -> str:
         """AI chat for general football questions"""

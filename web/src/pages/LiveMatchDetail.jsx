@@ -390,7 +390,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
 
         {!aiAnalysis && (
           <p className="text-white/30 text-xs text-center mt-3">
-            Uses 1 of your {user?.daily_limit || 10} daily AI requests
+            Uses 1 of your 3 free AI requests
           </p>
         )}
       </div>

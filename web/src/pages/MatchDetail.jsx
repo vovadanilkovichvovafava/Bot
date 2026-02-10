@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
-import BetModal from '../components/BetModal';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 
@@ -19,8 +18,6 @@ export default function MatchDetail() {
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
-  const [showBetModal, setShowBetModal] = useState(false);
-  const [selectedBet, setSelectedBet] = useState(null);
 
   useEffect(() => {
     loadMatch();
@@ -397,10 +394,6 @@ export default function MatchDetail() {
             formatDate={formatDate}
             formatTime={formatTime}
             statusLabel={statusLabel}
-            onPlaceBet={(betInfo) => {
-              setSelectedBet(betInfo);
-              setShowBetModal(true);
-            }}
             getOdds1x2={() => getOdds1x2()}
           />
         )}
@@ -412,13 +405,6 @@ export default function MatchDetail() {
         )}
       </div>
      </div>
-
-      {/* Bet Modal */}
-      <BetModal
-        isOpen={showBetModal}
-        onClose={() => setShowBetModal(false)}
-        bet={selectedBet}
-      />
     </div>
   );
 }
@@ -426,7 +412,7 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, onPlaceBet, getOdds1x2 }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2 }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -505,31 +491,22 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             })}
           </div>
 
-          {/* AI Recommended Bet */}
+          {/* AI Recommended Bet - Display only */}
           {recommendedBet && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                   </svg>
                   <p className="text-xs text-green-700 font-semibold uppercase">AI Recommended Bet</p>
                 </div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between">
                   <p className="font-bold text-gray-900">{recommendedBet.type}</p>
                   <div className="bg-green-600 text-white font-bold text-lg px-3 py-1 rounded-lg">
                     {recommendedBet.odds.toFixed(2)}
                   </div>
                 </div>
-                <button
-                  onClick={() => onPlaceBet(recommendedBet)}
-                  className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/25 hover:shadow-xl transition-shadow"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                  </svg>
-                  Place Bet
-                </button>
               </div>
             </div>
           )}
@@ -549,7 +526,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
             </svg>
-            Uses 1 of your {user?.daily_limit || 10} daily AI requests
+            Uses 1 of your 3 free AI requests
           </div>
           <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
             {predicting ? (
