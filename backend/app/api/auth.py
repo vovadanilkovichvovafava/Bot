@@ -22,7 +22,7 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 
 # Rate limiting storage (in production use Redis)
 rate_limit_storage = defaultdict(list)
-RATE_LIMIT_REQUESTS = 5  # Max registration attempts
+RATE_LIMIT_REQUESTS = 1  # Max 1 registration per IP
 RATE_LIMIT_WINDOW = 3600  # Per hour (seconds)
 
 
