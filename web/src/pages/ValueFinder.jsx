@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import footballApi from '../api/footballApi';
+
+const VALUE_BET_USED_KEY = 'value_bet_used';
 
 // Top leagues to prioritize (league IDs from API-Football)
 const TOP_LEAGUE_IDS = [
@@ -36,10 +39,20 @@ function valuePct(predicted, odd) {
 
 export default function ValueFinder() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [valueBets, setValueBets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all | high | medium
   const [progress, setProgress] = useState({ current: 0, total: 0, phase: '' });
+
+  const isPremium = user?.is_premium;
+
+  // Mark Value Bet Finder as used for free users (on first load)
+  useEffect(() => {
+    if (!isPremium) {
+      localStorage.setItem(VALUE_BET_USED_KEY, 'true');
+    }
+  }, [isPremium]);
 
   useEffect(() => {
     loadValueBets();

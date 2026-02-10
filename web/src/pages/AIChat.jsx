@@ -6,6 +6,9 @@ import { enrichMessage } from '../services/chatEnrichment';
 import { BOOKMAKER } from '../components/SupportChat';
 import BetModal from '../components/BetModal';
 
+const FREE_AI_LIMIT = 3;
+const AI_REQUESTS_KEY = 'ai_requests_count';
+
 const QUICK_QUESTIONS = [
   { label: "Today's best bets", emoji: '\uD83C\uDFAF' },
   { label: "Live matches now", emoji: '\uD83D\uDD34' },
@@ -26,9 +29,26 @@ export default function AIChat() {
   const [responseCount, setResponseCount] = useState(0);
   const [showBetModal, setShowBetModal] = useState(false);
   const [selectedBet, setSelectedBet] = useState(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const remaining = user ? (user.daily_limit - user.daily_requests + user.bonus_predictions) : 10;
+
+  const isPremium = user?.is_premium;
+
+  // Get AI request count from localStorage (for free users)
+  const getAIRequestCount = () => {
+    const count = localStorage.getItem(AI_REQUESTS_KEY);
+    return count ? parseInt(count, 10) : 0;
+  };
+
+  const incrementAIRequestCount = () => {
+    const newCount = getAIRequestCount() + 1;
+    localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
+    return newCount;
+  };
+
+  const aiRequestCount = getAIRequestCount();
+  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
   useEffect(() => {
     setMessages([{
@@ -79,11 +99,23 @@ export default function AIChat() {
 
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return;
+
+    // Check free limit for non-premium users
+    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
+      setShowLimitModal(true);
+      return;
+    }
+
     const userMsg = { id: Date.now(), role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setShowQuick(false);
     setLoading(true);
+
+    // Increment counter for free users
+    if (!isPremium) {
+      incrementAIRequestCount();
+    }
 
     try {
       // Build conversation history (exclude welcome message)
@@ -366,6 +398,62 @@ export default function AIChat() {
         onClose={() => setShowBetModal(false)}
         bet={selectedBet}
       />
+
+      {/* Limit Reached Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setShowLimitModal(false)}>
+          <div className="absolute inset-0 bg-black/40"/>
+          <div
+            className="relative bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <button onClick={() => setShowLimitModal(false)} className="absolute top-3 right-3 text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Free Limit Reached</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                You've used all {FREE_AI_LIMIT} free AI requests
+              </p>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+              <p className="text-sm font-medium text-green-800 mb-1">Unlock Unlimited AI</p>
+              <p className="text-xs text-green-600">
+                Make a deposit at {BOOKMAKER.name} → Unlimited AI requests
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <a
+                href={BOOKMAKER.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+              >
+                Deposit & Unlock
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                </svg>
+              </a>
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="w-full text-gray-500 text-sm py-2"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
