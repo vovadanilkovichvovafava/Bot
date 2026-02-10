@@ -139,6 +139,18 @@ async def register(
     if referrer:
         referrer.referral_bonus_requests += 1  # +1 free AI request
 
+        # Count total referrals for this referrer
+        referral_count_result = await db.execute(
+            select(User).where(User.referred_by_id == referrer.id)
+        )
+        total_referrals = len(referral_count_result.scalars().all())
+
+        # Give PRO for 3 days when reaching 3 referrals
+        if total_referrals >= 3 and not referrer.is_premium:
+            from datetime import datetime, timedelta
+            referrer.is_premium = True
+            referrer.premium_until = datetime.utcnow() + timedelta(days=3)
+
     await db.commit()
     await db.refresh(new_user)
 
