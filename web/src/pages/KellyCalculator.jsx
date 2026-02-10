@@ -66,7 +66,7 @@ export default function KellyCalculator() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="h-full overflow-y-auto bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-white px-5 pt-6 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
