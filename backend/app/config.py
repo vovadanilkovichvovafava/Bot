@@ -7,8 +7,17 @@ class Settings(BaseSettings):
     APP_NAME: str = "AI Betting Bot API"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
-    # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    # JWT - SECRET_KEY is required in production
+    @property
+    def SECRET_KEY(self) -> str:
+        key = os.getenv("SECRET_KEY", "")
+        if not key or key == "your-secret-key-change-in-production":
+            if not self.DEBUG:
+                raise ValueError("SECRET_KEY environment variable is required in production!")
+            # Allow insecure default only in DEBUG mode
+            return "dev-only-insecure-key-do-not-use-in-production"
+        return key
+
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 

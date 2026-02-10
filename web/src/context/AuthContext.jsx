@@ -5,12 +5,36 @@ const AuthContext = createContext(null);
 
 const BOOKMAKER_STORAGE_KEY = 'bookmaker_credentials';
 
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
+function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmakerAccount, setBookmakerAccount] = useState(() => {
-    const stored = localStorage.getItem(BOOKMAKER_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = safeGetItem(BOOKMAKER_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   });
   const [bookmakerBalance, setBookmakerBalance] = useState(null);
 
@@ -72,7 +96,7 @@ export function AuthProvider({ children }) {
   // Bookmaker account management
   const connectBookmaker = async (login, password) => {
     const credentials = { login, password, connectedAt: new Date().toISOString() };
-    localStorage.setItem(BOOKMAKER_STORAGE_KEY, JSON.stringify(credentials));
+    safeSetItem(BOOKMAKER_STORAGE_KEY, JSON.stringify(credentials));
     setBookmakerAccount(credentials);
     // TODO: Call backend to sync balance
     // For now, simulate a balance
@@ -81,7 +105,7 @@ export function AuthProvider({ children }) {
   };
 
   const disconnectBookmaker = () => {
-    localStorage.removeItem(BOOKMAKER_STORAGE_KEY);
+    safeRemoveItem(BOOKMAKER_STORAGE_KEY);
     setBookmakerAccount(null);
     setBookmakerBalance(null);
   };

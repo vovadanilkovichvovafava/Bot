@@ -2,20 +2,32 @@ const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1';
 
 class ApiService {
   constructor() {
-    this.token = localStorage.getItem('access_token');
+    try {
+      this.token = localStorage.getItem('access_token');
+    } catch {
+      this.token = null;
+    }
   }
 
   setToken(token) {
     this.token = token;
-    if (token) {
-      localStorage.setItem('access_token', token);
-    } else {
-      localStorage.removeItem('access_token');
+    try {
+      if (token) {
+        localStorage.setItem('access_token', token);
+      } else {
+        localStorage.removeItem('access_token');
+      }
+    } catch {
+      // localStorage unavailable (private browsing, etc.)
     }
   }
 
   getToken() {
-    return this.token || localStorage.getItem('access_token');
+    try {
+      return this.token || localStorage.getItem('access_token');
+    } catch {
+      return this.token;
+    }
   }
 
   async request(endpoint, options = {}) {
@@ -37,7 +49,7 @@ class ApiService {
 
     if (response.status === 401) {
       this.setToken(null);
-      localStorage.removeItem('refresh_token');
+      try { localStorage.removeItem('refresh_token'); } catch {}
       window.location.href = '/login';
       throw new Error('Unauthorized');
     }
@@ -64,7 +76,7 @@ class ApiService {
       body: JSON.stringify({ email, password }),
     });
     this.setToken(data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
+    try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
     return data;
   }
 
@@ -74,14 +86,16 @@ class ApiService {
       body: JSON.stringify({ email, password, username }),
     });
     this.setToken(data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
+    try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
     return data;
   }
 
   logout() {
     this.setToken(null);
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    try {
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+    } catch {}
   }
 
   // User

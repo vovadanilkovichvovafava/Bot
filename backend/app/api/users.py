@@ -10,8 +10,12 @@ from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
 
-# Internal secret for server-to-server calls
-INTERNAL_SECRET = os.getenv("POSTBACK_SECRET", "your_postback_secret_key")
+# Internal secret for server-to-server calls - REQUIRED
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET")
+if not INTERNAL_SECRET or INTERNAL_SECRET == "your_postback_secret_key":
+    import logging
+    logging.warning("POSTBACK_SECRET not set or using default - premium activation endpoint will reject all requests")
+    INTERNAL_SECRET = None  # Disable the endpoint if not configured
 
 router = APIRouter()
 
@@ -134,7 +138,13 @@ async def activate_premium(
 ):
     """Activate premium for user (internal endpoint for postback server)"""
 
-    # Verify internal secret
+    # Verify internal secret - reject if not configured
+    if not INTERNAL_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Premium activation not configured"
+        )
+
     if x_internal_secret != INTERNAL_SECRET:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

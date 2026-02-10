@@ -3,6 +3,20 @@ import { getAdvertiser, DEFAULT_ADVERTISER } from '../config/advertisers';
 
 const AdvertiserContext = createContext(null);
 
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
 // Free GeoIP services (fallback chain)
 const GEOIP_SERVICES = [
   {
@@ -22,7 +36,7 @@ const GEOIP_SERVICES = [
 export function AdvertiserProvider({ children }) {
   const [advertiser, setAdvertiser] = useState(() => {
     // Try to get cached advertiser first
-    const cached = localStorage.getItem('advertiser');
+    const cached = safeGetItem('advertiser');
     if (cached) {
       try {
         return JSON.parse(cached);
@@ -34,7 +48,7 @@ export function AdvertiserProvider({ children }) {
   });
 
   const [countryCode, setCountryCode] = useState(() => {
-    return localStorage.getItem('countryCode') || null;
+    return safeGetItem('countryCode') || null;
   });
 
   const [loading, setLoading] = useState(!countryCode);
@@ -65,11 +79,11 @@ export function AdvertiserProvider({ children }) {
 
         if (code) {
           setCountryCode(code);
-          localStorage.setItem('countryCode', code);
+          safeSetItem('countryCode', code);
 
           const adv = getAdvertiser(code);
           setAdvertiser(adv);
-          localStorage.setItem('advertiser', JSON.stringify(adv));
+          safeSetItem('advertiser', JSON.stringify(adv));
 
           setLoading(false);
           return;
@@ -82,24 +96,24 @@ export function AdvertiserProvider({ children }) {
 
     // All services failed, use default
     setAdvertiser(DEFAULT_ADVERTISER);
-    localStorage.setItem('advertiser', JSON.stringify(DEFAULT_ADVERTISER));
+    safeSetItem('advertiser', JSON.stringify(DEFAULT_ADVERTISER));
     setLoading(false);
   }
 
   // Manual override for testing
   function setCountry(code) {
     setCountryCode(code);
-    localStorage.setItem('countryCode', code);
+    safeSetItem('countryCode', code);
 
     const adv = getAdvertiser(code);
     setAdvertiser(adv);
-    localStorage.setItem('advertiser', JSON.stringify(adv));
+    safeSetItem('advertiser', JSON.stringify(adv));
   }
 
   // Track click with user ID for postback matching
   function trackClick(userId) {
     const clickId = `${userId}_${Date.now()}`;
-    localStorage.setItem('lastClickId', clickId);
+    safeSetItem('lastClickId', clickId);
 
     // Build tracking link with user ID
     const trackingLink = advertiser.link.includes('?')

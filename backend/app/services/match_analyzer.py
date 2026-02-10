@@ -252,7 +252,16 @@ Be realistic with confidence - rarely above 80%. Only respond with JSON."""
             start = text.find("{")
             end = text.rfind("}") + 1
             if start >= 0 and end > start:
-                return json.loads(text[start:end])
+                try:
+                    parsed = json.loads(text[start:end])
+                    # Validate expected fields exist
+                    if "bet_type" in parsed and "confidence" in parsed:
+                        return parsed
+                    logger.warning(f"AI response missing required fields: {list(parsed.keys())}")
+                except json.JSONDecodeError as je:
+                    logger.warning(f"Failed to parse AI JSON response: {je}")
+            else:
+                logger.warning(f"No JSON found in AI response: {text[:100]}...")
         except Exception as e:
             logger.error(f"Claude analysis error: {e}")
 
