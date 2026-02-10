@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -29,8 +30,16 @@ class User(Base):
     total_predictions = Column(Integer, default=0)
     correct_predictions = Column(Integer, default=0)
 
+    # Referral system
+    referral_code = Column(String, unique=True, index=True, nullable=True)
+    referred_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    referral_bonus_requests = Column(Integer, default=0)  # Free AI requests earned
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    referred_by = relationship("User", remote_side=[id], backref="referrals")
 
     @property
     def accuracy(self) -> float:

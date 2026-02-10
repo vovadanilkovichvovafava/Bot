@@ -80,10 +80,12 @@ class ApiService {
     return data;
   }
 
-  async register(email, password, username) {
+  async register(email, password, username, referralCode = null) {
+    const body = { email, password, username };
+    if (referralCode) body.referral_code = referralCode;
     const data = await this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, username }),
+      body: JSON.stringify(body),
     });
     this.setToken(data.access_token);
     try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
@@ -108,6 +110,10 @@ class ApiService {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async getReferralStats() {
+    return this.request('/users/me/referral');
   }
 
   // Matches

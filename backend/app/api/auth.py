@@ -43,6 +43,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     username: Optional[str] = None
+    referral_code: Optional[str] = None  # Code of the user who referred them
 
 
 class UserLogin(BaseModel):
@@ -111,14 +112,33 @@ async def register(
             detail="Email already registered"
         )
 
+    # Check if referral code is valid and get referrer
+    referrer = None
+    if user.referral_code:
+        ref_result = await db.execute(
+            select(User).where(User.referral_code == user.referral_code)
+        )
+        referrer = ref_result.scalar_one_or_none()
+
     # Create new user with IP
     new_user = User(
         email=user.email,
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
+        referred_by_id=referrer.id if referrer else None,
     )
     db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    # Generate unique referral code for new user
+    new_user.referral_code = f"PVA{new_user.id:04X}{int(new_user.created_at.timestamp()) % 10000:04X}"
+
+    # Award referrer with bonus
+    if referrer:
+        referrer.referral_bonus_requests += 1  # +1 free AI request
+
     await db.commit()
     await db.refresh(new_user)
 

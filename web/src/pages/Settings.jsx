@@ -6,6 +6,9 @@ import api from '../api';
 import SupportChat from '../components/SupportChat';
 import { getReferralStats, copyReferralLink, getReferralLink } from '../services/referralStore';
 
+// Default stats while loading
+const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
+
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
 const RISK_OPTIONS = [
@@ -68,13 +71,15 @@ export default function Settings() {
   const [minOdds, setMinOdds] = useState(user?.min_odds || 1.5);
   const [maxOdds, setMaxOdds] = useState(user?.max_odds || 3.0);
   const [riskLevel, setRiskLevel] = useState(user?.risk_level || 'medium');
-  const [referralStats, setReferralStats] = useState(null);
+  const [referralStats, setReferralStats] = useState(DEFAULT_REFERRAL_STATS);
   const [referralCopied, setReferralCopied] = useState(false);
 
-  // Load referral stats
+  // Load referral stats from backend
   useEffect(() => {
     if (user?.id) {
-      setReferralStats(getReferralStats(user.id));
+      getReferralStats().then(stats => {
+        if (stats) setReferralStats(stats);
+      });
     }
   }, [user?.id]);
 
@@ -507,7 +512,7 @@ export default function Settings() {
       )}
 
       {/* Referral Modal */}
-      {showReferralModal && referralStats && (
+      {showReferralModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowReferralModal(false)}>
           <div
             className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl"

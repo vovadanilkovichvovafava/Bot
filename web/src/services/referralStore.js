@@ -1,42 +1,7 @@
-const STORAGE_KEY = 'pva_referral';
+import api from '../api';
 
 /**
- * Generate a unique referral code based on user ID
- */
-export function generateReferralCode(userId) {
-  if (!userId) return null;
-  // Simple base36 encoding of user ID with prefix
-  const code = `PVA${userId.toString(36).toUpperCase()}${Date.now().toString(36).slice(-4).toUpperCase()}`;
-  return code;
-}
-
-/**
- * Get or create referral data for current user
- */
-export function getReferralData(userId) {
-  try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if (!data.code && userId) {
-      data.code = generateReferralCode(userId);
-      data.referrals = [];
-      data.createdAt = new Date().toISOString();
-      saveReferralData(data);
-    }
-    return data;
-  } catch {
-    return { code: null, referrals: [], createdAt: null };
-  }
-}
-
-/**
- * Save referral data
- */
-function saveReferralData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-/**
- * Get referral link
+ * Get referral link from code
  */
 export function getReferralLink(code) {
   const baseUrl = window.location.origin;
@@ -44,55 +9,49 @@ export function getReferralLink(code) {
 }
 
 /**
- * Check if user was referred
+ * Check if user was referred (from URL or session)
  */
 export function getReferredBy() {
   const urlParams = new URLSearchParams(window.location.search);
   const ref = urlParams.get('ref');
   if (ref) {
     // Store the referral code for later use (during registration)
-    sessionStorage.setItem('referral_code', ref);
+    try {
+      sessionStorage.setItem('referral_code', ref);
+    } catch {}
   }
-  return ref || sessionStorage.getItem('referral_code');
+  try {
+    return ref || sessionStorage.getItem('referral_code');
+  } catch {
+    return ref || null;
+  }
 }
 
 /**
- * Add a referral (when someone registers with your code)
+ * Clear stored referral code after registration
  */
-export function addReferral(referralInfo) {
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  if (!data.referrals) data.referrals = [];
-  data.referrals.push({
-    ...referralInfo,
-    date: new Date().toISOString(),
-  });
-  saveReferralData(data);
-  return data;
+export function clearReferralCode() {
+  try {
+    sessionStorage.removeItem('referral_code');
+  } catch {}
 }
 
 /**
- * Get referral stats
+ * Get referral stats from backend
  */
-export function getReferralStats(userId) {
-  const data = getReferralData(userId);
-  const referrals = data.referrals || [];
-
-  // Calculate bonus based on referrals
-  const totalReferrals = referrals.length;
-  const activeReferrals = referrals.filter(r => r.isActive).length;
-  const premiumReferrals = referrals.filter(r => r.isPremium).length;
-
-  // Rewards: 1 free AI request per referral, bonus for premium referrals
-  const freeRequests = totalReferrals + (premiumReferrals * 5);
-
-  return {
-    code: data.code,
-    totalReferrals,
-    activeReferrals,
-    premiumReferrals,
-    freeRequests,
-    referrals,
-  };
+export async function getReferralStats() {
+  try {
+    const data = await api.getReferralStats();
+    return {
+      code: data.code,
+      totalReferrals: data.total_referrals,
+      activeReferrals: data.active_referrals,
+      freeRequests: data.bonus_requests,
+    };
+  } catch (error) {
+    console.error('Failed to get referral stats:', error);
+    return null;
+  }
 }
 
 /**
@@ -123,11 +82,9 @@ export async function copyReferralLink(code) {
 }
 
 export default {
-  generateReferralCode,
-  getReferralData,
   getReferralLink,
   getReferredBy,
-  addReferral,
+  clearReferralCode,
   getReferralStats,
   copyReferralLink,
 };

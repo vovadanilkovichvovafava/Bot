@@ -178,3 +178,52 @@ async def activate_premium(
         "premium_until": user.premium_until.isoformat() if user.premium_until else None,
         "source": activation.source
     }
+
+
+# === Referral System ===
+
+class ReferralStatsResponse(BaseModel):
+    code: str
+    total_referrals: int
+    active_referrals: int
+    bonus_requests: int
+
+
+@router.get("/me/referral", response_model=ReferralStatsResponse)
+async def get_referral_stats(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get current user's referral code and stats"""
+    user_id = current_user.get("user_id")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Generate referral code if user doesn't have one
+    if not user.referral_code:
+        user.referral_code = f"PVA{user.id:04X}{int(user.created_at.timestamp()) % 10000:04X}"
+        await db.commit()
+        await db.refresh(user)
+
+    # Count referrals
+    referrals_result = await db.execute(
+        select(User).where(User.referred_by_id == user.id)
+    )
+    referrals = referrals_result.scalars().all()
+
+    total_referrals = len(referrals)
+    active_referrals = sum(1 for r in referrals if r.total_predictions > 0)
+
+    return ReferralStatsResponse(
+        code=user.referral_code,
+        total_referrals=total_referrals,
+        active_referrals=active_referrals,
+        bonus_requests=user.referral_bonus_requests
+    )

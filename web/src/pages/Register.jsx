@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getReferredBy, clearReferralCode } from '../services/referralStore';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -10,8 +11,17 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState(null);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Check for referral code on mount
+  useEffect(() => {
+    const ref = getReferredBy();
+    if (ref) {
+      setReferralCode(ref);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +40,8 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, username || undefined);
+      await register(email, password, username || undefined, referralCode);
+      clearReferralCode(); // Clear the referral code after successful registration
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed');
