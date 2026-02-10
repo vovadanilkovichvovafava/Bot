@@ -12,10 +12,18 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    # External APIs
-    FOOTBALL_API_KEY: str = os.getenv("FOOTBALL_API_KEY", "")
+    # External APIs - read at access time for Railway compatibility
     FOOTBALL_API_URL: str = "https://api.football-data.org/v4"
-    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+
+    @property
+    def FOOTBALL_API_KEY(self) -> str:
+        """Read at access time, not at module load"""
+        return os.getenv("FOOTBALL_API_KEY", "")
+
+    @property
+    def CLAUDE_API_KEY(self) -> str:
+        """Read at access time, not at module load"""
+        return os.getenv("CLAUDE_API_KEY", "")
 
     # Limits
     FREE_DAILY_LIMIT: int = 10

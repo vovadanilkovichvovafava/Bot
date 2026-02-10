@@ -11,7 +11,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 API_FOOTBALL_BASE = "https://v3.football.api-sports.io"
-API_KEY = os.getenv("API_FOOTBALL_KEY", "")
+
+
+def get_api_football_key() -> str:
+    """Get API key at request time, not module load time"""
+    return os.getenv("API_FOOTBALL_KEY", "")
 
 # In-memory cache shared between all users
 _cache: Dict[str, Dict] = {}
@@ -88,7 +92,9 @@ class ApiFootballService:
 
     async def _request(self, endpoint: str, params: Dict = None, cache_type: str = "default") -> Any:
         """Make request to API-Football with caching"""
-        if not API_KEY:
+        api_key = get_api_football_key()
+
+        if not api_key:
             logger.warning("API_FOOTBALL_KEY not set")
             return []
 
@@ -102,7 +108,7 @@ class ApiFootballService:
 
         # Make API request
         url = f"{API_FOOTBALL_BASE}{endpoint}"
-        headers = {"x-apisports-key": API_KEY}
+        headers = {"x-apisports-key": api_key}
 
         try:
             async with httpx.AsyncClient() as client:

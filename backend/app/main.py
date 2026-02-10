@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AI Betting Bot API",
     description="Backend API for AI Football Betting Predictions",
-    version="1.0.1",
+    version="1.0.2",
     lifespan=lifespan,
 )
 
@@ -63,6 +63,9 @@ async def root():
 async def health_check():
     from app.core.database import async_session_maker
     from sqlalchemy import text
+    from app.services.football_api import get_football_api_key
+    from app.services.api_football import get_api_football_key
+    import os
 
     db_status = "healthy"
     try:
@@ -73,8 +76,13 @@ async def health_check():
 
     return {
         "status": "healthy",
-        "version": "1.0.0",
-        "database": db_status
+        "version": "1.0.2",
+        "database": db_status,
+        "apis": {
+            "football_data": "configured" if get_football_api_key() else "missing",
+            "api_football": "configured" if get_api_football_key() else "missing",
+            "claude": "configured" if os.getenv("CLAUDE_API_KEY") else "missing",
+        }
     }
 
 
@@ -84,51 +92,89 @@ async def debug_football_api():
     import os
     import httpx
     import traceback
+    from app.services.football_api import fetch_matches, get_football_api_key
+    from app.services.api_football import get_api_football_key
+    from datetime import datetime
 
-    api_key = os.getenv("FOOTBALL_API_KEY", "")
+    # Check all API keys
+    football_data_key = get_football_api_key()
+    api_football_key = get_api_football_key()
+    claude_key = os.getenv("CLAUDE_API_KEY", "")
 
     result = {
-        "key_exists": bool(api_key),
-        "key_length": len(api_key) if api_key else 0,
+        "env_vars": {
+            "FOOTBALL_API_KEY": {"exists": bool(football_data_key), "length": len(football_data_key)},
+            "API_FOOTBALL_KEY": {"exists": bool(api_football_key), "length": len(api_football_key)},
+            "CLAUDE_API_KEY": {"exists": bool(claude_key), "length": len(claude_key)},
+        },
+        "football_data_org": {"status": "not_tested"},
+        "api_football": {"status": "not_tested"},
     }
 
-    if not api_key:
-        result["error"] = "FOOTBALL_API_KEY not set"
-        return result
+    # Test Football-Data.org API
+    if football_data_key:
+        try:
+            headers = {"X-Auth-Token": football_data_key}
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.football-data.org/v4/competitions/PL/matches",
+                    headers=headers,
+                    params={"status": "SCHEDULED"},
+                    timeout=15.0
+                )
+                result["football_data_org"]["status_code"] = response.status_code
 
-    # Test API call
+                if response.status_code == 200:
+                    data = response.json()
+                    result["football_data_org"]["status"] = "working"
+                    result["football_data_org"]["matches_count"] = len(data.get("matches", []))
+                    result["football_data_org"]["competition"] = data.get("competition", {}).get("name")
+                else:
+                    result["football_data_org"]["status"] = "error"
+                    result["football_data_org"]["error"] = response.text[:300]
+        except Exception as e:
+            result["football_data_org"]["status"] = "error"
+            result["football_data_org"]["error"] = f"{type(e).__name__}: {str(e)}"
+    else:
+        result["football_data_org"]["status"] = "no_key"
+
+    # Test API-Football
+    if api_football_key:
+        try:
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://v3.football.api-sports.io/fixtures",
+                    headers={"x-apisports-key": api_football_key},
+                    params={"date": today},
+                    timeout=15.0
+                )
+                result["api_football"]["status_code"] = response.status_code
+
+                if response.status_code == 200:
+                    data = response.json()
+                    fixtures = data.get("response", [])
+                    result["api_football"]["status"] = "working"
+                    result["api_football"]["fixtures_count"] = len(fixtures)
+                    result["api_football"]["errors"] = data.get("errors", {})
+                else:
+                    result["api_football"]["status"] = "error"
+                    result["api_football"]["error"] = response.text[:300]
+        except Exception as e:
+            result["api_football"]["status"] = "error"
+            result["api_football"]["error"] = f"{type(e).__name__}: {str(e)}"
+    else:
+        result["api_football"]["status"] = "no_key"
+
+    # Test internal fetch function
     try:
-        headers = {"X-Auth-Token": api_key}
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.football-data.org/v4/competitions/PL/matches",
-                headers=headers,
-                params={"status": "SCHEDULED"},
-                timeout=15.0
-            )
-
-            result["status_code"] = response.status_code
-            result["headers"] = dict(response.headers)
-
-            if response.status_code == 200:
-                data = response.json()
-                result["matches_count"] = len(data.get("matches", []))
-                result["competition"] = data.get("competition", {}).get("name")
-                # Show first 3 matches
-                matches = data.get("matches", [])[:3]
-                result["sample_matches"] = [
-                    {
-                        "home": m.get("homeTeam", {}).get("name"),
-                        "away": m.get("awayTeam", {}).get("name"),
-                        "date": m.get("utcDate")
-                    }
-                    for m in matches
-                ]
-            else:
-                result["response_text"] = response.text[:500]
-
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        matches = await fetch_matches(date_from=today, date_to=today)
+        result["internal_fetch"] = {
+            "status": "working" if matches else "empty",
+            "count": len(matches),
+        }
     except Exception as e:
-        result["error"] = f"{type(e).__name__}: {str(e)}"
-        result["traceback"] = traceback.format_exc()[-500:]
+        result["internal_fetch"] = {"status": "error", "error": str(e)}
 
     return result

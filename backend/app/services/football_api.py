@@ -6,7 +6,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-FOOTBALL_API_KEY = os.getenv("FOOTBALL_API_KEY", "")
+
+def get_football_api_key() -> str:
+    """Get API key at request time, not module load time"""
+    return os.getenv("FOOTBALL_API_KEY", "")
 
 # Football-Data.org API
 FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
@@ -48,8 +51,9 @@ def _set_cache(key: str, value: any):
 
 async def fetch_matches(date_from: str = None, date_to: str = None, league: str = None) -> List[Dict]:
     """Fetch matches from Football-Data.org API"""
+    api_key = get_football_api_key()
 
-    if not FOOTBALL_API_KEY:
+    if not api_key:
         logger.warning("FOOTBALL_API_KEY not set, returning empty list")
         return []
 
@@ -59,7 +63,7 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
     if cached:
         return cached
 
-    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+    headers = {"X-Auth-Token": api_key}
     all_matches = []
 
     # Determine which leagues to fetch
@@ -123,8 +127,10 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
 
 async def fetch_match_details(match_id: int) -> Optional[Dict]:
     """Fetch single match details with head-to-head"""
+    api_key = get_football_api_key()
 
-    if not FOOTBALL_API_KEY:
+    if not api_key:
+        logger.warning("FOOTBALL_API_KEY not set for match details")
         return None
 
     cache_key = f"match_{match_id}"
@@ -133,7 +139,7 @@ async def fetch_match_details(match_id: int) -> Optional[Dict]:
         return cached
 
     try:
-        headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+        headers = {"X-Auth-Token": api_key}
 
         async with httpx.AsyncClient() as client:
             # Get match details
@@ -191,8 +197,14 @@ async def fetch_match_details(match_id: int) -> Optional[Dict]:
 
 async def fetch_standings(league_code: str) -> List[Dict]:
     """Fetch league standings"""
+    api_key = get_football_api_key()
 
-    if not FOOTBALL_API_KEY or league_code not in LEAGUE_IDS:
+    if not api_key:
+        logger.warning("FOOTBALL_API_KEY not set for standings")
+        return []
+
+    if league_code not in LEAGUE_IDS:
+        logger.warning(f"Unknown league code: {league_code}")
         return []
 
     cache_key = f"standings_{league_code}"
@@ -201,7 +213,7 @@ async def fetch_standings(league_code: str) -> List[Dict]:
         return cached
 
     try:
-        headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+        headers = {"X-Auth-Token": api_key}
         league_id = LEAGUE_IDS[league_code]
 
         async with httpx.AsyncClient() as client:
