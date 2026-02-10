@@ -48,7 +48,7 @@ class ChatResponse(BaseModel):
     response: str
 
 
-@router.post("/ai/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse)
 async def ai_chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
     """AI chat for football questions and analysis"""
     analyzer = MatchAnalyzer()
