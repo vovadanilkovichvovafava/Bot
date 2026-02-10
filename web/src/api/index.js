@@ -44,7 +44,14 @@ class ApiService {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      throw new Error(data.detail || `HTTP ${response.status}`);
+      // Handle detail being string or object
+      let errorMessage = `HTTP ${response.status}`;
+      if (data.detail) {
+        errorMessage = typeof data.detail === 'string'
+          ? data.detail
+          : JSON.stringify(data.detail);
+      }
+      throw new Error(errorMessage);
     }
 
     return response.json();

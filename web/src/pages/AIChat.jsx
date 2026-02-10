@@ -193,15 +193,17 @@ export default function AIChat() {
       saveChatHistory(newMessages);
     } catch (e) {
       console.error('AI Chat error:', e);
+      // Safely extract error message
+      const errStr = typeof e === 'string' ? e : (e?.message || String(e));
       let errorMsg;
-      if (e.message?.includes('402') || e.message?.includes('limit')) {
+      if (errStr.includes('402') || errStr.includes('limit')) {
         errorMsg = 'You have reached your daily AI request limit. Upgrade to Premium for unlimited access.';
-      } else if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
+      } else if (errStr.includes('401') || errStr.includes('Unauthorized')) {
         errorMsg = 'Authentication error. Please try logging in again.';
-      } else if (e.message?.includes('500')) {
+      } else if (errStr.includes('500')) {
         errorMsg = 'Server error. Please try again later.';
       } else {
-        errorMsg = `Error: ${e.message || 'Unknown error occurred'}`;
+        errorMsg = `Error: ${errStr}`;
       }
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
