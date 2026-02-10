@@ -3,11 +3,12 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict
+import time
 
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.database import get_db
-from app.core.email import generate_verification_code, get_verification_expiry, send_verification_email
 from app.models.user import User
 from app.config import settings
 
@@ -18,6 +19,32 @@ COOKIE_SECURE = True  # Set to False for local development without HTTPS
 COOKIE_HTTPONLY = True
 COOKIE_SAMESITE = "lax"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+
+# Rate limiting storage (in production use Redis)
+rate_limit_storage = defaultdict(list)
+RATE_LIMIT_REQUESTS = 5  # Max registration attempts
+RATE_LIMIT_WINDOW = 3600  # Per hour (seconds)
+
+
+def get_client_ip(request: Request) -> str:
+    """Get client IP from request, considering proxies"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def check_rate_limit(ip: str) -> bool:
+    """Check if IP is rate limited. Returns True if allowed, False if blocked."""
+    now = time.time()
+    # Clean old entries
+    rate_limit_storage[ip] = [t for t in rate_limit_storage[ip] if now - t < RATE_LIMIT_WINDOW]
+    # Check limit
+    if len(rate_limit_storage[ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    # Record this request
+    rate_limit_storage[ip].append(now)
+    return True
 
 
 class UserRegister(BaseModel):
@@ -31,25 +58,10 @@ class UserLogin(BaseModel):
     password: str
 
 
-class VerifyEmailRequest(BaseModel):
-    email: EmailStr
-    code: str
-
-
-class ResendCodeRequest(BaseModel):
-    email: EmailStr
-
-
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-
-
-class RegisterResponse(BaseModel):
-    message: str
-    email: str
-    requires_verification: bool = True
 
 
 def set_auth_cookies(response: Response, access_token: str, refresh_token: str):
@@ -74,134 +86,52 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str):
     )
 
 
-@router.post("/register", response_model=RegisterResponse)
-async def register(user: UserRegister, db: AsyncSession = Depends(get_db)):
+@router.post("/register", response_model=TokenResponse)
+async def register(
+    user: UserRegister,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    # Rate limiting by IP
+    client_ip = get_client_ip(request)
+    if not check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registration attempts. Please try again later."
+        )
+
     # Check if user exists
     result = await db.execute(select(User).where(User.email == user.email))
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
-        if existing_user.email_verified:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered"
-            )
-        else:
-            # User exists but not verified - update password and resend code
-            verification_code = generate_verification_code()
-            existing_user.password_hash = get_password_hash(user.password)
-            existing_user.verification_code = verification_code
-            existing_user.verification_code_expires = get_verification_expiry()
-            await db.commit()
-            await send_verification_email(user.email, verification_code)
-            return RegisterResponse(
-                message="Verification code sent to your email",
-                email=user.email,
-                requires_verification=True
-            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
 
-    # Generate verification code
-    verification_code = generate_verification_code()
-
-    # Create new user (unverified)
+    # Create new user
     new_user = User(
         email=user.email,
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
-        email_verified=False,
-        verification_code=verification_code,
-        verification_code_expires=get_verification_expiry(),
     )
     db.add(new_user)
     await db.commit()
+    await db.refresh(new_user)
 
-    # Send verification email
-    await send_verification_email(user.email, verification_code)
+    access_token = create_access_token({"sub": user.email, "user_id": new_user.id})
+    refresh_token = create_access_token({"sub": user.email, "user_id": new_user.id, "refresh": True})
 
-    return RegisterResponse(
-        message="Verification code sent to your email",
-        email=user.email,
-        requires_verification=True
-    )
-
-
-@router.post("/verify-email", response_model=TokenResponse)
-async def verify_email(data: VerifyEmailRequest, response: Response, db: AsyncSession = Depends(get_db)):
-    # Find user
-    result = await db.execute(select(User).where(User.email == data.email))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    if user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already verified"
-        )
-
-    # Check code
-    if user.verification_code != data.code:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid verification code"
-        )
-
-    # Check expiry
-    if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification code expired. Please request a new one."
-        )
-
-    # Verify user
-    user.email_verified = True
-    user.verification_code = None
-    user.verification_code_expires = None
-    await db.commit()
-
-    # Generate tokens
-    access_token = create_access_token({"sub": user.email, "user_id": user.id})
-    refresh_token = create_access_token({"sub": user.email, "user_id": user.id, "refresh": True})
-
-    # Set cookies
+    # Set httpOnly cookies
     set_auth_cookies(response, access_token, refresh_token)
 
+    # Also return in body for backwards compatibility
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token
     )
-
-
-@router.post("/resend-code")
-async def resend_verification_code(data: ResendCodeRequest, db: AsyncSession = Depends(get_db)):
-    # Find user
-    result = await db.execute(select(User).where(User.email == data.email))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        # Don't reveal if email exists
-        return {"message": "If the email exists, a new code has been sent"}
-
-    if user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already verified"
-        )
-
-    # Generate new code
-    verification_code = generate_verification_code()
-    user.verification_code = verification_code
-    user.verification_code_expires = get_verification_expiry()
-    await db.commit()
-
-    # Send email
-    await send_verification_email(data.email, verification_code)
-
-    return {"message": "Verification code sent"}
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -214,19 +144,6 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
-        )
-
-    # Check if email is verified
-    if not db_user.email_verified:
-        # Send new verification code
-        verification_code = generate_verification_code()
-        db_user.verification_code = verification_code
-        db_user.verification_code_expires = get_verification_expiry()
-        await db.commit()
-        await send_verification_email(user.email, verification_code)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email not verified. A new verification code has been sent."
         )
 
     access_token = create_access_token({"sub": user.email, "user_id": db_user.id})

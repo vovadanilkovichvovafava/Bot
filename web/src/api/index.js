@@ -62,29 +62,13 @@ class ApiService {
   }
 
   async register(email, password, username) {
-    // Returns { message, email, requires_verification }
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, username }),
     });
-    return data;
-  }
-
-  async verifyEmail(email, code) {
-    const data = await this.request('/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ email, code }),
-    });
     this.setToken(data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
     return data;
-  }
-
-  async resendCode(email) {
-    return this.request('/auth/resend-code', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
   }
 
   logout() {
