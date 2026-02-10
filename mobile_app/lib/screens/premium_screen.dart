@@ -93,12 +93,12 @@ class PremiumScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           _PlanCard(
-            title: '30 Days',
-            price: '\$40',
-            period: 'month',
+            title: '15 Days',
+            price: '\$20',
+            period: '15 days',
             features: ['Unlimited predictions', 'Full AI analysis', 'Priority support'],
             isPopular: true,
-            onTap: () => _showPaymentDialog(context, 30, 40),
+            onTap: () => _showPaymentDialog(context, 15, 20),
           ),
           const SizedBox(height: 8),
           _PlanCard(

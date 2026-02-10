@@ -226,7 +226,7 @@ async function activatePremium(userId, depositInfo) {
   premiumActivations.set(userId, {
     activatedAt: new Date().toISOString(),
     depositInfo,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+    expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days
   });
 
   // Call main API to update user's premium status

@@ -54,7 +54,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
 
     // PRO access questions
     if (lower.includes('pro') || lower.includes('access') || lower.includes('unlock') || lower.includes('premium')) {
-      return `Great! PRO access includes:\n\n✅ Value Bet Finder — AI finds bets with inflated odds\n✅ Bankroll Tracker — track your bankroll and bets\n✅ Unlimited AI predictions\n✅ Priority support\n\n🎁 Good news — you can get PRO for **FREE**!\n\nJust register with our partner ${BOOKMAKER.name} and deposit at least ${BOOKMAKER.minDeposit}.\n\nThey're a reliable bookmaker with fast payouts. After registration, message me — I'll verify and activate your PRO for 30 days! 🚀`;
+      return `Great! PRO access includes:\n\n✅ Value Bet Finder — AI finds bets with inflated odds\n✅ Bankroll Tracker — track your bankroll and bets\n✅ Unlimited AI predictions\n✅ Priority support\n\n🎁 Good news — you can get PRO for **FREE**!\n\nJust register with our partner ${BOOKMAKER.name} and deposit at least ${BOOKMAKER.minDeposit}.\n\nThey're a reliable bookmaker with fast payouts. After registration, message me — I'll verify and activate your PRO for 15 days! 🚀`;
     }
 
     // Registration questions

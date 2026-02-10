@@ -11,9 +11,9 @@ const PLANS = [
   },
   {
     id: 'month',
-    days: '30 Days',
-    price: '$40',
-    period: '/month',
+    days: '15 Days',
+    price: '$20',
+    period: '/15 days',
     features: 'Unlimited predictions \u2022 Full AI analysis \u2022 Priority support',
     popular: true,
   },
