@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import MatchCard from '../components/MatchCard';
-import { BOOKMAKER } from '../components/SupportChat';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import { useAuth } from '../context/AuthContext';
 
 // Popular league IDs for API-Football
 const POPULAR_LEAGUE_IDS = [
@@ -52,6 +53,8 @@ export default function Matches() {
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const navigate = useNavigate();
   const liveInterval = useRef(null);
+  const { advertiser, trackClick } = useAdvertiser();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (tab === 'today') loadTodayMatches();
@@ -174,14 +177,14 @@ export default function Matches() {
       <div className="px-5 pt-4">
         {/* Partner Banner */}
         <a
-          href={BOOKMAKER.link}
+          href={user?.id ? trackClick(user.id) : advertiser.link}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4"
         >
           <span className="text-lg">🎯</span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-medium">Bonus {BOOKMAKER.bonus} at {BOOKMAKER.name}</p>
+            <p className="text-white text-xs font-medium">Bonus {advertiser.bonus} at {advertiser.name}</p>
           </div>
           <span className="text-slate-400 text-xs">Get It →</span>
         </a>
