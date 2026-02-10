@@ -192,9 +192,17 @@ export default function AIChat() {
       setMessages(newMessages);
       saveChatHistory(newMessages);
     } catch (e) {
-      const errorMsg = e.message?.includes('402') || e.message?.includes('limit')
-        ? 'You have reached your daily AI request limit. Upgrade to Premium for unlimited access.'
-        : 'Sorry, I encountered an error. Please try again.';
+      console.error('AI Chat error:', e);
+      let errorMsg;
+      if (e.message?.includes('402') || e.message?.includes('limit')) {
+        errorMsg = 'You have reached your daily AI request limit. Upgrade to Premium for unlimited access.';
+      } else if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
+        errorMsg = 'Authentication error. Please try logging in again.';
+      } else if (e.message?.includes('500')) {
+        errorMsg = 'Server error. Please try again later.';
+      } else {
+        errorMsg = `Error: ${e.message || 'Unknown error occurred'}`;
+      }
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',

@@ -152,16 +152,27 @@ class MatchAnalyzer:
         messages.append({"role": "user", "content": prompt})
 
         try:
+            logger.info(f"Calling Claude API with {len(messages)} messages")
             response = self.claude_client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=1500,
                 system=system,
                 messages=messages,
             )
+            logger.info("Claude API call successful")
             return response.content[0].text
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Claude API authentication error: {e}")
+            return "AI authentication failed. Please check the API key configuration."
+        except anthropic.RateLimitError as e:
+            logger.error(f"Claude API rate limit: {e}")
+            return "AI service is temporarily busy. Please try again in a moment."
+        except anthropic.APIError as e:
+            logger.error(f"Claude API error: {e}")
+            return f"AI service error: {str(e)[:100]}"
         except Exception as e:
-            logger.error(f"AI chat error: {e}")
-            return f"Sorry, AI analysis is temporarily unavailable. Error: {type(e).__name__}"
+            logger.error(f"AI chat unexpected error: {type(e).__name__}: {e}")
+            return f"Sorry, AI analysis is temporarily unavailable. Error: {type(e).__name__}: {str(e)[:100]}"
 
     def _build_context(
         self,
