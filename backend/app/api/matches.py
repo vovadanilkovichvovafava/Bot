@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -158,7 +158,8 @@ async def get_match_detail(match_id: int, current_user: dict = Depends(get_curre
     if details:
         return MatchDetail(**details)
 
-    return _get_demo_match_detail(match_id)
+    # Return 404 so frontend can fallback to API-Football
+    raise HTTPException(status_code=404, detail="Match not found")
 
 
 # Demo data generators
@@ -184,24 +185,6 @@ def _generate_demo_matches(day_offset: int) -> List[Match]:
         ))
 
     return matches
-
-
-def _get_demo_match_detail(match_id: int) -> MatchDetail:
-    """Generate demo match detail"""
-    return MatchDetail(
-        id=match_id,
-        home_team=Team(name="Manchester City", logo="https://media.api-sports.io/football/teams/50.png"),
-        away_team=Team(name="Arsenal", logo="https://media.api-sports.io/football/teams/42.png"),
-        league="Premier League",
-        league_code="PL",
-        match_date=datetime.utcnow(),
-        head_to_head=HeadToHead(
-            total_matches=10,
-            home_wins=4,
-            away_wins=3,
-            draws=3
-        )
-    )
 
 
 def _get_demo_standings() -> List[Standing]:
