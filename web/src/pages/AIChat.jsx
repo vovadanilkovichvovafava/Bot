@@ -148,11 +148,6 @@ export default function AIChat() {
     setShowQuick(false);
     setLoading(true);
 
-    // Increment counter for free users
-    if (!isPremium) {
-      incrementAIRequestCount();
-    }
-
     try {
       // Build conversation history (exclude welcome message)
       const history = messages
@@ -174,6 +169,12 @@ export default function AIChat() {
       setEnriching(false);
 
       const data = await api.aiChat(textWithPrefs, history, matchContext);
+
+      // Increment counter for free users only AFTER successful response
+      if (!isPremium) {
+        incrementAIRequestCount();
+      }
+
       const newCount = responseCount + 1;
       setResponseCount(newCount);
 
