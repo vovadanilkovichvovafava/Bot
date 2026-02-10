@@ -64,19 +64,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - allow mobile app to connect
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Security middleware (order matters: first added = last executed)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(InjectionDetectionMiddleware)
+
+# CORS - MUST be added LAST so it runs FIRST (LIFO order)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 # Routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
