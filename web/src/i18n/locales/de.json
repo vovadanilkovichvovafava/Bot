@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "save": "Speichern",
+    "back": "Zurück",
+    "next": "Weiter",
+    "close": "Schließen",
+    "search": "Suchen",
+    "noResults": "Keine Ergebnisse gefunden"
+  },
+  "nav": {
+    "home": "Start",
+    "matches": "Spiele",
+    "predictions": "Vorhersagen",
+    "tools": "Werkzeuge",
+    "settings": "Einstellungen"
+  },
+  "home": {
+    "welcome": "Willkommen",
+    "todayMatches": "Heutige Spiele",
+    "topPredictions": "Top-Vorhersagen",
+    "aiAnalysis": "KI-Analyse",
+    "getAnalysis": "KI-Analyse erhalten",
+    "analyzing": "Analysieren...",
+    "viewAll": "Alle anzeigen"
+  },
+  "matches": {
+    "today": "Heute",
+    "upcoming": "Kommende",
+    "live": "Live",
+    "finished": "Beendet",
+    "noMatches": "Keine Spiele verfügbar",
+    "kickoff": "Anstoß",
+    "odds": "Quoten"
+  },
+  "betting": {
+    "placeBet": "Wette platzieren",
+    "stake": "Einsatz",
+    "potentialWin": "Möglicher Gewinn",
+    "balance": "Guthaben",
+    "connectAccount": "Konto verbinden",
+    "createAccount": "Konto erstellen",
+    "loginToBet": "Anmelden zum Wetten",
+    "insufficientBalance": "Unzureichendes Guthaben",
+    "betPlaced": "Wette platziert!",
+    "placingBet": "Wette wird platziert...",
+    "yourBet": "Deine Wette",
+    "quickAmounts": "Schnellbeträge",
+    "getBonus": "{{bonus}} erhalten"
+  },
+  "predictions": {
+    "aiRecommended": "KI-Empfehlung",
+    "confidence": "Vertrauen",
+    "value": "Wert",
+    "safebet": "Sichere Wette",
+    "riskLevel": "Risikoniveau",
+    "low": "Niedrig",
+    "medium": "Mittel",
+    "high": "Hoch"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "password": "Passwort",
+    "emailOrPhone": "E-Mail oder Telefon",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "connecting": "Verbinden...",
+    "creatingAccount": "Konto wird erstellt..."
+  },
+  "bonus": {
+    "welcomeBonus": "Willkommensbonus",
+    "getBonus": "Bonus erhalten",
+    "freeSpins": "Freispiele",
+    "depositBonus": "Einzahlungsbonus",
+    "promoCode": "Promo-Code",
+    "claimNow": "Jetzt beanspruchen"
+  },
+  "pro": {
+    "getPro": "PRO erhalten",
+    "proAccess": "PRO-Zugang",
+    "proFeatures": "PRO-Funktionen",
+    "unlimitedPredictions": "Unbegrenzte KI-Vorhersagen",
+    "valueBetFinder": "Value-Bet-Finder",
+    "bankrollTracker": "Bankroll-Tracker",
+    "prioritySupport": "Prioritäts-Support",
+    "getFreeWith": "Kostenlos mit Einzahlung"
+  },
+  "support": {
+    "support": "Support",
+    "helpCenter": "Hilfezentrum",
+    "chatWithUs": "Mit uns chatten",
+    "sendMessage": "Nachricht senden",
+    "typeMessage": "Nachricht eingeben..."
+  },
+  "errors": {
+    "somethingWrong": "Etwas ist schiefgelaufen",
+    "tryAgain": "Bitte versuche es erneut",
+    "networkError": "Netzwerkfehler",
+    "captchaRequired": "Captcha-Verifizierung erforderlich"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "cancel": "Отмена",
+    "confirm": "Подтвердить",
+    "save": "Сохранить",
+    "back": "Назад",
+    "next": "Далее",
+    "close": "Закрыть",
+    "search": "Поиск",
+    "noResults": "Ничего не найдено"
+  },
+  "nav": {
+    "home": "Главная",
+    "matches": "Матчи",
+    "predictions": "Прогнозы",
+    "tools": "Инструменты",
+    "settings": "Настройки"
+  },
+  "home": {
+    "welcome": "Добро пожаловать",
+    "todayMatches": "Матчи сегодня",
+    "topPredictions": "Лучшие прогнозы",
+    "aiAnalysis": "ИИ Анализ",
+    "getAnalysis": "Получить ИИ Анализ",
+    "analyzing": "Анализируем...",
+    "viewAll": "Смотреть все"
+  },
+  "matches": {
+    "today": "Сегодня",
+    "upcoming": "Скоро",
+    "live": "Live",
+    "finished": "Завершён",
+    "noMatches": "Нет доступных матчей",
+    "kickoff": "Начало",
+    "odds": "Коэффициенты"
+  },
+  "betting": {
+    "placeBet": "Сделать ставку",
+    "stake": "Ставка",
+    "potentialWin": "Возможный выигрыш",
+    "balance": "Баланс",
+    "connectAccount": "Подключить аккаунт",
+    "createAccount": "Создать аккаунт",
+    "loginToBet": "Войдите для ставок",
+    "insufficientBalance": "Недостаточно средств",
+    "betPlaced": "Ставка сделана!",
+    "placingBet": "Делаем ставку...",
+    "yourBet": "Ваша ставка",
+    "quickAmounts": "Быстрые суммы",
+    "getBonus": "Получить {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "Рекомендация ИИ",
+    "confidence": "Уверенность",
+    "value": "Ценность",
+    "safebet": "Надёжная ставка",
+    "riskLevel": "Уровень риска",
+    "low": "Низкий",
+    "medium": "Средний",
+    "high": "Высокий"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "email": "Email",
+    "phone": "Телефон",
+    "password": "Пароль",
+    "emailOrPhone": "Email или Телефон",
+    "forgotPassword": "Забыли пароль?",
+    "noAccount": "Нет аккаунта?",
+    "hasAccount": "Уже есть аккаунт?",
+    "connecting": "Подключение...",
+    "creatingAccount": "Создание аккаунта..."
+  },
+  "bonus": {
+    "welcomeBonus": "Приветственный бонус",
+    "getBonus": "Получить бонус",
+    "freeSpins": "Бесплатные вращения",
+    "depositBonus": "Бонус на депозит",
+    "promoCode": "Промокод",
+    "claimNow": "Забрать сейчас"
+  },
+  "pro": {
+    "getPro": "Получить PRO",
+    "proAccess": "PRO доступ",
+    "proFeatures": "PRO функции",
+    "unlimitedPredictions": "Безлимитные ИИ прогнозы",
+    "valueBetFinder": "Поиск ценных ставок",
+    "bankrollTracker": "Трекер банкролла",
+    "prioritySupport": "Приоритетная поддержка",
+    "getFreeWith": "Бесплатно при депозите"
+  },
+  "support": {
+    "support": "Поддержка",
+    "helpCenter": "Центр помощи",
+    "chatWithUs": "Напишите нам",
+    "sendMessage": "Отправить",
+    "typeMessage": "Введите сообщение..."
+  },
+  "errors": {
+    "somethingWrong": "Что-то пошло не так",
+    "tryAgain": "Попробуйте ещё раз",
+    "networkError": "Ошибка сети",
+    "captchaRequired": "Требуется проверка captcha"
+  }
+}

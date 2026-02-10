@@ -70,12 +70,14 @@ export default function BetModal({ isOpen, onClose, bet }) {
             onClick={e => e.stopPropagation()}
           >
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-200">
-                <span className="text-2xl font-bold text-white">1W</span>
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
+                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Connect {BOOKMAKER.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Betting Account</h3>
               <p className="text-gray-500 text-sm mb-6">
-                Connect your {BOOKMAKER.name} account to place real bets directly from the app
+                Connect your account to place real bets directly from the app
               </p>
 
               {/* Bet preview */}
@@ -99,7 +101,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 rel="noopener noreferrer"
                 className="block text-sm text-gray-500 hover:text-gray-700"
               >
-                Don't have account? Register at {BOOKMAKER.name} →
+                Don't have account? Get {BOOKMAKER.bonus} →
               </a>
             </div>
           </div>

@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useBookmaker } from '../context/BookmakerContext';
 
-// Bookmaker info
+// Bookmaker config - loaded from env or defaults (no brand names shown to user)
 export const BOOKMAKER = {
-  name: '1Win',
-  link: 'https://1wjbkj.com/?open=register&p=betpwa',
-  bonus: '+500%',
-  promoCode: 'BETPWA500',
+  // Internal name (not shown to users)
+  name: import.meta.env.VITE_BOOKMAKER_NAME || 'Partner',
+  // Registration link (configured per offer/geo)
+  link: import.meta.env.VITE_BOOKMAKER_LINK || '#',
+  // Bonus text (generic)
+  bonus: import.meta.env.VITE_BOOKMAKER_BONUS || 'Welcome Bonus',
+  // Promo code (optional)
+  promoCode: import.meta.env.VITE_BOOKMAKER_PROMO || '',
 };
 
 export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
@@ -55,7 +59,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
       // If captcha required, show helpful message
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification required. Server-side captcha is being configured. Please try again later or use the 1Win app directly.');
+        setLocalError('Captcha verification required. Please try again later or register through the partner app.');
       } else {
         setLocalError(msg);
       }
@@ -93,7 +97,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
       const msg = err.message || 'Registration failed';
 
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification required. Please register directly at 1Win website and then login here.');
+        setLocalError('Captcha verification required. Please register through the partner app and then login here.');
       } else {
         setLocalError(msg);
       }
@@ -122,11 +126,13 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-orange-200">
-            <span className="text-2xl font-bold text-white">1W</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-200">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900">
-            {mode === 'login' ? 'Connect 1Win Account' : 'Create 1Win Account'}
+            {mode === 'login' ? 'Connect Betting Account' : 'Create Account'}
           </h2>
           <p className="text-gray-500 text-sm mt-1">
             {mode === 'login' ? 'Login to place real bets' : 'Get bonus ' + BOOKMAKER.bonus}

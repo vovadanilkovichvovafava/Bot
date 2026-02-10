@@ -8,12 +8,12 @@ const MANAGER = {
   role: 'Support Manager',
 };
 
-// Bookmaker info (configurable)
+// Bookmaker info - loaded from env (no brand names shown)
 const BOOKMAKER = {
-  name: '1xBet',
-  bonus: '$100',
-  minDeposit: '$10',
-  link: 'https://refpa.top/L?tag=d_3931543m_24795c_&site=3931543&ad=24795', // Affiliate link placeholder
+  name: import.meta.env.VITE_BOOKMAKER_NAME || 'our partner',
+  bonus: import.meta.env.VITE_BOOKMAKER_BONUS || 'Welcome Bonus',
+  minDeposit: import.meta.env.VITE_BOOKMAKER_MIN_DEPOSIT || '$10',
+  link: import.meta.env.VITE_BOOKMAKER_LINK || '#',
 };
 
 export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
@@ -202,7 +202,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
             >
               <span>🎁</span>
-              Register at {BOOKMAKER.name}
+              Get {BOOKMAKER.bonus}
             </button>
             <button
               onClick={() => setInput('I want PRO access')}

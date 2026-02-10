@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Guardar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "noResults": "No se encontraron resultados"
+  },
+  "nav": {
+    "home": "Inicio",
+    "matches": "Partidos",
+    "predictions": "Predicciones",
+    "tools": "Herramientas",
+    "settings": "Ajustes"
+  },
+  "home": {
+    "welcome": "Bienvenido",
+    "todayMatches": "Partidos de Hoy",
+    "topPredictions": "Mejores Predicciones",
+    "aiAnalysis": "Análisis IA",
+    "getAnalysis": "Obtener Análisis IA",
+    "analyzing": "Analizando...",
+    "viewAll": "Ver Todo"
+  },
+  "matches": {
+    "today": "Hoy",
+    "upcoming": "Próximos",
+    "live": "En Vivo",
+    "finished": "Terminado",
+    "noMatches": "No hay partidos disponibles",
+    "kickoff": "Inicio",
+    "odds": "Cuotas"
+  },
+  "betting": {
+    "placeBet": "Apostar",
+    "stake": "Apuesta",
+    "potentialWin": "Ganancia Potencial",
+    "balance": "Saldo",
+    "connectAccount": "Conectar Cuenta",
+    "createAccount": "Crear Cuenta",
+    "loginToBet": "Inicia sesión para apostar",
+    "insufficientBalance": "Saldo insuficiente",
+    "betPlaced": "¡Apuesta Realizada!",
+    "placingBet": "Apostando...",
+    "yourBet": "Tu Apuesta",
+    "quickAmounts": "Cantidades rápidas",
+    "getBonus": "Obtener {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "Recomendado por IA",
+    "confidence": "Confianza",
+    "value": "Valor",
+    "safebet": "Apuesta Segura",
+    "riskLevel": "Nivel de Riesgo",
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "email": "Correo",
+    "phone": "Teléfono",
+    "password": "Contraseña",
+    "emailOrPhone": "Correo o Teléfono",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "connecting": "Conectando...",
+    "creatingAccount": "Creando Cuenta..."
+  },
+  "bonus": {
+    "welcomeBonus": "Bono de Bienvenida",
+    "getBonus": "Obtener Bono",
+    "freeSpins": "Giros Gratis",
+    "depositBonus": "Bono por Depósito",
+    "promoCode": "Código Promocional",
+    "claimNow": "Reclamar Ahora"
+  },
+  "pro": {
+    "getPro": "Obtener PRO",
+    "proAccess": "Acceso PRO",
+    "proFeatures": "Funciones PRO",
+    "unlimitedPredictions": "Predicciones IA ilimitadas",
+    "valueBetFinder": "Buscador de Apuestas de Valor",
+    "bankrollTracker": "Seguimiento de Bankroll",
+    "prioritySupport": "Soporte prioritario",
+    "getFreeWith": "Gratis con depósito"
+  },
+  "support": {
+    "support": "Soporte",
+    "helpCenter": "Centro de Ayuda",
+    "chatWithUs": "Chatea con nosotros",
+    "sendMessage": "Enviar mensaje",
+    "typeMessage": "Escribe tu mensaje..."
+  },
+  "errors": {
+    "somethingWrong": "Algo salió mal",
+    "tryAgain": "Por favor, inténtalo de nuevo",
+    "networkError": "Error de red",
+    "captchaRequired": "Verificación captcha requerida"
+  }
+}

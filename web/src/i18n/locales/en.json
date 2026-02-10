@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "search": "Search",
+    "noResults": "No results found"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Matches",
+    "predictions": "Predictions",
+    "tools": "Tools",
+    "settings": "Settings"
+  },
+  "home": {
+    "welcome": "Welcome",
+    "todayMatches": "Today's Matches",
+    "topPredictions": "Top Predictions",
+    "aiAnalysis": "AI Analysis",
+    "getAnalysis": "Get AI Analysis",
+    "analyzing": "Analyzing...",
+    "viewAll": "View All"
+  },
+  "matches": {
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "live": "Live",
+    "finished": "Finished",
+    "noMatches": "No matches available",
+    "kickoff": "Kick-off",
+    "odds": "Odds"
+  },
+  "betting": {
+    "placeBet": "Place Bet",
+    "stake": "Stake",
+    "potentialWin": "Potential Win",
+    "balance": "Balance",
+    "connectAccount": "Connect Account",
+    "createAccount": "Create Account",
+    "loginToBet": "Login to place real bets",
+    "insufficientBalance": "Insufficient balance",
+    "betPlaced": "Bet Placed!",
+    "placingBet": "Placing Bet...",
+    "yourBet": "Your Bet",
+    "quickAmounts": "Quick amounts",
+    "getBonus": "Get {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "AI Recommended",
+    "confidence": "Confidence",
+    "value": "Value",
+    "safebet": "Safe Bet",
+    "riskLevel": "Risk Level",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "phone": "Phone",
+    "password": "Password",
+    "emailOrPhone": "Email or Phone",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "connecting": "Connecting...",
+    "creatingAccount": "Creating Account..."
+  },
+  "bonus": {
+    "welcomeBonus": "Welcome Bonus",
+    "getBonus": "Get Bonus",
+    "freeSpins": "Free Spins",
+    "depositBonus": "Deposit Bonus",
+    "promoCode": "Promo Code",
+    "claimNow": "Claim Now"
+  },
+  "pro": {
+    "getPro": "Get PRO",
+    "proAccess": "PRO Access",
+    "proFeatures": "PRO Features",
+    "unlimitedPredictions": "Unlimited AI predictions",
+    "valueBetFinder": "Value Bet Finder",
+    "bankrollTracker": "Bankroll Tracker",
+    "prioritySupport": "Priority support",
+    "getFreeWith": "Get FREE with deposit"
+  },
+  "support": {
+    "support": "Support",
+    "helpCenter": "Help Center",
+    "chatWithUs": "Chat with us",
+    "sendMessage": "Send message",
+    "typeMessage": "Type your message..."
+  },
+  "errors": {
+    "somethingWrong": "Something went wrong",
+    "tryAgain": "Please try again",
+    "networkError": "Network error",
+    "captchaRequired": "Captcha verification required"
+  }
+}

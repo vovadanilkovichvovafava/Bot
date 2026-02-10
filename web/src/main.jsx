@@ -6,6 +6,9 @@ import { BookmakerProvider } from './context/BookmakerContext';
 import App from './App';
 import './index.css';
 
+// Initialize i18n (auto-detects phone/browser language)
+import './i18n';
+
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
