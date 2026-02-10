@@ -1,3 +1,5 @@
+import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +13,45 @@ from app.middleware import (
     InjectionDetectionMiddleware,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def check_security_config():
+    """Check for security misconfigurations at startup"""
+    warnings = []
+
+    # Check SECRET_KEY
+    secret_key = os.getenv("SECRET_KEY", "")
+    if not secret_key or secret_key == "your-secret-key-change-in-production":
+        warnings.append(
+            "CRITICAL: SECRET_KEY is not set or using default value! "
+            "Set a secure random SECRET_KEY in environment variables."
+        )
+
+    # Check API keys
+    if not os.getenv("CLAUDE_API_KEY"):
+        warnings.append("WARNING: CLAUDE_API_KEY not set. AI features will be unavailable.")
+
+    if not os.getenv("FOOTBALL_API_KEY"):
+        warnings.append("WARNING: FOOTBALL_API_KEY not set. Match data may be limited.")
+
+    if not os.getenv("API_FOOTBALL_KEY"):
+        warnings.append("WARNING: API_FOOTBALL_KEY not set. Live data will be unavailable.")
+
+    for warning in warnings:
+        logger.warning(f"\n{'='*60}\n{warning}\n{'='*60}")
+
+    return len([w for w in warnings if "CRITICAL" in w]) == 0
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize database tables
+    # Startup: Security checks
+    is_secure = check_security_config()
+    if not is_secure:
+        logger.error("Application started with critical security issues!")
+
+    # Initialize database tables
     await init_db()
     yield
     # Shutdown: cleanup if needed

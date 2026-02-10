@@ -68,6 +68,15 @@ class League(BaseModel):
     icon: Optional[str] = None
 
 
+class PaginatedMatchesResponse(BaseModel):
+    """Paginated matches response"""
+    items: List[Match]
+    total: int
+    page: int
+    per_page: int
+    pages: int
+
+
 # Demo matches data (fallback)
 DEMO_MATCHES = [
     {"home": "Manchester City", "away": "Arsenal", "league": "Premier League", "code": "PL",
@@ -130,6 +139,38 @@ async def get_upcoming_matches(
         return [Match(**m) for m in matches]
 
     return _generate_demo_matches(0) + _generate_demo_matches(1)
+
+
+@router.get("/upcoming/paginated", response_model=PaginatedMatchesResponse)
+async def get_upcoming_matches_paginated(
+    days: int = Query(7, ge=1, le=14),
+    league: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """Get upcoming matches with pagination"""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    end_date = (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d")
+
+    all_matches = await fetch_matches(date_from=today, date_to=end_date, league=league)
+
+    if not all_matches:
+        all_matches = [m.__dict__ for m in (_generate_demo_matches(0) + _generate_demo_matches(1))]
+
+    total = len(all_matches)
+    pages = (total + per_page - 1) // per_page
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    items = [Match(**m) if isinstance(m, dict) else m for m in all_matches[start:end]]
+
+    return PaginatedMatchesResponse(
+        items=items,
+        total=total,
+        page=page,
+        per_page=per_page,
+        pages=pages,
+    )
 
 
 @router.get("/leagues", response_model=List[League])

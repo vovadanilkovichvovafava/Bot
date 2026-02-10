@@ -1,5 +1,6 @@
+import re
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,6 +10,19 @@ from app.core.database import get_db
 from app.models.user import User
 
 router = APIRouter()
+
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """Validate password meets security requirements"""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter"
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter"
+    if not re.search(r"\d", password):
+        return False, "Password must contain at least one digit"
+    return True, "Password is strong"
 
 # Cookie settings
 COOKIE_SECURE = True  # Set to False for local development without HTTPS
@@ -71,6 +85,14 @@ async def register(
     response: Response,
     db: AsyncSession = Depends(get_db)
 ):
+    # Validate password strength
+    is_valid, message = validate_password_strength(user.password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message
+        )
+
     client_ip = get_client_ip(request)
 
     # Check if IP already registered
