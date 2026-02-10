@@ -5,6 +5,10 @@ import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { BOOKMAKER } from '../components/SupportChat';
 
+const FREE_AI_LIMIT = 3;
+const AI_REQUESTS_KEY = 'ai_requests_count';
+const VALUE_BET_USED_KEY = 'value_bet_used';
+
 // Top leagues to show on home
 const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
 
@@ -49,7 +53,10 @@ export default function Home() {
     }
   };
 
-  const remaining = user ? (user.daily_limit - user.daily_requests + user.bonus_predictions) : 10;
+  const isPremium = user?.is_premium;
+  const aiRequestCount = parseInt(localStorage.getItem(AI_REQUESTS_KEY) || '0', 10);
+  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
+  const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
   return (
     <div>
@@ -77,8 +84,8 @@ export default function Home() {
               </svg>
             </div>
             <div>
-              <p className="text-primary-100 text-xs">AI Predictions Left Today</p>
-              <p className="text-2xl font-bold">{remaining}<span className="text-sm text-primary-200">/ {user?.daily_limit || 10}</span></p>
+              <p className="text-primary-100 text-xs">AI Predictions Left</p>
+              <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${FREE_AI_LIMIT}`}</span></p>
             </div>
           </div>
           {!user?.is_premium && (
@@ -113,7 +120,69 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Partner Banner - Balanced promo */}
+        {/* Value Bet Finder - Main Hook */}
+        <div
+          onClick={() => navigate(isPremium || !valueBetUsed ? '/value-finder' : '/pro-tools')}
+          className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+              </svg>
+            </div>
+            {!isPremium && !valueBetUsed && (
+              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
+                1 FREE TRY
+              </span>
+            )}
+            {!isPremium && valueBetUsed && (
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                </svg>
+                PRO
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-xl font-bold text-white mb-2">Value Bet Finder</h3>
+          <p className="text-white/80 text-sm mb-4">
+            AI finds bets where actual probability is higher than bookmaker odds. Professional bettors' secret.
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">87%</p>
+              <p className="text-white/60 text-xs">Accuracy</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">+12%</p>
+              <p className="text-white/60 text-xs">Avg. Edge</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">50+</p>
+              <p className="text-white/60 text-xs">Daily Bets</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white/70 text-sm">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+              {isPremium ? 'Unlimited scans' : valueBetUsed ? 'Deposit to unlock' : 'Try it free now!'}
+            </div>
+            <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+              {isPremium || !valueBetUsed ? 'Find Value Bets' : 'Unlock'}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Partner Banner */}
         <a
           href={BOOKMAKER.link}
           target="_blank"
@@ -125,8 +194,8 @@ export default function Home() {
               <span className="text-xl">🎯</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Bonus {BOOKMAKER.bonus}</p>
-              <p className="text-white/60 text-xs">Bet on AI predictions at {BOOKMAKER.name}</p>
+              <p className="font-semibold text-sm">{BOOKMAKER.bonus}</p>
+              <p className="text-white/60 text-xs">Bet on AI predictions at our partner</p>
             </div>
             <svg className="w-5 h-5 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
