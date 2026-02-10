@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "back": "返回",
+    "next": "下一步",
+    "close": "关闭",
+    "search": "搜索",
+    "noResults": "未找到结果"
+  },
+  "nav": {
+    "home": "首页",
+    "matches": "比赛",
+    "predictions": "预测",
+    "tools": "工具",
+    "settings": "设置"
+  },
+  "home": {
+    "welcome": "欢迎",
+    "todayMatches": "今日比赛",
+    "topPredictions": "热门预测",
+    "aiAnalysis": "AI分析",
+    "getAnalysis": "获取AI分析",
+    "analyzing": "分析中...",
+    "viewAll": "查看全部"
+  },
+  "matches": {
+    "today": "今天",
+    "upcoming": "即将开始",
+    "live": "直播",
+    "finished": "已结束",
+    "noMatches": "暂无比赛",
+    "kickoff": "开球时间",
+    "odds": "赔率"
+  },
+  "betting": {
+    "placeBet": "下注",
+    "stake": "投注金额",
+    "potentialWin": "预计收益",
+    "balance": "余额",
+    "connectAccount": "连接账户",
+    "createAccount": "创建账户",
+    "loginToBet": "登录后下注",
+    "insufficientBalance": "余额不足",
+    "betPlaced": "下注成功！",
+    "placingBet": "正在下注...",
+    "yourBet": "您的投注",
+    "quickAmounts": "快捷金额",
+    "getBonus": "获取{{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "AI推荐",
+    "confidence": "置信度",
+    "value": "价值",
+    "safebet": "稳妥投注",
+    "riskLevel": "风险等级",
+    "low": "低",
+    "medium": "中",
+    "high": "高"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "email": "邮箱",
+    "phone": "手机号",
+    "password": "密码",
+    "emailOrPhone": "邮箱或手机号",
+    "forgotPassword": "忘记密码？",
+    "noAccount": "没有账户？",
+    "hasAccount": "已有账户？",
+    "connecting": "连接中...",
+    "creatingAccount": "创建账户中..."
+  },
+  "bonus": {
+    "welcomeBonus": "欢迎奖金",
+    "getBonus": "获取奖金",
+    "freeSpins": "免费旋转",
+    "depositBonus": "存款奖金",
+    "promoCode": "优惠码",
+    "claimNow": "立即领取"
+  },
+  "pro": {
+    "getPro": "获取PRO",
+    "proAccess": "PRO权限",
+    "proFeatures": "PRO功能",
+    "unlimitedPredictions": "无限AI预测",
+    "valueBetFinder": "价值投注查找器",
+    "bankrollTracker": "资金追踪器",
+    "prioritySupport": "优先支持",
+    "getFreeWith": "存款免费获得"
+  },
+  "support": {
+    "support": "支持",
+    "helpCenter": "帮助中心",
+    "chatWithUs": "联系我们",
+    "sendMessage": "发送消息",
+    "typeMessage": "输入消息..."
+  },
+  "errors": {
+    "somethingWrong": "出了点问题",
+    "tryAgain": "请重试",
+    "networkError": "网络错误",
+    "captchaRequired": "需要验证码验证"
+  }
+}

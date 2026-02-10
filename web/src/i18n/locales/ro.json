@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Se încarcă...",
+    "error": "Eroare",
+    "success": "Succes",
+    "cancel": "Anulează",
+    "confirm": "Confirmă",
+    "save": "Salvează",
+    "back": "Înapoi",
+    "next": "Următorul",
+    "close": "Închide",
+    "search": "Caută",
+    "noResults": "Niciun rezultat găsit"
+  },
+  "nav": {
+    "home": "Acasă",
+    "matches": "Meciuri",
+    "predictions": "Predicții",
+    "tools": "Instrumente",
+    "settings": "Setări"
+  },
+  "home": {
+    "welcome": "Bine ai venit",
+    "todayMatches": "Meciurile de Azi",
+    "topPredictions": "Top Predicții",
+    "aiAnalysis": "Analiză AI",
+    "getAnalysis": "Obține Analiză AI",
+    "analyzing": "Se analizează...",
+    "viewAll": "Vezi Tot"
+  },
+  "matches": {
+    "today": "Azi",
+    "upcoming": "Viitoare",
+    "live": "Live",
+    "finished": "Terminat",
+    "noMatches": "Niciun meci disponibil",
+    "kickoff": "Start",
+    "odds": "Cote"
+  },
+  "betting": {
+    "placeBet": "Plasează Pariu",
+    "stake": "Miză",
+    "potentialWin": "Câștig Potențial",
+    "balance": "Sold",
+    "connectAccount": "Conectează Cont",
+    "createAccount": "Creează Cont",
+    "loginToBet": "Conectează-te pentru a paria",
+    "insufficientBalance": "Sold insuficient",
+    "betPlaced": "Pariu Plasat!",
+    "placingBet": "Se plasează pariul...",
+    "yourBet": "Pariul Tău",
+    "quickAmounts": "Sume rapide",
+    "getBonus": "Obține {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "Recomandat de AI",
+    "confidence": "Încredere",
+    "value": "Valoare",
+    "safebet": "Pariu Sigur",
+    "riskLevel": "Nivel de Risc",
+    "low": "Scăzut",
+    "medium": "Mediu",
+    "high": "Ridicat"
+  },
+  "auth": {
+    "login": "Conectare",
+    "register": "Înregistrare",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "password": "Parolă",
+    "emailOrPhone": "E-mail sau Telefon",
+    "forgotPassword": "Ai uitat parola?",
+    "noAccount": "Nu ai cont?",
+    "hasAccount": "Ai deja cont?",
+    "connecting": "Se conectează...",
+    "creatingAccount": "Se creează contul..."
+  },
+  "bonus": {
+    "welcomeBonus": "Bonus de Bun Venit",
+    "getBonus": "Obține Bonus",
+    "freeSpins": "Rotiri Gratuite",
+    "depositBonus": "Bonus la Depunere",
+    "promoCode": "Cod Promoțional",
+    "claimNow": "Revendică Acum"
+  },
+  "pro": {
+    "getPro": "Obține PRO",
+    "proAccess": "Acces PRO",
+    "proFeatures": "Funcții PRO",
+    "unlimitedPredictions": "Predicții AI nelimitate",
+    "valueBetFinder": "Găsitor de Pariuri Valoroase",
+    "bankrollTracker": "Tracker Bankroll",
+    "prioritySupport": "Suport prioritar",
+    "getFreeWith": "Gratuit cu depunere"
+  },
+  "support": {
+    "support": "Suport",
+    "helpCenter": "Centru de Ajutor",
+    "chatWithUs": "Discută cu noi",
+    "sendMessage": "Trimite mesaj",
+    "typeMessage": "Scrie mesajul..."
+  },
+  "errors": {
+    "somethingWrong": "Ceva nu a mers bine",
+    "tryAgain": "Te rugăm să încerci din nou",
+    "networkError": "Eroare de rețea",
+    "captchaRequired": "Verificare captcha necesară"
+  }
+}

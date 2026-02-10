@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Ładowanie...",
+    "error": "Błąd",
+    "success": "Sukces",
+    "cancel": "Anuluj",
+    "confirm": "Potwierdź",
+    "save": "Zapisz",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "close": "Zamknij",
+    "search": "Szukaj",
+    "noResults": "Brak wyników"
+  },
+  "nav": {
+    "home": "Start",
+    "matches": "Mecze",
+    "predictions": "Prognozy",
+    "tools": "Narzędzia",
+    "settings": "Ustawienia"
+  },
+  "home": {
+    "welcome": "Witaj",
+    "todayMatches": "Dzisiejsze Mecze",
+    "topPredictions": "Najlepsze Prognozy",
+    "aiAnalysis": "Analiza AI",
+    "getAnalysis": "Pobierz Analizę AI",
+    "analyzing": "Analizowanie...",
+    "viewAll": "Zobacz Wszystko"
+  },
+  "matches": {
+    "today": "Dziś",
+    "upcoming": "Nadchodzące",
+    "live": "Na Żywo",
+    "finished": "Zakończone",
+    "noMatches": "Brak dostępnych meczów",
+    "kickoff": "Początek",
+    "odds": "Kursy"
+  },
+  "betting": {
+    "placeBet": "Postaw Zakład",
+    "stake": "Stawka",
+    "potentialWin": "Potencjalna Wygrana",
+    "balance": "Saldo",
+    "connectAccount": "Połącz Konto",
+    "createAccount": "Utwórz Konto",
+    "loginToBet": "Zaloguj się, aby obstawiać",
+    "insufficientBalance": "Niewystarczające saldo",
+    "betPlaced": "Zakład Postawiony!",
+    "placingBet": "Stawianie zakładu...",
+    "yourBet": "Twój Zakład",
+    "quickAmounts": "Szybkie kwoty",
+    "getBonus": "Odbierz {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "Rekomendacja AI",
+    "confidence": "Pewność",
+    "value": "Wartość",
+    "safebet": "Bezpieczny Zakład",
+    "riskLevel": "Poziom Ryzyka",
+    "low": "Niski",
+    "medium": "Średni",
+    "high": "Wysoki"
+  },
+  "auth": {
+    "login": "Zaloguj",
+    "register": "Zarejestruj",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "password": "Hasło",
+    "emailOrPhone": "E-mail lub Telefon",
+    "forgotPassword": "Zapomniałeś hasła?",
+    "noAccount": "Nie masz konta?",
+    "hasAccount": "Masz już konto?",
+    "connecting": "Łączenie...",
+    "creatingAccount": "Tworzenie konta..."
+  },
+  "bonus": {
+    "welcomeBonus": "Bonus Powitalny",
+    "getBonus": "Odbierz Bonus",
+    "freeSpins": "Darmowe Spiny",
+    "depositBonus": "Bonus od Depozytu",
+    "promoCode": "Kod Promocyjny",
+    "claimNow": "Odbierz Teraz"
+  },
+  "pro": {
+    "getPro": "Zdobądź PRO",
+    "proAccess": "Dostęp PRO",
+    "proFeatures": "Funkcje PRO",
+    "unlimitedPredictions": "Nieograniczone prognozy AI",
+    "valueBetFinder": "Wyszukiwarka Zakładów Wartościowych",
+    "bankrollTracker": "Tracker Bankrolla",
+    "prioritySupport": "Priorytetowe wsparcie",
+    "getFreeWith": "Za darmo z depozytem"
+  },
+  "support": {
+    "support": "Wsparcie",
+    "helpCenter": "Centrum Pomocy",
+    "chatWithUs": "Porozmawiaj z nami",
+    "sendMessage": "Wyślij wiadomość",
+    "typeMessage": "Wpisz wiadomość..."
+  },
+  "errors": {
+    "somethingWrong": "Coś poszło nie tak",
+    "tryAgain": "Spróbuj ponownie",
+    "networkError": "Błąd sieci",
+    "captchaRequired": "Wymagana weryfikacja captcha"
+  }
+}

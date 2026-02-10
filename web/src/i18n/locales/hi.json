@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफल",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "save": "सहेजें",
+    "back": "वापस",
+    "next": "अगला",
+    "close": "बंद करें",
+    "search": "खोजें",
+    "noResults": "कोई परिणाम नहीं मिला"
+  },
+  "nav": {
+    "home": "होम",
+    "matches": "मैच",
+    "predictions": "भविष्यवाणी",
+    "tools": "टूल्स",
+    "settings": "सेटिंग्स"
+  },
+  "home": {
+    "welcome": "स्वागत है",
+    "todayMatches": "आज के मैच",
+    "topPredictions": "टॉप भविष्यवाणियां",
+    "aiAnalysis": "AI विश्लेषण",
+    "getAnalysis": "AI विश्लेषण प्राप्त करें",
+    "analyzing": "विश्लेषण हो रहा है...",
+    "viewAll": "सभी देखें"
+  },
+  "matches": {
+    "today": "आज",
+    "upcoming": "आगामी",
+    "live": "लाइव",
+    "finished": "समाप्त",
+    "noMatches": "कोई मैच उपलब्ध नहीं",
+    "kickoff": "किकऑफ",
+    "odds": "ऑड्स"
+  },
+  "betting": {
+    "placeBet": "बेट लगाएं",
+    "stake": "दांव",
+    "potentialWin": "संभावित जीत",
+    "balance": "बैलेंस",
+    "connectAccount": "अकाउंट कनेक्ट करें",
+    "createAccount": "अकाउंट बनाएं",
+    "loginToBet": "बेट लगाने के लिए लॉगिन करें",
+    "insufficientBalance": "अपर्याप्त बैलेंस",
+    "betPlaced": "बेट लग गई!",
+    "placingBet": "बेट लग रही है...",
+    "yourBet": "आपकी बेट",
+    "quickAmounts": "त्वरित राशि",
+    "getBonus": "{{bonus}} पाएं"
+  },
+  "predictions": {
+    "aiRecommended": "AI अनुशंसित",
+    "confidence": "विश्वास",
+    "value": "मूल्य",
+    "safebet": "सुरक्षित बेट",
+    "riskLevel": "जोखिम स्तर",
+    "low": "कम",
+    "medium": "मध्यम",
+    "high": "उच्च"
+  },
+  "auth": {
+    "login": "लॉगिन",
+    "register": "रजिस्टर",
+    "email": "ईमेल",
+    "phone": "फोन",
+    "password": "पासवर्ड",
+    "emailOrPhone": "ईमेल या फोन",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "noAccount": "अकाउंट नहीं है?",
+    "hasAccount": "पहले से अकाउंट है?",
+    "connecting": "कनेक्ट हो रहा है...",
+    "creatingAccount": "अकाउंट बन रहा है..."
+  },
+  "bonus": {
+    "welcomeBonus": "वेलकम बोनस",
+    "getBonus": "बोनस पाएं",
+    "freeSpins": "फ्री स्पिन्स",
+    "depositBonus": "डिपॉजिट बोनस",
+    "promoCode": "प्रोमो कोड",
+    "claimNow": "अभी क्लेम करें"
+  },
+  "pro": {
+    "getPro": "PRO पाएं",
+    "proAccess": "PRO एक्सेस",
+    "proFeatures": "PRO फीचर्स",
+    "unlimitedPredictions": "असीमित AI भविष्यवाणियां",
+    "valueBetFinder": "वैल्यू बेट फाइंडर",
+    "bankrollTracker": "बैंकरोल ट्रैकर",
+    "prioritySupport": "प्राथमिकता सपोर्ट",
+    "getFreeWith": "डिपॉजिट के साथ मुफ्त"
+  },
+  "support": {
+    "support": "सपोर्ट",
+    "helpCenter": "हेल्प सेंटर",
+    "chatWithUs": "हमसे चैट करें",
+    "sendMessage": "मैसेज भेजें",
+    "typeMessage": "अपना मैसेज लिखें..."
+  },
+  "errors": {
+    "somethingWrong": "कुछ गलत हो गया",
+    "tryAgain": "कृपया फिर से प्रयास करें",
+    "networkError": "नेटवर्क त्रुटि",
+    "captchaRequired": "कैप्चा सत्यापन आवश्यक"
+  }
+}

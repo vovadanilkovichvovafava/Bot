@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "cancel": "İptal",
+    "confirm": "Onayla",
+    "save": "Kaydet",
+    "back": "Geri",
+    "next": "İleri",
+    "close": "Kapat",
+    "search": "Ara",
+    "noResults": "Sonuç bulunamadı"
+  },
+  "nav": {
+    "home": "Ana Sayfa",
+    "matches": "Maçlar",
+    "predictions": "Tahminler",
+    "tools": "Araçlar",
+    "settings": "Ayarlar"
+  },
+  "home": {
+    "welcome": "Hoş Geldiniz",
+    "todayMatches": "Bugünün Maçları",
+    "topPredictions": "En İyi Tahminler",
+    "aiAnalysis": "AI Analizi",
+    "getAnalysis": "AI Analizi Al",
+    "analyzing": "Analiz ediliyor...",
+    "viewAll": "Tümünü Gör"
+  },
+  "matches": {
+    "today": "Bugün",
+    "upcoming": "Yaklaşan",
+    "live": "Canlı",
+    "finished": "Bitti",
+    "noMatches": "Maç bulunamadı",
+    "kickoff": "Başlangıç",
+    "odds": "Oranlar"
+  },
+  "betting": {
+    "placeBet": "Bahis Yap",
+    "stake": "Bahis Miktarı",
+    "potentialWin": "Potansiyel Kazanç",
+    "balance": "Bakiye",
+    "connectAccount": "Hesap Bağla",
+    "createAccount": "Hesap Oluştur",
+    "loginToBet": "Bahis yapmak için giriş yapın",
+    "insufficientBalance": "Yetersiz bakiye",
+    "betPlaced": "Bahis Yapıldı!",
+    "placingBet": "Bahis yapılıyor...",
+    "yourBet": "Bahiniz",
+    "quickAmounts": "Hızlı tutarlar",
+    "getBonus": "{{bonus}} Al"
+  },
+  "predictions": {
+    "aiRecommended": "AI Önerisi",
+    "confidence": "Güven",
+    "value": "Değer",
+    "safebet": "Güvenli Bahis",
+    "riskLevel": "Risk Seviyesi",
+    "low": "Düşük",
+    "medium": "Orta",
+    "high": "Yüksek"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "register": "Kayıt Ol",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "password": "Şifre",
+    "emailOrPhone": "E-posta veya Telefon",
+    "forgotPassword": "Şifremi unuttum?",
+    "noAccount": "Hesabınız yok mu?",
+    "hasAccount": "Zaten hesabınız var mı?",
+    "connecting": "Bağlanıyor...",
+    "creatingAccount": "Hesap oluşturuluyor..."
+  },
+  "bonus": {
+    "welcomeBonus": "Hoş Geldin Bonusu",
+    "getBonus": "Bonus Al",
+    "freeSpins": "Bedava Dönüşler",
+    "depositBonus": "Yatırım Bonusu",
+    "promoCode": "Promosyon Kodu",
+    "claimNow": "Şimdi Al"
+  },
+  "pro": {
+    "getPro": "PRO Al",
+    "proAccess": "PRO Erişim",
+    "proFeatures": "PRO Özellikler",
+    "unlimitedPredictions": "Sınırsız AI tahminleri",
+    "valueBetFinder": "Değerli Bahis Bulucu",
+    "bankrollTracker": "Bankroll Takipçisi",
+    "prioritySupport": "Öncelikli destek",
+    "getFreeWith": "Yatırımla ücretsiz"
+  },
+  "support": {
+    "support": "Destek",
+    "helpCenter": "Yardım Merkezi",
+    "chatWithUs": "Bizimle sohbet edin",
+    "sendMessage": "Mesaj gönder",
+    "typeMessage": "Mesajınızı yazın..."
+  },
+  "errors": {
+    "somethingWrong": "Bir şeyler yanlış gitti",
+    "tryAgain": "Lütfen tekrar deneyin",
+    "networkError": "Ağ hatası",
+    "captchaRequired": "Captcha doğrulaması gerekli"
+  }
+}

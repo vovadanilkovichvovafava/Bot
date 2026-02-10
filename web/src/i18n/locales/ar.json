@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجاح",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "save": "حفظ",
+    "back": "رجوع",
+    "next": "التالي",
+    "close": "إغلاق",
+    "search": "بحث",
+    "noResults": "لا توجد نتائج"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "matches": "المباريات",
+    "predictions": "التوقعات",
+    "tools": "الأدوات",
+    "settings": "الإعدادات"
+  },
+  "home": {
+    "welcome": "مرحباً",
+    "todayMatches": "مباريات اليوم",
+    "topPredictions": "أفضل التوقعات",
+    "aiAnalysis": "تحليل AI",
+    "getAnalysis": "احصل على تحليل AI",
+    "analyzing": "جاري التحليل...",
+    "viewAll": "عرض الكل"
+  },
+  "matches": {
+    "today": "اليوم",
+    "upcoming": "القادمة",
+    "live": "مباشر",
+    "finished": "انتهت",
+    "noMatches": "لا توجد مباريات",
+    "kickoff": "وقت البداية",
+    "odds": "الاحتمالات"
+  },
+  "betting": {
+    "placeBet": "ضع رهان",
+    "stake": "مبلغ الرهان",
+    "potentialWin": "الربح المتوقع",
+    "balance": "الرصيد",
+    "connectAccount": "ربط الحساب",
+    "createAccount": "إنشاء حساب",
+    "loginToBet": "سجل دخول للمراهنة",
+    "insufficientBalance": "رصيد غير كافي",
+    "betPlaced": "تم وضع الرهان!",
+    "placingBet": "جاري وضع الرهان...",
+    "yourBet": "رهانك",
+    "quickAmounts": "مبالغ سريعة",
+    "getBonus": "احصل على {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "موصى به من AI",
+    "confidence": "الثقة",
+    "value": "القيمة",
+    "safebet": "رهان آمن",
+    "riskLevel": "مستوى المخاطرة",
+    "low": "منخفض",
+    "medium": "متوسط",
+    "high": "مرتفع"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "التسجيل",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "password": "كلمة المرور",
+    "emailOrPhone": "البريد أو الهاتف",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "connecting": "جاري الاتصال...",
+    "creatingAccount": "جاري إنشاء الحساب..."
+  },
+  "bonus": {
+    "welcomeBonus": "مكافأة الترحيب",
+    "getBonus": "احصل على المكافأة",
+    "freeSpins": "دورات مجانية",
+    "depositBonus": "مكافأة الإيداع",
+    "promoCode": "كود الترويج",
+    "claimNow": "اطلب الآن"
+  },
+  "pro": {
+    "getPro": "احصل على PRO",
+    "proAccess": "وصول PRO",
+    "proFeatures": "ميزات PRO",
+    "unlimitedPredictions": "توقعات AI غير محدودة",
+    "valueBetFinder": "باحث الرهانات القيمة",
+    "bankrollTracker": "متتبع الرصيد",
+    "prioritySupport": "دعم ذو أولوية",
+    "getFreeWith": "مجاناً مع الإيداع"
+  },
+  "support": {
+    "support": "الدعم",
+    "helpCenter": "مركز المساعدة",
+    "chatWithUs": "تحدث معنا",
+    "sendMessage": "إرسال رسالة",
+    "typeMessage": "اكتب رسالتك..."
+  },
+  "errors": {
+    "somethingWrong": "حدث خطأ ما",
+    "tryAgain": "يرجى المحاولة مرة أخرى",
+    "networkError": "خطأ في الشبكة",
+    "captchaRequired": "التحقق من captcha مطلوب"
+  }
+}
