@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import SupportChatModal, { BOOKMAKER } from '../components/SupportChat';
+import SupportChatModal from '../components/SupportChat';
 
 export default function ProTools() {
   const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [modal, setModal] = useState(null);
@@ -50,7 +52,7 @@ export default function ProTools() {
           <h1 className="text-xl font-bold">{t('nav.proTools')}</h1>
           {!isPremium && (
             <a
-              href={BOOKMAKER.link}
+              href={user?.id ? trackClick(user.id) : advertiser.link}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-accent-gold text-sm font-semibold"
@@ -86,7 +88,7 @@ export default function ProTools() {
                 <p className="text-sm text-gray-500">3 AI requests + 1 Value Bet scan</p>
               </div>
               <a
-                href={BOOKMAKER.link}
+                href={user?.id ? trackClick(user.id) : advertiser.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-accent-gold text-white font-semibold px-4 py-2 rounded-lg text-sm"
@@ -247,13 +249,13 @@ export default function ProTools() {
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <p className="text-sm font-medium text-green-800 mb-1">Unlock PRO Access</p>
               <p className="text-xs text-green-600">
-                Make a deposit at {BOOKMAKER.name} → Unlimited PRO access
+                Make a deposit at {advertiser.name} → Unlimited PRO access
               </p>
             </div>
 
             <div className="space-y-2">
               <a
-                href={BOOKMAKER.link}
+                href={user?.id ? trackClick(user.id) : advertiser.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
