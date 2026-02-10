@@ -5,6 +5,8 @@ import {
   getFavouriteLeagues,
   removeFavouriteTeam,
   removeFavouriteLeague,
+  addFavouriteTeam,
+  addFavouriteLeague,
 } from '../services/favouritesStore';
 import footballApi from '../api/footballApi';
 
@@ -255,8 +257,6 @@ function EmptyState({ type, onAdd }) {
 }
 
 function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClose, onAdded, existingIds }) {
-  const { addFavouriteTeam, addFavouriteLeague } = require('../services/favouritesStore');
-
   const handleAdd = (item) => {
     if (type === 'teams') {
       addFavouriteTeam(item);
