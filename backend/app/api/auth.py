@@ -71,16 +71,6 @@ async def register(
     response: Response,
     db: AsyncSession = Depends(get_db)
 ):
-    client_ip = get_client_ip(request)
-
-    # Check if IP already registered
-    ip_check = await db.execute(select(User).where(User.registration_ip == client_ip))
-    if ip_check.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Registration limit reached"
-        )
-
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user.email))
     if result.scalar_one_or_none():
@@ -89,12 +79,11 @@ async def register(
             detail="Email already registered"
         )
 
-    # Create new user with IP
+    # Create new user
     new_user = User(
         email=user.email,
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
-        registration_ip=client_ip,
     )
     db.add(new_user)
     await db.commit()

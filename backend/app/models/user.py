@@ -10,7 +10,6 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
-    registration_ip = Column(String, index=True, nullable=True)
 
     language = Column(String, default="en")
     timezone = Column(String, default="UTC")
