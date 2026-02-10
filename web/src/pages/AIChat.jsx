@@ -150,9 +150,10 @@ export default function AIChat() {
 
     try {
       // Build conversation history (exclude welcome message)
+      // Filter out any invalid messages to prevent 422 validation errors
       const history = messages
-        .filter(m => m.id !== 'welcome')
-        .map(m => ({ role: m.role, content: m.content }));
+        .filter(m => m.id !== 'welcome' && m.role && m.content)
+        .map(m => ({ role: String(m.role), content: String(m.content) }));
 
       // Add user preferences to the message
       const textWithPrefs = text + getUserPreferencesPrompt();
@@ -162,7 +163,9 @@ export default function AIChat() {
       setEnriching(true);
       let matchContext = null;
       try {
-        matchContext = await enrichMessage(text);
+        const enriched = await enrichMessage(text);
+        // Ensure match_context is always a string or null (prevent 422 validation errors)
+        matchContext = enriched ? String(enriched) : null;
       } catch (e) {
         console.error('Enrichment failed:', e);
       }
