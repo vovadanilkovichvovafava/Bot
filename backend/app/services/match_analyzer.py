@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # AI Analysis Cache - shared between all users
 # Key: match_id, Value: {data: analysis_result, timestamp: unix_time}
 _ai_cache: Dict[int, Dict] = {}
-AI_CACHE_TTL = 7200  # 2 hours - same analysis for all users
+AI_CACHE_TTL = 86400  # 24 hours - same analysis for all users
 
 
 def _get_cached_analysis(match_id: int) -> Optional[Dict]:

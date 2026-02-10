@@ -7,6 +7,8 @@ import { enrichMessage } from '../services/chatEnrichment';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
+const CHAT_HISTORY_KEY = 'ai_chat_history';
+const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
 const QUICK_QUESTIONS = [
   { label: "Today's best bets", emoji: '\uD83C\uDFAF' },
@@ -33,6 +35,37 @@ export default function AIChat() {
 
   const isPremium = user?.is_premium;
 
+  // Load cached chat history from localStorage
+  const loadCachedChat = () => {
+    try {
+      const cached = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (!cached) return null;
+      const { messages: cachedMsgs, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp > CHAT_CACHE_TTL) {
+        localStorage.removeItem(CHAT_HISTORY_KEY);
+        return null;
+      }
+      return cachedMsgs;
+    } catch {
+      return null;
+    }
+  };
+
+  // Save chat history to localStorage
+  const saveChatHistory = (msgs) => {
+    try {
+      const toSave = msgs.filter(m => m.id !== 'welcome');
+      if (toSave.length > 0) {
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify({
+          messages: toSave,
+          timestamp: Date.now()
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to save chat history:', e);
+    }
+  };
+
   // Get AI request count from localStorage (for free users)
   const getAIRequestCount = () => {
     const count = localStorage.getItem(AI_REQUESTS_KEY);
@@ -49,11 +82,21 @@ export default function AIChat() {
   const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
   useEffect(() => {
-    setMessages([{
+    // Try to load cached chat history first
+    const cachedMessages = loadCachedChat();
+    const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',
       content: `Welcome to **AI Football Assistant**!\n\nI have access to **real-time data** from 900+ leagues:\n\n\u2022 \uD83D\uDCCA **Match predictions** with real probabilities & odds\n\u2022 \uD83D\uDD34 **Live scores** and match statistics\n\u2022 \uD83C\uDFAF **Betting recommendations** based on actual data\n\u2022 \uD83E\uDE7A **Injuries & lineups** for upcoming matches\n\u2022 \uD83D\uDCC5 **Today's overview** with AI predictions\n\n**Try asking:**\n\u2022 "Arsenal vs Chelsea prediction"\n\u2022 "Best bets for today"\n\u2022 "Live matches now"\n\u2022 "Premier League today"`,
-    }]);
+    };
+
+    if (cachedMessages && cachedMessages.length > 0) {
+      // Restore cached messages with welcome at the start
+      setMessages([welcomeMsg, ...cachedMessages]);
+      setShowQuick(false);
+    } else {
+      setMessages([welcomeMsg]);
+    }
   }, []);
 
   useEffect(() => {
@@ -137,14 +180,16 @@ export default function AIChat() {
       // Parse bet from response
       const parsedBet = parseBetFromMessage(data.response);
 
-      setMessages(prev => [...prev, {
+      const newMessages = [...messages, userMsg, {
         id: Date.now() + 1,
         role: 'assistant',
         content: data.response,
         hasData: !!matchContext,
         showAd: newCount % 2 === 0,
         bet: parsedBet,
-      }]);
+      }];
+      setMessages(newMessages);
+      saveChatHistory(newMessages);
     } catch (e) {
       const errorMsg = e.message?.includes('402') || e.message?.includes('limit')
         ? 'You have reached your daily AI request limit. Upgrade to Premium for unlimited access.'
@@ -167,6 +212,7 @@ export default function AIChat() {
       content: 'Chat cleared. How can I help you with football analysis?',
     }]);
     setShowQuick(true);
+    localStorage.removeItem(CHAT_HISTORY_KEY);
   };
 
   return (

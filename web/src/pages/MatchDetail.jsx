@@ -6,6 +6,42 @@ import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
+const PREDICTION_CACHE_KEY = 'match_predictions_cache';
+const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+// Helper functions for prediction caching
+const getCachedPrediction = (matchId) => {
+  try {
+    const cache = JSON.parse(localStorage.getItem(PREDICTION_CACHE_KEY) || '{}');
+    const entry = cache[matchId];
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > PREDICTION_CACHE_TTL) {
+      delete cache[matchId];
+      localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
+      return null;
+    }
+    return entry.data;
+  } catch {
+    return null;
+  }
+};
+
+const saveCachedPrediction = (matchId, data) => {
+  try {
+    const cache = JSON.parse(localStorage.getItem(PREDICTION_CACHE_KEY) || '{}');
+    // Clean up old entries
+    const now = Date.now();
+    Object.keys(cache).forEach(key => {
+      if (now - cache[key].timestamp > PREDICTION_CACHE_TTL) {
+        delete cache[key];
+      }
+    });
+    cache[matchId] = { data, timestamp: now };
+    localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error('Failed to cache prediction:', e);
+  }
+};
 
 export default function MatchDetail() {
   const { id } = useParams();
@@ -186,6 +222,14 @@ export default function MatchDetail() {
   };
 
   const getAnalysis = async () => {
+    // Check cache first
+    const cached = getCachedPrediction(id);
+    if (cached) {
+      console.log('Using cached prediction for match:', id);
+      setPrediction(cached);
+      return;
+    }
+
     setPredicting(true);
     try {
       // If enriched data hasn't loaded yet, try to fetch prediction directly
@@ -200,6 +244,9 @@ export default function MatchDetail() {
       const data = await api.aiChat(prompt);
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
       setPrediction(result);
+
+      // Cache the prediction for 24 hours
+      saveCachedPrediction(id, result);
 
       // Auto-save prediction for history tracking
       try {
