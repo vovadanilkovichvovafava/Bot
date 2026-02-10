@@ -1,6 +1,6 @@
 """Predictions endpoints - real AI analysis via Claude"""
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -66,8 +66,11 @@ async def get_prediction_history(
     return []
 
 
-@router.post("/{match_id}", response_model=PredictionResponse)
-async def create_prediction(match_id: int, current_user: dict = Depends(get_current_user)):
+@router.post("/{match_id:int}", response_model=PredictionResponse)
+async def create_prediction(
+    match_id: int = Path(..., gt=0, description="Match ID must be a positive integer"),
+    current_user: dict = Depends(get_current_user)
+):
     """Get AI prediction for a specific match"""
     analyzer = MatchAnalyzer()
     result = await analyzer.analyze_match(match_id)
