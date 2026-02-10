@@ -127,11 +127,11 @@ class ApiService {
     return this.request(`/predictions/history?limit=${limit}`);
   }
 
-  // AI Chat (uses backend /chat/send endpoint with Claude AI)
+  // AI Chat (uses Claude AI via predictions/chat endpoint)
   async aiChat(message, history = [], matchContext = null) {
     const body = { message, history };
     if (matchContext) body.match_context = matchContext;
-    return this.request('/chat/send', {
+    return this.request('/predictions/chat', {
       method: 'POST',
       body: JSON.stringify(body),
     });
