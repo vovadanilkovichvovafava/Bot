@@ -34,12 +34,27 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
         # Add missing columns (migrations)
+        migrations = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip VARCHAR",
+            # Referral system columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES users(id)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_requests INTEGER DEFAULT 0",
+        ]
+
+        for migration in migrations:
+            try:
+                await conn.execute(text(migration))
+            except Exception:
+                pass  # Column might already exist
+
+        # Create index for referral_code if not exists
         try:
             await conn.execute(
-                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip VARCHAR")
+                text("CREATE INDEX IF NOT EXISTS ix_users_referral_code ON users(referral_code)")
             )
         except Exception:
-            pass  # Column might already exist or DB doesn't support IF NOT EXISTS
+            pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
