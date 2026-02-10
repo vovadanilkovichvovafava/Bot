@@ -11,6 +11,11 @@ class User(Base):
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
 
+    # Email verification
+    email_verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+    verification_code_expires = Column(DateTime, nullable=True)
+
     language = Column(String, default="en")
     timezone = Column(String, default="UTC")
 

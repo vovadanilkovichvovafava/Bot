@@ -182,24 +182,31 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Partner Banner */}
+        {/* Partner Banner - Eye-catching Bonus */}
         <a
           href={BOOKMAKER.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="block bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-3.5 text-white"
+          className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-xl">🎯</span>
+          {/* Animated shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite]" style={{animation: 'shine 3s infinite'}}/>
+
+          {/* Sparkle decorations */}
+          <div className="absolute top-2 right-3 text-yellow-200 animate-pulse">✨</div>
+          <div className="absolute bottom-2 left-8 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>⭐</div>
+
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shrink-0 border-2 border-white/30">
+              <span className="text-3xl">🎁</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">{BOOKMAKER.bonus}</p>
-              <p className="text-white/60 text-xs">Bet on AI predictions at our partner</p>
+              <p className="font-black text-lg leading-tight drop-shadow-md">{BOOKMAKER.bonus}</p>
+              <p className="text-white/90 text-sm mt-1 font-medium">Start betting with extra cash!</p>
             </div>
-            <svg className="w-5 h-5 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
+            <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">
+              GET NOW
+            </div>
           </div>
         </a>
 

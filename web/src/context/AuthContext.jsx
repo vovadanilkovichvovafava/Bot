@@ -44,10 +44,20 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (email, password, username) => {
-    await api.register(email, password, username);
+    // Returns { message, email, requires_verification }
+    const result = await api.register(email, password, username);
+    return result;
+  };
+
+  const verifyEmail = async (email, code) => {
+    await api.verifyEmail(email, code);
     const userData = await api.getMe();
     setUser(userData);
     return userData;
+  };
+
+  const resendCode = async (email) => {
+    return api.resendCode(email);
   };
 
   const logout = () => {
@@ -98,7 +108,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      login, register, logout, refreshUser, togglePremium,
+      login, register, verifyEmail, resendCode, logout, refreshUser, togglePremium,
       isAuthenticated: !!user,
       // Bookmaker
       bookmakerAccount,
