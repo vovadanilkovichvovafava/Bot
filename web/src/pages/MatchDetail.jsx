@@ -9,6 +9,20 @@ const TABS = ['Overview', 'Stats', 'Lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
+// AI request tracking (same as AIChat.jsx)
+const AI_REQUESTS_KEY = 'ai_requests_count';
+
+const getAIRequestCount = () => {
+  const count = localStorage.getItem(AI_REQUESTS_KEY);
+  return count ? parseInt(count, 10) : 0;
+};
+
+const incrementAIRequestCount = () => {
+  const newCount = getAIRequestCount() + 1;
+  localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
+  return newCount;
+};
+
 // Helper functions for prediction caching
 const getCachedPrediction = (matchId) => {
   try {
@@ -243,6 +257,13 @@ export default function MatchDetail() {
 
       const prompt = buildAIPrompt();
       const data = await api.aiChat(prompt);
+
+      // Increment AI request counter for non-premium users (AFTER successful response)
+      const isPremium = user?.is_premium;
+      if (!isPremium) {
+        incrementAIRequestCount();
+      }
+
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
       setPrediction(result);
 
