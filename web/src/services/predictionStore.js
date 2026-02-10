@@ -114,7 +114,49 @@ export function getPredictions() {
 }
 
 /**
- * Get prediction stats: total, correct, wrong, pending, accuracy.
+ * Calculate prediction streaks
+ */
+function calculateStreaks(predictions) {
+  // Sort by verification date, most recent first
+  const verified = predictions
+    .filter(p => p.result && p.verifiedAt)
+    .sort((a, b) => new Date(b.verifiedAt) - new Date(a.verifiedAt));
+
+  if (verified.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, streakType: null };
+  }
+
+  // Calculate current streak (consecutive results from most recent)
+  let currentStreak = 0;
+  let streakType = verified[0]?.result?.isCorrect ? 'win' : 'loss';
+
+  for (const pred of verified) {
+    const isCorrect = pred.result?.isCorrect;
+    if ((streakType === 'win' && isCorrect) || (streakType === 'loss' && !isCorrect)) {
+      currentStreak++;
+    } else {
+      break;
+    }
+  }
+
+  // Calculate longest win streak
+  let longestStreak = 0;
+  let tempStreak = 0;
+
+  for (const pred of verified) {
+    if (pred.result?.isCorrect) {
+      tempStreak++;
+      longestStreak = Math.max(longestStreak, tempStreak);
+    } else {
+      tempStreak = 0;
+    }
+  }
+
+  return { currentStreak, longestStreak, streakType };
+}
+
+/**
+ * Get prediction stats: total, correct, wrong, pending, accuracy, streaks.
  */
 export function getStats() {
   const all = getAll();
@@ -122,6 +164,7 @@ export function getStats() {
   const correct = verified.filter(p => p.result?.isCorrect);
   const wrong = verified.filter(p => !p.result?.isCorrect);
   const pending = all.filter(p => !p.result);
+  const streaks = calculateStreaks(all);
 
   return {
     total: all.length,
@@ -132,6 +175,9 @@ export function getStats() {
     accuracy: verified.length > 0
       ? Math.round((correct.length / verified.length) * 100 * 10) / 10
       : 0,
+    currentStreak: streaks.currentStreak,
+    longestStreak: streaks.longestStreak,
+    streakType: streaks.streakType,
   };
 }
 

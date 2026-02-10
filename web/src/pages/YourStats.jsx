@@ -21,28 +21,15 @@ export default function YourStats() {
     setLoading(false);
   };
 
-  const s = stats || { total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 };
+  const s = stats || { total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0, currentStreak: 0, longestStreak: 0, streakType: null };
 
-  // Streak calculation
+  // Get verified predictions for recent form
   const verified = predictions.filter(p => p.result).sort((a, b) => new Date(b.verifiedAt) - new Date(a.verifiedAt));
-  let currentStreak = 0;
-  let streakType = null;
-  for (const p of verified) {
-    if (streakType === null) streakType = p.result.isCorrect;
-    if (p.result.isCorrect === streakType) currentStreak++;
-    else break;
-  }
 
-  let bestStreak = 0;
-  let tempStreak = 0;
-  for (const p of verified) {
-    if (p.result.isCorrect) {
-      tempStreak++;
-      if (tempStreak > bestStreak) bestStreak = tempStreak;
-    } else {
-      tempStreak = 0;
-    }
-  }
+  // Use streaks from stats
+  const currentStreak = s.currentStreak;
+  const streakType = s.streakType;
+  const bestStreak = s.longestStreak;
 
   // By league breakdown
   const byLeague = {};

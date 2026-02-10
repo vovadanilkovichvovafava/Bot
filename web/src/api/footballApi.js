@@ -268,6 +268,22 @@ class FootballApiService {
     return this.directRequest('/teams', { search: name });
   }
 
+  async searchTeams(query) {
+    try {
+      const results = await this.searchTeam(query);
+      // Extract team data from the API response
+      return (results || []).map(item => ({
+        id: item.team?.id || item.id,
+        name: item.team?.name || item.name,
+        logo: item.team?.logo || item.logo,
+        country: item.team?.country || item.country,
+      })).filter(t => t.id && t.name);
+    } catch (e) {
+      console.error('Team search failed:', e);
+      return [];
+    }
+  }
+
   async getTeamStatistics(teamId, season, leagueId) {
     // Complex query - direct API
     return this.directRequest('/teams/statistics', {

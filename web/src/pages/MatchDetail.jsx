@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
+import ShareButton from '../components/ShareButton';
+import { generateMatchShareText } from '../services/shareUtils';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -514,9 +516,20 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
             </svg>
             <h3 className="font-bold text-gray-900">AI Analysis</h3>
-            <div className="ml-auto flex gap-1.5">
+            <div className="ml-auto flex gap-1.5 items-center">
               {pred && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">Data</span>}
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-medium">Claude AI</span>
+              <ShareButton
+                variant="icon"
+                text={generateMatchShareText({
+                  homeTeam: match.home_team?.name,
+                  awayTeam: match.away_team?.name,
+                  league: match.league,
+                  date: formatDate(match.match_date),
+                  prediction: pred,
+                  odds: odds1x2,
+                })}
+              />
             </div>
           </div>
 
