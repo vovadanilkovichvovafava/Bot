@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { BookmakerProvider } from './context/BookmakerContext';
+import { AdvertiserProvider } from './context/AdvertiserContext';
 import App from './App';
 import './index.css';
 
@@ -20,9 +21,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <BookmakerProvider>
-          <App />
-        </BookmakerProvider>
+        <AdvertiserProvider>
+          <BookmakerProvider>
+            <App />
+          </BookmakerProvider>
+        </AdvertiserProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

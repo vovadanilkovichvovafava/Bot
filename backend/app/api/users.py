@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import os
 
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
+
+# Internal secret for server-to-server calls
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET", "your_postback_secret_key")
 
 router = APIRouter()
 
@@ -111,3 +115,56 @@ async def update_user(
     await db.refresh(user)
 
     return {"message": "User updated successfully"}
+
+
+class PremiumActivation(BaseModel):
+    premium: bool
+    source: str
+    depositAmount: Optional[str] = None
+    currency: Optional[str] = None
+    expiresAt: Optional[str] = None
+
+
+@router.post("/{user_id}/premium")
+async def activate_premium(
+    user_id: int,
+    activation: PremiumActivation,
+    x_internal_secret: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """Activate premium for user (internal endpoint for postback server)"""
+
+    # Verify internal secret
+    if x_internal_secret != INTERNAL_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid internal secret"
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Activate premium
+    user.is_premium = activation.premium
+
+    if activation.expiresAt:
+        user.premium_until = datetime.fromisoformat(activation.expiresAt.replace('Z', '+00:00'))
+    else:
+        # Default 15 days
+        user.premium_until = datetime.utcnow() + timedelta(days=15)
+
+    await db.commit()
+
+    return {
+        "success": True,
+        "user_id": user_id,
+        "is_premium": user.is_premium,
+        "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+        "source": activation.source
+    }

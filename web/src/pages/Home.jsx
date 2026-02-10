@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
-import { BOOKMAKER } from '../components/SupportChat';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -21,6 +21,7 @@ function getGreeting() {
 
 export default function Home() {
   const { user, isDemo } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,7 +185,7 @@ export default function Home() {
 
         {/* Partner Banner - Eye-catching Bonus */}
         <a
-          href={BOOKMAKER.link}
+          href={user?.id ? trackClick(user.id) : advertiser.link}
           target="_blank"
           rel="noopener noreferrer"
           className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
@@ -201,7 +202,7 @@ export default function Home() {
               <span className="text-3xl">🎁</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-black text-lg leading-tight drop-shadow-md">{BOOKMAKER.bonus}</p>
+              <p className="font-black text-lg leading-tight drop-shadow-md">{advertiser.bonus}</p>
               <p className="text-white/90 text-sm mt-1 font-medium">Start betting with extra cash!</p>
             </div>
             <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">

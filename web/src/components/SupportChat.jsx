@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import { useAuth } from '../context/AuthContext';
 
 // Manager info (configurable)
 const MANAGER = {
@@ -8,16 +10,10 @@ const MANAGER = {
   role: 'Support Manager',
 };
 
-// Bookmaker info - loaded from env (no brand names shown)
-const BOOKMAKER = {
-  name: import.meta.env.VITE_BOOKMAKER_NAME || 'our partner',
-  bonus: import.meta.env.VITE_BOOKMAKER_BONUS || 'Welcome Bonus',
-  minDeposit: import.meta.env.VITE_BOOKMAKER_MIN_DEPOSIT || '$10',
-  link: import.meta.env.VITE_BOOKMAKER_LINK || '#',
-};
-
 export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   const navigate = useNavigate();
+  const { advertiser, trackClick, countryCode } = useAdvertiser();
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
@@ -54,27 +50,27 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
 
     // PRO access questions
     if (lower.includes('pro') || lower.includes('access') || lower.includes('unlock') || lower.includes('premium')) {
-      return `Great! PRO access includes:\n\n✅ Value Bet Finder — AI finds bets with inflated odds\n✅ Bankroll Tracker — track your bankroll and bets\n✅ Unlimited AI predictions\n✅ Priority support\n\n🎁 Good news — you can get PRO for **FREE**!\n\nJust register with our partner ${BOOKMAKER.name} and deposit at least ${BOOKMAKER.minDeposit}.\n\nThey're a reliable bookmaker with fast payouts. After registration, message me — I'll verify and activate your PRO for 15 days! 🚀`;
+      return `Great! PRO access includes:\n\n✅ Value Bet Finder — AI finds bets with inflated odds\n✅ Bankroll Tracker — track your bankroll and bets\n✅ Unlimited AI predictions\n✅ Priority support\n\n🎁 Good news — you can get PRO for **FREE**!\n\nJust register with our partner ${advertiser.name} and deposit at least ${advertiser.minDeposit}.\n\nThey're a reliable bookmaker with fast payouts. After registration, message me — I'll verify and activate your PRO for 15 days! 🚀`;
     }
 
     // Registration questions
     if (lower.includes('register') || lower.includes('sign up') || lower.includes('start') || lower.includes('beginner') || lower.includes('new')) {
-      return `Great that you decided to start! 💪\n\nI recommend ${BOOKMAKER.name} — we partner with them, and for our users there's a bonus of **${BOOKMAKER.bonus}**!\n\nStep by step:\n1️⃣ Click the link and register\n2️⃣ Deposit at least ${BOOKMAKER.minDeposit}\n3️⃣ Message me — I'll activate your PRO!\n\n👉 Click the button below to register`;
+      return `Great that you decided to start! 💪\n\nI recommend ${advertiser.name} — we partner with them, and for our users there's a bonus of **${advertiser.bonus}**!\n\nStep by step:\n1️⃣ Click the link and register\n2️⃣ Deposit at least ${advertiser.minDeposit}\n3️⃣ Message me — I'll activate your PRO!\n\n👉 Click the button below to register`;
     }
 
     // Bonus questions
     if (lower.includes('bonus') || lower.includes('free bet') || lower.includes('promo') || lower.includes('offer')) {
-      return `🎁 Right now ${BOOKMAKER.name} has a great bonus for new players — **${BOOKMAKER.bonus}** on first deposit!\n\nTo get it:\n1. Register via our link\n2. Deposit at least ${BOOKMAKER.minDeposit}\n3. Bonus is credited automatically\n\n+ I'll unlock PRO access for you for free! 🔓`;
+      return `🎁 Right now ${advertiser.name} has a great bonus for new players — **${advertiser.bonus}** on first deposit!\n\nTo get it:\n1. Register via our link\n2. Deposit at least ${advertiser.minDeposit}\n3. Bonus is credited automatically\n\n+ I'll unlock PRO access for you for free! 🔓`;
     }
 
     // Bookmaker questions
     if (lower.includes('bookmaker') || lower.includes('where to bet') || lower.includes('which bk') || lower.includes('1xbet') || lower.includes('betting site')) {
-      return `We recommend ${BOOKMAKER.name} — our official partner.\n\n✅ Licensed bookmaker\n✅ Fast payouts (up to 24 hours)\n✅ Wide markets and high odds\n✅ Bonus ${BOOKMAKER.bonus} for new users\n\nPlus — when you register through us, you get PRO access to our tools for free! 🎉`;
+      return `We recommend ${advertiser.name} — our official partner.\n\n✅ Licensed bookmaker\n✅ Fast payouts (up to 24 hours)\n✅ Wide markets and high odds\n✅ Bonus ${advertiser.bonus} for new users\n\nPlus — when you register through us, you get PRO access to our tools for free! 🎉`;
     }
 
     // Withdrawal/payout questions
     if (lower.includes('withdraw') || lower.includes('payout') || lower.includes('cash out') || lower.includes('money')) {
-      return `At ${BOOKMAKER.name}, payouts usually take up to 24 hours.\n\nAvailable methods:\n• Bank cards\n• E-wallets\n• Cryptocurrency\n\nFirst withdrawal may require verification (upload documents). This is a standard security procedure.\n\nIf you have questions — message me, happy to help! 🤝`;
+      return `At ${advertiser.name}, payouts usually take up to 24 hours.\n\nAvailable methods:\n• Bank cards\n• E-wallets\n• Cryptocurrency\n\nFirst withdrawal may require verification (upload documents). This is a standard security procedure.\n\nIf you have questions — message me, happy to help! 🤝`;
     }
 
     // Gratitude
@@ -121,7 +117,8 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   };
 
   const openBookmakerLink = () => {
-    window.open(BOOKMAKER.link, '_blank');
+    const link = user?.id ? trackClick(user.id) : advertiser.link;
+    window.open(link, '_blank');
   };
 
   if (!isOpen) return null;
@@ -202,7 +199,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
             >
               <span>🎁</span>
-              Get {BOOKMAKER.bonus}
+              Get {advertiser.bonus}
             </button>
             <button
               onClick={() => setInput('I want PRO access')}
@@ -257,5 +254,5 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   );
 }
 
-// Export bookmaker config for use in other components
-export { BOOKMAKER, MANAGER };
+// Export manager config for use in other components
+export { MANAGER };
