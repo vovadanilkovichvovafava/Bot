@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from sqlalchemy import text
 from typing import AsyncGenerator
 import os
 
@@ -28,9 +29,17 @@ Base = declarative_base()
 
 
 async def init_db():
-    """Create all tables"""
+    """Create all tables and run migrations"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # Add missing columns (migrations)
+        try:
+            await conn.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip VARCHAR")
+            )
+        except Exception:
+            pass  # Column might already exist or DB doesn't support IF NOT EXISTS
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
