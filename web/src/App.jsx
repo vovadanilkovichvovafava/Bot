@@ -20,6 +20,9 @@ import YourStats from './pages/YourStats';
 import LiveMatchDetail from './pages/LiveMatchDetail';
 import BookmakerPromo from './pages/BookmakerPromo';
 import BeginnerGuide from './pages/BeginnerGuide';
+import BankrollTracker from './pages/BankrollTracker';
+import BetSlipBuilder from './pages/BetSlipBuilder';
+import KellyCalculator from './pages/KellyCalculator';
 import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children }) {
@@ -101,6 +104,15 @@ export default function App() {
       } />
       <Route path="/guide" element={
         <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
+      } />
+      <Route path="/bankroll-tracker" element={
+        <ProtectedRoute><BankrollTracker /></ProtectedRoute>
+      } />
+      <Route path="/bet-slip-builder" element={
+        <ProtectedRoute><BetSlipBuilder /></ProtectedRoute>
+      } />
+      <Route path="/kelly-calculator" element={
+        <ProtectedRoute><KellyCalculator /></ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
     </Routes>
