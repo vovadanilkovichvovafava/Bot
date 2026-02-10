@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import SupportChat, { BOOKMAKER } from '../components/SupportChat';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 
 export default function BookmakerPromo() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [geoInfo, setGeoInfo] = useState(null);
-  const [bookmakerLink, setBookmakerLink] = useState(BOOKMAKER.link);
+  const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
 
   // Fetch geo info and appropriate bookmaker link on mount
@@ -25,16 +27,19 @@ export default function BookmakerPromo() {
         const linkData = await geoService.getBookmakerLink(user?.id || 'anonymous', 'promo_page');
         if (linkData.success) {
           setBookmakerLink(linkData.link);
+        } else {
+          setBookmakerLink(advertiser.link);
         }
       } catch (error) {
         console.error('Failed to fetch geo/link:', error);
+        setBookmakerLink(advertiser.link);
       } finally {
         setLoadingLink(false);
       }
     }
 
     fetchGeoAndLink();
-  }, [user?.id]);
+  }, [user?.id, advertiser.link]);
 
   const advantages = [
     { icon: '⚡', title: 'Fast Payouts', desc: 'Withdrawal within 24h' },
@@ -53,8 +58,8 @@ export default function BookmakerPromo() {
 
   const faqs = [
     { q: 'How to register?', a: 'Click our link, fill out the registration form (takes 2 minutes), confirm your email or phone.' },
-    { q: 'What is the minimum deposit?', a: `Minimum deposit is ${BOOKMAKER.minDeposit}. That's enough to get started.` },
-    { q: 'How to get the bonus?', a: `Bonus ${BOOKMAKER.bonus} is credited automatically after your first deposit when registering through our link.` },
+    { q: 'What is the minimum deposit?', a: `Minimum deposit is ${advertiser.minDeposit}. That's enough to get started.` },
+    { q: 'How to get the bonus?', a: `Bonus ${advertiser.bonus} is credited automatically after your first deposit when registering through our link.` },
     { q: 'How to get PRO access?', a: 'After registration and first deposit, PRO access will open automatically within a few minutes.' },
     { q: 'How to withdraw winnings?', a: 'Withdrawal is available to bank cards, e-wallets, and cryptocurrency. Processing up to 24 hours.' },
   ];
@@ -96,13 +101,13 @@ export default function BookmakerPromo() {
           </div>
 
           <h1 className="text-3xl font-black text-white mb-2">
-            Get bonus {BOOKMAKER.bonus}
+            Get bonus {advertiser.bonus}
           </h1>
           <p className="text-lg text-amber-400 font-semibold mb-1">
             + FREE PRO access!
           </p>
           <p className="text-white/60 text-sm mb-6">
-            Register at {BOOKMAKER.name} and bet on AI predictions
+            Register at {advertiser.name} and bet on AI predictions
           </p>
 
           <a
@@ -133,7 +138,7 @@ export default function BookmakerPromo() {
 
         {/* Advantages */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Why {BOOKMAKER.name}?</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Why {advertiser.name}?</h2>
           <div className="grid grid-cols-3 gap-3">
             {advantages.map((adv, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
@@ -150,8 +155,8 @@ export default function BookmakerPromo() {
           <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">How to Start?</h2>
           <div className="space-y-3">
             <StepCard number={1} title="Register via the link" desc="Go to the site and fill out the registration form (2 minutes)" />
-            <StepCard number={2} title={`Deposit from ${BOOKMAKER.minDeposit}`} desc="Choose a convenient payment method and make a deposit" />
-            <StepCard number={3} title="Get bonus + PRO" desc={`Bonus ${BOOKMAKER.bonus} will be credited, PRO opens automatically!`} done />
+            <StepCard number={2} title={`Deposit from ${advertiser.minDeposit}`} desc="Choose a convenient payment method and make a deposit" />
+            <StepCard number={3} title="Get bonus + PRO" desc={`Bonus ${advertiser.bonus} will be credited, PRO opens automatically!`} done />
           </div>
         </section>
 
@@ -237,7 +242,7 @@ export default function BookmakerPromo() {
         <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 text-center">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to Start?</h2>
           <p className="text-sm text-gray-600 mb-5">
-            Register now and get bonus {BOOKMAKER.bonus} + FREE PRO access
+            Register now and get bonus {advertiser.bonus} + FREE PRO access
           </p>
 
           <a
@@ -246,7 +251,7 @@ export default function BookmakerPromo() {
             rel="noopener noreferrer"
             className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg mb-3"
           >
-            Register at {BOOKMAKER.name}
+            Register at {advertiser.name}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
             </svg>

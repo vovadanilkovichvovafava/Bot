@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BOOKMAKER } from '../components/SupportChat';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import { useAuth } from '../context/AuthContext';
 
-const GUIDE_CARDS = [
+const getGuideCards = (advertiser) => [
   {
     icon: '👋',
     title: 'Welcome!',
@@ -69,8 +70,8 @@ const GUIDE_CARDS = [
   {
     icon: '🎁',
     title: 'Start with a Bonus!',
-    subtitle: `${BOOKMAKER.bonus} on first deposit`,
-    content: `Register at ${BOOKMAKER.name} and get a bonus of ${BOOKMAKER.bonus}. Great start for using AI predictions!`,
+    subtitle: `${advertiser.bonus} on first deposit`,
+    content: `Register at ${advertiser.name} and get a bonus of ${advertiser.bonus}. Great start for using AI predictions!`,
     color: 'from-amber-400 to-orange-500',
     cta: true,
   },
@@ -78,8 +79,12 @@ const GUIDE_CARDS = [
 
 export default function BeginnerGuide() {
   const navigate = useNavigate();
+  const { advertiser, trackClick } = useAdvertiser();
+  const { user } = useAuth();
   const [currentCard, setCurrentCard] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
+
+  const GUIDE_CARDS = useMemo(() => getGuideCards(advertiser), [advertiser]);
 
   const nextCard = () => {
     if (currentCard < GUIDE_CARDS.length - 1) {
@@ -175,7 +180,7 @@ export default function BeginnerGuide() {
             {card.cta && (
               <div className="mt-6 space-y-3">
                 <a
-                  href={BOOKMAKER.link}
+                  href={user?.id ? trackClick(user.id) : advertiser.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"

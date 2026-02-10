@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
-import SupportChat, { BOOKMAKER } from '../components/SupportChat';
+import SupportChat from '../components/SupportChat';
 
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
@@ -53,6 +54,7 @@ const RISK_OPTIONS = [
 
 export default function Settings() {
   const { user, logout, togglePremium, bookmakerAccount, bookmakerBalance, connectBookmaker, disconnectBookmaker } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
@@ -120,7 +122,7 @@ export default function Settings() {
         {/* Bookmaker Partner Status */}
         <div className="mb-3">
           <p className="text-primary-600 font-semibold text-sm mb-1">Partner</p>
-          <p className="text-xs text-gray-500 mb-3">{BOOKMAKER.name} registration status</p>
+          <p className="text-xs text-gray-500 mb-3">{advertiser.name} registration status</p>
         </div>
 
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
@@ -141,14 +143,14 @@ export default function Settings() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">Bonus {BOOKMAKER.bonus}</p>
+                  <p className="text-sm font-semibold text-gray-900">Bonus {advertiser.bonus}</p>
                   <p className="text-xs text-gray-600">Register to get PRO access</p>
                 </>
               )}
             </div>
             {!user?.is_premium && (
               <a
-                href={BOOKMAKER.link}
+                href={advertiser.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
@@ -229,7 +231,7 @@ export default function Settings() {
         <SettingsItem
           icon={<span className="text-lg">🎁</span>}
           label="Promo Page"
-          value={`${BOOKMAKER.name} bonuses`}
+          value={`${advertiser.name} bonuses`}
           onClick={() => navigate('/promo')}
         />
 
@@ -408,7 +410,7 @@ export default function Settings() {
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
               <p className="text-xs text-amber-700">
-                <span className="font-semibold">Note:</span> Enter your {BOOKMAKER.name} credentials.
+                <span className="font-semibold">Note:</span> Enter your {advertiser.name} credentials.
                 Data is stored locally and used only for placing bets.
               </p>
             </div>
