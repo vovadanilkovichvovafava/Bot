@@ -119,6 +119,7 @@ export default function MatchDetail() {
       console.error('API-Football enrichment failed:', e);
     } finally {
       setEnrichedLoading(false);
+      setLoading(false);
     }
   };
 
