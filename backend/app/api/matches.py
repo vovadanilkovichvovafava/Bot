@@ -70,11 +70,21 @@ class League(BaseModel):
 
 # Demo matches data (fallback)
 DEMO_MATCHES = [
-    {"home": "Manchester City", "away": "Arsenal", "league": "Premier League", "code": "PL"},
-    {"home": "Real Madrid", "away": "Barcelona", "league": "La Liga", "code": "PD"},
-    {"home": "Bayern Munich", "away": "Dortmund", "league": "Bundesliga", "code": "BL1"},
-    {"home": "PSG", "away": "Marseille", "league": "Ligue 1", "code": "FL1"},
-    {"home": "Juventus", "away": "Inter Milan", "league": "Serie A", "code": "SA"},
+    {"home": "Manchester City", "away": "Arsenal", "league": "Premier League", "code": "PL",
+     "home_logo": "https://media.api-sports.io/football/teams/50.png",
+     "away_logo": "https://media.api-sports.io/football/teams/42.png"},
+    {"home": "Real Madrid", "away": "Barcelona", "league": "La Liga", "code": "PD",
+     "home_logo": "https://media.api-sports.io/football/teams/541.png",
+     "away_logo": "https://media.api-sports.io/football/teams/529.png"},
+    {"home": "Bayern Munich", "away": "Dortmund", "league": "Bundesliga", "code": "BL1",
+     "home_logo": "https://media.api-sports.io/football/teams/157.png",
+     "away_logo": "https://media.api-sports.io/football/teams/165.png"},
+    {"home": "PSG", "away": "Marseille", "league": "Ligue 1", "code": "FL1",
+     "home_logo": "https://media.api-sports.io/football/teams/85.png",
+     "away_logo": "https://media.api-sports.io/football/teams/81.png"},
+    {"home": "Juventus", "away": "Inter Milan", "league": "Serie A", "code": "SA",
+     "home_logo": "https://media.api-sports.io/football/teams/496.png",
+     "away_logo": "https://media.api-sports.io/football/teams/505.png"},
 ]
 
 
@@ -166,8 +176,8 @@ def _generate_demo_matches(day_offset: int) -> List[Match]:
         )
         matches.append(Match(
             id=1000 + i + (day_offset * 100),
-            home_team=Team(name=m["home"]),
-            away_team=Team(name=m["away"]),
+            home_team=Team(name=m["home"], logo=m.get("home_logo")),
+            away_team=Team(name=m["away"], logo=m.get("away_logo")),
             league=m["league"],
             league_code=m["code"],
             match_date=match_time,
@@ -180,8 +190,8 @@ def _get_demo_match_detail(match_id: int) -> MatchDetail:
     """Generate demo match detail"""
     return MatchDetail(
         id=match_id,
-        home_team=Team(name="Manchester City"),
-        away_team=Team(name="Arsenal"),
+        home_team=Team(name="Manchester City", logo="https://media.api-sports.io/football/teams/50.png"),
+        away_team=Team(name="Arsenal", logo="https://media.api-sports.io/football/teams/42.png"),
         league="Premier League",
         league_code="PL",
         match_date=datetime.utcnow(),
