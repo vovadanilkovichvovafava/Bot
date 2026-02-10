@@ -1,56 +1,53 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import SupportChatModal, { BOOKMAKER } from '../components/SupportChat';
-
-// Tools that are not yet implemented
-const COMING_SOON_TOOLS = [];
 
 export default function ProTools() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [modal, setModal] = useState(null);
   const [showSupportChat, setShowSupportChat] = useState(false);
-  const [showComingSoon, setShowComingSoon] = useState(false);
   const isPremium = user?.is_premium;
 
+  // Check if user has used free Value Bet Finder trial
+  const valueBetUsed = localStorage.getItem('value_bet_used') === 'true';
+
   const handleToolClick = (toolName) => {
-    // Check if tool is coming soon
-    if (COMING_SOON_TOOLS.includes(toolName)) {
-      setShowComingSoon(true);
-      setTimeout(() => setShowComingSoon(false), 2000);
+    // Free tools - always accessible
+    if (toolName === 'yourStats') {
+      return navigate('/your-stats');
+    }
+
+    // Value Bet Finder - 1 free try, then PRO
+    if (toolName === 'valueFinder') {
+      if (isPremium || !valueBetUsed) {
+        return navigate('/value-finder');
+      }
+      setModal('valueFinder');
       return;
     }
 
+    // PRO tools - need deposit
     if (isPremium) {
-      if (toolName === 'valueFinder') return navigate('/value-finder');
       if (toolName === 'predictions') return navigate('/prediction-history');
       if (toolName === 'betSlip') return navigate('/bet-slip-builder');
       if (toolName === 'bankroll') return navigate('/bankroll-tracker');
       if (toolName === 'kelly') return navigate('/kelly-calculator');
       if (toolName === 'oddsConverter') return navigate('/odds-converter');
-      if (toolName === 'yourStats') return navigate('/your-stats');
       return;
     }
     setModal(toolName);
   };
 
-  const MODAL_INFO = {
-    valueFinder: { title: 'Value Bet Finder', desc: 'AI-powered analysis to find valuable bets' },
-    betSlip: { title: 'Bet Slip Builder', desc: 'Build and manage betting slips' },
-    bankroll: { title: 'Bankroll Tracker', desc: 'Track your betting performance' },
-    predictions: { title: 'Prediction History', desc: 'View all your past predictions' },
-    kelly: { title: 'Kelly Calculator', desc: 'Calculate optimal bet sizing' },
-    oddsConverter: { title: 'Odds Converter', desc: 'Convert between odds formats' },
-    yourStats: { title: 'Your Stats', desc: 'Detailed accuracy and streaks' },
-  };
-
   return (
-    <div>
+    <div className="pb-20">
       {/* Header */}
       <div className="bg-white px-5 pt-6 pb-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold">Pro Tools</h1>
+          <h1 className="text-xl font-bold">{t('nav.proTools')}</h1>
           {!isPremium && (
             <a
               href={BOOKMAKER.link}
@@ -74,7 +71,7 @@ export default function ProTools() {
               </svg>
               <div className="text-white">
                 <p className="font-bold">Premium Active</p>
-                <p className="text-sm text-white/80">Unlimited AI predictions</p>
+                <p className="text-sm text-white/80">Unlimited access</p>
               </div>
             </div>
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -86,7 +83,7 @@ export default function ProTools() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-gray-900">Free Plan</p>
-                <p className="text-sm text-gray-500">Deposit to unlock PRO tools</p>
+                <p className="text-sm text-gray-500">3 AI requests + 1 Value Bet scan</p>
               </div>
               <a
                 href={BOOKMAKER.link}
@@ -102,18 +99,81 @@ export default function ProTools() {
       </div>
 
       <div className="px-5 pt-2 pb-4 space-y-4">
-        <h2 className="section-title">PRO Tools</h2>
-
-        {/* Value Bet Finder - главный хук, 1 бесплатная попытка */}
-        <ToolCard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>}
-          title="Value Bet Finder"
-          subtitle="AI-powered analysis to find valuable betting opportunities"
-          pro={!isPremium}
-          locked={!isPremium}
-          highlight={!isPremium}
+        {/* Value Bet Finder - Главный хук! */}
+        <div
           onClick={() => handleToolClick('valueFinder')}
+          className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+              </svg>
+            </div>
+            {!isPremium && !valueBetUsed && (
+              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
+                1 FREE TRY
+              </span>
+            )}
+            {!isPremium && valueBetUsed && (
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                </svg>
+                PRO
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-xl font-bold text-white mb-2">Value Bet Finder</h3>
+          <p className="text-white/80 text-sm mb-4">
+            AI analyzes odds from bookmakers and finds bets where the actual probability is higher than what the odds suggest. This is how professional bettors make money.
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">87%</p>
+              <p className="text-white/60 text-xs">Accuracy</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">+12%</p>
+              <p className="text-white/60 text-xs">Avg. Edge</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2 text-center">
+              <p className="text-white font-bold text-lg">50+</p>
+              <p className="text-white/60 text-xs">Daily Bets</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white/70 text-sm">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+              {isPremium ? 'Unlimited scans' : valueBetUsed ? 'Deposit to unlock' : 'Try it free now!'}
+            </div>
+            <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+              {isPremium || !valueBetUsed ? 'Find Value Bets' : 'Unlock'}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Free Tools */}
+        <h2 className="section-title">Free Tools</h2>
+
+        <ToolCard
+          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
+          title="Your Stats"
+          subtitle="Track your prediction accuracy and streaks"
+          onClick={() => handleToolClick('yourStats')}
         />
+
+        {/* PRO Tools */}
+        <h2 className="section-title mt-6">PRO Tools</h2>
+
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>}
           title="Bet Slip Builder"
@@ -147,14 +207,6 @@ export default function ProTools() {
           onClick={() => handleToolClick('oddsConverter')}
         />
         <ToolCard
-          icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
-          title="Your Stats"
-          subtitle="Detailed accuracy, streaks, league breakdown"
-          pro={!isPremium}
-          locked={!isPremium}
-          onClick={() => handleToolClick('yourStats')}
-        />
-        <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           title="Prediction History"
           subtitle="View all your past AI predictions and their results"
@@ -166,7 +218,7 @@ export default function ProTools() {
         <div className="h-4"/>
       </div>
 
-      {/* PRO Lock Modal - Compact version */}
+      {/* PRO Lock Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setModal(null)}>
           <div className="absolute inset-0 bg-black/40"/>
@@ -174,14 +226,12 @@ export default function ProTools() {
             className="relative bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Close button */}
             <button onClick={() => setModal(null)} className="absolute top-3 right-3 text-gray-400">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
 
-            {/* Icon + Title */}
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
@@ -190,19 +240,17 @@ export default function ProTools() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">PRO Feature</h3>
-                <p className="text-xs text-gray-500">Available with subscription</p>
+                <p className="text-xs text-gray-500">Unlock with deposit</p>
               </div>
             </div>
 
-            {/* Unlock with deposit */}
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-              <p className="text-sm font-medium text-green-800 mb-1">🎁 Unlock PRO Access!</p>
+              <p className="text-sm font-medium text-green-800 mb-1">Unlock PRO Access</p>
               <p className="text-xs text-green-600">
                 Make a deposit at {BOOKMAKER.name} → Unlimited PRO access
               </p>
             </div>
 
-            {/* Actions */}
             <div className="space-y-2">
               <a
                 href={BOOKMAKER.link}
@@ -226,7 +274,6 @@ export default function ProTools() {
         </div>
       )}
 
-      {/* Support Chat triggered from modal */}
       {showSupportChat && (
         <SupportChatModal
           isOpen={showSupportChat}
@@ -234,64 +281,27 @@ export default function ProTools() {
           initialMessage="I want PRO access"
         />
       )}
-
-      {/* Coming Soon Toast */}
-      {showComingSoon && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
-          <div className="bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
-            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-            </svg>
-            <span className="text-sm font-medium">Coming Soon!</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-function FeatureRow({ label }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-        </svg>
-        <span className="font-medium text-gray-900">{label}</span>
-      </div>
-      <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd"/>
-      </svg>
-    </div>
-  );
-}
-
-function ToolCard({ icon, title, subtitle, pro, locked, comingSoon, onClick }) {
+function ToolCard({ icon, title, subtitle, pro, locked, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`card flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow ${comingSoon ? 'opacity-70' : ''}`}
+      className="card flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
     >
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${comingSoon ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'}`}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className={`font-semibold ${comingSoon ? 'text-gray-500' : 'text-gray-900'}`}>{title}</p>
-          {comingSoon && (
-            <span className="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
-              SOON
-            </span>
-          )}
-          {pro && !comingSoon && <span className="badge-pro text-[10px]">PRO</span>}
+          <p className="font-semibold text-gray-900">{title}</p>
+          {pro && <span className="badge-pro text-[10px]">PRO</span>}
         </div>
         <p className="text-sm text-gray-500 truncate">{subtitle}</p>
       </div>
-      {comingSoon ? (
-        <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      ) : locked ? (
+      {locked ? (
         <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
         </svg>
