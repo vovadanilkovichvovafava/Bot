@@ -700,7 +700,7 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`
   ==========================================
   Betting Bot Server running on port ${PORT}
@@ -720,3 +720,21 @@ app.listen(PORT, () => {
   - GET /api/admin/test-postback?secret=xxx&userId=xxx
   `);
 });
+
+// Graceful shutdown handling
+const shutdown = (signal) => {
+  console.log(`\n[SHUTDOWN] Received ${signal}, shutting down gracefully...`);
+  server.close(() => {
+    console.log('[SHUTDOWN] Server closed');
+    process.exit(0);
+  });
+
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.log('[SHUTDOWN] Forcing shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
