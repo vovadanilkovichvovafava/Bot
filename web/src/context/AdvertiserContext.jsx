@@ -111,14 +111,15 @@ export function AdvertiserProvider({ children }) {
   }
 
   // Track click with user ID for postback matching
+  // 1win uses sub1 parameter for tracking - this is returned in postback
   function trackClick(userId) {
-    const clickId = `${userId}_${Date.now()}`;
-    safeSetItem('lastClickId', clickId);
+    safeSetItem('lastClickId', `${userId}_${Date.now()}`);
 
-    // Build tracking link with user ID
+    // Build tracking link with sub1 parameter (1win standard)
+    // sub1 = userId - will be returned in postback for PRO activation
     const trackingLink = advertiser.link.includes('?')
-      ? `${advertiser.link}&clickid=${clickId}&uid=${userId}`
-      : `${advertiser.link}?clickid=${clickId}&uid=${userId}`;
+      ? `${advertiser.link}&sub1=${userId}`
+      : `${advertiser.link}?sub1=${userId}`;
 
     return trackingLink;
   }
