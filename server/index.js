@@ -265,27 +265,38 @@ app.get('/api/1win/postback', async (req, res) => {
   // Check if this is a qualifying action for Premium activation
   // 1win events: registration, first_deposit (FTD), deposit, qualified_deposit, etc.
   const qualifyingEvents = ['deposit', 'first_deposit', 'ftd', 'qualified', 'qualified_deposit'];
+  const MIN_DEPOSIT_FOR_PRO = 20; // Minimum deposit in USD for PRO activation
 
   if (qualifyingEvents.includes(event?.toLowerCase())) {
-    console.log(`[1WIN POSTBACK] Qualifying deposit! Activating Premium for user: ${userId}`);
+    const depositAmount = parseFloat(amount) || 0;
 
-    try {
-      // Activate Premium for the user
-      await activatePremium(userId, {
-        source: '1win',
-        transactionId: transaction_id,
-        depositAmount: amount,
-        country,
-        event,
-      });
-
-      postbackRecord.premiumActivated = true;
-      postbackRecord.premiumActivatedAt = new Date().toISOString();
+    // Check minimum deposit requirement
+    if (depositAmount < MIN_DEPOSIT_FOR_PRO) {
+      console.log(`[1WIN POSTBACK] Deposit $${depositAmount} below minimum $${MIN_DEPOSIT_FOR_PRO} - PRO not activated for user: ${userId}`);
+      postbackRecord.premiumActivated = false;
+      postbackRecord.reason = `Deposit below minimum ($${MIN_DEPOSIT_FOR_PRO} required)`;
       postbackStore.set(`1win_${recordKey}`, postbackRecord);
+    } else {
+      console.log(`[1WIN POSTBACK] Qualifying deposit $${depositAmount}! Activating Premium for user: ${userId}`);
 
-      console.log(`[1WIN POSTBACK] Premium activated for user: ${userId}`);
-    } catch (error) {
-      console.error('[1WIN POSTBACK] Failed to activate Premium:', error.message);
+      try {
+        // Activate Premium for the user
+        await activatePremium(userId, {
+          source: '1win',
+          transactionId: transaction_id,
+          depositAmount: amount,
+          country,
+          event,
+        });
+
+        postbackRecord.premiumActivated = true;
+        postbackRecord.premiumActivatedAt = new Date().toISOString();
+        postbackStore.set(`1win_${recordKey}`, postbackRecord);
+
+        console.log(`[1WIN POSTBACK] Premium activated for user: ${userId}`);
+      } catch (error) {
+        console.error('[1WIN POSTBACK] Failed to activate Premium:', error.message);
+      }
     }
   }
 
