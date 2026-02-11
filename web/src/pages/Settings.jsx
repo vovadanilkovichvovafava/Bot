@@ -65,6 +65,10 @@ export default function Settings() {
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showBookmakerModal, setShowBookmakerModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationId, setVerificationId] = useState('');
+  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
+  const [verificationSubmitted, setVerificationSubmitted] = useState(false);
   const [bookmakerLogin, setBookmakerLogin] = useState('');
   const [bookmakerPassword, setBookmakerPassword] = useState('');
   const [connectingBookmaker, setConnectingBookmaker] = useState(false);
@@ -110,6 +114,29 @@ export default function Settings() {
       console.error('Failed to connect bookmaker:', e);
     } finally {
       setConnectingBookmaker(false);
+    }
+  };
+
+  const handleVerificationSubmit = async () => {
+    if (!verificationId.trim()) return;
+    setVerificationSubmitting(true);
+    try {
+      const geoUrl = import.meta.env.VITE_GEO_SERVER_URL || 'http://localhost:3001';
+      await fetch(`${geoUrl}/api/verification/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          email: user?.email,
+          bookmakerId: verificationId.trim(),
+          bookmaker: advertiser.name,
+        }),
+      });
+      setVerificationSubmitted(true);
+    } catch (e) {
+      console.error('Failed to submit verification:', e);
+    } finally {
+      setVerificationSubmitting(false);
     }
   };
 
@@ -175,6 +202,14 @@ export default function Settings() {
               </a>
             )}
           </div>
+          {!user?.is_premium && (
+            <div className="mt-3 pt-3 border-t border-amber-200/50">
+              <p className="text-xs text-amber-700">
+                <span className="font-semibold">Important:</span> PRO activates only with a NEW {advertiser.name} account.
+                Already have an account? <button onClick={() => setShowVerificationModal(true)} className="underline font-medium">Request manual verification</button>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* One-Click Betting */}
@@ -641,6 +676,97 @@ export default function Settings() {
             <p className="text-center text-xs text-gray-400">
               Share your link with friends and earn rewards when they sign up!
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Verification Modal */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => !verificationSubmitting && setShowVerificationModal(false)}>
+          <div
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl animate-slideUp"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Manual Verification</h3>
+              <button onClick={() => !verificationSubmitting && setShowVerificationModal(false)} className="text-gray-400">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            {verificationSubmitted ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Request Submitted!</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  We'll verify your deposit and activate PRO within 24 hours.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowVerificationModal(false);
+                    setVerificationSubmitted(false);
+                    setVerificationId('');
+                  }}
+                  className="px-6 py-2 bg-primary-500 text-white font-medium rounded-xl"
+                >
+                  Got it
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5">
+                  <p className="text-xs text-blue-700">
+                    <span className="font-semibold">How it works:</span> Enter your {advertiser.name} account ID and we'll verify your deposit manually.
+                    PRO will be activated within 24 hours after verification.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Your {advertiser.name} ID
+                    </label>
+                    <input
+                      type="text"
+                      value={verificationId}
+                      onChange={(e) => setVerificationId(e.target.value)}
+                      placeholder="Enter your account ID"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Find it in your {advertiser.name} profile settings
+                    </p>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <p className="text-xs text-amber-700">
+                      <span className="font-semibold">Requirements:</span> Minimum deposit of $20 USD to activate PRO access.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleVerificationSubmit}
+                  disabled={!verificationId.trim() || verificationSubmitting}
+                  className="w-full mt-6 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {verificationSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit for Verification'
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

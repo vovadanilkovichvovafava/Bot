@@ -34,6 +34,7 @@ const CONFIG = {
 // In-memory storage for demo (use Redis/DB in production)
 const postbackStore = new Map();
 const premiumActivations = new Map();
+const verificationRequests = new Map(); // Store manual verification requests
 
 app.use(cors());
 app.use(express.json());
@@ -383,6 +384,116 @@ app.get('/api/premium/check/:userId', (req, res) => {
     expiresAt: activation.expiresAt,
     source: 'bookmaker_deposit',
   });
+});
+
+// ============================================
+// MANUAL VERIFICATION ENDPOINTS
+// ============================================
+
+/**
+ * Submit verification request (for existing bookmaker accounts)
+ */
+app.post('/api/verification/request', (req, res) => {
+  const { userId, email, bookmakerId, bookmaker } = req.body;
+
+  if (!userId || !bookmakerId) {
+    return res.status(400).json({ error: 'userId and bookmakerId are required' });
+  }
+
+  const requestId = `ver_${Date.now()}_${userId}`;
+  const request = {
+    id: requestId,
+    userId,
+    email,
+    bookmakerId,
+    bookmaker: bookmaker || '1win',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  verificationRequests.set(requestId, request);
+  console.log(`[VERIFICATION] New request: ${requestId} for user ${userId}, bookmaker ID: ${bookmakerId}`);
+
+  res.json({ success: true, requestId });
+});
+
+/**
+ * Get all verification requests (admin only)
+ */
+app.get('/api/admin/verifications', (req, res) => {
+  const { secret } = req.query;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const requests = Array.from(verificationRequests.values())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.json({ count: requests.length, requests });
+});
+
+/**
+ * Approve verification request (admin only)
+ */
+app.post('/api/admin/verifications/:requestId/approve', async (req, res) => {
+  const { secret } = req.query;
+  const { requestId } = req.params;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const request = verificationRequests.get(requestId);
+  if (!request) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+
+  try {
+    await activatePremium(request.userId, {
+      source: 'manual_verification',
+      bookmakerId: request.bookmakerId,
+      bookmaker: request.bookmaker,
+      verificationId: requestId,
+    });
+
+    request.status = 'approved';
+    request.updatedAt = new Date().toISOString();
+    verificationRequests.set(requestId, request);
+
+    console.log(`[VERIFICATION] Approved: ${requestId} for user ${request.userId}`);
+    res.json({ success: true, request });
+  } catch (error) {
+    console.error(`[VERIFICATION] Failed to approve: ${error.message}`);
+    res.status(500).json({ error: 'Failed to activate premium' });
+  }
+});
+
+/**
+ * Reject verification request (admin only)
+ */
+app.post('/api/admin/verifications/:requestId/reject', (req, res) => {
+  const { secret } = req.query;
+  const { requestId } = req.params;
+  const { reason } = req.body;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const request = verificationRequests.get(requestId);
+  if (!request) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+
+  request.status = 'rejected';
+  request.reason = reason || 'Verification failed';
+  request.updatedAt = new Date().toISOString();
+  verificationRequests.set(requestId, request);
+
+  console.log(`[VERIFICATION] Rejected: ${requestId} for user ${request.userId}`);
+  res.json({ success: true, request });
 });
 
 // ============================================
