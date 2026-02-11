@@ -216,6 +216,100 @@ app.post('/api/postback', express.json(), async (req, res) => {
   return app._router.handle(req, res, () => {});
 });
 
+// ============================================
+// 1WIN POSTBACK ENDPOINT
+// ============================================
+
+/**
+ * 1win Postback endpoint
+ *
+ * URL format: /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
+ *
+ * Parameters:
+ * - event: Event type (registration, deposit, first_deposit, withdrawal, etc.)
+ * - amount: Transaction amount
+ * - sub1: User ID (our tracking parameter)
+ * - transaction_id: Unique transaction ID from 1win
+ * - country: User's country code
+ */
+app.get('/api/1win/postback', async (req, res) => {
+  const { event, amount, sub1, transaction_id, country } = req.query;
+
+  console.log(`[1WIN POSTBACK] Received: event=${event}, amount=${amount}, sub1=${sub1}, transaction_id=${transaction_id}, country=${country}`);
+
+  // sub1 is our user ID
+  const userId = sub1;
+
+  if (!userId) {
+    console.log('[1WIN POSTBACK] Missing sub1 (userId)');
+    return res.status(200).send('OK'); // Always return OK to the affiliate network
+  }
+
+  // Store postback record
+  const postbackRecord = {
+    userId,
+    event,
+    amount: amount ? parseFloat(amount) : null,
+    transactionId: transaction_id,
+    country,
+    timestamp: new Date().toISOString(),
+    source: '1win',
+  };
+
+  // Store with transaction_id as key for deduplication
+  const recordKey = transaction_id || `${userId}_${event}_${Date.now()}`;
+  postbackStore.set(`1win_${recordKey}`, postbackRecord);
+
+  console.log(`[1WIN POSTBACK] Stored record: ${recordKey}`);
+
+  // Check if this is a qualifying action for Premium activation
+  // 1win events: registration, first_deposit (FTD), deposit, qualified_deposit, etc.
+  const qualifyingEvents = ['deposit', 'first_deposit', 'ftd', 'qualified', 'qualified_deposit'];
+
+  if (qualifyingEvents.includes(event?.toLowerCase())) {
+    console.log(`[1WIN POSTBACK] Qualifying deposit! Activating Premium for user: ${userId}`);
+
+    try {
+      // Activate Premium for the user
+      await activatePremium(userId, {
+        source: '1win',
+        transactionId: transaction_id,
+        depositAmount: amount,
+        country,
+        event,
+      });
+
+      postbackRecord.premiumActivated = true;
+      postbackRecord.premiumActivatedAt = new Date().toISOString();
+      postbackStore.set(`1win_${recordKey}`, postbackRecord);
+
+      console.log(`[1WIN POSTBACK] Premium activated for user: ${userId}`);
+    } catch (error) {
+      console.error('[1WIN POSTBACK] Failed to activate Premium:', error.message);
+    }
+  }
+
+  // Always respond with OK to the affiliate network
+  res.status(200).send('OK');
+});
+
+/**
+ * 1win Postback POST endpoint (alternative)
+ */
+app.post('/api/1win/postback', async (req, res) => {
+  // Support both query params and body
+  const event = req.query.event || req.body.event;
+  const amount = req.query.amount || req.body.amount;
+  const sub1 = req.query.sub1 || req.body.sub1;
+  const transaction_id = req.query.transaction_id || req.body.transaction_id;
+  const country = req.query.country || req.body.country;
+
+  req.query = { event, amount, sub1, transaction_id, country };
+
+  // Forward to GET handler
+  return app._router.handle({ ...req, method: 'GET' }, res, () => {});
+});
+
 /**
  * Activate Premium for user
  */
@@ -475,6 +569,7 @@ app.get('/', (req, res) => {
       geo: 'GET /api/geo - Get geo info for current IP',
       click: 'GET /api/click?userId=xxx - Generate affiliate click ID',
       postback: 'GET/POST /api/postback - Bookmaker postback endpoint',
+      '1winPostback': 'GET/POST /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}',
       premiumCheck: 'GET /api/premium/check/:userId - Check premium status',
       bookmakerLink: 'GET /api/bookmaker/link?userId=xxx - Get bookmaker link with cloaking',
       proxy: 'ALL /api/proxy/* - Proxy requests to bookmaker',
@@ -491,6 +586,9 @@ app.listen(PORT, () => {
 
   Postback URL for bookmaker:
   https://your-domain.com/api/postback?click_id={click_id}&status={status}&amount={amount}&currency={currency}
+
+  1WIN Postback URL:
+  https://your-domain.com/api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
 
   Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
 
