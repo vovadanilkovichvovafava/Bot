@@ -4,10 +4,10 @@
  */
 
 const GENERIC_PARTNER = {
-  name: 'Partner Bookmaker',
-  bonus: '100% Welcome Bonus',
-  minDeposit: '$10',
-  link: 'https://refpa.top/L?tag=your_tag&site=your_site&ad=your_ad',
+  name: '1win',
+  bonus: 'Бонус до 500%',
+  minDeposit: '$1',
+  link: 'https://1wtmvf.live/?p=m2zy',
 };
 
 export const ADVERTISERS = {
