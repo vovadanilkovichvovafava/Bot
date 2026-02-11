@@ -266,7 +266,7 @@ app.get('/api/1win/postback', async (req, res) => {
   // Check if this is a qualifying action for Premium activation
   // 1win events: registration, first_deposit (FTD), deposit, qualified_deposit, etc.
   const qualifyingEvents = ['deposit', 'first_deposit', 'ftd', 'qualified', 'qualified_deposit'];
-  const MIN_DEPOSIT_FOR_PRO = 20; // Minimum deposit in USD for PRO activation
+  const MIN_DEPOSIT_FOR_PRO = 0; // Minimum deposit disabled for testing
 
   if (qualifyingEvents.includes(event?.toLowerCase())) {
     const depositAmount = parseFloat(amount) || 0;
