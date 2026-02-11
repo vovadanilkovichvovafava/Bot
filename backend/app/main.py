@@ -70,9 +70,20 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(InjectionDetectionMiddleware)
 
 # CORS - MUST be added LAST so it runs FIRST (LIFO order)
+# Note: When allow_credentials=True, cannot use wildcard "*" for origins
+# Instead, we list specific origins or use allow_origin_regex
+CORS_ORIGINS = [
+    "https://pwa-production-20b5.up.railway.app",
+    "https://appbot-production-152e.up.railway.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
