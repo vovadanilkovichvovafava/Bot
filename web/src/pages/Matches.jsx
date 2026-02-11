@@ -26,26 +26,26 @@ const POPULAR_LEAGUE_IDS = [
   94,   // Primeira Liga
 ];
 
-// League info for display
+// League info for display with logo URLs from API-Football
 const LEAGUES_INFO = {
   popular: [
-    { id: 39, code: 'PL', name: 'Premier League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-    { id: 140, code: 'PD', name: 'La Liga', country: 'Spain', flag: '🇪🇸' },
-    { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Germany', flag: '🇩🇪' },
-    { id: 135, code: 'SA', name: 'Serie A', country: 'Italy', flag: '🇮🇹' },
-    { id: 61, code: 'FL1', name: 'Ligue 1', country: 'France', flag: '🇫🇷' },
+    { id: 39, code: 'PL', name: 'Premier League', country: 'England', logo: 'https://media.api-sports.io/football/leagues/39.png' },
+    { id: 140, code: 'PD', name: 'La Liga', country: 'Spain', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+    { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Germany', logo: 'https://media.api-sports.io/football/leagues/78.png' },
+    { id: 135, code: 'SA', name: 'Serie A', country: 'Italy', logo: 'https://media.api-sports.io/football/leagues/135.png' },
+    { id: 61, code: 'FL1', name: 'Ligue 1', country: 'France', logo: 'https://media.api-sports.io/football/leagues/61.png' },
   ],
   euro: [
-    { id: 2, code: 'CL', name: 'Champions League', country: 'Europe', flag: '🏆' },
-    { id: 3, code: 'EL', name: 'Europa League', country: 'Europe', flag: '🏅' },
-    { id: 848, code: 'ECL', name: 'Conference League', country: 'Europe', flag: '🎖️' },
+    { id: 2, code: 'CL', name: 'Champions League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/2.png' },
+    { id: 3, code: 'EL', name: 'Europa League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/3.png' },
+    { id: 848, code: 'ECL', name: 'Conference League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/848.png' },
   ],
   other: [
-    { id: 88, code: 'ERE', name: 'Eredivisie', country: 'Netherlands', flag: '🇳🇱' },
-    { id: 94, code: 'PPL', name: 'Primeira Liga', country: 'Portugal', flag: '🇵🇹' },
-    { id: 203, code: 'TUR', name: 'Süper Lig', country: 'Turkey', flag: '🇹🇷' },
-    { id: 307, code: 'SAU', name: 'Saudi Pro League', country: 'Saudi Arabia', flag: '🇸🇦' },
-    { id: 253, code: 'MLS', name: 'MLS', country: 'USA', flag: '🇺🇸' },
+    { id: 88, code: 'ERE', name: 'Eredivisie', country: 'Netherlands', logo: 'https://media.api-sports.io/football/leagues/88.png' },
+    { id: 94, code: 'PPL', name: 'Primeira Liga', country: 'Portugal', logo: 'https://media.api-sports.io/football/leagues/94.png' },
+    { id: 203, code: 'TUR', name: 'Süper Lig', country: 'Turkey', logo: 'https://media.api-sports.io/football/leagues/203.png' },
+    { id: 307, code: 'SAU', name: 'Saudi Pro League', country: 'Saudi Arabia', logo: 'https://media.api-sports.io/football/leagues/307.png' },
+    { id: 253, code: 'MLS', name: 'MLS', country: 'USA', logo: 'https://media.api-sports.io/football/leagues/253.png' },
   ],
 };
 
@@ -501,7 +501,7 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular 
                 <span className="text-sm font-semibold text-gray-700">{league.name}</span>
                 <span className="text-[10px] text-gray-400 ml-auto">{league.country}</span>
               </div>
-              <div className="space-y-2">
+              <div className="rounded-xl overflow-hidden">
                 {fixtures.map(f => (
                   isLive ? (
                     <LiveMatchCard
@@ -534,27 +534,43 @@ function FixtureCard({ fixture, onClick }) {
 
   return (
     <div
-      className="bg-white rounded-xl p-3 border border-gray-100 cursor-pointer hover:shadow-md transition-all"
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
       onClick={onClick}
     >
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <img src={f.teams.home.logo} alt="" className="w-5 h-5 object-contain"/>
-            <span className="text-sm font-medium text-gray-800 truncate">{f.teams.home.name}</span>
+      <div className="flex items-center py-3 px-3">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <img src={f.teams.away.logo} alt="" className="w-5 h-5 object-contain"/>
-            <span className="text-sm font-medium text-gray-800 truncate">{f.teams.away.name}</span>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
           </div>
         </div>
-        <div className="text-center">
+
+        {/* Time/Score column */}
+        <div className="flex-shrink-0 text-right ml-3">
           {status === 'NS' ? (
-            <span className="text-sm font-semibold text-gray-900">{time}</span>
+            <span className="text-sm text-gray-500">{time}</span>
           ) : status === 'FT' ? (
-            <div>
-              <span className="text-lg font-bold text-gray-900">{f.goals.home} - {f.goals.away}</span>
-              <p className="text-[10px] text-gray-400">Finished</p>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-bold text-gray-900">{f.goals.home}</span>
+              <span className="text-sm font-bold text-gray-900">{f.goals.away}</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">FT</span>
             </div>
           ) : (
             <span className="text-xs text-gray-500">{status}</span>
@@ -573,28 +589,43 @@ function LiveMatchCard({ fixture, onClick }) {
 
   return (
     <div
-      className="bg-white rounded-xl p-3 border-2 border-red-100 cursor-pointer hover:shadow-lg hover:border-red-200 transition-all"
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 border-l-2 border-l-red-500"
       onClick={onClick}
     >
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <img src={f.teams.home.logo} alt="" className="w-5 h-5 object-contain"/>
-            <span className={`text-sm font-medium ${f.teams.home.winner ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
-              {f.teams.home.name}
-            </span>
-            <span className="text-lg font-bold text-gray-900 ml-auto">{f.goals.home ?? 0}</span>
+      <div className="flex items-center py-3 px-3">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <img src={f.teams.away.logo} alt="" className="w-5 h-5 object-contain"/>
-            <span className={`text-sm font-medium ${f.teams.away.winner ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
-              {f.teams.away.name}
-            </span>
-            <span className="text-lg font-bold text-gray-900 ml-auto">{f.goals.away ?? 0}</span>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
           </div>
         </div>
-        <div className="w-12 text-center">
-          <div className="bg-red-500 text-white text-xs font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1">
+
+        {/* Score column */}
+        <div className="flex flex-col items-end mr-3">
+          <span className="text-sm font-bold text-gray-900">{f.goals.home ?? 0}</span>
+          <span className="text-sm font-bold text-gray-900">{f.goals.away ?? 0}</span>
+        </div>
+
+        {/* Live indicator */}
+        <div className="flex-shrink-0">
+          <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center gap-1">
             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"/>
             {minuteDisplay}
           </div>
@@ -610,7 +641,12 @@ function LeagueCard({ league, navigate }) {
       onClick={() => navigate(`/league/${league.code}`)}
       className="bg-white rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
     >
-      <span className="text-2xl">{league.flag}</span>
+      <img
+        src={league.logo}
+        alt={league.name}
+        className="w-8 h-8 object-contain"
+        onError={(e) => { e.target.style.display = 'none'; }}
+      />
       <div className="flex-1">
         <p className="font-semibold text-gray-900">{league.name}</p>
         <p className="text-xs text-gray-500">{league.country}</p>

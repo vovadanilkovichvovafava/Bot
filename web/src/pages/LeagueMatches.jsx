@@ -69,7 +69,7 @@ export default function LeagueMatches() {
           Object.entries(groupedMatches).map(([date, dayMatches]) => (
             <div key={date}>
               <h3 className="text-primary-600 font-semibold text-sm mb-2">{date}</h3>
-              <div className="space-y-2">
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm">
                 {dayMatches.map(match => (
                   <MatchCard key={match.id} match={match} showLeague={false} compact/>
                 ))}

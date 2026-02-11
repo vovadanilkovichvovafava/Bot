@@ -333,7 +333,7 @@ export default function Home() {
               <p className="text-gray-500">No matches scheduled for today</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
               {matches.map((f) => (
                 <HomeMatchCard key={f.fixture.id} fixture={f} navigate={navigate} />
               ))}
@@ -349,56 +349,56 @@ export default function Home() {
 
 function HomeMatchCard({ fixture, navigate }) {
   const f = fixture;
-  const time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const time = new Date(f.fixture.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const isLive = ['1H', '2H', 'HT'].includes(f.fixture.status.short);
 
   return (
     <div
       onClick={() => navigate(`/match/${f.fixture.id}`)}
-      className="card cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <img src={f.league.logo} alt="" className="w-4 h-4 object-contain"/>
-          <span className="badge-league text-[10px]">{f.league.name}</span>
+      <div className="flex items-center py-3 px-4">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
+          </div>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {isLive && <span className="badge-live">Live</span>}
-          <span className="text-sm text-gray-500">{time}</span>
-        </div>
-      </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex-1 text-center">
-          <img src={f.teams.home.logo} alt="" className="w-10 h-10 mx-auto mb-1 object-contain"/>
-          <p className="font-medium text-xs text-gray-900 leading-tight truncate px-1">{f.teams.home.name}</p>
-        </div>
-
-        <div className="px-3 text-center">
+        {/* Time/Score column */}
+        <div className="flex-shrink-0 text-right ml-3">
           {isLive ? (
-            <span className="text-lg font-bold text-gray-900">
-              {f.goals?.home ?? 0} - {f.goals?.away ?? 0}
-            </span>
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-sm font-bold text-gray-900">{f.goals?.home ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-gray-900">{f.goals?.away ?? 0}</span>
+              </div>
+              <span className="text-[10px] text-red-500 font-medium mt-0.5">LIVE</span>
+            </div>
           ) : (
-            <span className="text-gray-400 font-semibold">VS</span>
+            <span className="text-sm text-gray-500">{time}</span>
           )}
         </div>
-
-        <div className="flex-1 text-center">
-          <img src={f.teams.away.logo} alt="" className="w-10 h-10 mx-auto mb-1 object-contain"/>
-          <p className="font-medium text-xs text-gray-900 leading-tight truncate px-1">{f.teams.away.name}</p>
-        </div>
       </div>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); navigate(`/match/${f.fixture.id}`); }}
-        className="mt-3 w-full py-2 text-primary-600 text-sm font-medium bg-primary-50 rounded-xl flex items-center justify-center gap-1"
-      >
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-        </svg>
-        AI Analysis
-      </button>
     </div>
   );
 }
