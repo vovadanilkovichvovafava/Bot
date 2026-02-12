@@ -60,6 +60,26 @@ export default function Home() {
   const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
+  // Show full-screen splash while loading matches
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
+        <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+          <svg viewBox="0 0 40 40" className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="20" cy="20" r="16"/>
+            <circle cx="20" cy="20" r="5"/>
+            <line x1="20" y1="4" x2="20" y2="12"/>
+            <line x1="20" y1="28" x2="20" y2="36"/>
+            <line x1="4" y1="20" x2="12" y2="20"/>
+            <line x1="28" y1="20" x2="36" y2="20"/>
+          </svg>
+        </div>
+        <h1 className="text-white text-2xl font-bold">AI Betting Bot</h1>
+        <div className="mt-8 w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"/>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
@@ -128,7 +148,6 @@ export default function Home() {
           advertiser={advertiser}
           trackClick={trackClick}
           userId={user?.id}
-          loading={loading}
         />
 
         {/* Value Bet Finder - Main Hook */}
@@ -297,20 +316,7 @@ export default function Home() {
             </button>
           </div>
 
-          {loading ? (
-            <div className="space-y-3">
-              {[1,2,3].map(i => (
-                <div key={i} className="card">
-                  <div className="shimmer h-4 w-24 mb-3"/>
-                  <div className="flex justify-between">
-                    <div className="shimmer h-4 w-32"/>
-                    <div className="shimmer h-4 w-8"/>
-                    <div className="shimmer h-4 w-32"/>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : matches.length === 0 ? (
+          {matches.length === 0 ? (
             <div className="card text-center py-8">
               <p className="text-gray-500">No matches scheduled for today</p>
             </div>
@@ -386,7 +392,7 @@ function HomeMatchCard({ fixture, navigate }) {
 }
 
 // Featured Match Promo Banner with team logos and diagonal split
-function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, loading }) {
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Get the first match from top leagues as featured match
   const featuredMatch = matches?.[0];
 
@@ -400,33 +406,6 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, loading 
   };
 
   const link = userId ? trackClick(userId) : advertiser.link;
-
-  // Show shimmer skeleton while loading
-  if (loading) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 shadow-lg" style={{ minHeight: '140px' }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shine_1.5s_infinite]" />
-        <div className="flex items-center justify-between h-full p-4" style={{ minHeight: '140px' }}>
-          {/* Left team shimmer */}
-          <div className="flex flex-col items-center gap-2 w-20">
-            <div className="w-16 h-16 bg-white/60 rounded-xl shimmer" />
-            <div className="w-14 h-3 bg-white/60 rounded shimmer" />
-          </div>
-          {/* Center shimmer */}
-          <div className="flex-1 flex flex-col items-center justify-center px-2">
-            <div className="w-8 h-3 bg-white/60 rounded shimmer mb-2" />
-            <div className="w-40 h-5 bg-white/60 rounded shimmer mb-2" />
-            <div className="w-24 h-8 bg-white/60 rounded-xl shimmer" />
-          </div>
-          {/* Right team shimmer */}
-          <div className="flex flex-col items-center gap-2 w-20">
-            <div className="w-16 h-16 bg-white/60 rounded-xl shimmer" />
-            <div className="w-14 h-3 bg-white/60 rounded shimmer" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // If we have a featured match, show it with team colors diagonal split
   if (featuredMatch) {
