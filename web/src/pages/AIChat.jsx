@@ -284,28 +284,68 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* AI Recommended Bet - Display only */}
+                {/* AI Recommended Bet - Premium integrated card with bonus */}
                 {msg.bet && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5">
-                          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                          </svg>
-                          <span className="text-xs font-semibold text-green-700">Recommended</span>
+                    <button
+                      onClick={() => navigate('/promo')}
+                      className="w-full text-left relative overflow-hidden rounded-xl border border-amber-300 shadow-lg"
+                      style={{
+                        background: 'linear-gradient(135deg, #065f46 0%, #047857 50%, #d97706 100%)',
+                      }}
+                    >
+                      {/* Animated shimmer overlay */}
+                      <div
+                        className="absolute inset-0 opacity-30"
+                        style={{
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.4) 50%, transparent 100%)',
+                          animation: 'shimmer 2s infinite',
+                        }}
+                      />
+
+                      {/* Top section - Recommendation */}
+                      <div className="relative p-3 pb-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4 text-emerald-300" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                            </svg>
+                            <span className="text-xs font-semibold text-emerald-200">Recommended</span>
+                          </div>
+                          <span className="bg-white text-green-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
+                            {msg.bet.odds.toFixed(2)}
+                          </span>
                         </div>
-                        <span className="bg-green-600 text-white text-sm font-bold px-2 py-0.5 rounded">
-                          {msg.bet.odds.toFixed(2)}
-                        </span>
+                        <p className="text-sm font-semibold text-white">{msg.bet.type}</p>
                       </div>
-                      <p className="text-sm font-medium text-gray-900">{msg.bet.type}</p>
-                    </div>
+
+                      {/* Bottom section - Free bet bonus */}
+                      <div
+                        className="relative px-3 py-2.5"
+                        style={{
+                          background: 'linear-gradient(90deg, rgba(251,191,36,0.2) 0%, rgba(245,158,11,0.3) 100%)',
+                          borderTop: '1px solid rgba(251,191,36,0.3)',
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🎁</span>
+                            <div>
+                              <p className="text-xs font-bold text-amber-200">{advertiser.texts.useFreeBet}!</p>
+                              <p className="text-[10px] text-amber-100/80">{advertiser.texts.potentialWin}: <span className="font-bold text-amber-200">{advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}</span></p>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 )}
 
-                {/* Promo link after every AI response (except welcome) */}
-                {msg.role === 'assistant' && msg.id !== 'welcome' && (
+                {/* Simple promo link for messages without bet recommendation */}
+                {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
                     onClick={() => navigate('/promo')}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-amber-600 font-medium hover:text-amber-700"

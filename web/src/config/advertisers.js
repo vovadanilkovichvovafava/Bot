@@ -27,6 +27,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Piazza scommessa gratuita',
       bonusButton: 'Bonus 1.500 €',
       bestBets: 'Migliori scommesse',
+      useFreeBet: 'Usa la scommessa gratuita e vinci',
+      potentialWin: 'Possibile vincita',
     },
   },
   // Germany - Euro
@@ -48,6 +50,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Gratiswette platzieren',
       bonusButton: 'Bonus 1.500 €',
       bestBets: 'Beste Wetten',
+      useFreeBet: 'Nutze den Freiwette und gewinne',
+      potentialWin: 'Möglicher Gewinn',
     },
   },
   // Poland - PLN (Zloty)
@@ -69,6 +73,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Postaw darmowy zakład',
       bonusButton: 'Bonus 6.000 zł',
       bestBets: 'Najlepsze zakłady',
+      useFreeBet: 'Użyj darmowego zakładu i wygraj',
+      potentialWin: 'Możliwa wygrana',
     },
   },
   // Russia - RUB (default Russian text)
@@ -90,6 +96,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Сделать бесплатную ставку',
       bonusButton: 'Бонус 1500 €',
       bestBets: 'Лучшие ставки',
+      useFreeBet: 'Используй фрибет и выиграй',
+      potentialWin: 'Возможный выигрыш',
     },
   },
   // UK - GBP
@@ -111,6 +119,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Place free bet',
       bonusButton: '£1,500 Bonus',
       bestBets: 'Best bets',
+      useFreeBet: 'Use your free bet and win',
+      potentialWin: 'Potential win',
     },
   },
   // Default for other Euro countries
@@ -132,6 +142,8 @@ const ADVERTISERS_CONFIG = {
       promoCtaFree: 'Place free bet',
       bonusButton: '€1,500 Bonus',
       bestBets: 'Best bets',
+      useFreeBet: 'Use your free bet and win',
+      potentialWin: 'Potential win',
     },
   },
 };
