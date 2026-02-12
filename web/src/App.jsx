@@ -19,6 +19,7 @@ import OddsConverter from './pages/OddsConverter';
 import YourStats from './pages/YourStats';
 import LiveMatchDetail from './pages/LiveMatchDetail';
 import BookmakerPromo from './pages/BookmakerPromo';
+import ProAccess from './pages/ProAccess';
 import BeginnerGuide from './pages/BeginnerGuide';
 import BankrollTracker from './pages/BankrollTracker';
 import BetSlipBuilder from './pages/BetSlipBuilder';
@@ -101,6 +102,9 @@ export default function App() {
       } />
       <Route path="/promo" element={
         <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
+      } />
+      <Route path="/pro-access" element={
+        <ProtectedRoute><ProAccess /></ProtectedRoute>
       } />
       <Route path="/guide" element={
         <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
