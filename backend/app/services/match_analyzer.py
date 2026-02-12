@@ -154,7 +154,7 @@ class MatchAnalyzer:
         try:
             logger.info(f"Calling Claude API with {len(messages)} messages")
             response = self.claude_client.messages.create(
-                model="claude-3-haiku-20240307",
+                model="claude-3-5-haiku-latest",
                 max_tokens=1500,
                 system=system,
                 messages=messages,
@@ -167,12 +167,15 @@ class MatchAnalyzer:
         except anthropic.RateLimitError as e:
             logger.error(f"Claude API rate limit: {e}")
             return "AI service is temporarily busy. Please try again in a moment."
+        except anthropic.BadRequestError as e:
+            logger.error(f"Claude API bad request: {e}")
+            return "AI service error: Invalid request. Please try again."
         except anthropic.APIError as e:
             logger.error(f"Claude API error: {e}")
-            return f"AI service error: {str(e)[:100]}"
+            return "AI service is temporarily unavailable. Please try again later."
         except Exception as e:
             logger.error(f"AI chat unexpected error: {type(e).__name__}: {e}")
-            return f"Sorry, AI analysis is temporarily unavailable. Error: {type(e).__name__}: {str(e)[:100]}"
+            return "Sorry, AI analysis is temporarily unavailable. Please try again later."
 
     def _build_context(
         self,
@@ -243,7 +246,7 @@ Be realistic with confidence - rarely above 80%. Only respond with JSON."""
 
         try:
             response = self.claude_client.messages.create(
-                model="claude-3-haiku-20240307",
+                model="claude-3-5-haiku-latest",
                 max_tokens=500,
                 messages=[{"role": "user", "content": prompt}],
             )

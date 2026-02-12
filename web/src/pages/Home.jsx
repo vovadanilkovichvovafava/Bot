@@ -183,33 +183,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Partner Banner - Eye-catching Bonus */}
-        <a
-          href={user?.id ? trackClick(user.id) : advertiser.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
-        >
-          {/* Animated shine effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite]" style={{animation: 'shine 3s infinite'}}/>
-
-          {/* Sparkle decorations */}
-          <div className="absolute top-2 right-3 text-yellow-200 animate-pulse">✨</div>
-          <div className="absolute bottom-2 left-8 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>⭐</div>
-
-          <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shrink-0 border-2 border-white/30">
-              <span className="text-3xl">🎁</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-lg leading-tight drop-shadow-md">{advertiser.bonus}</p>
-              <p className="text-white/90 text-sm mt-1 font-medium">Start betting with extra cash!</p>
-            </div>
-            <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">
-              GET NOW
-            </div>
-          </div>
-        </a>
+        {/* Featured Match Promo Banner */}
+        <FeaturedMatchBanner
+          matches={matches}
+          advertiser={advertiser}
+          trackClick={trackClick}
+          userId={user?.id}
+        />
 
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
@@ -400,5 +380,113 @@ function HomeMatchCard({ fixture, navigate }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// Featured Match Promo Banner with team logos
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
+  // Get the first match from top leagues as featured match
+  const featuredMatch = matches?.[0];
+
+  // Get localized texts from advertiser config
+  const texts = advertiser.texts || {
+    freeBet: `Free bet up to ${advertiser.bonusAmount || '€1,500'}`,
+    betOnMatch: 'Bet on any match',
+    ctaButton: `Get ${advertiser.bonusAmount || '€1,500'}`,
+    promoTitle: `${advertiser.bonusAmount || '€1,500'} free bet on this match!`,
+    promoCta: 'Place bet',
+  };
+
+  const link = userId ? trackClick(userId) : advertiser.link;
+
+  // If we have a featured match, show it with team logos
+  if (featuredMatch) {
+    const f = featuredMatch;
+    return (
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block relative overflow-hidden rounded-2xl text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
+      >
+        {/* Animated shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite]" style={{animation: 'shine 3s infinite'}}/>
+
+        {/* Sparkle decorations */}
+        <div className="absolute top-2 right-3 text-yellow-200 animate-pulse">✨</div>
+        <div className="absolute bottom-2 left-4 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>⭐</div>
+
+        <div className="relative p-4">
+          {/* Teams row with logos */}
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 flex items-center justify-center">
+                <img
+                  src={f.teams.home.logo}
+                  alt={f.teams.home.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+              <span className="text-sm font-semibold text-white/90 max-w-[80px] truncate">{f.teams.home.name}</span>
+            </div>
+
+            <span className="text-white/60 font-bold text-sm">VS</span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white/90 max-w-[80px] truncate">{f.teams.away.name}</span>
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 flex items-center justify-center">
+                <img
+                  src={f.teams.away.logo}
+                  alt={f.teams.away.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Promo text and CTA */}
+          <div className="text-center">
+            <p className="font-black text-lg leading-tight drop-shadow-md mb-2">
+              {texts.promoTitle}
+            </p>
+            <div className="inline-flex bg-white text-orange-600 font-bold px-6 py-2.5 rounded-xl text-sm shadow-lg">
+              {texts.promoCta}
+            </div>
+          </div>
+        </div>
+      </a>
+    );
+  }
+
+  // Fallback: Simple banner without match (similar to old design)
+  return (
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
+    >
+      {/* Animated shine effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite]" style={{animation: 'shine 3s infinite'}}/>
+
+      {/* Sparkle decorations */}
+      <div className="absolute top-2 right-3 text-yellow-200 animate-pulse">✨</div>
+      <div className="absolute bottom-2 left-8 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>⭐</div>
+
+      <div className="relative flex items-center gap-4">
+        <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shrink-0 border-2 border-white/30">
+          <span className="text-3xl">🎁</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-lg leading-tight drop-shadow-md">{texts.freeBet}</p>
+          <p className="text-white/90 text-sm mt-1 font-medium">{texts.betOnMatch}</p>
+        </div>
+        <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">
+          {texts.ctaButton}
+        </div>
+      </div>
+    </a>
   );
 }

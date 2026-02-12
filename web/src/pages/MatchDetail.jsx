@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
@@ -63,6 +64,7 @@ export default function MatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -447,24 +449,38 @@ export default function MatchDetail() {
             </div>
           </div>
 
-          {/* Odds row */}
+          {/* Odds row - clickable */}
           {odds1x2 && (
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-gray-50 rounded-lg py-2 text-center">
-                  <p className="text-[10px] text-gray-400 uppercase">Home</p>
-                  <p className="text-sm font-bold text-gray-900">{odds1x2.home}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg py-2 text-center">
-                  <p className="text-[10px] text-gray-400 uppercase">Draw</p>
-                  <p className="text-sm font-bold text-gray-900">{odds1x2.draw}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg py-2 text-center">
-                  <p className="text-[10px] text-gray-400 uppercase">Away</p>
-                  <p className="text-sm font-bold text-gray-900">{odds1x2.away}</p>
-                </div>
+                <a
+                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
+                >
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">Home</p>
+                  <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
+                </a>
+                <a
+                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
+                >
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">Draw</p>
+                  <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
+                </a>
+                <a
+                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
+                >
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">Away</p>
+                  <p className="text-sm font-bold text-blue-600">{odds1x2.away}</p>
+                </a>
               </div>
-              <p className="text-[10px] text-gray-400 text-center mt-1">{odds1x2.bookmaker}</p>
             </div>
           )}
         </div>
@@ -501,6 +517,8 @@ export default function MatchDetail() {
             formatTime={formatTime}
             statusLabel={statusLabel}
             getOdds1x2={() => getOdds1x2()}
+            advertiser={advertiser}
+            trackClick={trackClick}
           />
         )}
         {activeTab === 'Stats' && (
@@ -518,9 +536,16 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2 }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
+
+  // Get localized texts from advertiser config
+  const adTexts = advertiser?.texts || {
+    promoTitle: '€1,500 free bet on this match!',
+    promoCtaFree: 'Place free bet',
+  };
+  const affiliateLink = user?.id ? trackClick?.(user.id) : advertiser?.link;
 
   // Parse AI recommended bet from analysis
   const parseRecommendedBet = () => {
@@ -627,6 +652,13 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               </div>
             </div>
           )}
+
+          {/* Native Ad Block after AI Analysis */}
+          <NativeAdBlock
+            advertiser={advertiser}
+            affiliateLink={affiliateLink}
+            matchId={match?.id}
+          />
         </div>
       ) : (
         <div className="card border border-gray-100 text-center py-6">
@@ -660,6 +692,21 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               </>
             )}
           </button>
+
+          {/* Promo block under Get AI Analysis */}
+          <a
+            href={affiliateLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl p-3 text-white hover:opacity-95 transition-opacity"
+          >
+            <div className="flex items-center justify-between">
+              <p className="font-bold text-sm">{adTexts.promoTitle}</p>
+              <span className="bg-white text-orange-600 font-bold px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">
+                {adTexts.promoCtaFree}
+              </span>
+            </div>
+          </a>
         </div>
       )}
 
@@ -938,6 +985,106 @@ function InfoRow({ icon, label, value }) {
         <span className="text-sm">{label}</span>
       </div>
       <span className="text-sm font-medium text-gray-900">{value}</span>
+    </div>
+  );
+}
+
+// Native Ad Block with rotating ad texts
+function NativeAdBlock({ advertiser, affiliateLink, matchId }) {
+  // 6 ad text variants for rotation (based on match ID for consistency)
+  const adVariants = [
+    // Variant 1: Main (recommended)
+    {
+      title: '⚽ Where to place your bet?',
+      body: 'To play this prediction, we recommend using our trusted partner. A reliable licensed bookmaker with the best odds on the market and fast payouts.',
+      features: [
+        { icon: '🎁', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} for new players` },
+        { icon: '⚡', text: 'Fast payouts — withdrawals from 15 minutes' },
+        { icon: '📱', text: 'Convenient app — bet from your phone in two clicks' },
+        { icon: '🔒', text: 'Reliability — licensed bookmaker, trusted by thousands' },
+      ],
+      cta: `Go to bookmaker and get ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+    // Variant 2: Short
+    {
+      title: '⚽ Place a bet on this prediction',
+      body: `We recommend betting with our trusted partner — best odds, bonus up to ${advertiser?.bonusAmount || '€1,500'} and payouts from 15 minutes.`,
+      features: [],
+      cta: `Place bet — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+    // Variant 3: Motivational
+    {
+      title: '🚀 Prediction ready — time to bet!',
+      body: 'You already have the AI analysis. Now it\'s time to play this prediction and earn. We recommend our partner — a reliable licensed bookmaker used by thousands of our users.',
+      features: [
+        { icon: '•', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} on first deposit` },
+        { icon: '•', text: 'Best odds on top leagues' },
+        { icon: '•', text: 'Withdrawal from 15 minutes' },
+      ],
+      cta: `Register and get ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+    // Variant 4: Social proof
+    {
+      title: '🏆 Where do our users bet?',
+      body: 'Most AI Betting Bot users place their bets with our trusted partner. Why there?',
+      features: [
+        { icon: '✔', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} on registration` },
+        { icon: '✔', text: 'High odds — more profit from each bet' },
+        { icon: '✔', text: 'Payouts from 15 minutes — get money fast' },
+        { icon: '✔', text: 'Reliable licensed bookmaker' },
+      ],
+      cta: `Join — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+    // Variant 5: Urgency (for matches starting soon)
+    {
+      title: '⏰ Match starts soon — place your bet!',
+      body: 'Prediction received, odds are still good — don\'t miss the moment. The closer to kickoff, the more lines can change.',
+      features: [
+        { icon: '⚡', text: 'Quick registration in 2 minutes' },
+        { icon: '🎁', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'}` },
+        { icon: '✓', text: 'Instant bet confirmation' },
+      ],
+      cta: `Place bet now — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+    // Variant 6: Focus on odds
+    {
+      title: '📈 Best odds for this bet',
+      body: `Our AI found the optimal odds at our partner. This bookmaker is our trusted partner: license, fast payouts from 15 minutes and bonus up to ${advertiser?.bonusAmount || '€1,500'} on registration.`,
+      features: [],
+      cta: `Bet at best odds — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+    },
+  ];
+
+  // Select variant based on matchId for consistency (same match = same ad)
+  const variantIndex = matchId ? Math.abs(parseInt(matchId, 10) || 0) % adVariants.length : 0;
+  const ad = adVariants[variantIndex];
+
+  return (
+    <div className="mt-6 pt-4 border-t border-gray-100">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+        <h4 className="font-bold text-gray-900 mb-2">{ad.title}</h4>
+        <p className="text-sm text-gray-600 mb-3">{ad.body}</p>
+
+        {ad.features.length > 0 && (
+          <div className="space-y-1.5 mb-4">
+            {ad.features.map((f, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span>{f.icon}</span>
+                <span>{f.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <a
+          href={affiliateLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl text-center text-sm hover:opacity-95 transition-opacity shadow-lg shadow-orange-500/20"
+        >
+          👉 {ad.cta}
+        </a>
+      </div>
     </div>
   );
 }

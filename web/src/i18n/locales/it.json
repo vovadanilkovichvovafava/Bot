@@ -1,0 +1,109 @@
+{
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "save": "Salva",
+    "back": "Indietro",
+    "next": "Avanti",
+    "close": "Chiudi",
+    "search": "Cerca",
+    "noResults": "Nessun risultato trovato"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Partite",
+    "predictions": "Pronostici",
+    "tools": "Strumenti",
+    "settings": "Impostazioni"
+  },
+  "home": {
+    "welcome": "Benvenuto",
+    "todayMatches": "Partite di Oggi",
+    "topPredictions": "Migliori Pronostici",
+    "aiAnalysis": "Analisi AI",
+    "getAnalysis": "Ottieni Analisi AI",
+    "analyzing": "Analizzando...",
+    "viewAll": "Vedi Tutto"
+  },
+  "matches": {
+    "today": "Oggi",
+    "upcoming": "Prossime",
+    "live": "In Diretta",
+    "finished": "Terminate",
+    "noMatches": "Nessuna partita disponibile",
+    "kickoff": "Calcio d'inizio",
+    "odds": "Quote"
+  },
+  "betting": {
+    "placeBet": "Piazza Scommessa",
+    "stake": "Puntata",
+    "potentialWin": "Vincita Potenziale",
+    "balance": "Saldo",
+    "connectAccount": "Collega Account",
+    "createAccount": "Crea Account",
+    "loginToBet": "Accedi per scommettere",
+    "insufficientBalance": "Saldo insufficiente",
+    "betPlaced": "Scommessa Piazzata!",
+    "placingBet": "Piazzamento scommessa...",
+    "yourBet": "La Tua Scommessa",
+    "quickAmounts": "Importi rapidi",
+    "getBonus": "Ottieni {{bonus}}"
+  },
+  "predictions": {
+    "aiRecommended": "Raccomandato dall'AI",
+    "confidence": "Affidabilità",
+    "value": "Valore",
+    "safebet": "Scommessa Sicura",
+    "riskLevel": "Livello di Rischio",
+    "low": "Basso",
+    "medium": "Medio",
+    "high": "Alto"
+  },
+  "auth": {
+    "login": "Accedi",
+    "register": "Registrati",
+    "email": "Email",
+    "phone": "Telefono",
+    "password": "Password",
+    "emailOrPhone": "Email o Telefono",
+    "forgotPassword": "Password dimenticata?",
+    "noAccount": "Non hai un account?",
+    "hasAccount": "Hai già un account?",
+    "connecting": "Connessione...",
+    "creatingAccount": "Creazione account..."
+  },
+  "bonus": {
+    "welcomeBonus": "Bonus di Benvenuto",
+    "getBonus": "Ottieni Bonus",
+    "freeSpins": "Giri Gratuiti",
+    "depositBonus": "Bonus sul Deposito",
+    "promoCode": "Codice Promo",
+    "claimNow": "Richiedi Ora"
+  },
+  "pro": {
+    "getPro": "Ottieni PRO",
+    "proAccess": "Accesso PRO",
+    "proFeatures": "Funzionalità PRO",
+    "unlimitedPredictions": "Pronostici AI illimitati",
+    "valueBetFinder": "Trova Scommesse di Valore",
+    "bankrollTracker": "Tracciatore Bankroll",
+    "prioritySupport": "Supporto prioritario",
+    "getFreeWith": "Gratis con deposito"
+  },
+  "support": {
+    "support": "Supporto",
+    "helpCenter": "Centro Assistenza",
+    "chatWithUs": "Chatta con noi",
+    "sendMessage": "Invia messaggio",
+    "typeMessage": "Scrivi il tuo messaggio..."
+  },
+  "errors": {
+    "somethingWrong": "Qualcosa è andato storto",
+    "tryAgain": "Riprova",
+    "networkError": "Errore di rete",
+    "captchaRequired": "Verifica captcha richiesta"
+  }
+}
