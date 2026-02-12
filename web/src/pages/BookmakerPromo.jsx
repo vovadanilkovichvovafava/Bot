@@ -133,7 +133,7 @@ export default function BookmakerPromo() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="h-screen bg-gray-50 overflow-y-auto">
       {/* Header - Dark */}
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-5 pt-4 pb-8 rounded-b-3xl">
         {/* Back button */}
