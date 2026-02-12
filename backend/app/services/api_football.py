@@ -151,6 +151,10 @@ class ApiFootballService:
         result = await self._request("/fixtures", {"id": fixture_id}, "fixture")
         return result[0] if result else None
 
+    async def get_league_fixtures(self, league_id: int, next_count: int = 20) -> List[Dict]:
+        """Get upcoming fixtures for a league"""
+        return await self._request("/fixtures", {"league": league_id, "next": next_count}, "fixtures")
+
     # === Statistics ===
 
     async def get_fixture_statistics(self, fixture_id: int) -> List[Dict]:

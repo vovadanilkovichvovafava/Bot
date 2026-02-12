@@ -1,18 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
-import MatchCard from '../components/MatchCard';
+import footballApi from '../api/footballApi';
 
-const LEAGUE_NAMES = {
-  PL: 'Premier League', PD: 'La Liga', BL1: 'Bundesliga',
-  SA: 'Serie A', FL1: 'Ligue 1', CL: 'Champions League', EL: 'Europa League',
+// Map league codes to API-Football league IDs
+const LEAGUE_MAP = {
+  PL: { id: 39, name: 'Premier League' },
+  PD: { id: 140, name: 'La Liga' },
+  BL1: { id: 78, name: 'Bundesliga' },
+  SA: { id: 135, name: 'Serie A' },
+  FL1: { id: 61, name: 'Ligue 1' },
+  CL: { id: 2, name: 'Champions League' },
+  EL: { id: 3, name: 'Europa League' },
+  ECL: { id: 848, name: 'Conference League' },
+  ERE: { id: 88, name: 'Eredivisie' },
+  PPL: { id: 94, name: 'Primeira Liga' },
+  TUR: { id: 203, name: 'Süper Lig' },
+  SAU: { id: 307, name: 'Saudi Pro League' },
+  MLS: { id: 253, name: 'MLS' },
 };
 
 export default function LeagueMatches() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const [matches, setMatches] = useState([]);
+  const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const leagueInfo = LEAGUE_MAP[code] || { id: null, name: code };
 
   useEffect(() => {
     loadMatches();
@@ -21,22 +34,27 @@ export default function LeagueMatches() {
   const loadMatches = async () => {
     setLoading(true);
     try {
-      const data = await api.getUpcomingMatches(14, code);
-      setMatches(data);
+      if (leagueInfo.id) {
+        const data = await footballApi.getLeagueFixtures(leagueInfo.id, 30);
+        setFixtures(data || []);
+      } else {
+        setFixtures([]);
+      }
     } catch (e) {
       console.error(e);
+      setFixtures([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Group matches by date
-  const groupedMatches = matches.reduce((acc, match) => {
-    const dateKey = new Date(match.match_date).toLocaleDateString('en-GB', {
+  // Group fixtures by date
+  const groupedFixtures = fixtures.reduce((acc, fixture) => {
+    const dateKey = new Date(fixture.fixture.date).toLocaleDateString('en-GB', {
       weekday: 'long', day: 'numeric', month: 'long'
     });
     if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(match);
+    acc[dateKey].push(fixture);
     return acc;
   }, {});
 
@@ -50,7 +68,7 @@ export default function LeagueMatches() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-900">{LEAGUE_NAMES[code] || code}</h1>
+          <h1 className="text-lg font-bold text-gray-900">{leagueInfo.name}</h1>
         </div>
       </div>
 
@@ -58,20 +76,26 @@ export default function LeagueMatches() {
         {loading ? (
           <div className="space-y-3">
             {[1,2,3,4].map(i => (
-              <div key={i} className="card"><div className="shimmer h-16 w-full"/></div>
+              <div key={i} className="bg-white rounded-xl p-4">
+                <div className="shimmer h-16 w-full rounded-lg"/>
+              </div>
             ))}
           </div>
-        ) : Object.keys(groupedMatches).length === 0 ? (
+        ) : Object.keys(groupedFixtures).length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-500">No upcoming matches</p>
           </div>
         ) : (
-          Object.entries(groupedMatches).map(([date, dayMatches]) => (
+          Object.entries(groupedFixtures).map(([date, dayFixtures]) => (
             <div key={date}>
               <h3 className="text-primary-600 font-semibold text-sm mb-2">{date}</h3>
               <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-                {dayMatches.map(match => (
-                  <MatchCard key={match.id} match={match} showLeague={false} compact/>
+                {dayFixtures.map(f => (
+                  <FixtureCard
+                    key={f.fixture.id}
+                    fixture={f}
+                    onClick={() => navigate(`/match/${f.fixture.id}`)}
+                  />
                 ))}
               </div>
             </div>
@@ -79,6 +103,67 @@ export default function LeagueMatches() {
         )}
       </div>
      </div>
+    </div>
+  );
+}
+
+function FixtureCard({ fixture, onClick }) {
+  const f = fixture;
+  const date = new Date(f.fixture.date);
+  const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const status = f.fixture.status.short;
+
+  return (
+    <div
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+      onClick={onClick}
+    >
+      <div className="flex items-center py-3 px-3">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
+          </div>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
+          </div>
+        </div>
+
+        {/* Time/Score column */}
+        <div className="flex-shrink-0 text-right ml-3">
+          {status === 'NS' ? (
+            <span className="text-sm text-gray-500">{time}</span>
+          ) : status === 'FT' ? (
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-bold text-gray-900">{f.goals.home}</span>
+              <span className="text-sm font-bold text-gray-900">{f.goals.away}</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">FT</span>
+            </div>
+          ) : ['1H', '2H', 'HT', 'ET', 'P'].includes(status) ? (
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-bold text-gray-900">{f.goals.home ?? 0}</span>
+              <span className="text-sm font-bold text-gray-900">{f.goals.away ?? 0}</span>
+              <span className="text-[10px] text-red-500 font-medium mt-0.5">{status}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-500">{status}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

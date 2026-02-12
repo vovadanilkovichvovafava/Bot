@@ -44,6 +44,16 @@ async def get_fixture(fixture_id: int) -> Optional[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch fixture")
 
 
+@router.get("/fixtures/league/{league_id}")
+async def get_league_fixtures(league_id: int, next_count: int = Query(20, ge=1, le=50)) -> List[Dict]:
+    """Get upcoming fixtures for a league"""
+    try:
+        return await api_football.get_league_fixtures(league_id, next_count)
+    except Exception as e:
+        logger.error(f"Error fetching fixtures for league {league_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch league fixtures")
+
+
 @router.get("/fixtures/{fixture_id}/enriched")
 async def get_fixture_enriched(fixture_id: int) -> Dict:
     """Get all enriched data for a fixture (stats, events, lineups, prediction, odds)"""
