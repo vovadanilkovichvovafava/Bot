@@ -12,8 +12,8 @@ const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
 // Primary questions - always visible (deposit bonus + best bets)
 const PRIMARY_QUESTIONS = [
-  { label: "Best deposit bonuses", emoji: '🎁', isPromo: true },
-  { label: "Today's best bets", emoji: '🎯' },
+  { label: "1500€ бонус", emoji: '🎁', isPromo: true },
+  { label: "Лучшие ставки", emoji: '🎯' },
 ];
 
 // Secondary questions - shown on expand
@@ -309,6 +309,20 @@ export default function AIChat() {
                     </div>
                   </div>
                 )}
+
+                {/* Promo link after every AI response (except welcome) */}
+                {msg.role === 'assistant' && msg.id !== 'welcome' && (
+                  <button
+                    onClick={() => navigate('/promo')}
+                    className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-amber-600 font-medium hover:text-amber-700"
+                  >
+                    <span>🎁</span>
+                    1500€ бесплатная ставка на любой матч!
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
             {/* Ad block after certain responses */}
@@ -377,10 +391,9 @@ export default function AIChat() {
                 key={q.label}
                 onClick={() => {
                   if (q.isPromo) {
-                    const link = user?.id ? trackClick(user.id) : advertiser.link;
-                    window.open(link, '_blank');
+                    navigate('/promo');
                   } else {
-                    sendMessage(q.label);
+                    sendMessage("Today's best bets");
                   }
                 }}
                 disabled={loading && !q.isPromo}
