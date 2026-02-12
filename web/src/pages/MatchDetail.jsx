@@ -7,6 +7,7 @@ import footballApi from '../api/footballApi';
 import { savePrediction } from '../services/predictionStore';
 import ShareButton from '../components/ShareButton';
 import { generateMatchShareText } from '../services/shareUtils';
+import { getMatchColors } from '../utils/teamColors';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -693,20 +694,14 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             )}
           </button>
 
-          {/* Promo block under Get AI Analysis */}
-          <a
-            href={affiliateLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-4 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl p-3 text-white hover:opacity-95 transition-opacity"
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-sm">{adTexts.promoTitle}</p>
-              <span className="bg-white text-orange-600 font-bold px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">
-                {adTexts.promoCtaFree}
-              </span>
-            </div>
-          </a>
+          {/* Match Bonus Card with team colors */}
+          <MatchBonusCard
+            match={match}
+            enriched={enriched}
+            advertiser={advertiser}
+            affiliateLink={affiliateLink}
+            adTexts={adTexts}
+          />
         </div>
       )}
 
@@ -986,6 +981,103 @@ function InfoRow({ icon, label, value }) {
       </div>
       <span className="text-sm font-medium text-gray-900">{value}</span>
     </div>
+  );
+}
+
+// Match Bonus Card with team colors diagonal split
+function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts }) {
+  // Get team IDs from enriched data or match data
+  const homeTeamId = enriched?.homeId || enriched?.fixture?.teams?.home?.id;
+  const awayTeamId = enriched?.awayId || enriched?.fixture?.teams?.away?.id;
+
+  // Get team colors with contrast check
+  const { homeColor, awayColor } = getMatchColors(homeTeamId, awayTeamId);
+
+  return (
+    <a
+      href={affiliateLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01]"
+      style={{ minHeight: '120px' }}
+    >
+      {/* Diagonal split background */}
+      <div className="absolute inset-0">
+        {/* Home team color - left side */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: homeColor,
+            clipPath: 'polygon(0 0, 65% 0, 35% 100%, 0 100%)'
+          }}
+        />
+        {/* Away team color - right side */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: awayColor,
+            clipPath: 'polygon(65% 0, 100% 0, 100% 100%, 35% 100%)'
+          }}
+        />
+        {/* Diagonal line separator */}
+        <div
+          className="absolute inset-0 bg-white/30"
+          style={{
+            clipPath: 'polygon(63% 0, 67% 0, 37% 100%, 33% 100%)'
+          }}
+        />
+      </div>
+
+      {/* Animated shine effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 3s infinite'}}/>
+
+      {/* Sparkle decoration */}
+      <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg">✨</div>
+
+      {/* Content */}
+      <div className="relative flex items-center justify-between h-full p-4" style={{ minHeight: '120px' }}>
+        {/* Home team - left side */}
+        <div className="flex flex-col items-center gap-1 z-10 w-16">
+          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
+            <img
+              src={match?.home_team?.logo}
+              alt={match?.home_team?.name}
+              className="w-full h-full object-contain"
+              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
+            />
+          </div>
+          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[70px] truncate">
+            {match?.home_team?.name}
+          </span>
+        </div>
+
+        {/* Center - Promo text */}
+        <div className="flex-1 flex flex-col items-center justify-center z-10 px-2">
+          <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+          <p className="font-black text-sm sm:text-base leading-tight drop-shadow-lg text-center mb-2 max-w-[160px]">
+            {adTexts?.promoTitle || `${advertiser?.bonusAmount || '€1,500'} free bet!`}
+          </p>
+          <div className="bg-white text-gray-800 font-bold px-4 py-1.5 rounded-xl text-xs shadow-lg hover:bg-gray-100 transition-colors">
+            {adTexts?.promoCtaFree || 'Place free bet'}
+          </div>
+        </div>
+
+        {/* Away team - right side */}
+        <div className="flex flex-col items-center gap-1 z-10 w-16">
+          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
+            <img
+              src={match?.away_team?.logo}
+              alt={match?.away_team?.name}
+              className="w-full h-full object-contain"
+              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
+            />
+          </div>
+          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[70px] truncate">
+            {match?.away_team?.name}
+          </span>
+        </div>
+      </div>
+    </a>
   );
 }
 
