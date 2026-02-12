@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
 import footballApi from '../api/footballApi';
 import MatchCard from '../components/MatchCard';
 import { useAdvertiser } from '../context/AdvertiserContext';
@@ -51,7 +50,6 @@ const LEAGUES_INFO = {
 
 export default function Matches() {
   const [tab, setTab] = useState('today');
-  const [matches, setMatches] = useState([]);
   const [todayFixtures, setTodayFixtures] = useState([]);
   const [liveFixtures, setLiveFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,12 +83,9 @@ export default function Matches() {
   const loadTodayMatches = async () => {
     setLoading(true);
     try {
-      // Load from API-Football for consistency
+      // Load from API-Football (with backend proxy caching)
       const data = await footballApi.getTodayFixtures();
       setTodayFixtures(data || []);
-      // Also load from backend for AI predictions
-      const backendData = await api.getTodayMatches();
-      setMatches(backendData || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -115,7 +110,7 @@ export default function Matches() {
         const data = await footballApi.getLiveFixtures();
         setLiveFixtures(data || []);
       } catch (_) {}
-    }, 30000);
+    }, 60000); // Update every 60 seconds instead of 30
   };
 
   // Check if league is popular
@@ -296,7 +291,7 @@ export default function Matches() {
                 {/* Live indicator */}
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-4">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
-                  Updates every 30 sec
+                  Updates every 60 sec
                 </div>
 
                 {/* Filter toggle */}
