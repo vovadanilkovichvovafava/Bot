@@ -328,6 +328,8 @@ export default function AIChat() {
                       >
                         <div className="flex items-center justify-between">
                           <div>
+                            {/* Free bet label */}
+                            <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{advertiser.texts.freeBetLabel || 'Free bet'}</span>
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
                               <span className="text-emerald-200 text-sm">×</span>
@@ -343,6 +345,8 @@ export default function AIChat() {
                               </span>
                               <span className="text-emerald-200 text-xs ml-1">{advertiser.texts.potentialWin}</span>
                             </div>
+                            {/* Call to action text */}
+                            <p className="text-white text-xs font-medium mt-1.5 opacity-90">{advertiser.texts.betAndTakeIt || 'Bet and take it!'}</p>
                           </div>
                           <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
