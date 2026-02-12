@@ -50,7 +50,12 @@ def _set_cache(key: str, value: any):
 
 
 async def fetch_matches(date_from: str = None, date_to: str = None, league: str = None) -> List[Dict]:
-    """Fetch matches from Football-Data.org API"""
+    """Fetch scheduled matches from Football-Data.org API
+
+    Note: date_from/date_to parameters are kept for API compatibility but not used
+    for filtering since system time may differ from real API time.
+    All scheduled matches are returned, sorted by date.
+    """
     api_key = get_football_api_key()
 
     if not api_key:
@@ -58,9 +63,9 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         return []
 
     # Check cache
-    cache_key = f"matches_{date_from}_{date_to}_{league}"
+    cache_key = f"matches_scheduled_{league or 'all'}"
     cached = _get_cache(cache_key)
-    if cached:
+    if cached is not None:
         return cached
 
     headers = {"X-Auth-Token": api_key}
@@ -77,12 +82,8 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         for lg_code in leagues_to_fetch:
             try:
                 url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
-                params = {}
-
-                if date_from:
-                    params["dateFrom"] = date_from
-                if date_to:
-                    params["dateTo"] = date_to
+                # Use status=SCHEDULED to get upcoming matches
+                params = {"status": "SCHEDULED"}
 
                 response = await client.get(url, headers=headers, params=params, timeout=15.0)
 
