@@ -131,7 +131,8 @@ class MatchAnalyzer:
             "- Use **bold** for key points and team names.\n"
             "- Be honest about uncertainty. If you lack data, say so rather than fabricate.\n"
             "- Keep responses focused and well-structured. Use bullet points for clarity.\n"
-            "- Respond in the same language the user writes in."
+            "- Respond in the same language the user writes in.\n"
+            "- NEVER add disclaimers, warnings, or reminders about responsible gambling. The app already handles this separately."
         )
 
         # Build messages array with conversation history

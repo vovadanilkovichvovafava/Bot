@@ -284,22 +284,21 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* AI Recommended Bet - Premium integrated card with bonus */}
+                {/* AI Recommended Bet - Clean green card with shimmer */}
                 {msg.bet && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => navigate('/promo')}
-                      className="w-full text-left relative overflow-hidden rounded-xl border border-amber-300 shadow-lg"
-                      style={{
-                        background: 'linear-gradient(135deg, #065f46 0%, #047857 50%, #d97706 100%)',
-                      }}
+                      className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
+                      style={{ background: '#059669' }}
                     >
                       {/* Animated shimmer overlay */}
                       <div
-                        className="absolute inset-0 opacity-30"
+                        className="absolute inset-0"
                         style={{
-                          background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.4) 50%, transparent 100%)',
-                          animation: 'shimmer 2s infinite',
+                          background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
+                          animation: 'shimmer 2.5s infinite',
+                          backgroundSize: '200% 100%',
                         }}
                       />
 
@@ -307,35 +306,45 @@ export default function AIChat() {
                       <div className="relative p-3 pb-2">
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
-                            <svg className="w-4 h-4 text-emerald-300" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-4 h-4 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                             </svg>
-                            <span className="text-xs font-semibold text-emerald-200">Recommended</span>
+                            <span className="text-xs font-semibold text-emerald-100">Recommended</span>
                           </div>
-                          <span className="bg-white text-green-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
+                          <span className="bg-white text-emerald-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
                             {msg.bet.odds.toFixed(2)}
                           </span>
                         </div>
                         <p className="text-sm font-semibold text-white">{msg.bet.type}</p>
                       </div>
 
-                      {/* Bottom section - Free bet bonus */}
+                      {/* Bottom section - Free bet bonus calculation */}
                       <div
-                        className="relative px-3 py-2.5"
+                        className="relative px-3 py-3"
                         style={{
-                          background: 'linear-gradient(90deg, rgba(251,191,36,0.2) 0%, rgba(245,158,11,0.3) 100%)',
-                          borderTop: '1px solid rgba(251,191,36,0.3)',
+                          background: 'rgba(0,0,0,0.15)',
+                          borderTop: '1px solid rgba(255,255,255,0.1)',
                         }}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">🎁</span>
-                            <div>
-                              <p className="text-xs font-bold text-amber-200">{advertiser.texts.useFreeBet}!</p>
-                              <p className="text-[10px] text-amber-100/80">{advertiser.texts.potentialWin}: <span className="font-bold text-amber-200">{advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}</span></p>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
+                              <span className="text-emerald-200 text-sm">×</span>
+                              <span className="text-white font-semibold">{msg.bet.odds.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-200 text-xs">=</span>
+                              <span
+                                className="font-bold text-lg"
+                                style={{ color: '#fbbf24' }}
+                              >
+                                {advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}
+                              </span>
+                              <span className="text-emerald-200 text-xs ml-1">{advertiser.texts.potentialWin}</span>
                             </div>
                           </div>
-                          <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                           </svg>
                         </div>
@@ -348,10 +357,9 @@ export default function AIChat() {
                 {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
                     onClick={() => navigate('/promo')}
-                    className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-amber-600 font-medium hover:text-amber-700"
+                    className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
-                    <span>🎁</span>
-                    {advertiser.texts.freeBet}!
+                    {advertiser.currency}1,500 {advertiser.texts.freeBet}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -361,10 +369,10 @@ export default function AIChat() {
             </div>
             {/* Ad block after certain responses */}
             {msg.showAd && (
-              <div className="mt-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+              <div className="mt-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-                    <span className="text-lg">🎁</span>
+                  <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                    <span className="text-white font-bold text-xs">{advertiser.currency}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Bet on AI predictions!</p>
@@ -376,7 +384,7 @@ export default function AIChat() {
                     href={user?.id ? trackClick(user.id) : advertiser.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
+                    className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                   >
                     Get Bonus
                   </a>
@@ -422,9 +430,9 @@ export default function AIChat() {
           <div className="flex gap-2 mb-2">
             <button
               onClick={() => navigate('/promo')}
-              className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+              className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
             >
-              🎁 {advertiser.texts.bonusButton}
+              {advertiser.currency}1,500 {advertiser.texts.bonusButton}
             </button>
             <button
               onClick={() => sendMessage("Today's best bets")}
