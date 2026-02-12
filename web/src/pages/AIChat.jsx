@@ -10,13 +10,19 @@ const AI_REQUESTS_KEY = 'ai_requests_count';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
-const QUICK_QUESTIONS = [
-  { label: "Today's best bets", emoji: '\uD83C\uDFAF' },
-  { label: "Live matches now", emoji: '\uD83D\uDD34' },
-  { label: 'Premier League today', emoji: '\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F' },
-  { label: 'La Liga today', emoji: '\uD83C\uDDEA\uD83C\uDDF8' },
-  { label: 'Champions League', emoji: '\u2B50' },
-  { label: 'Serie A today', emoji: '\uD83C\uDDEE\uD83C\uDDF9' },
+// Primary questions - always visible (deposit bonus + best bets)
+const PRIMARY_QUESTIONS = [
+  { label: "Best deposit bonuses", emoji: '🎁', isPromo: true },
+  { label: "Today's best bets", emoji: '🎯' },
+];
+
+// Secondary questions - shown on expand
+const SECONDARY_QUESTIONS = [
+  { label: "Live matches now", emoji: '🔴' },
+  { label: 'Premier League today', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { label: 'La Liga today', emoji: '🇪🇸' },
+  { label: 'Champions League', emoji: '⭐' },
+  { label: 'Serie A today', emoji: '🇮🇹' },
 ];
 
 export default function AIChat() {
@@ -28,6 +34,7 @@ export default function AIChat() {
   const [loading, setLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [showQuick, setShowQuick] = useState(true);
+  const [questionsExpanded, setQuestionsExpanded] = useState(false);
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const messagesEndRef = useRef(null);
@@ -360,50 +367,71 @@ export default function AIChat() {
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Quick Questions */}
+      {/* Quick Questions - Compact */}
       {showQuick && messages.length <= 1 && (
         <div className="px-5 pb-2 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.714 6.714 0 01-.937-.171.75.75 0 11.374-1.453 5.261 5.261 0 002.626 0 .75.75 0 11.374 1.452 6.712 6.712 0 01-.937.172v4.66c0 .327.277.586.6.545.364-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z"/>
-              </svg>
-              Quick questions
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {QUICK_QUESTIONS.map(q => (
+          {/* Primary Questions - Always visible */}
+          <div className="flex gap-2 mb-2">
+            {PRIMARY_QUESTIONS.map(q => (
               <button
                 key={q.label}
-                onClick={() => sendMessage(q.label)}
-                disabled={loading}
-                className="bg-white text-gray-700 text-sm px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                onClick={() => {
+                  if (q.isPromo) {
+                    const link = user?.id ? trackClick(user.id) : advertiser.link;
+                    window.open(link, '_blank');
+                  } else {
+                    sendMessage(q.label);
+                  }
+                }}
+                disabled={loading && !q.isPromo}
+                className={`flex-1 text-sm px-3 py-2.5 rounded-xl font-medium disabled:opacity-50 ${
+                  q.isPromo
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                    : 'bg-primary-600 text-white'
+                }`}
               >
                 {q.emoji} {q.label}
               </button>
             ))}
           </div>
-          {/* Promo chip */}
-          <div className="mt-3 flex items-center gap-2">
-            <a
-              href={user?.id ? trackClick(user.id) : advertiser.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
-            >
-              <span>🎁</span>
-              Bonus {advertiser.bonus}
-            </a>
-            <button
-              onClick={() => navigate('/promo')}
-              className="inline-flex items-center gap-1 text-xs text-gray-500"
-            >
-              How to get it?
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-              </svg>
-            </button>
-          </div>
+
+          {/* Secondary Questions - Expandable */}
+          {questionsExpanded && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {SECONDARY_QUESTIONS.map(q => (
+                <button
+                  key={q.label}
+                  onClick={() => sendMessage(q.label)}
+                  disabled={loading}
+                  className="bg-white text-gray-700 text-sm px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {q.emoji} {q.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Expand/Collapse Button */}
+          <button
+            onClick={() => setQuestionsExpanded(!questionsExpanded)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-500 py-2 hover:text-gray-700"
+          >
+            {questionsExpanded ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
+                </svg>
+                Show less
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+                More questions
+              </>
+            )}
+          </button>
         </div>
       )}
 
