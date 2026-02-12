@@ -1,14 +1,69 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 
+// Country to language mapping
+const countryToLanguage = {
+  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
+  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
+  PT: 'pt', BR: 'pt',
+  DE: 'de', AT: 'de', CH: 'de',
+  FR: 'fr', BE: 'fr', CA: 'fr',
+  IT: 'it',
+  PL: 'pl',
+  RO: 'ro', MD: 'ro',
+  TR: 'tr',
+  IN: 'hi',
+  CN: 'zh', TW: 'zh', HK: 'zh',
+  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
+};
+
+// SVG Icons
+const ChartIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+  </svg>
+);
+
+const MoneyIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+  </svg>
+);
+
+const TrendUpIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+  </svg>
+);
+
+const InfoCircleIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+  </svg>
+);
+
+const RocketIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+  </svg>
+);
+
 export default function BookmakerPromo() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
   const [geoInfo, setGeoInfo] = useState(null);
   const [bookmakerLink, setBookmakerLink] = useState(null);
@@ -21,6 +76,12 @@ export default function BookmakerPromo() {
       try {
         const geo = await geoService.getGeoInfo();
         setGeoInfo(geo);
+
+        // Set language based on geo
+        const geoLang = countryToLanguage[geo.country];
+        if (geoLang && i18n.language !== geoLang) {
+          i18n.changeLanguage(geoLang);
+        }
 
         // Get tracked bookmaker link with cloaking support
         const linkData = await geoService.getBookmakerLink(user?.id || 'anonymous', 'promo_page');
@@ -38,82 +99,41 @@ export default function BookmakerPromo() {
     }
 
     fetchGeoAndLink();
-  }, [user?.id, advertiser.link]);
+  }, [user?.id, advertiser.link, i18n]);
 
   const benefits = [
     {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-        </svg>
-      ),
-      title: 'Совпадение с нашими прогнозами',
-      desc: 'Коэффициенты и линии, которые мы указываем в прогнозах, берутся именно от этого букмекера. У другого букмекера ваши ставки могут не совпадать с нашими рекомендациями.'
+      icon: <ChartIcon />,
+      titleKey: 'promo.benefit1Title',
+      descKey: 'promo.benefit1Desc'
     },
     {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
-        </svg>
-      ),
-      title: 'Выплаты любых выигрышей',
-      desc: 'Работая по нашим прогнозам, вы будете выигрывать — и зачастую крупные суммы. Этот букмекер гарантированно выплачивает большие выигрыши без задержек и ограничений.'
+      icon: <MoneyIcon />,
+      titleKey: 'promo.benefit2Title',
+      descKey: 'promo.benefit2Desc'
     },
     {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
-        </svg>
-      ),
-      title: 'Лучшие коэффициенты',
-      desc: 'Высокие коэффициенты = больше прибыли с каждой ставки. Здесь одни из самых выгодных коэффициентов на рынке.'
+      icon: <TrendUpIcon />,
+      titleKey: 'promo.benefit3Title',
+      descKey: 'promo.benefit3Desc'
     },
     {
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
-        </svg>
-      ),
-      title: 'Надёжный лицензированный букмекер',
-      desc: 'Работает по международной лицензии. Проверен нашей командой и тысячами пользователей AI Betting Bot.'
+      icon: <ShieldIcon />,
+      titleKey: 'promo.benefit4Title',
+      descKey: 'promo.benefit4Desc'
     },
   ];
 
-  const whyHere = [
-    {
-      text: 'Наши прогнозы привязаны к этому букмекеру',
-      desc: '— коэффициенты, линии и рекомендации рассчитаны под его котировки'
-    },
-    {
-      text: 'У другого букмекера ваш результат может отличаться',
-      desc: '— другие коэффициенты и маржа могут привести к убыткам даже при верном прогнозе'
-    },
-    {
-      text: 'Статистика в приложении будет точной',
-      desc: '— ваши результаты полностью совпадут с нашей статистикой побед'
-    },
-  ];
+  const whyHereKeys = ['promo.why1', 'promo.why2', 'promo.why3'];
 
-  const steps = [
-    {
-      num: 1,
-      title: 'Установи приложение',
-      desc: 'Нажми кнопку ниже — скачай и установи приложение букмекера'
-    },
-    {
-      num: 2,
-      title: 'Зарегистрируйся',
-      desc: 'Заполни данные за минуту, пополни депозит и получи бонус на ставки до 1500€'
-    },
-    {
-      num: 3,
-      title: 'Делай ставки по прогнозам',
-      desc: 'Возвращайся в AI Betting Bot, читай прогнозы и ставь по рекомендациям'
-    },
+  const stepKeys = [
+    { titleKey: 'promo.step1Title', descKey: 'promo.step1Desc' },
+    { titleKey: 'promo.step2Title', descKey: 'promo.step2Desc' },
+    { titleKey: 'promo.step3Title', descKey: 'promo.step3Desc' },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* Header - Dark */}
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-5 pt-4 pb-8 rounded-b-3xl">
         {/* Back button */}
@@ -126,39 +146,38 @@ export default function BookmakerPromo() {
         {/* Partner badge */}
         <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1 mb-4">
           <span className="w-2 h-2 bg-green-400 rounded-full"/>
-          <span className="text-xs text-white/80">Официальный партнёр AI Betting Bot</span>
+          <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 
         {/* Hero text */}
         <h1 className="text-2xl font-bold mb-2">
-          Бонус до <span className="text-amber-400">1 500€</span> на ставки
-          <br/>по нашим прогнозам
+          {t('promo.heroTitle1')} <span className="text-amber-400">1 500€</span> {t('promo.heroTitle2')}
         </h1>
         <p className="text-white/60 text-sm mb-6">
-          Делай ставки по AI-прогнозам у проверенного букмекера с лучшими коэффициентами
+          {t('promo.heroSubtitle')}
         </p>
 
         {/* Bonus card */}
         <div className="bg-white rounded-2xl p-4 text-gray-900">
           <div className="text-center mb-4">
-            <p className="text-xs text-gray-500 mb-1">до</p>
+            <p className="text-xs text-gray-500 mb-1">{t('promo.upTo')}</p>
             <p className="text-4xl font-black text-amber-500">1 500<span className="text-2xl">€</span></p>
-            <p className="text-xs text-gray-500">бонус на первый депозит для новых игроков</p>
+            <p className="text-xs text-gray-500">{t('promo.bonusDesc')}</p>
           </div>
 
           {/* Stats */}
           <div className="flex justify-between border-t border-gray-100 pt-4">
             <div className="text-center flex-1">
-              <p className="text-lg font-bold text-gray-900">15 мин</p>
-              <p className="text-[10px] text-gray-400 uppercase">вывод средств</p>
+              <p className="text-lg font-bold text-gray-900">{t('promo.stat1Value')}</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('promo.stat1Label')}</p>
             </div>
             <div className="text-center flex-1 border-x border-gray-100">
               <p className="text-lg font-bold text-gray-900">50+</p>
-              <p className="text-[10px] text-gray-400 uppercase">видов спорта</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('promo.stat2Label')}</p>
             </div>
             <div className="text-center flex-1">
               <p className="text-lg font-bold text-gray-900">24/7</p>
-              <p className="text-[10px] text-gray-400 uppercase">поддержка</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('promo.stat3Label')}</p>
             </div>
           </div>
         </div>
@@ -172,7 +191,7 @@ export default function BookmakerPromo() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
             </svg>
             <p className="text-amber-700 text-sm">
-              Используется альтернативная ссылка для вашего региона ({geoInfo.country})
+              {t('promo.geoWarning', { country: geoInfo.country })}
             </p>
           </div>
         </div>
@@ -188,8 +207,8 @@ export default function BookmakerPromo() {
                 {b.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 text-sm">{b.title}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{b.desc}</p>
+                <h3 className="font-semibold text-gray-900 text-sm">{t(b.titleKey)}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{t(b.descKey)}</p>
               </div>
             </div>
           ))}
@@ -198,21 +217,20 @@ export default function BookmakerPromo() {
         {/* Why here block */}
         <section className="bg-amber-50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-amber-500">⚠️</span>
-            <h2 className="font-bold text-gray-900">Почему важно ставить именно здесь?</h2>
+            <div className="text-amber-500">
+              <InfoCircleIcon />
+            </div>
+            <h2 className="font-bold text-gray-900">{t('promo.whyHereTitle')}</h2>
           </div>
           <div className="space-y-3">
-            {whyHere.map((item, i) => (
+            {whyHereKeys.map((key, i) => (
               <div key={i} className="flex gap-2">
                 <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                   <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
                 </div>
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">{item.text}</span>
-                  {item.desc}
-                </p>
+                <p className="text-sm text-gray-700">{t(key)}</p>
               </div>
             ))}
           </div>
@@ -221,18 +239,20 @@ export default function BookmakerPromo() {
         {/* How to start */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <span>🚀</span>
-            <h2 className="font-bold text-gray-900">Как начать за 2 минуты</h2>
+            <div className="text-primary-600">
+              <RocketIcon />
+            </div>
+            <h2 className="font-bold text-gray-900">{t('promo.howToStartTitle')}</h2>
           </div>
           <div className="space-y-3">
-            {steps.map((step) => (
-              <div key={step.num} className="flex gap-3">
+            {stepKeys.map((step, i) => (
+              <div key={i} className="flex gap-3">
                 <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-sm">
-                  {step.num}
+                  {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm">{step.title}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{step.desc}</p>
+                  <h3 className="font-semibold text-gray-900 text-sm">{t(step.titleKey)}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t(step.descKey)}</p>
                 </div>
               </div>
             ))}
@@ -249,19 +269,19 @@ export default function BookmakerPromo() {
           {loadingLink ? (
             <span className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-              Загрузка...
+              {t('common.loading')}
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
               </svg>
-              Установить приложение букмекера
+              {t('promo.ctaButton')}
             </span>
           )}
         </a>
         <p className="text-center text-xs text-gray-400">
-          Бесплатно • Бонус до 1500€ при регистрации
+          {t('promo.ctaSubtext')}
         </p>
 
         {/* Help block */}
@@ -273,15 +293,15 @@ export default function BookmakerPromo() {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-gray-900 text-sm">Нужна помощь с регистрацией?</h3>
-              <p className="text-xs text-gray-500">Наш менеджер поможет пройти все шаги!</p>
+              <h3 className="font-bold text-gray-900 text-sm">{t('promo.helpTitle')}</h3>
+              <p className="text-xs text-gray-500">{t('promo.helpDesc')}</p>
             </div>
           </div>
           <button
             onClick={() => setShowChat(true)}
             className="w-full mt-3 py-2.5 bg-primary-600 text-white font-semibold rounded-xl text-sm"
           >
-            Написать в поддержку
+            {t('promo.helpButton')}
           </button>
         </section>
 
