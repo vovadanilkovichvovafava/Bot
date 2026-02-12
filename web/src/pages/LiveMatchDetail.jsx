@@ -116,6 +116,10 @@ export default function LiveMatchDetail() {
       prompt += `\n- Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]})`;
 
       prompt += '\n\nProvide LIVE analysis: current momentum, which team is dominating, prediction for remaining time. Recommend live bets matching user preferences (odds between ' + minOdds + '-' + maxOdds + ', ' + riskLevel + ' risk). Be specific about the current match state.';
+      prompt += `\n\n**IMPORTANT: End your analysis with exactly this format:**`;
+      prompt += `\n[BET] Bet Type Here @ Odds Here`;
+      prompt += `\nExample: [BET] Next Goal: ${home} @ 3.5`;
+      prompt += `\nExample: [BET] Over 1.5 Goals @ 1.85`;
 
       const data = await api.aiChat(prompt);
 
@@ -359,6 +363,21 @@ function QuickStats({ stats }) {
 function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished }) {
   const recentEvents = events.slice(-5).reverse();
 
+  // Parse AI recommended bet from analysis
+  const parseRecommendedBet = () => {
+    if (!aiAnalysis) return null;
+    const betMatch = aiAnalysis.match(/\[BET\]\s*(.+?)\s*@\s*([\d.]+)/i);
+    if (betMatch) {
+      return {
+        type: betMatch[1].trim(),
+        odds: parseFloat(betMatch[2]),
+      };
+    }
+    return null;
+  };
+
+  const recommendedBet = parseRecommendedBet();
+
   return (
     <>
       {/* AI Live Analysis */}
@@ -376,12 +395,34 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
         </div>
 
         {aiAnalysis ? (
-          <div className="bg-gray-50 rounded-xl p-4 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-            {aiAnalysis.split('\n').map((line, i) => {
-              const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>');
-              return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
-            })}
-          </div>
+          <>
+            <div className="bg-gray-50 rounded-xl p-4 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+              {aiAnalysis.split('\n').map((line, i) => {
+                const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>');
+                return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
+              })}
+            </div>
+
+            {/* AI Recommended Bet - Green card */}
+            {recommendedBet && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    </svg>
+                    <p className="text-xs text-green-700 font-semibold uppercase">AI Live Bet Recommendation</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-gray-900">{recommendedBet.type}</p>
+                    <div className="bg-green-600 text-white font-bold text-lg px-3 py-1 rounded-lg">
+                      {recommendedBet.odds.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <button
             onClick={getLiveAnalysis}
