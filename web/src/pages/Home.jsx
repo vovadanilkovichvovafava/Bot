@@ -448,7 +448,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
         </div>
 
         {/* Animated shine effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 3s infinite'}}/>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 6s infinite'}}/>
 
         {/* Sparkle decoration */}
         <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg">✨</div>
@@ -509,7 +509,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
       className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
     >
       {/* Animated shine effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_3s_infinite]" style={{animation: 'shine 3s infinite'}}/>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_6s_infinite]" style={{animation: 'shine 6s infinite'}}/>
 
       {/* Sparkle decorations */}
       <div className="absolute top-2 right-3 text-yellow-200 animate-pulse">✨</div>

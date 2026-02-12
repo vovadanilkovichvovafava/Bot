@@ -1029,7 +1029,7 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
       </div>
 
       {/* Animated shine effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 3s infinite'}}/>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 6s infinite'}}/>
 
       {/* Sparkle decoration */}
       <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg">✨</div>

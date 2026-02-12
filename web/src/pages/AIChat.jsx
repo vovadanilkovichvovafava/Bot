@@ -297,7 +297,7 @@ export default function AIChat() {
                         className="absolute inset-0"
                         style={{
                           background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
-                          animation: 'shimmer 2.5s infinite',
+                          animation: 'shimmer 5s infinite',
                           backgroundSize: '200% 100%',
                         }}
                       />
