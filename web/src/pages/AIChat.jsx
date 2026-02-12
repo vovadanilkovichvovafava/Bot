@@ -385,7 +385,7 @@ export default function AIChat() {
                 </div>
                 <div className="flex gap-2 mt-3">
                   <a
-                    href={user?.id ? trackClick(user.id) : advertiser.link}
+                    href="https://pwa-production-20b5.up.railway.app/promo"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
@@ -551,7 +551,7 @@ export default function AIChat() {
 
             <div className="space-y-2">
               <a
-                href={user?.id ? trackClick(user.id) : advertiser.link}
+                href="https://pwa-production-20b5.up.railway.app/promo"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"

@@ -208,7 +208,7 @@ export default function Matches() {
       <div className="px-5 pt-4">
         {/* Partner Banner */}
         <a
-          href={user?.id ? trackClick(user.id) : advertiser.link}
+          href="https://pwa-production-20b5.up.railway.app/promo"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4"

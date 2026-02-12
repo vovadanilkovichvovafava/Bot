@@ -455,7 +455,7 @@ export default function MatchDetail() {
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="grid grid-cols-3 gap-2">
                 <a
-                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  href="https://pwa-production-20b5.up.railway.app/promo"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
@@ -464,7 +464,7 @@ export default function MatchDetail() {
                   <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
                 </a>
                 <a
-                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  href="https://pwa-production-20b5.up.railway.app/promo"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
@@ -473,7 +473,7 @@ export default function MatchDetail() {
                   <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
                 </a>
                 <a
-                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  href="https://pwa-production-20b5.up.railway.app/promo"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
@@ -546,7 +546,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
     promoTitle: '€1,500 free bet on this match!',
     promoCtaFree: 'Place free bet',
   };
-  const affiliateLink = user?.id ? trackClick?.(user.id) : advertiser?.link;
+  const affiliateLink = 'https://pwa-production-20b5.up.railway.app/promo';
 
   // Parse AI recommended bet from analysis
   const parseRecommendedBet = () => {

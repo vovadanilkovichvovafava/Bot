@@ -350,7 +350,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
               Don't have an account?
             </p>
             <a
-              href={BOOKMAKER.link}
+              href="https://pwa-production-20b5.up.railway.app/promo"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full text-center text-orange-600 font-semibold py-2 hover:bg-orange-50 rounded-xl transition-colors"

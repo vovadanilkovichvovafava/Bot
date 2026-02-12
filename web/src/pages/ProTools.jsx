@@ -52,7 +52,7 @@ export default function ProTools() {
           <h1 className="text-xl font-bold">{t('nav.proTools')}</h1>
           {!isPremium && (
             <a
-              href={user?.id ? trackClick(user.id) : advertiser.link}
+              href="https://pwa-production-20b5.up.railway.app/promo"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-accent-gold text-sm font-semibold"
@@ -88,7 +88,7 @@ export default function ProTools() {
                 <p className="text-sm text-gray-500">3 AI requests + 1 Value Bet scan</p>
               </div>
               <a
-                href={user?.id ? trackClick(user.id) : advertiser.link}
+                href="https://pwa-production-20b5.up.railway.app/promo"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-accent-gold text-white font-semibold px-4 py-2 rounded-lg text-sm"
@@ -255,7 +255,7 @@ export default function ProTools() {
 
             <div className="space-y-2">
               <a
-                href={user?.id ? trackClick(user.id) : advertiser.link}
+                href="https://pwa-production-20b5.up.railway.app/promo"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"

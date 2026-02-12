@@ -180,7 +180,7 @@ export default function BeginnerGuide() {
             {card.cta && (
               <div className="mt-6 space-y-3">
                 <a
-                  href={user?.id ? trackClick(user.id) : advertiser.link}
+                  href="https://pwa-production-20b5.up.railway.app/promo"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"

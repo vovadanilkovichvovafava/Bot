@@ -193,7 +193,7 @@ export default function Settings() {
             </div>
             {!user?.is_premium && (
               <a
-                href={user?.id ? trackClick(user.id) : advertiser.link}
+                href="https://pwa-production-20b5.up.railway.app/promo"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
