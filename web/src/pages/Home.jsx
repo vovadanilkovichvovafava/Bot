@@ -128,6 +128,7 @@ export default function Home() {
           advertiser={advertiser}
           trackClick={trackClick}
           userId={user?.id}
+          loading={loading}
         />
 
         {/* Value Bet Finder - Main Hook */}
@@ -385,7 +386,7 @@ function HomeMatchCard({ fixture, navigate }) {
 }
 
 // Featured Match Promo Banner with team logos and diagonal split
-function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, loading }) {
   // Get the first match from top leagues as featured match
   const featuredMatch = matches?.[0];
 
@@ -399,6 +400,33 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   };
 
   const link = userId ? trackClick(userId) : advertiser.link;
+
+  // Show shimmer skeleton while loading
+  if (loading) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 shadow-lg" style={{ minHeight: '140px' }}>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shine_1.5s_infinite]" />
+        <div className="flex items-center justify-between h-full p-4" style={{ minHeight: '140px' }}>
+          {/* Left team shimmer */}
+          <div className="flex flex-col items-center gap-2 w-20">
+            <div className="w-16 h-16 bg-white/60 rounded-xl shimmer" />
+            <div className="w-14 h-3 bg-white/60 rounded shimmer" />
+          </div>
+          {/* Center shimmer */}
+          <div className="flex-1 flex flex-col items-center justify-center px-2">
+            <div className="w-8 h-3 bg-white/60 rounded shimmer mb-2" />
+            <div className="w-40 h-5 bg-white/60 rounded shimmer mb-2" />
+            <div className="w-24 h-8 bg-white/60 rounded-xl shimmer" />
+          </div>
+          {/* Right team shimmer */}
+          <div className="flex flex-col items-center gap-2 w-20">
+            <div className="w-16 h-16 bg-white/60 rounded-xl shimmer" />
+            <div className="w-14 h-3 bg-white/60 rounded shimmer" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If we have a featured match, show it with team colors diagonal split
   if (featuredMatch) {
