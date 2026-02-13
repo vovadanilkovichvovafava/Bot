@@ -10,7 +10,6 @@ export default function ProTools() {
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [modal, setModal] = useState(null);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const isPremium = user?.is_premium;
 
@@ -28,8 +27,7 @@ export default function ProTools() {
       if (isPremium || !valueBetUsed) {
         return navigate('/value-finder');
       }
-      setModal('valueFinder');
-      return;
+      return navigate('/pro-access?reason=limit&feature=value-finder');
     }
 
     // PRO tools - need deposit
@@ -41,7 +39,7 @@ export default function ProTools() {
       if (toolName === 'oddsConverter') return navigate('/odds-converter');
       return;
     }
-    setModal(toolName);
+    return navigate('/pro-access?reason=limit&feature=' + toolName);
   };
 
   return (
@@ -219,62 +217,6 @@ export default function ProTools() {
 
         <div className="h-4"/>
       </div>
-
-      {/* PRO Lock Modal */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setModal(null)}>
-          <div className="absolute inset-0 bg-black/40"/>
-          <div
-            className="relative bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <button onClick={() => setModal(null)} className="absolute top-3 right-3 text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">PRO Feature</h3>
-                <p className="text-xs text-gray-500">Unlock with deposit</p>
-              </div>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-              <p className="text-sm font-medium text-green-800 mb-1">Unlock PRO Access</p>
-              <p className="text-xs text-green-600">
-                Make a deposit at {advertiser.name} → Unlimited PRO access
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <a
-                href="https://pwa-production-20b5.up.railway.app/promo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
-              >
-                Deposit & Unlock
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
-                </svg>
-              </a>
-              <button
-                onClick={() => setModal(null)}
-                className="w-full text-gray-500 text-sm py-2"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSupportChat && (
         <SupportChatModal

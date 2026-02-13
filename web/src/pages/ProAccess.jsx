@@ -29,12 +29,6 @@ const StarIcon = () => (
   </svg>
 );
 
-const WarningIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-  </svg>
-);
-
 const InfinityIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 8.25c2.485 0 4.5 1.679 4.5 3.75s-2.015 3.75-4.5 3.75c-1.41 0-2.664-.56-3.5-1.427-.836.867-2.09 1.427-3.5 1.427C7.015 15.75 5 14.071 5 12s2.015-3.75 4.5-3.75c1.41 0 2.664.56 3.5 1.427.836-.867 2.09-1.427 3.5-1.427z"/>
@@ -71,33 +65,15 @@ const ArrowPathIcon = () => (
   </svg>
 );
 
-const LockOpenIcon = () => (
+const RocketIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-  </svg>
-);
-
-const GiftIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
   </svg>
 );
 
 const CheckIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-  </svg>
-);
-
-const ClockIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
   </svg>
 );
 
@@ -112,8 +88,8 @@ export default function ProAccess() {
   const [loadingLink, setLoadingLink] = useState(false);
 
   // Check if user exhausted free limit
-  const reason = searchParams.get('reason'); // 'limit' or 'feature'
-  const feature = searchParams.get('feature'); // which feature they tried to access
+  const reason = searchParams.get('reason');
+  const feature = searchParams.get('feature');
 
   // Fetch geo info and appropriate bookmaker link on mount
   useEffect(() => {
@@ -151,37 +127,31 @@ export default function ProAccess() {
       icon: <InfinityIcon />,
       titleKey: 'proAccess.benefit1Title',
       descKey: 'proAccess.benefit1Desc',
-      color: 'bg-purple-100 text-purple-600'
     },
     {
       icon: <ChatIcon />,
       titleKey: 'proAccess.benefit2Title',
       descKey: 'proAccess.benefit2Desc',
-      color: 'bg-blue-100 text-blue-600'
     },
     {
       icon: <WalletIcon />,
       titleKey: 'proAccess.benefit3Title',
       descKey: 'proAccess.benefit3Desc',
-      color: 'bg-green-100 text-green-600'
     },
     {
       icon: <SearchIcon />,
       titleKey: 'proAccess.benefit4Title',
       descKey: 'proAccess.benefit4Desc',
-      color: 'bg-amber-100 text-amber-600'
     },
     {
       icon: <ClipboardIcon />,
       titleKey: 'proAccess.benefit5Title',
       descKey: 'proAccess.benefit5Desc',
-      color: 'bg-pink-100 text-pink-600'
     },
     {
       icon: <ArrowPathIcon />,
       titleKey: 'proAccess.benefit6Title',
       descKey: 'proAccess.benefit6Desc',
-      color: 'bg-cyan-100 text-cyan-600'
     },
   ];
 
@@ -193,8 +163,8 @@ export default function ProAccess() {
 
   return (
     <div className="h-screen bg-gray-50 overflow-y-auto">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white px-5 pt-4 pb-8 rounded-b-3xl">
+      {/* Header - Dark style like BookmakerPromo */}
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-5 pt-4 pb-8 rounded-b-3xl">
         {/* Back button */}
         <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full mb-4">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -202,70 +172,121 @@ export default function ProAccess() {
           </svg>
         </button>
 
-        {/* PRO star badge */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 bg-amber-400 rounded-2xl flex items-center justify-center text-white">
+        {/* PRO badge */}
+        <div className="inline-flex items-center gap-1.5 bg-amber-500/20 rounded-full px-3 py-1 mb-4">
+          <div className="text-amber-400">
             <StarIcon />
           </div>
-          <div>
-            <h1 className="text-xl font-bold">{t('proAccess.heroTitle')}</h1>
-            <p className="text-white/70 text-sm">{t('proAccess.heroSubtitle')}</p>
+          <span className="text-xs font-medium text-amber-400">PRO Access</span>
+        </div>
+
+        {/* Hero text */}
+        <h1 className="text-2xl font-bold mb-2">
+          {t('proAccess.heroTitle')}
+        </h1>
+        <p className="text-white/60 text-sm mb-6">
+          {t('proAccess.heroSubtitle')}
+        </p>
+
+        {/* Bonus card */}
+        <div className="bg-white rounded-2xl p-4 text-gray-900">
+          <div className="text-center mb-4">
+            <p className="text-xs text-gray-500 mb-1">{t('proAccess.unlockWith')}</p>
+            <p className="text-4xl font-black text-amber-500">1 500<span className="text-2xl">€</span></p>
+            <p className="text-xs text-gray-500">{t('proAccess.bonusDesc')}</p>
+          </div>
+
+          {/* Stats */}
+          <div className="flex justify-between border-t border-gray-100 pt-4">
+            <div className="text-center flex-1">
+              <p className="text-lg font-bold text-gray-900">∞</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('proAccess.statPredictions')}</p>
+            </div>
+            <div className="text-center flex-1 border-x border-gray-100">
+              <p className="text-lg font-bold text-gray-900">∞</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('proAccess.statValueBets')}</p>
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-lg font-bold text-gray-900">100%</p>
+              <p className="text-[10px] text-gray-400 uppercase">{t('proAccess.statTools')}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Warning block - Limit exhausted */}
-      <div className="mx-5 -mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0 text-amber-600">
-            <WarningIcon />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-amber-900 text-sm">{t('proAccess.limitTitle')}</h3>
-            <p className="text-xs text-amber-700 mt-0.5">{t('proAccess.limitDesc')}</p>
+      {/* Limit Warning - if coming from limit exceeded */}
+      {reason === 'limit' && (
+        <div className="mx-5 mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+            </svg>
+            <p className="text-amber-700 text-sm">
+              {t('proAccess.limitTitle')}
+            </p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className="px-5 py-6 space-y-6">
-        {/* What you get section */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="text-purple-600">
-              <LockOpenIcon />
+        {/* Benefits */}
+        <section className="space-y-3">
+          {benefits.map((b, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0 text-amber-600">
+                {b.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 text-sm">{t(b.titleKey)}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{t(b.descKey)}</p>
+              </div>
             </div>
-            <h2 className="font-bold text-gray-900">{t('proAccess.benefitsTitle')}</h2>
+          ))}
+        </section>
+
+        {/* Why deposit here block */}
+        <section className="bg-amber-50 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+            </svg>
+            <h2 className="font-bold text-gray-900">{t('proAccess.whyDepositTitle')}</h2>
           </div>
           <div className="space-y-3">
-            {benefits.map((b, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${b.color}`}>
-                  {b.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm">{t(b.titleKey)}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{t(b.descKey)}</p>
-                </div>
+            <div className="flex gap-2">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                <CheckIcon />
               </div>
-            ))}
+              <p className="text-sm text-gray-700">{t('proAccess.why1')}</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                <CheckIcon />
+              </div>
+              <p className="text-sm text-gray-700">{t('proAccess.why2')}</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                <CheckIcon />
+              </div>
+              <p className="text-sm text-gray-700">{t('proAccess.why3')}</p>
+            </div>
           </div>
         </section>
 
-        {/* How to activate PRO */}
+        {/* How to activate */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
-              </svg>
+            <div className="text-primary-600">
+              <RocketIcon />
             </div>
             <h2 className="font-bold text-gray-900">{t('proAccess.howToTitle')}</h2>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {steps.map((step, i) => (
               <div key={i} className="flex gap-3">
-                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-sm">
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-sm">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -276,38 +297,6 @@ export default function ProAccess() {
             ))}
           </div>
         </section>
-
-        {/* Auto activation badge */}
-        <div className="flex items-center justify-center gap-2 py-2">
-          <div className="flex items-center gap-1.5 text-green-600">
-            <CheckIcon />
-            <span className="text-sm font-medium">{t('proAccess.autoActivation')}</span>
-          </div>
-        </div>
-
-        {/* Bonus card */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-500">
-              <GiftIcon />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900 text-sm">{t('proAccess.bonusTitle')}</h3>
-              <p className="text-xs text-gray-600 mt-0.5">{t('proAccess.bonusDesc')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Support link */}
-        <div className="flex items-center justify-center">
-          <button
-            onClick={() => setShowChat(true)}
-            className="text-sm text-gray-500 flex items-center gap-2 hover:text-gray-700"
-          >
-            {t('proAccess.needHelp')}
-            <span className="text-purple-600 font-medium">{t('proAccess.contactSupport')}</span>
-          </button>
-        </div>
 
         {/* CTA Button */}
         <a
@@ -323,7 +312,9 @@ export default function ProAccess() {
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
-              <DownloadIcon />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+              </svg>
               {t('proAccess.ctaButton')}
             </span>
           )}
@@ -331,6 +322,27 @@ export default function ProAccess() {
         <p className="text-center text-xs text-gray-400">
           {t('proAccess.ctaSubtext')}
         </p>
+
+        {/* Help block */}
+        <section className="bg-primary-50 rounded-2xl p-4 mt-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-sm">{t('proAccess.needHelp')}</h3>
+              <p className="text-xs text-gray-500">{t('proAccess.helpDesc')}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowChat(true)}
+            className="w-full mt-3 py-2.5 bg-primary-600 text-white font-semibold rounded-xl text-sm"
+          >
+            {t('proAccess.contactSupport')}
+          </button>
+        </section>
 
         <div className="h-6"/>
       </div>

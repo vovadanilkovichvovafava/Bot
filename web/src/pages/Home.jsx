@@ -152,7 +152,7 @@ export default function Home() {
 
         {/* Value Bet Finder - Main Hook */}
         <div
-          onClick={() => navigate(isPremium || !valueBetUsed ? '/value-finder' : '/pro-tools')}
+          onClick={() => navigate(isPremium || !valueBetUsed ? '/value-finder' : '/pro-access')}
           className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
         >
           <div className="flex items-start justify-between mb-3">
@@ -283,7 +283,7 @@ export default function Home() {
               </div>
               <p className="text-xs font-medium text-gray-700">Matches</p>
             </div>
-            <div onClick={() => navigate(user?.is_premium ? '/value-finder' : '/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
+            <div onClick={() => navigate(user?.is_premium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
               {!user?.is_premium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
