@@ -14,6 +14,7 @@ const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
 // AI request tracking (same as AIChat.jsx)
+const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
 
 const getAIRequestCount = () => {
@@ -277,6 +278,13 @@ export default function MatchDetail() {
   };
 
   const getAnalysis = async () => {
+    // Check free limit for non-premium users BEFORE making request
+    const isPremium = user?.is_premium;
+    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
+      navigate('/pro-access?reason=limit&feature=match-analysis');
+      return;
+    }
+
     // Check cache first
     const cached = getCachedPrediction(id);
     if (cached) {
@@ -520,6 +528,7 @@ export default function MatchDetail() {
             getOdds1x2={() => getOdds1x2()}
             advertiser={advertiser}
             trackClick={trackClick}
+            navigate={navigate}
           />
         )}
         {activeTab === 'Stats' && (
@@ -537,9 +546,15 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
+
+  // Check AI limit status
+  const isPremium = user?.is_premium;
+  const aiRequestCount = getAIRequestCount();
+  const limitReached = !isPremium && aiRequestCount >= FREE_AI_LIMIT;
+  const remainingRequests = Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
   // Get localized texts from advertiser config
   const adTexts = advertiser?.texts || {
@@ -672,27 +687,59 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
           <p className="text-gray-500 text-sm mb-1">
             {enriched ? 'Win probabilities, team comparison & expert analysis' : 'Get detailed prediction & betting recommendation'}
           </p>
-          <div className="bg-blue-50 text-primary-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
-            </svg>
-            Uses 1 of your 3 free AI requests
-          </div>
-          <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
-            {predicting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                </svg>
-                Get AI Analysis
-              </>
-            )}
-          </button>
+
+          {/* Limit info badge */}
+          {limitReached ? (
+            <div className="bg-amber-50 text-amber-700 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+              </svg>
+              Free limit reached — unlock PRO for unlimited
+            </div>
+          ) : isPremium ? (
+            <div className="bg-green-50 text-green-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+              </svg>
+              PRO — Unlimited AI requests
+            </div>
+          ) : (
+            <div className="bg-blue-50 text-primary-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+              </svg>
+              {remainingRequests} of 3 free AI requests left
+            </div>
+          )}
+
+          {/* Button - different based on limit status */}
+          {limitReached ? (
+            <button
+              onClick={() => navigate('/pro-access?reason=limit&feature=match-analysis')}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 max-w-xs mx-auto"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+              </svg>
+              Unlock PRO Access
+            </button>
+          ) : (
+            <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
+              {predicting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                  </svg>
+                  Get AI Analysis
+                </>
+              )}
+            </button>
+          )}
 
           {/* Match Bonus Card with team colors */}
           <MatchBonusCard
