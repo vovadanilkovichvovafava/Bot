@@ -462,33 +462,27 @@ export default function MatchDetail() {
           {odds1x2 && (
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="grid grid-cols-3 gap-2">
-                <a
-                  href="https://pwa-production-20b5.up.railway.app/promo"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <div
+                  onClick={() => navigate('/promo')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">Home</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
-                </a>
-                <a
-                  href="https://pwa-production-20b5.up.railway.app/promo"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                </div>
+                <div
+                  onClick={() => navigate('/promo')}
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
                 >
                   <p className="text-[10px] text-gray-500 uppercase font-medium">Draw</p>
                   <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
-                </a>
-                <a
-                  href="https://pwa-production-20b5.up.railway.app/promo"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                </div>
+                <div
+                  onClick={() => navigate('/promo')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">Away</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.away}</p>
-                </a>
+                </div>
               </div>
             </div>
           )}
@@ -1041,11 +1035,9 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
   const { homeColor, awayColor } = getMatchColors(homeTeamId, awayTeamId);
 
   return (
-    <a
-      href={affiliateLink}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01]"
+    <div
+      onClick={() => navigate('/promo')}
+      className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
       style={{ minHeight: '120px' }}
     >
       {/* Diagonal split background */}
@@ -1124,7 +1116,7 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
           </span>
         </div>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -1215,14 +1207,12 @@ function NativeAdBlock({ advertiser, affiliateLink, matchId }) {
           </div>
         )}
 
-        <a
-          href={affiliateLink}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => navigate('/promo')}
           className="block w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl text-center text-sm hover:opacity-95 transition-opacity shadow-lg shadow-orange-500/20"
         >
           👉 {ad.cta}
-        </a>
+        </button>
       </div>
     </div>
   );

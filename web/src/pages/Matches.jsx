@@ -207,18 +207,16 @@ export default function Matches() {
 
       <div className="px-5 pt-4">
         {/* Partner Banner */}
-        <a
-          href="https://pwa-production-20b5.up.railway.app/promo"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4"
+        <div
+          onClick={() => navigate('/promo')}
+          className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
         >
           <span className="text-lg">🎯</span>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-medium">Bonus {advertiser.bonus} at {advertiser.name}</p>
           </div>
           <span className="text-slate-400 text-xs">Get It →</span>
-        </a>
+        </div>
 
         {/* TODAY TAB */}
         {tab === 'today' && (

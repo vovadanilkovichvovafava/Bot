@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBookmaker } from '../context/BookmakerContext';
 
 // Bookmaker config - loaded from env or defaults (no brand names shown to user)
@@ -14,6 +15,7 @@ export const BOOKMAKER = {
 };
 
 export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -349,14 +351,12 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             <p className="text-center text-gray-500 text-sm mb-3">
               Don't have an account?
             </p>
-            <a
-              href="https://pwa-production-20b5.up.railway.app/promo"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => navigate('/promo')}
               className="block w-full text-center text-orange-600 font-semibold py-2 hover:bg-orange-50 rounded-xl transition-colors"
             >
               Register at {BOOKMAKER.name} →
-            </a>
+            </button>
           </div>
         )}
 

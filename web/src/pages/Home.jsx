@@ -413,11 +413,9 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
     const { homeColor, awayColor } = getMatchColors(f.teams.home.id, f.teams.away.id);
 
     return (
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+      <div
+        onClick={() => navigate('/promo')}
+        className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
         style={{ minHeight: '140px' }}
       >
         {/* Diagonal split background */}
@@ -496,17 +494,15 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
             </span>
           </div>
         </div>
-      </a>
+      </div>
     );
   }
 
   // Fallback: Simple banner without match (similar to old design)
   return (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02]"
+    <div
+      onClick={() => navigate('/promo')}
+      className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] cursor-pointer"
     >
       {/* Animated shine effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shine_6s_infinite]" style={{animation: 'shine 6s infinite'}}/>
@@ -527,6 +523,6 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
           {texts.ctaButton}
         </div>
       </div>
-    </a>
+    </div>
   );
 }

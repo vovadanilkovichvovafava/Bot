@@ -384,14 +384,12 @@ export default function AIChat() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <a
-                    href="https://pwa-production-20b5.up.railway.app/promo"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => navigate('/promo')}
                     className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                   >
                     Get Bonus
-                  </a>
+                  </button>
                   <button
                     onClick={() => navigate('/promo')}
                     className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
@@ -550,17 +548,12 @@ export default function AIChat() {
             </div>
 
             <div className="space-y-2">
-              <a
-                href="https://pwa-production-20b5.up.railway.app/promo"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => { setShowLimitModal(false); navigate('/promo'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
               >
                 Deposit & Unlock
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
-                </svg>
-              </a>
+              </button>
               <button
                 onClick={() => setShowLimitModal(false)}
                 className="w-full text-gray-500 text-sm py-2"

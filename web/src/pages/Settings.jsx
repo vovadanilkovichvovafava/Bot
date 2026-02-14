@@ -221,14 +221,12 @@ export default function Settings() {
               )}
             </div>
             {!user?.is_premium && (
-              <a
-                href="https://pwa-production-20b5.up.railway.app/promo"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => navigate('/promo')}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
               >
                 Get It
-              </a>
+              </button>
             )}
           </div>
           {!user?.is_premium && (
