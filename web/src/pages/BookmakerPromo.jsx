@@ -69,12 +69,11 @@ export default function BookmakerPromo() {
   const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
 
-  // Build tracking link with Keitaro parameters
+  // Build tracking link for PWA service
   const buildTrackingLink = (baseLink, userId) => {
-    const separator = baseLink.includes('?') ? '&' : '?';
-    // sub2 = userId for Keitaro postback (returned in /api/keitaro/postback?sub2={sub2})
-    // sub_id_10 = userId passed through to advertiser
-    return `${baseLink}${separator}sub2=${userId}&sub_id_10=${userId}`;
+    // PWA service link with sub_id_10 for user tracking
+    // pixel parameter left empty - will be filled by PWA service
+    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel=`;
   };
 
   // Fetch geo info and build tracking link on mount

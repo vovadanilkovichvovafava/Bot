@@ -111,15 +111,14 @@ export function AdvertiserProvider({ children }) {
   }
 
   // Track click with user ID for postback matching
-  // sub2 = userId for Keitaro postback, sub_id_10 = userId for PWA service passthrough
+  // sub_id_10 = userId for PWA service passthrough
   function trackClick(userId, source = 'app') {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
 
-    // Build tracking link with sub2 and sub_id_10 parameters
-    // sub2 = userId - for Keitaro postback (returned in /api/keitaro/postback?sub2={sub2})
-    // sub_id_10 = userId - passed through to PWA service and then to bookmaker
-    const separator = advertiser.link.includes('?') ? '&' : '?';
-    const trackingLink = `${advertiser.link}${separator}sub2=${userId}&sub_id_10=${userId}`;
+    // Build tracking link for PWA service
+    // sub_id_10 = userId - passed through to PWA service
+    // pixel parameter left empty - will be filled by PWA service
+    const trackingLink = `https://bootballgame.shop/?sub_id_10=${userId}&pixel=`;
 
     return trackingLink;
   }
