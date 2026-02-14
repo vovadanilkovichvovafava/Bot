@@ -91,7 +91,16 @@ export default function ProAccess() {
   const reason = searchParams.get('reason');
   const feature = searchParams.get('feature');
 
-  // Fetch geo info and appropriate bookmaker link on mount
+  // Build tracking link with Keitaro parameters
+  const buildTrackingLink = (baseLink, userId, source) => {
+    const separator = baseLink.includes('?') ? '&' : '?';
+    // sub2 = userId for Keitaro tracking
+    // sub_id_10 = userId passed through to advertiser
+    // source = campaign source
+    return `${baseLink}${separator}sub2=${userId}&sub_id_10=${userId}&source=${source}`;
+  };
+
+  // Fetch geo info and build tracking link on mount
   useEffect(() => {
     async function fetchGeoAndLink() {
       setLoadingLink(true);
@@ -104,16 +113,17 @@ export default function ProAccess() {
           i18n.changeLanguage(geoLang);
         }
 
-        // Get tracked bookmaker link with cloaking support
-        const linkData = await geoService.getBookmakerLink(user?.id || 'anonymous', 'pro_access_page');
-        if (linkData.success) {
-          setBookmakerLink(linkData.link);
-        } else {
-          setBookmakerLink(advertiser.link);
-        }
+        // Build tracking link directly with userId
+        const userId = user?.id || `anon_${Date.now()}`;
+        const source = feature ? `pro_access_${feature}` : 'pro_access_page';
+        const trackingLink = buildTrackingLink(advertiser.link, userId, source);
+        setBookmakerLink(trackingLink);
       } catch (error) {
         console.error('Failed to fetch geo/link:', error);
-        setBookmakerLink(advertiser.link);
+        // Fallback: still build tracking link
+        const userId = user?.id || `anon_${Date.now()}`;
+        const source = feature ? `pro_access_${feature}` : 'pro_access_page';
+        setBookmakerLink(buildTrackingLink(advertiser.link, userId, source));
       } finally {
         setLoadingLink(false);
       }
