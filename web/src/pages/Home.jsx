@@ -393,6 +393,7 @@ function HomeMatchCard({ fixture, navigate }) {
 
 // Featured Match Promo Banner with team logos and diagonal split
 function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
+  const navigate = useNavigate();
   // Get the first match from top leagues as featured match
   const featuredMatch = matches?.[0];
 
