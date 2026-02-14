@@ -584,6 +584,121 @@ app.all('/api/proxy/*', async (req, res) => {
 });
 
 // ============================================
+// KEITARO POSTBACK ENDPOINT
+// ============================================
+
+/**
+ * Keitaro Postback endpoint
+ *
+ * URL format: /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
+ *
+ * Parameters:
+ * - subid: Keitaro click ID (unique click identifier)
+ * - status: Conversion status (lead, sale, rejected, hold)
+ * - payout: Payout amount
+ * - currency: Currency (optional)
+ * - sub1: User ID (our tracking parameter)
+ * - sub2: Campaign/source (optional)
+ * - sub3-sub5: Additional tracking params (optional)
+ *
+ * Configure in Keitaro:
+ * Postback URL: https://your-server.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
+ */
+app.get('/api/keitaro/postback', async (req, res) => {
+  const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5 } = req.query;
+
+  console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub1=${sub1}, sub2=${sub2}`);
+
+  // sub1 is our user ID
+  const userId = sub1;
+
+  if (!userId) {
+    console.log('[KEITARO POSTBACK] Missing sub1 (userId) - ignoring postback');
+    return res.status(200).send('OK'); // Always return OK to Keitaro
+  }
+
+  // Store postback record
+  const postbackRecord = {
+    userId,
+    keitaroSubid: subid,
+    status,
+    payout: payout ? parseFloat(payout) : null,
+    currency: currency || 'EUR',
+    campaign: sub2,
+    sub3,
+    sub4,
+    sub5,
+    timestamp: new Date().toISOString(),
+    source: 'keitaro',
+  };
+
+  // Store with subid as key for deduplication
+  const recordKey = subid || `${userId}_${status}_${Date.now()}`;
+  postbackStore.set(`keitaro_${recordKey}`, postbackRecord);
+
+  console.log(`[KEITARO POSTBACK] Stored record: keitaro_${recordKey}`);
+
+  // Check if this is a qualifying action for Premium activation
+  // Keitaro statuses: lead, sale, rejected, hold
+  const qualifyingStatuses = ['lead', 'sale', 'deposit', 'ftd', 'confirmed'];
+
+  if (qualifyingStatuses.includes(status?.toLowerCase())) {
+    const payoutAmount = parseFloat(payout) || 0;
+
+    console.log(`[KEITARO POSTBACK] Qualifying conversion (${status})! Activating Premium for user: ${userId}`);
+
+    try {
+      // Activate Premium for the user
+      await activatePremium(userId, {
+        source: 'keitaro',
+        keitaroSubid: subid,
+        status,
+        payout: payoutAmount,
+        currency: currency || 'EUR',
+        campaign: sub2,
+      });
+
+      postbackRecord.premiumActivated = true;
+      postbackRecord.premiumActivatedAt = new Date().toISOString();
+      postbackStore.set(`keitaro_${recordKey}`, postbackRecord);
+
+      console.log(`[KEITARO POSTBACK] Premium activated for user: ${userId}`);
+    } catch (error) {
+      console.error('[KEITARO POSTBACK] Failed to activate Premium:', error.message);
+      postbackRecord.premiumActivated = false;
+      postbackRecord.error = error.message;
+      postbackStore.set(`keitaro_${recordKey}`, postbackRecord);
+    }
+  } else {
+    console.log(`[KEITARO POSTBACK] Non-qualifying status (${status}) - no premium activation`);
+  }
+
+  // Always respond with OK to Keitaro
+  res.status(200).send('OK');
+});
+
+/**
+ * Keitaro Postback POST endpoint (alternative)
+ */
+app.post('/api/keitaro/postback', async (req, res) => {
+  // Support both query params and body
+  const subid = req.query.subid || req.body.subid;
+  const status = req.query.status || req.body.status;
+  const payout = req.query.payout || req.body.payout;
+  const currency = req.query.currency || req.body.currency;
+  const sub1 = req.query.sub1 || req.body.sub1;
+  const sub2 = req.query.sub2 || req.body.sub2;
+  const sub3 = req.query.sub3 || req.body.sub3;
+  const sub4 = req.query.sub4 || req.body.sub4;
+  const sub5 = req.query.sub5 || req.body.sub5;
+
+  req.query = { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5 };
+
+  // Forward to GET handler
+  return app._router.handle({ ...req, method: 'GET' }, res, () => {});
+});
+
+// ============================================
 // ADMIN / DEBUG ENDPOINTS
 // ============================================
 
@@ -692,6 +807,7 @@ app.get('/', (req, res) => {
       click: 'GET /api/click?userId=xxx - Generate affiliate click ID',
       postback: 'GET/POST /api/postback - Bookmaker postback endpoint',
       '1winPostback': 'GET/POST /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}',
+      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}',
       premiumCheck: 'GET /api/premium/check/:userId - Check premium status',
       bookmakerLink: 'GET /api/bookmaker/link?userId=xxx - Get bookmaker link with cloaking',
       proxy: 'ALL /api/proxy/* - Proxy requests to bookmaker',
@@ -711,6 +827,9 @@ const server = app.listen(PORT, () => {
 
   1WIN Postback URL:
   https://your-domain.com/api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
+
+  KEITARO Postback URL:
+  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
 
   Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
 

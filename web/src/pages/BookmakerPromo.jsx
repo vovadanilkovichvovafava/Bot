@@ -72,10 +72,10 @@ export default function BookmakerPromo() {
   // Build tracking link with Keitaro parameters
   const buildTrackingLink = (baseLink, userId) => {
     const separator = baseLink.includes('?') ? '&' : '?';
-    // sub2 = userId for Keitaro tracking
+    // sub1 = userId for Keitaro postback (returned in /api/keitaro/postback?sub1={sub1})
+    // sub2 = source for campaign tracking
     // sub_id_10 = userId passed through to advertiser
-    // source = campaign source
-    return `${baseLink}${separator}sub2=${userId}&sub_id_10=${userId}&source=promo_page`;
+    return `${baseLink}${separator}sub1=${userId}&sub2=promo_page&sub_id_10=${userId}`;
   };
 
   // Fetch geo info and build tracking link on mount

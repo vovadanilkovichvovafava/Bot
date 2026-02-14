@@ -111,15 +111,16 @@ export function AdvertiserProvider({ children }) {
   }
 
   // Track click with user ID for postback matching
-  // sub2 = userId for tracker, sub_id_10 = userId for PWA service passthrough
-  function trackClick(userId) {
+  // sub1 = userId for Keitaro postback, sub_id_10 = userId for PWA service passthrough
+  function trackClick(userId, source = 'app') {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
 
-    // Build tracking link with sub2 and sub_id_10 parameters
-    // sub2 = userId - for tracker tracking
+    // Build tracking link with sub1, sub2, and sub_id_10 parameters
+    // sub1 = userId - for Keitaro postback (returned in /api/keitaro/postback?sub1={sub1})
+    // sub2 = source - campaign source for analytics
     // sub_id_10 = userId - passed through to PWA service and then to bookmaker
     const separator = advertiser.link.includes('?') ? '&' : '?';
-    const trackingLink = `${advertiser.link}${separator}sub2=${userId}&sub_id_10=${userId}`;
+    const trackingLink = `${advertiser.link}${separator}sub1=${userId}&sub2=${source}&sub_id_10=${userId}`;
 
     return trackingLink;
   }
