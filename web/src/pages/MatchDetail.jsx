@@ -663,11 +663,13 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             </div>
           )}
 
-          {/* Native Ad Block after AI Analysis */}
-          <NativeAdBlock
+          {/* Match Bonus Card after AI Analysis */}
+          <MatchBonusCard
+            match={match}
+            enriched={enriched}
             advertiser={advertiser}
             affiliateLink={affiliateLink}
-            matchId={match?.id}
+            adTexts={adTexts}
           />
         </div>
       ) : (
@@ -1027,6 +1029,7 @@ function InfoRow({ icon, label, value }) {
 
 // Match Bonus Card with team colors diagonal split
 function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts }) {
+  const navigate = useNavigate();
   // Get team IDs from enriched data or match data
   const homeTeamId = enriched?.homeId || enriched?.fixture?.teams?.home?.id;
   const awayTeamId = enriched?.awayId || enriched?.fixture?.teams?.away?.id;
