@@ -92,7 +92,11 @@ export default function BookmakerPromo() {
 
         // Build tracking link directly with userId
         const userId = user?.id || `anon_${Date.now()}`;
+        console.log('[BookmakerPromo] user object:', user);
+        console.log('[BookmakerPromo] user.id:', user?.id);
+        console.log('[BookmakerPromo] final userId for link:', userId);
         const trackingLink = buildTrackingLink(advertiser.link, userId);
+        console.log('[BookmakerPromo] trackingLink:', trackingLink);
         setBookmakerLink(trackingLink);
       } catch (error) {
         console.error('Failed to fetch geo/link:', error);
