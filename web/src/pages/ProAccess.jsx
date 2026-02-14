@@ -95,7 +95,7 @@ export default function ProAccess() {
   const buildTrackingLink = (baseLink, userId, source) => {
     // PWA service link with sub_id_10 for user tracking
     // pixel parameter left empty - will be filled by PWA service
-    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel=`;
+    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel={pixel}`;
   };
 
   // Fetch geo info and build tracking link on mount
