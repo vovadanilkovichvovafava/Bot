@@ -363,7 +363,7 @@ export default function AIChat() {
                     onClick={() => navigate('/promo')}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
-                    {advertiser.currency}1,500 {advertiser.texts.freeBet}
+                    {advertiser.texts.freeBet}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -434,7 +434,7 @@ export default function AIChat() {
               onClick={() => navigate('/promo')}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
             >
-              {advertiser.currency}1,500 {advertiser.texts.bonusButton}
+              {advertiser.texts.bonusButton}
             </button>
             <button
               onClick={() => sendMessage("Today's best bets")}
