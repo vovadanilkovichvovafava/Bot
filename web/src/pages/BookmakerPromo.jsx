@@ -71,9 +71,9 @@ export default function BookmakerPromo() {
 
   // Build tracking link for PWA service
   const buildTrackingLink = (baseLink, userId) => {
-    // PWA service link with sub_id_2 for Keitaro Sub ID 2 column
+    // PWA service link with sub_id_10 for user tracking
     // pixel parameter left empty - will be filled by PWA service
-    return `https://bootballgame.shop/?sub_id_2=${userId}&pixel={pixel}`;
+    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel={pixel}`;
   };
 
   // Fetch geo info and build tracking link on mount
