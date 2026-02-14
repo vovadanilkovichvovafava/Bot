@@ -111,15 +111,15 @@ export function AdvertiserProvider({ children }) {
   }
 
   // Track click with user ID for postback matching
-  // 1win uses sub1 parameter for tracking - this is returned in postback
+  // sub2 = userId for tracker, sub_id_10 = userId for PWA service passthrough
   function trackClick(userId) {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
 
-    // Build tracking link with sub1 parameter (1win standard)
-    // sub1 = userId - will be returned in postback for PRO activation
-    const trackingLink = advertiser.link.includes('?')
-      ? `${advertiser.link}&sub1=${userId}`
-      : `${advertiser.link}?sub1=${userId}`;
+    // Build tracking link with sub2 and sub_id_10 parameters
+    // sub2 = userId - for tracker tracking
+    // sub_id_10 = userId - passed through to PWA service and then to bookmaker
+    const separator = advertiser.link.includes('?') ? '&' : '?';
+    const trackingLink = `${advertiser.link}${separator}sub2=${userId}&sub_id_10=${userId}`;
 
     return trackingLink;
   }

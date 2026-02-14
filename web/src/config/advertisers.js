@@ -3,8 +3,8 @@
  * Localized partner bookmaker with region-specific bonuses and currencies
  */
 
-// Base partner link
-const PARTNER_LINK = 'https://1wtmvf.live/?p=m2zy';
+// Base partner link (tracker URL)
+const PARTNER_LINK = 'https://siteofficialred.com/KnSQ1M';
 
 // Region-specific configurations
 const ADVERTISERS_CONFIG = {
