@@ -94,10 +94,9 @@ export default function ProAccess() {
   // Build tracking link with Keitaro parameters
   const buildTrackingLink = (baseLink, userId, source) => {
     const separator = baseLink.includes('?') ? '&' : '?';
-    // sub1 = userId for Keitaro postback (returned in /api/keitaro/postback?sub1={sub1})
-    // sub2 = source for campaign tracking
+    // sub2 = userId for Keitaro postback (returned in /api/keitaro/postback?sub2={sub2})
     // sub_id_10 = userId passed through to advertiser
-    return `${baseLink}${separator}sub1=${userId}&sub2=${source}&sub_id_10=${userId}`;
+    return `${baseLink}${separator}sub2=${userId}&sub_id_10=${userId}`;
   };
 
   // Fetch geo info and build tracking link on mount

@@ -590,30 +590,29 @@ app.all('/api/proxy/*', async (req, res) => {
 /**
  * Keitaro Postback endpoint
  *
- * URL format: /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
+ * URL format: /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
  *
  * Parameters:
  * - subid: Keitaro click ID (unique click identifier)
  * - status: Conversion status (lead, sale, rejected, hold)
  * - payout: Payout amount
  * - currency: Currency (optional)
- * - sub1: User ID (our tracking parameter)
- * - sub2: Campaign/source (optional)
- * - sub3-sub5: Additional tracking params (optional)
+ * - sub2: User ID (our tracking parameter)
+ * - sub1, sub3-sub5: Additional tracking params (optional)
  *
  * Configure in Keitaro:
- * Postback URL: https://your-server.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
+ * Postback URL: https://your-server.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
  */
 app.get('/api/keitaro/postback', async (req, res) => {
   const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5 } = req.query;
 
-  console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub1=${sub1}, sub2=${sub2}`);
+  console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub2=${sub2}`);
 
-  // sub1 is our user ID
-  const userId = sub1;
+  // sub2 is our user ID
+  const userId = sub2;
 
   if (!userId) {
-    console.log('[KEITARO POSTBACK] Missing sub1 (userId) - ignoring postback');
+    console.log('[KEITARO POSTBACK] Missing sub2 (userId) - ignoring postback');
     return res.status(200).send('OK'); // Always return OK to Keitaro
   }
 
@@ -624,7 +623,7 @@ app.get('/api/keitaro/postback', async (req, res) => {
     status,
     payout: payout ? parseFloat(payout) : null,
     currency: currency || 'EUR',
-    campaign: sub2,
+    campaign: sub1, // sub1 for campaign/source tracking
     sub3,
     sub4,
     sub5,
@@ -655,7 +654,7 @@ app.get('/api/keitaro/postback', async (req, res) => {
         status,
         payout: payoutAmount,
         currency: currency || 'EUR',
-        campaign: sub2,
+        campaign: sub1, // sub1 for campaign/source tracking
       });
 
       postbackRecord.premiumActivated = true;
@@ -807,7 +806,7 @@ app.get('/', (req, res) => {
       click: 'GET /api/click?userId=xxx - Generate affiliate click ID',
       postback: 'GET/POST /api/postback - Bookmaker postback endpoint',
       '1winPostback': 'GET/POST /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}',
-      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}',
+      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}',
       premiumCheck: 'GET /api/premium/check/:userId - Check premium status',
       bookmakerLink: 'GET /api/bookmaker/link?userId=xxx - Get bookmaker link with cloaking',
       proxy: 'ALL /api/proxy/* - Proxy requests to bookmaker',
@@ -829,7 +828,7 @@ const server = app.listen(PORT, () => {
   https://your-domain.com/api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
 
   KEITARO Postback URL:
-  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub1={sub1}&sub2={sub2}
+  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
 
   Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
 
