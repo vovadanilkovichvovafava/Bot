@@ -18,7 +18,7 @@ router = APIRouter()
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: str  # Now returns public_id instead of internal id
     email: str
     username: Optional[str]
     language: str = "en"
@@ -71,7 +71,7 @@ async def get_current_user_info(
         )
 
     return UserResponse(
-        id=user.id,
+        id=user.public_id,  # Return public_id as 'id' for frontend compatibility
         email=user.email,
         username=user.username,
         language=user.language,
@@ -128,7 +128,7 @@ class PremiumActivation(BaseModel):
 
 @router.post("/{user_id}/premium")
 async def activate_premium(
-    user_id: int,
+    user_id: str,  # Now accepts public_id (string like usr_xxxx)
     activation: PremiumActivation,
     x_internal_secret: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db)
@@ -142,7 +142,20 @@ async def activate_premium(
             detail="Invalid internal secret"
         )
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    # Search by public_id (new format: usr_xxxx) or fall back to integer id for backwards compatibility
+    if user_id.startswith("usr_"):
+        result = await db.execute(select(User).where(User.public_id == user_id))
+    else:
+        # Backwards compatibility: try to parse as integer id
+        try:
+            int_id = int(user_id)
+            result = await db.execute(select(User).where(User.id == int_id))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user_id format"
+            )
+
     user = result.scalar_one_or_none()
 
     if not user:
@@ -164,7 +177,7 @@ async def activate_premium(
 
     return {
         "success": True,
-        "user_id": user_id,
+        "user_id": user.public_id,  # Return public_id
         "is_premium": user.is_premium,
         "premium_until": user.premium_until.isoformat() if user.premium_until else None,
         "source": activation.source

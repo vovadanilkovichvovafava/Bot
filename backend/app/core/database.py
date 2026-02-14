@@ -3,6 +3,8 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import text
 from typing import AsyncGenerator
 import os
+import secrets
+import string
 
 # Get DATABASE_URL from Railway
 DATABASE_URL = os.getenv("DATABASE_URL", "")
@@ -40,6 +42,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES users(id)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_requests INTEGER DEFAULT 0",
+            # Public ID for tracking (secure, non-guessable)
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR UNIQUE",
         ]
 
         for migration in migrations:
@@ -53,6 +57,29 @@ async def init_db():
             await conn.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_users_referral_code ON users(referral_code)")
             )
+        except Exception:
+            pass
+
+        # Create index for public_id if not exists
+        try:
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_users_public_id ON users(public_id)")
+            )
+        except Exception:
+            pass
+
+        # Generate public_id for existing users who don't have one
+        try:
+            result = await conn.execute(text("SELECT id FROM users WHERE public_id IS NULL"))
+            rows = result.fetchall()
+            for row in rows:
+                chars = string.ascii_lowercase + string.digits
+                random_part = ''.join(secrets.choice(chars) for _ in range(12))
+                public_id = f"usr_{random_part}"
+                await conn.execute(
+                    text("UPDATE users SET public_id = :public_id WHERE id = :id"),
+                    {"public_id": public_id, "id": row[0]}
+                )
         except Exception:
             pass
 

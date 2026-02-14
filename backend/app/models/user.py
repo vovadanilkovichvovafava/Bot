@@ -1,13 +1,24 @@
+import secrets
+import string
+
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
 
+def generate_public_id():
+    """Generate a unique public ID like usr_a7f3k9x2m5p8"""
+    chars = string.ascii_lowercase + string.digits
+    random_part = ''.join(secrets.choice(chars) for _ in range(12))
+    return f"usr_{random_part}"
+
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(String, unique=True, index=True, nullable=False, default=generate_public_id)
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
