@@ -111,16 +111,8 @@ export function AdvertiserProvider({ children }) {
   }
 
   // Track click with user ID for postback matching
-  // sub_id_10 = userId for PWA service passthrough
   function trackClick(userId, source = 'app') {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
-
-    // Build tracking link for PWA service
-    // sub_id_10 = userId - passed through to PWA service
-    // pixel parameter left empty - will be filled by PWA service
-    const trackingLink = `https://bootballgame.shop/?sub_id_10=${userId}&pixel={pixel}`;
-
-    return trackingLink;
   }
 
   return (

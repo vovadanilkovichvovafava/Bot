@@ -223,7 +223,7 @@ export default function Settings() {
             </div>
             {!user?.is_premium && (
               <button
-                onClick={() => navigate('/promo')}
+                onClick={() => navigate('/promo?banner=settings_get_pro')}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
               >
                 Get It
@@ -311,7 +311,7 @@ export default function Settings() {
           icon={<span className="text-lg">🎁</span>}
           label="Promo Page"
           value={`${advertiser.name} bonuses`}
-          onClick={() => navigate('/promo')}
+          onClick={() => navigate('/promo?banner=settings_promo_page')}
         />
 
         <div className="h-3"/>

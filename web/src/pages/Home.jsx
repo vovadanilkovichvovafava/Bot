@@ -405,7 +405,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
 
     return (
       <div
-        onClick={() => navigate('/promo')}
+        onClick={() => navigate('/promo?banner=home_featured_match')}
         className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
         style={{ minHeight: '140px' }}
       >
@@ -492,7 +492,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Fallback: Simple banner without match (similar to old design)
   return (
     <div
-      onClick={() => navigate('/promo')}
+      onClick={() => navigate('/promo?banner=home_fallback_banner')}
       className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] cursor-pointer"
     >
       {/* Animated shine effect */}

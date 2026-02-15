@@ -180,7 +180,7 @@ export default function BeginnerGuide() {
             {card.cta && (
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => navigate('/promo')}
+                  onClick={() => navigate('/promo?banner=guide_register_cta')}
                   className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"
                 >
                   Register Now

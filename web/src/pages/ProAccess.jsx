@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
+import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
 const countryToLanguage = {
@@ -92,13 +93,6 @@ export default function ProAccess() {
   const reason = searchParams.get('reason');
   const feature = searchParams.get('feature');
 
-  // Build tracking link for PWA service
-  const buildTrackingLink = (baseLink, userId, source) => {
-    // PWA service link with sub_id_10 for user tracking
-    // pixel parameter left empty - will be filled by PWA service
-    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel={pixel}`;
-  };
-
   // Fetch geo info and build tracking link on mount
   useEffect(() => {
     async function fetchGeoAndLink() {
@@ -112,24 +106,27 @@ export default function ProAccess() {
           i18n.changeLanguage(geoLang);
         }
 
-        // Build tracking link directly with userId
+        // Get tracking link from PostbackAPI (with all sub_ids)
         const userId = user?.id || `anon_${Date.now()}`;
-        const source = feature ? `pro_access_${feature}` : 'pro_access_page';
-        const trackingLink = buildTrackingLink(advertiser.link, userId, source);
-        setBookmakerLink(trackingLink);
+        const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
+        const link = await getTrackingLink(userId, banner);
+        if (link) {
+          setBookmakerLink(link);
+        } else {
+          setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
+        }
       } catch (error) {
         console.error('Failed to fetch geo/link:', error);
-        // Fallback: still build tracking link
         const userId = user?.id || `anon_${Date.now()}`;
-        const source = feature ? `pro_access_${feature}` : 'pro_access_page';
-        setBookmakerLink(buildTrackingLink(advertiser.link, userId, source));
+        const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
+        setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
       } finally {
         setLoadingLink(false);
       }
     }
 
     fetchGeoAndLink();
-  }, [user?.id, advertiser.link, i18n]);
+  }, [user?.id, i18n]);
 
   const benefits = [
     {

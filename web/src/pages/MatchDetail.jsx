@@ -461,21 +461,21 @@ export default function MatchDetail() {
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="grid grid-cols-3 gap-2">
                 <div
-                  onClick={() => navigate('/promo')}
+                  onClick={() => navigate('/promo?banner=match_odds_home')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">Home</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
                 </div>
                 <div
-                  onClick={() => navigate('/promo')}
+                  onClick={() => navigate('/promo?banner=match_odds_draw')}
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
                 >
                   <p className="text-[10px] text-gray-500 uppercase font-medium">Draw</p>
                   <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
                 </div>
                 <div
-                  onClick={() => navigate('/promo')}
+                  onClick={() => navigate('/promo?banner=match_odds_away')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">Away</p>
@@ -1037,7 +1037,7 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
 
   return (
     <div
-      onClick={() => navigate('/promo')}
+      onClick={() => navigate('/promo?banner=match_promo_banner')}
       className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
       style={{ minHeight: '120px' }}
     >
@@ -1209,7 +1209,7 @@ function NativeAdBlock({ advertiser, affiliateLink, matchId }) {
         )}
 
         <button
-          onClick={() => navigate('/promo')}
+          onClick={() => navigate('/promo?banner=match_ad_cta')}
           className="block w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl text-center text-sm hover:opacity-95 transition-opacity shadow-lg shadow-orange-500/20"
         >
           👉 {ad.cta}

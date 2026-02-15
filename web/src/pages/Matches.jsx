@@ -208,7 +208,7 @@ export default function Matches() {
       <div className="px-5 pt-4">
         {/* Partner Banner */}
         <div
-          onClick={() => navigate('/promo')}
+          onClick={() => navigate('/promo?banner=matches_partner_banner')}
           className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
         >
           <span className="text-lg">🎯</span>

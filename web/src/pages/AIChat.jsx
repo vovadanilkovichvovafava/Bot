@@ -289,7 +289,7 @@ export default function AIChat() {
                 {msg.bet && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <button
-                      onClick={() => navigate('/promo')}
+                      onClick={() => navigate('/promo?banner=aichat_bet_card')}
                       className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
                       style={{ background: '#059669' }}
                     >
@@ -361,7 +361,7 @@ export default function AIChat() {
                 {/* Simple promo link for messages without bet recommendation */}
                 {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
-                    onClick={() => navigate('/promo')}
+                    onClick={() => navigate('/promo?banner=aichat_promo_link')}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
                     {advertiser.texts.freeBet}
@@ -386,13 +386,13 @@ export default function AIChat() {
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button
-                    onClick={() => navigate('/promo')}
+                    onClick={() => navigate('/promo?banner=aichat_ad_get_bonus')}
                     className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                   >
                     Get Bonus
                   </button>
                   <button
-                    onClick={() => navigate('/promo')}
+                    onClick={() => navigate('/promo?banner=aichat_ad_learn_more')}
                     className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
                   >
                     Learn More
@@ -428,7 +428,7 @@ export default function AIChat() {
           {/* Primary Questions - Always visible */}
           <div className="flex gap-2 mb-2">
             <button
-              onClick={() => navigate('/promo')}
+              onClick={() => navigate('/promo?banner=aichat_bonus_button')}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
             >
               {advertiser.texts.bonusButton}
@@ -546,7 +546,7 @@ export default function AIChat() {
 
             <div className="space-y-2">
               <button
-                onClick={() => { setShowLimitModal(false); navigate('/promo'); }}
+                onClick={() => { setShowLimitModal(false); navigate('/promo?banner=aichat_limit_unlock'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
               >
                 Deposit & Unlock

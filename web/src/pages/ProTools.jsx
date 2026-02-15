@@ -50,7 +50,7 @@ export default function ProTools() {
           <h1 className="text-xl font-bold">{t('nav.proTools')}</h1>
           {!isPremium && (
             <button
-              onClick={() => navigate('/promo')}
+              onClick={() => navigate('/promo?banner=protools_get_pro')}
               className="flex items-center gap-1 text-accent-gold text-sm font-semibold"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@ export default function ProTools() {
                 <p className="text-sm text-gray-500">3 AI requests + 1 Value Bet scan</p>
               </div>
               <button
-                onClick={() => navigate('/promo')}
+                onClick={() => navigate('/promo?banner=protools_deposit_btn')}
                 className="bg-accent-gold text-white font-semibold px-4 py-2 rounded-lg text-sm"
               >
                 Deposit

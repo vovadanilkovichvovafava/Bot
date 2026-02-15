@@ -353,7 +353,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
               Don't have an account?
             </p>
             <button
-              onClick={() => navigate('/promo')}
+              onClick={() => navigate('/promo?banner=bookmaker_connect_register')}
               className="block w-full text-center text-orange-600 font-semibold py-2 hover:bg-orange-50 rounded-xl transition-colors"
             >
               Register at {BOOKMAKER.name} →
