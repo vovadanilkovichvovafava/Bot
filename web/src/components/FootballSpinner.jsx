@@ -1,7 +1,9 @@
 import { useRef } from 'react';
+import soccerBall from '../assets/soccer-ball.svg';
 
 /**
  * Premium bouncing football spinner with gradient glow shadow.
+ * Uses a real soccer ball SVG icon (from SVGRepo, public domain).
  *
  * Props:
  *  - size: 'xs' | 'sm' | 'md' | 'lg'  (default 'md')
@@ -12,10 +14,10 @@ export default function FootballSpinner({ size = 'md', text, light = false }) {
   const id = useRef(Math.random().toString(36).slice(2, 8)).current;
 
   const sizes = {
-    xs: { ball: 20, bounce: 10, shadow: { w: 16, h: 4 }, gap: 3, textClass: 'text-[10px] mt-1' },
-    sm: { ball: 28, bounce: 14, shadow: { w: 22, h: 5 }, gap: 4, textClass: 'text-xs mt-1' },
-    md: { ball: 48, bounce: 24, shadow: { w: 40, h: 8 }, gap: 6, textClass: 'text-sm mt-2' },
-    lg: { ball: 64, bounce: 32, shadow: { w: 52, h: 10 }, gap: 8, textClass: 'text-base mt-3' },
+    xs: { ball: 18, bounce: 8,  shadow: { w: 14, h: 4 }, gap: 2, textClass: 'text-[10px] mt-1' },
+    sm: { ball: 26, bounce: 12, shadow: { w: 20, h: 5 }, gap: 3, textClass: 'text-xs mt-1' },
+    md: { ball: 44, bounce: 22, shadow: { w: 36, h: 8 }, gap: 5, textClass: 'text-sm mt-2' },
+    lg: { ball: 60, bounce: 30, shadow: { w: 48, h: 10 }, gap: 6, textClass: 'text-base mt-3' },
   };
 
   const s = sizes[size] || sizes.md;
@@ -28,43 +30,16 @@ export default function FootballSpinner({ size = 'md', text, light = false }) {
         className="flex flex-col items-center justify-end"
         style={{ width: Math.max(s.ball, s.shadow.w), height: totalH }}
       >
-        {/* Bouncing ball wrapper */}
+        {/* Bouncing ball */}
         <div className={`fbb-${id}`} style={{ flexShrink: 0 }}>
-          <svg
-            viewBox="0 0 100 100"
+          <img
+            src={soccerBall}
+            alt=""
             width={s.ball}
             height={s.ball}
             className={`fbr-${id}`}
-          >
-            {/* Ball body */}
-            <circle cx="50" cy="50" r="48" fill="white" />
-
-            {/* Center pentagon */}
-            <polygon
-              points="50,28 37,36 40,52 60,52 63,36"
-              fill="none"
-              stroke="#bbb"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-
-            {/* Seams from pentagon to edge */}
-            <line x1="50" y1="28" x2="50" y2="4" stroke="#ccc" strokeWidth="1" />
-            <line x1="37" y1="36" x2="16" y2="25" stroke="#ccc" strokeWidth="1" />
-            <line x1="63" y1="36" x2="84" y2="25" stroke="#ccc" strokeWidth="1" />
-            <line x1="40" y1="52" x2="22" y2="68" stroke="#ccc" strokeWidth="1" />
-            <line x1="60" y1="52" x2="78" y2="68" stroke="#ccc" strokeWidth="1" />
-
-            {/* Outer connecting seams */}
-            <line x1="16" y1="25" x2="5" y2="48" stroke="#ccc" strokeWidth="1" />
-            <line x1="84" y1="25" x2="95" y2="48" stroke="#ccc" strokeWidth="1" />
-            <line x1="5" y1="48" x2="22" y2="68" stroke="#ccc" strokeWidth="1" />
-            <line x1="95" y1="48" x2="78" y2="68" stroke="#ccc" strokeWidth="1" />
-            <line x1="22" y1="68" x2="36" y2="88" stroke="#ccc" strokeWidth="1" />
-            <line x1="78" y1="68" x2="64" y2="88" stroke="#ccc" strokeWidth="1" />
-            <line x1="36" y1="88" x2="50" y2="97" stroke="#ccc" strokeWidth="1" />
-            <line x1="64" y1="88" x2="50" y2="97" stroke="#ccc" strokeWidth="1" />
-          </svg>
+            draggable={false}
+          />
         </div>
 
         {/* Gradient glow shadow */}
@@ -87,16 +62,16 @@ export default function FootballSpinner({ size = 'md', text, light = false }) {
 
       <style>{`
         .fbb-${id} {
-          animation: fbbBounce${id} 0.8s infinite;
+          animation: fbbB${id} 0.8s infinite;
         }
         .fbr-${id} {
-          animation: fbbRoll${id} 1.6s linear infinite;
+          animation: fbbR${id} 1.6s linear infinite;
         }
         .fbs-${id} {
-          animation: fbbShadow${id} 0.8s infinite;
+          animation: fbbS${id} 0.8s infinite;
         }
 
-        @keyframes fbbBounce${id} {
+        @keyframes fbbB${id} {
           0%, 100% {
             transform: translateY(0) scaleY(0.88) scaleX(1.12);
             animation-timing-function: ease-out;
@@ -113,11 +88,11 @@ export default function FootballSpinner({ size = 'md', text, light = false }) {
           }
         }
 
-        @keyframes fbbRoll${id} {
+        @keyframes fbbR${id} {
           to { transform: rotate(360deg); }
         }
 
-        @keyframes fbbShadow${id} {
+        @keyframes fbbS${id} {
           0%, 100% {
             transform: scaleX(1.15);
             opacity: 0.7;
