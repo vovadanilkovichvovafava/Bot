@@ -140,15 +140,19 @@ app.get('/api/postback', async (req, res) => {
     click_id,
     clickId, // alternative param name
     status,
+    event, // Keitaro alias for status
     amount,
+    payout, // Keitaro alias for amount
     currency,
     user_id,
     secret
   } = req.query;
 
   const actualClickId = click_id || clickId;
+  const actualStatus = status || event; // Support both status and event params
+  const actualAmount = amount || payout; // Support both amount and payout params
 
-  console.log(`[POSTBACK] Received: click_id=${actualClickId}, status=${status}, amount=${amount}`);
+  console.log(`[POSTBACK] Received: click_id=${actualClickId}, user_id=${user_id}, status=${actualStatus}, amount=${actualAmount}`);
 
   // Verify postback secret (optional but recommended)
   if (secret && secret !== CONFIG.POSTBACK_SECRET) {
@@ -156,47 +160,69 @@ app.get('/api/postback', async (req, res) => {
     return res.status(403).json({ error: 'Invalid secret' });
   }
 
-  // Find the click record
-  const clickRecord = postbackStore.get(actualClickId);
+  // Find the click record by click_id
+  const clickRecord = actualClickId ? postbackStore.get(actualClickId) : null;
 
-  if (!clickRecord) {
-    console.log(`[POSTBACK] Click ID not found: ${actualClickId}`);
-    // Still return OK to bookmaker (they don't need to know about our issues)
+  // Determine userId: from click record or directly from user_id param (Keitaro sub_id_10 format)
+  const userId = clickRecord?.userId || user_id;
+
+  if (!userId) {
+    console.log(`[POSTBACK] No userId found (click_id=${actualClickId}, user_id=${user_id}) - ignoring`);
     return res.status(200).send('OK');
   }
 
-  // Update click record
-  clickRecord.status = status;
-  if (amount) {
-    clickRecord.deposits.push({
-      amount: parseFloat(amount),
-      currency: currency || 'USD',
+  console.log(`[POSTBACK] Resolved userId: ${userId} (from ${clickRecord ? 'click record' : 'user_id param'})`);
+
+  // Update click record if exists
+  if (clickRecord) {
+    clickRecord.status = actualStatus;
+    if (actualAmount) {
+      clickRecord.deposits.push({
+        amount: parseFloat(actualAmount),
+        currency: currency || 'USD',
+        timestamp: new Date().toISOString(),
+        bookmakerId: user_id,
+      });
+    }
+    postbackStore.set(actualClickId, clickRecord);
+  } else {
+    // Store a new record for direct user_id postbacks (Keitaro format)
+    const recordKey = `direct_${user_id}_${Date.now()}`;
+    postbackStore.set(recordKey, {
+      userId: user_id,
+      source: 'keitaro_direct',
       timestamp: new Date().toISOString(),
-      bookmakerId: user_id,
+      status: actualStatus,
+      deposits: actualAmount ? [{
+        amount: parseFloat(actualAmount),
+        currency: currency || 'USD',
+        timestamp: new Date().toISOString(),
+      }] : [],
     });
   }
 
-  postbackStore.set(actualClickId, clickRecord);
-
   // Check if this is a qualifying action for Premium activation
-  const qualifyingStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified'];
+  const qualifyingStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified', 'lead', 'sale', 'confirmed'];
 
-  if (qualifyingStatuses.includes(status?.toLowerCase())) {
-    console.log(`[POSTBACK] Qualifying deposit! Activating Premium for user: ${clickRecord.userId}`);
+  if (qualifyingStatuses.includes(actualStatus?.toLowerCase())) {
+    console.log(`[POSTBACK] Qualifying event (${actualStatus})! Activating Premium for user: ${userId}`);
 
     try {
       // Activate Premium for the user
-      await activatePremium(clickRecord.userId, {
+      await activatePremium(userId, {
         clickId: actualClickId,
-        depositAmount: amount,
-        currency,
-        bookmakerId: user_id,
+        depositAmount: actualAmount,
+        currency: currency || 'USD',
+        source: clickRecord ? 'bookmaker_postback' : 'keitaro_direct',
       });
 
-      clickRecord.premiumActivated = true;
-      clickRecord.premiumActivatedAt = new Date().toISOString();
-      postbackStore.set(actualClickId, clickRecord);
+      if (clickRecord) {
+        clickRecord.premiumActivated = true;
+        clickRecord.premiumActivatedAt = new Date().toISOString();
+        postbackStore.set(actualClickId, clickRecord);
+      }
 
+      console.log(`[POSTBACK] Premium activated for user: ${userId}`);
     } catch (error) {
       console.error('[POSTBACK] Failed to activate Premium:', error.message);
     }
@@ -210,10 +236,10 @@ app.get('/api/postback', async (req, res) => {
  * Alternative POST endpoint for postbacks
  */
 app.post('/api/postback', express.json(), async (req, res) => {
-  const { click_id, clickId, status, amount, currency, user_id, secret } = req.body;
+  const { click_id, clickId, status, event, amount, payout, currency, user_id, secret } = req.body;
 
-  // Reuse GET logic
-  req.query = { click_id, clickId, status, amount, currency, user_id, secret };
+  // Reuse GET logic - support both original and Keitaro param names
+  req.query = { click_id, clickId, status, event, amount, payout, currency, user_id, secret };
   return app._router.handle(req, res, () => {});
 });
 
