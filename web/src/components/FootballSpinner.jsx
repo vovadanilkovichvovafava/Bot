@@ -1,112 +1,118 @@
+import { useRef } from 'react';
+
 /**
- * Football-themed loading spinner — clean bouncing soccer ball with shadow.
+ * Premium loading spinner — gradient ring with rolling football.
  *
  * Props:
  *  - size: 'xs' | 'sm' | 'md' | 'lg'  (default 'md')
- *  - text: optional label below the ball
+ *  - text: optional label below the spinner
  *  - light: true for light text (use on dark backgrounds)
  */
 export default function FootballSpinner({ size = 'md', text, light = false }) {
+  const id = useRef(Math.random().toString(36).slice(2, 8)).current;
+
   const sizes = {
-    xs: { ball: 20, gap: 3, shadow: { w: 16, h: 4 }, textClass: 'text-[10px] mt-1' },
-    sm: { ball: 28, gap: 4, shadow: { w: 22, h: 5 }, textClass: 'text-xs mt-1' },
-    md: { ball: 48, gap: 6, shadow: { w: 36, h: 8 }, textClass: 'text-sm mt-2' },
-    lg: { ball: 64, gap: 8, shadow: { w: 48, h: 10 }, textClass: 'text-base mt-3' },
+    xs: { dim: 24, textClass: 'text-[10px] mt-1' },
+    sm: { dim: 32, textClass: 'text-xs mt-1' },
+    md: { dim: 56, textClass: 'text-sm mt-2' },
+    lg: { dim: 72, textClass: 'text-base mt-3' },
   };
 
   const s = sizes[size] || sizes.md;
-  const textColor = light ? 'text-white/80' : 'text-gray-500';
+  const textColor = light ? 'text-white/80' : 'text-gray-400';
+
+  /* Ring geometry: r=40, circumference ≈ 251 → 75% visible arc = 188, gap = 63 */
 
   return (
     <div className="inline-flex flex-col items-center justify-center">
-      <div className="flex flex-col items-center" style={{ width: s.ball, height: s.ball + s.gap + s.shadow.h }}>
-        {/* Bouncing ball */}
-        <svg
-          viewBox="0 0 100 100"
-          width={s.ball}
-          height={s.ball}
-          className="fb-bounce"
-          style={{ flexShrink: 0 }}
-        >
-          {/* Main circle — dark gray */}
-          <circle cx="50" cy="50" r="48" fill="#555" stroke="#333" strokeWidth="3" />
+      <svg
+        viewBox="0 0 100 100"
+        width={s.dim}
+        height={s.dim}
+        className={`fbs-${id}`}
+      >
+        <defs>
+          <linearGradient id={`rg${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="33%" stopColor="#6366F1" />
+            <stop offset="66%" stopColor="#8B5CF6" />
+            <stop offset="100%" stopColor="#EC4899" />
+          </linearGradient>
+          <filter id={`gw${id}`}>
+            <feGaussianBlur stdDeviation="1.5" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
 
-          {/* Center pentagon — white */}
-          <polygon
-            points="50,22 35,33 39,51 61,51 65,33"
-            fill="#fff"
-            stroke="#333"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-
-          {/* Top-left pentagon */}
-          <polygon
-            points="35,33 18,28 8,44 17,58 39,51"
-            fill="#fff"
-            stroke="#333"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-
-          {/* Top-right pentagon */}
-          <polygon
-            points="65,33 82,28 92,44 83,58 61,51"
-            fill="#fff"
-            stroke="#333"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-
-          {/* Bottom-left pentagon */}
-          <polygon
-            points="39,51 17,58 20,76 40,82 50,67"
-            fill="#fff"
-            stroke="#333"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-
-          {/* Bottom-right pentagon */}
-          <polygon
-            points="61,51 83,58 80,76 60,82 50,67"
-            fill="#fff"
-            stroke="#333"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-        </svg>
-
-        {/* Shadow */}
-        <div
-          className="fb-shadow rounded-full"
-          style={{
-            width: s.shadow.w,
-            height: s.shadow.h,
-            marginTop: s.gap,
-            background: 'radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)',
-          }}
+        {/* Faint background ring */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth="3"
         />
-      </div>
+
+        {/* Gradient arc with glow */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke={`url(#rg${id})`}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray="188 63"
+          filter={`url(#gw${id})`}
+          className={`fbp-${id}`}
+        />
+
+        {/* Football at leading edge of arc (12 o'clock position) */}
+        <g transform="translate(50,10)">
+          <g className={`fbr-${id}`}>
+            {/* Ball body */}
+            <circle r="6.5" fill="white" />
+            {/* Center pentagon */}
+            <polygon
+              points="0,-2.8 -2.3,-0.9 -1.4,2.3 1.4,2.3 2.3,-0.9"
+              fill="none"
+              stroke="#bbb"
+              strokeWidth="0.6"
+              strokeLinejoin="round"
+            />
+            {/* Seams from pentagon vertices */}
+            <line x1="0" y1="-2.8" x2="0" y2="-5.8" stroke="#ccc" strokeWidth="0.4" />
+            <line x1="-2.3" y1="-0.9" x2="-5.2" y2="-2.2" stroke="#ccc" strokeWidth="0.4" />
+            <line x1="2.3" y1="-0.9" x2="5.2" y2="-2.2" stroke="#ccc" strokeWidth="0.4" />
+            <line x1="-1.4" y1="2.3" x2="-3.2" y2="5" stroke="#ccc" strokeWidth="0.4" />
+            <line x1="1.4" y1="2.3" x2="3.2" y2="5" stroke="#ccc" strokeWidth="0.4" />
+          </g>
+        </g>
+      </svg>
 
       {text && (
         <p className={`${s.textClass} ${textColor} font-medium`}>{text}</p>
       )}
 
       <style>{`
-        .fb-bounce {
-          animation: fbBounce 0.6s ease-in-out infinite;
+        .fbs-${id} {
+          animation: fbSpin 2.5s linear infinite;
         }
-        .fb-shadow {
-          animation: fbShadow 0.6s ease-in-out infinite;
+        .fbr-${id} {
+          animation: fbRoll 2.5s linear infinite;
         }
-        @keyframes fbBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-50%); }
+        .fbp-${id} {
+          animation: fbPulse 2.5s ease-in-out infinite;
         }
-        @keyframes fbShadow {
-          0%, 100% { transform: scaleX(1); opacity: 0.6; }
-          50% { transform: scaleX(0.6); opacity: 0.3; }
+        @keyframes fbSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes fbRoll {
+          to { transform: rotate(2160deg); }
+        }
+        @keyframes fbPulse {
+          0%, 100% { opacity: 0.85; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
