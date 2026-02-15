@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getReferredBy, clearReferralCode } from '../services/referralStore';
+import { isValidPhone, fullPhoneNumber, getCountryByCode, detectCountry } from '../utils/phoneUtils';
+import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneCountry] = useState(() => getCountryByCode(detectCountry()));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,8 +30,12 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email || !password || !phone) {
       setError('Please fill in all required fields');
+      return;
+    }
+    if (!isValidPhone(phone, phoneCountry)) {
+      setError('Please enter a valid phone number');
       return;
     }
     if (password !== confirmPassword) {
@@ -53,16 +61,16 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
-      {/* Hero Section */}
-      <div className="relative flex-shrink-0 pt-10 pb-12 px-6">
+      {/* Hero Section — compact like Login */}
+      <div className="relative flex-shrink-0 pt-8 pb-8 px-6">
         {/* Background decorations */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
         <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
 
         <div className="relative text-center">
           {/* Logo */}
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-6 shadow-lg shadow-primary-500/30">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-4 shadow-lg shadow-primary-500/30">
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
               <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
               <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -70,33 +78,27 @@ export default function Register() {
             </svg>
           </div>
 
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400">Sign up to get started</p>
+          <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
+          <p className="text-gray-400 text-sm">Sign up to get started</p>
         </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-8 pb-8">
+      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-6 pb-6">
         <div className="max-w-sm mx-auto">
           {/* Benefits */}
-          <div className="flex justify-center gap-6 mb-6">
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-              </svg>
-              Free
+          <div className="flex justify-center gap-4 mb-5">
+            <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
+              <p className="text-green-600 font-bold text-lg">Free</p>
+              <p className="text-green-600/70 text-[10px] uppercase font-medium">Start</p>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-              </svg>
-              AI Predictions
+            <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
+              <p className="text-amber-600 font-bold text-lg">PRO</p>
+              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Access</p>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-              </svg>
-              PRO
+            <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
+              <p className="text-purple-600 font-bold text-lg">AI</p>
+              <p className="text-purple-600/70 text-[10px] uppercase font-medium">Predictions</p>
             </div>
           </div>
 
@@ -109,7 +111,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
               <div className="relative">
@@ -126,6 +128,11 @@ export default function Register() {
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone *</label>
+              <PhoneInput value={phone} onChange={setPhone} />
             </div>
 
             <div>
@@ -201,7 +208,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <FootballSpinner size="xs" light />
@@ -216,11 +223,11 @@ export default function Register() {
             </button>
           </form>
 
-          <p className="text-center text-gray-400 text-xs mt-4">
+          <p className="text-center text-gray-400 text-xs mt-3">
             By registering, you agree to the terms of service
           </p>
 
-          <p className="text-center text-gray-500 text-sm mt-6">
+          <p className="text-center text-gray-500 text-sm mt-4">
             Already have an account?{' '}
             <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
               Sign In
