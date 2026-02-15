@@ -7,8 +7,13 @@ import {
   getCountryByCode,
 } from '../utils/phoneUtils';
 
-export default function PhoneInput({ value, onChange, className = '' }) {
-  const [country, setCountry] = useState(() => getCountryByCode(detectCountry()));
+export default function PhoneInput({ value, onChange, onCountryChange, className = '' }) {
+  const [country, setCountry] = useState(() => {
+    const initial = getCountryByCode(detectCountry());
+    // Notify parent of initial country on mount
+    if (onCountryChange) setTimeout(() => onCountryChange(initial), 0);
+    return initial;
+  });
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -32,6 +37,7 @@ export default function PhoneInput({ value, onChange, className = '' }) {
   const selectCountry = (c) => {
     setCountry(c);
     setOpen(false);
+    if (onCountryChange) onCountryChange(c);
     // trim digits if new country has shorter max
     if (value.length > c.digits) {
       onChange(value.slice(0, c.digits));

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { isValidPhone, fullPhoneNumber, getCountryByCode, detectCountry } from '../utils/phoneUtils';
+import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 
@@ -9,7 +9,7 @@ export default function Login() {
   const [mode, setMode] = useState('email'); // 'email' | 'phone'
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [phoneCountry] = useState(() => getCountryByCode(detectCountry()));
+  const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +149,7 @@ export default function Login() {
             ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
-                <PhoneInput value={phone} onChange={setPhone} />
+                <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
               </div>
             )}
 
