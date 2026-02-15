@@ -30,7 +30,10 @@ import NotFound from './pages/NotFound';
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <SplashScreen />;
-  if (!isAuthenticated) return <Navigate to="/register" replace />;
+  if (!isAuthenticated) {
+    const hasAccount = localStorage.getItem('has_account');
+    return <Navigate to={hasAccount ? '/login' : '/register'} replace />;
+  }
   return children;
 }
 

@@ -64,6 +64,7 @@ export function AuthProvider({ children }) {
     await api.login(email, password);
     const userData = await api.getMe();
     setUser(userData);
+    safeSetItem('has_account', '1');
     return userData;
   };
 
@@ -71,6 +72,7 @@ export function AuthProvider({ children }) {
     await api.register(email, password, username, referralCode);
     const userData = await api.getMe();
     setUser(userData);
+    safeSetItem('has_account', '1');
     return userData;
   };
 
