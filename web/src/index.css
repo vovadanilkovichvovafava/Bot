@@ -9,10 +9,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   width: 100%;
   overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
