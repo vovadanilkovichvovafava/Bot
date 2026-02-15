@@ -6,16 +6,33 @@ import {
   detectCountry,
   getCountryByCode,
 } from '../utils/phoneUtils';
+import geoService from '../services/geoService';
 
 export default function PhoneInput({ value, onChange, onCountryChange, className = '' }) {
   const [country, setCountry] = useState(() => {
     const initial = getCountryByCode(detectCountry());
-    // Notify parent of initial country on mount
     if (onCountryChange) setTimeout(() => onCountryChange(initial), 0);
     return initial;
   });
   const [open, setOpen] = useState(false);
+  const [manuallySelected, setManuallySelected] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Try to detect country by IP (more accurate), override only if user hasn't picked manually
+  useEffect(() => {
+    let cancelled = false;
+    geoService.getGeoInfo().then((geo) => {
+      if (cancelled || manuallySelected) return;
+      if (geo?.country && geo.country !== 'UNKNOWN') {
+        const found = COUNTRIES.find((c) => c.code === geo.country);
+        if (found) {
+          setCountry(found);
+          if (onCountryChange) onCountryChange(found);
+        }
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -37,6 +54,7 @@ export default function PhoneInput({ value, onChange, onCountryChange, className
   const selectCountry = (c) => {
     setCountry(c);
     setOpen(false);
+    setManuallySelected(true);
     if (onCountryChange) onCountryChange(c);
     // trim digits if new country has shorter max
     if (value.length > c.digits) {
