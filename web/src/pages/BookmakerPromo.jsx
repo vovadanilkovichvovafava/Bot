@@ -143,7 +143,7 @@ export default function BookmakerPromo() {
   ];
 
   return (
-    <div className="h-screen bg-gray-50 overflow-y-auto">
+    <div className="h-screen bg-gray-50 overflow-y-auto pb-24">
       {/* Header - Dark */}
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-5 pt-4 pb-8 rounded-b-3xl">
         {/* Back button */}
@@ -269,30 +269,7 @@ export default function BookmakerPromo() {
           </div>
         </section>
 
-        {/* CTA Button */}
-        <a
-          href={bookmakerLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
-        >
-          {loadingLink ? (
-            <span className="flex items-center justify-center gap-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-              {t('common.loading')}
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-              </svg>
-              {t('promo.ctaButton')}
-            </span>
-          )}
-        </a>
-        <p className="text-center text-xs text-gray-400">
-          {t('promo.ctaSubtext')}
-        </p>
+        {/* CTA Button is now fixed at bottom */}
 
         {/* Help block */}
         <section className="bg-primary-50 rounded-2xl p-4 mt-4">
@@ -316,6 +293,33 @@ export default function BookmakerPromo() {
         </section>
 
         <div className="h-6"/>
+      </div>
+
+      {/* Fixed CTA Button at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3 z-50">
+        <a
+          href={bookmakerLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
+        >
+          {loadingLink ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              {t('common.loading')}
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+              </svg>
+              {t('promo.ctaButton')}
+            </span>
+          )}
+        </a>
+        <p className="text-center text-xs text-gray-400 mt-1">
+          {t('promo.ctaSubtext')}
+        </p>
       </div>
 
       {/* Support Chat */}
