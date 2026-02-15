@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import FootballSpinner from './FootballSpinner';
 
 // 1Win Geetest v4 captcha ID
 const GEETEST_CAPTCHA_ID = 'c8abe6dfba763d691007f7b470f73b9e';
@@ -142,7 +143,7 @@ export default function GeetestCaptcha({
     >
       {verifying ? (
         <div className="flex items-center justify-center gap-2">
-          <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+          <FootballSpinner size="xs" />
           Verifying...
         </div>
       ) : children}

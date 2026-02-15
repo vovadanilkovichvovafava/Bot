@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBookmaker } from '../context/BookmakerContext';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
+import FootballSpinner from './FootballSpinner';
 
 export default function BetModal({ isOpen, onClose, bet }) {
   const { isConnected, balance, placeBet, loading: bkLoading } = useBookmaker();
@@ -252,7 +253,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           >
             {placing ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                <FootballSpinner size="xs" light />
                 Placing Bet...
               </>
             ) : (

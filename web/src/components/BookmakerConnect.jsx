@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBookmaker } from '../context/BookmakerContext';
+import FootballSpinner from './FootballSpinner';
 
 // Bookmaker config - loaded from env or defaults (no brand names shown to user)
 export const BOOKMAKER = {
@@ -231,7 +232,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             >
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  <FootballSpinner size="xs" light />
                   Connecting...
                 </>
               ) : (
@@ -326,7 +327,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             >
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  <FootballSpinner size="xs" light />
                   Creating Account...
                 </>
               ) : (

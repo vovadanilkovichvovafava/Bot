@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
+import FootballSpinner from '../components/FootballSpinner';
 
 // Country to language mapping
 const countryToLanguage = {
@@ -315,7 +316,7 @@ export default function ProAccess() {
         >
           {loadingLink ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              <FootballSpinner size="xs" light />
               {t('common.loading')}
             </span>
           ) : (

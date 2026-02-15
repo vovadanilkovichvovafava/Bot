@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { footballApi } from '../api/footballApi';
+import FootballSpinner from './FootballSpinner';
 import {
   getNotificationSettings,
   addNotificationTeam,
@@ -284,7 +285,7 @@ export default function NotificationSetupModal({ isOpen, onClose, isReminder = f
                 />
                 {searching && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"/>
+                    <FootballSpinner size="xs" />
                   </div>
                 )}
               </div>
@@ -410,7 +411,7 @@ export default function NotificationSetupModal({ isOpen, onClose, isReminder = f
               >
                 {enabling ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                    <FootballSpinner size="xs" light />
                     {t('notifications.enabling', 'Enabling...')}
                   </>
                 ) : (

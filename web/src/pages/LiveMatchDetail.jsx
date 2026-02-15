@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
+import FootballSpinner from '../components/FootballSpinner';
 
 const TABS = ['Overview', 'Stats', 'Events', 'Lineups'];
 
@@ -142,10 +143,7 @@ export default function LiveMatchDetail() {
     return (
       <div className="h-screen flex flex-col bg-gray-50">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"/>
-            <p className="text-gray-500">Loading live match...</p>
-          </div>
+          <FootballSpinner size="lg" text="Loading live match..." />
         </div>
       </div>
     );
@@ -431,7 +429,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
           >
             {analyzing ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                <FootballSpinner size="xs" light />
                 Analyzing match...
               </>
             ) : (

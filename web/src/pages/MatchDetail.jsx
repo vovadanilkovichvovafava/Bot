@@ -8,6 +8,7 @@ import { savePrediction } from '../services/predictionStore';
 import ShareButton from '../components/ShareButton';
 import { generateMatchShareText } from '../services/shareUtils';
 import { getMatchColors } from '../utils/teamColors';
+import FootballSpinner from '../components/FootballSpinner';
 
 const TABS = ['Overview', 'Stats', 'Lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -373,10 +374,7 @@ export default function MatchDetail() {
     return (
       <div className="h-screen flex flex-col bg-[#F0F2F5]">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"/>
-            <p className="text-gray-500 text-sm">Loading match...</p>
-          </div>
+          <FootballSpinner size="lg" text="Loading match..." />
         </div>
       </div>
     );
@@ -723,7 +721,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
               {predicting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  <FootballSpinner size="xs" light />
                   Analyzing...
                 </>
               ) : (

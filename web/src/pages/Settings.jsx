@@ -13,6 +13,7 @@ import {
   disableNotifications as disableNotificationsStore,
 } from '../services/notificationStore';
 import { isPushSupported, unsubscribeFromPush } from '../services/pushNotificationService';
+import FootballSpinner from '../components/FootballSpinner';
 
 // Default stats while loading
 const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
@@ -617,7 +618,7 @@ export default function Settings() {
             >
               {connectingBookmaker ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  <FootballSpinner size="xs" light />
                   Connecting...
                 </>
               ) : (
@@ -845,7 +846,7 @@ export default function Settings() {
                 >
                   {verificationSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                      <FootballSpinner size="xs" light />
                       Submitting...
                     </>
                   ) : (

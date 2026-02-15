@@ -9,6 +9,7 @@ import {
   addFavouriteLeague,
 } from '../services/favouritesStore';
 import footballApi from '../api/footballApi';
+import FootballSpinner from '../components/FootballSpinner';
 
 // Popular leagues for quick add
 const QUICK_ADD_LEAGUES = [
@@ -297,8 +298,7 @@ function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClo
         <div className="flex-1 overflow-y-auto space-y-2">
           {searching && (
             <div className="text-center py-8 text-gray-500">
-              <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"/>
-              Searching...
+              <FootballSpinner size="sm" text="Searching..." />
             </div>
           )}
 

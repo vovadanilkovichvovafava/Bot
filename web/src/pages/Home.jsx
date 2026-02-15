@@ -5,6 +5,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
+import FootballSpinner from '../components/FootballSpinner';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -64,18 +65,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
-        <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-          <svg viewBox="0 0 40 40" className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="20" cy="20" r="16"/>
-            <circle cx="20" cy="20" r="5"/>
-            <line x1="20" y1="4" x2="20" y2="12"/>
-            <line x1="20" y1="28" x2="20" y2="36"/>
-            <line x1="4" y1="20" x2="12" y2="20"/>
-            <line x1="28" y1="20" x2="36" y2="20"/>
-          </svg>
-        </div>
-        <h1 className="text-white text-2xl font-bold">AI Betting Bot</h1>
-        <div className="mt-8 w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"/>
+        <FootballSpinner size="lg" text="Loading matches..." light />
       </div>
     );
   }

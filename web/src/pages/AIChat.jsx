@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
+import FootballSpinner from '../components/FootballSpinner';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -406,16 +407,12 @@ export default function AIChat() {
             <div className="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm">
               {enriching ? (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="w-4 h-4 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin"/>
+                  <FootballSpinner size="xs" />
                   Fetching real-time data...
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="flex gap-1.5">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}/>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}/>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}/>
-                  </div>
+                  <FootballSpinner size="xs" />
                   Analyzing...
                 </div>
               )}
@@ -504,7 +501,7 @@ export default function AIChat() {
             className="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center shrink-0 disabled:opacity-50"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              <FootballSpinner size="xs" light />
             ) : (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>

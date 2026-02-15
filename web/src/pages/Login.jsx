@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import FootballSpinner from '../components/FootballSpinner';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -140,7 +141,7 @@ export default function Login() {
               className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                <FootballSpinner size="xs" light />
               ) : (
                 <>
                   Sign In
