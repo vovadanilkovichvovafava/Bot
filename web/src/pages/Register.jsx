@@ -51,7 +51,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
       {/* Hero Section */}
       <div className="relative flex-shrink-0 pt-10 pb-12 px-6">
         {/* Background decorations */}
