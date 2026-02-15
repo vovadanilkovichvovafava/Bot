@@ -1,16 +1,5 @@
 // Country phone data: code, dial code, flag emoji, format pattern, max digits (without code)
 const COUNTRIES = [
-  { code: 'RU', dial: '+7', flag: '\u{1F1F7}\u{1F1FA}', mask: '(___) ___-__-__', digits: 10 },
-  { code: 'UA', dial: '+380', flag: '\u{1F1FA}\u{1F1E6}', mask: '(__) ___-__-__', digits: 9 },
-  { code: 'BY', dial: '+375', flag: '\u{1F1E7}\u{1F1FE}', mask: '(__) ___-__-__', digits: 9 },
-  { code: 'KZ', dial: '+7', flag: '\u{1F1F0}\u{1F1FF}', mask: '(___) ___-__-__', digits: 10 },
-  { code: 'UZ', dial: '+998', flag: '\u{1F1FA}\u{1F1FF}', mask: '(__) ___-__-__', digits: 9 },
-  { code: 'GE', dial: '+995', flag: '\u{1F1EC}\u{1F1EA}', mask: '(___) __-__-__', digits: 9 },
-  { code: 'AM', dial: '+374', flag: '\u{1F1E6}\u{1F1F2}', mask: '(__) ___-___', digits: 8 },
-  { code: 'AZ', dial: '+994', flag: '\u{1F1E6}\u{1F1FF}', mask: '(__) ___-__-__', digits: 9 },
-  { code: 'KG', dial: '+996', flag: '\u{1F1F0}\u{1F1EC}', mask: '(___) __-__-__', digits: 9 },
-  { code: 'TJ', dial: '+992', flag: '\u{1F1F9}\u{1F1EF}', mask: '(__) ___-__-__', digits: 9 },
-  { code: 'MD', dial: '+373', flag: '\u{1F1F2}\u{1F1E9}', mask: '(__) ___-___', digits: 8 },
   { code: 'US', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}', mask: '(___) ___-____', digits: 10 },
   { code: 'GB', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}', mask: '(____) ______', digits: 10 },
   { code: 'DE', dial: '+49', flag: '\u{1F1E9}\u{1F1EA}', mask: '(___) ________', digits: 11 },
@@ -60,28 +49,6 @@ export function detectCountry() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
     const lang = navigator.language || '';
 
-    if (tz.startsWith('Europe/Moscow') || tz.startsWith('Asia/Yekaterinburg') || tz.startsWith('Asia/Novosibirsk') || tz.startsWith('Asia/Krasnoyarsk') || tz.startsWith('Asia/Vladivostok') || tz.startsWith('Europe/Samara') || tz.startsWith('Europe/Volgograd') || lang.startsWith('ru'))
-      return 'RU';
-    if (tz.startsWith('Europe/Kiev') || tz.startsWith('Europe/Kyiv') || lang.startsWith('uk'))
-      return 'UA';
-    if (tz.startsWith('Europe/Minsk') || lang.startsWith('be'))
-      return 'BY';
-    if (tz.startsWith('Asia/Almaty') || tz.startsWith('Asia/Aqtau') || tz.startsWith('Asia/Oral'))
-      return 'KZ';
-    if (tz.startsWith('Asia/Tashkent'))
-      return 'UZ';
-    if (tz.startsWith('Asia/Tbilisi'))
-      return 'GE';
-    if (tz.startsWith('Asia/Yerevan'))
-      return 'AM';
-    if (tz.startsWith('Asia/Baku'))
-      return 'AZ';
-    if (tz.startsWith('Asia/Bishkek'))
-      return 'KG';
-    if (tz.startsWith('Asia/Dushanbe'))
-      return 'TJ';
-    if (tz.startsWith('Europe/Chisinau'))
-      return 'MD';
     if (tz.startsWith('America/') && lang.startsWith('en'))
       return 'US';
     if (tz.startsWith('Europe/London'))
@@ -106,7 +73,7 @@ export function detectCountry() {
       return 'AE';
   } catch {}
 
-  return 'RU'; // default
+  return 'US'; // default
 }
 
 export function getCountryByCode(code) {
