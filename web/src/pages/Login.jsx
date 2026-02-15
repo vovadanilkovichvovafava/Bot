@@ -33,15 +33,15 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
       {/* Hero Section */}
-      <div className="relative flex-shrink-0 pt-12 pb-16 px-6">
+      <div className="relative flex-shrink-0 pt-8 pb-8 px-6">
         {/* Background decorations */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
         <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
 
         <div className="relative text-center">
           {/* Logo */}
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-6 shadow-lg shadow-primary-500/30">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-4 shadow-lg shadow-primary-500/30">
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
               <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
               <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -49,16 +49,16 @@ export default function Login() {
             </svg>
           </div>
 
-          <h1 className="text-3xl font-bold text-white mb-2">AI Betting Bot</h1>
-          <p className="text-gray-400">Sign in to continue</p>
+          <h1 className="text-2xl font-bold text-white mb-1">AI Betting Bot</h1>
+          <p className="text-gray-400 text-sm">Sign in to continue</p>
         </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-8 pb-8">
+      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-6 pb-6">
         <div className="max-w-sm mx-auto">
           {/* Stats badges */}
-          <div className="flex justify-center gap-4 mb-8">
+          <div className="flex justify-center gap-4 mb-5">
             <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
               <p className="text-green-600 font-bold text-lg">73%</p>
               <p className="text-green-600/70 text-[10px] uppercase font-medium">Win Rate</p>
@@ -138,7 +138,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
             >
               {loading ? (
                 <FootballSpinner size="xs" light />
@@ -153,7 +153,7 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-gray-500 text-sm mt-8">
+          <p className="text-center text-gray-500 text-sm mt-5">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
               Sign Up
@@ -161,7 +161,7 @@ export default function Login() {
           </p>
 
           {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 mt-8 pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-center gap-4 mt-5 pt-4 border-t border-gray-100">
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd"/>
