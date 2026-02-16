@@ -9,6 +9,7 @@ import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 import { openExternalLink } from '../utils/openExternalLink';
+import OfferIframe from '../components/OfferIframe';
 
 
 // SVG Icons
@@ -57,6 +58,7 @@ export default function BookmakerPromo() {
   const [geoInfo, setGeoInfo] = useState(null);
   const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
 
   const [searchParams] = useSearchParams();
   const banner = searchParams.get('banner') || '';
@@ -278,7 +280,8 @@ export default function BookmakerPromo() {
         <button
           onClick={() => {
             track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
-            openExternalLink(bookmakerLink);
+            const opened = openExternalLink(bookmakerLink);
+            if (!opened) setShowIframe(true);
           }}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
@@ -303,6 +306,9 @@ export default function BookmakerPromo() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showChat} onClose={() => setShowChat(false)} />
+
+      {/* Iframe overlay for standalone PWA — opens bootballgame.shop inside our app */}
+      <OfferIframe url={bookmakerLink} isOpen={showIframe} onClose={() => setShowIframe(false)} />
     </div>
   );
 }

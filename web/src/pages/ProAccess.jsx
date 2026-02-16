@@ -9,6 +9,7 @@ import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 import { openExternalLink } from '../utils/openExternalLink';
+import OfferIframe from '../components/OfferIframe';
 
 
 // Download icon for CTA button
@@ -29,6 +30,7 @@ export default function ProAccess() {
   const [showChat, setShowChat] = useState(false);
   const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
 
   const feature = searchParams.get('feature');
 
@@ -194,7 +196,8 @@ export default function ProAccess() {
         <button
           onClick={() => {
             track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') });
-            openExternalLink(bookmakerLink);
+            const opened = openExternalLink(bookmakerLink);
+            if (!opened) setShowIframe(true);
           }}
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
@@ -213,6 +216,9 @@ export default function ProAccess() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showChat} onClose={() => setShowChat(false)} />
+
+      {/* Iframe overlay for standalone PWA */}
+      <OfferIframe url={bookmakerLink} isOpen={showIframe} onClose={() => setShowIframe(false)} />
 
       {/* Animations */}
       <style>{`
