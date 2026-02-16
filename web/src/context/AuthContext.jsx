@@ -46,6 +46,9 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    // If user has a token, they had an account at some point
+    safeSetItem('hasAccount', 'true');
+
     try {
       const userData = await api.getMe();
       setUser(userData);
@@ -64,7 +67,7 @@ export function AuthProvider({ children }) {
     await api.login(email, password);
     const userData = await api.getMe();
     setUser(userData);
-    safeSetItem('has_account', '1');
+    safeSetItem('hasAccount', 'true');
     return userData;
   };
 
@@ -72,7 +75,7 @@ export function AuthProvider({ children }) {
     await api.register(email, password, username, referralCode);
     const userData = await api.getMe();
     setUser(userData);
-    safeSetItem('has_account', '1');
+    safeSetItem('hasAccount', 'true');
     return userData;
   };
 
