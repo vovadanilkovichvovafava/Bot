@@ -80,7 +80,13 @@
     "freeBetUpTo": "Free bet up to {{bonus}}",
     "betOnMatch": "Bet on any match",
     "freeBetOnMatch": "Free bet {{bonus}} on this match!",
-    "placeBet": "Place Bet"
+    "placeBet": "Place Bet",
+    "aiPromoAsk": "AI thinks {{team}} wins — ask why?",
+    "aiPromoNoMatch": "Ask AI about today's best bets!",
+    "aiPromoTry": "Try AI",
+    "aiNudgeTitle": "Welcome! Try our AI Assistant",
+    "aiNudgeDesc": "Ask anything about matches, predictions, and betting tips — AI will help!",
+    "aiNudgeCta": "Chat with AI"
   },
   "matches": {
     "today": "Today",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Confirm Password",
     "emailPlaceholder": "example@email.com",
     "optionalPlaceholder": "Optional",
-    "passwordPlaceholder": "Min 6 chars, 1 uppercase",
+    "passwordPlaceholder": "Min 8 chars (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Repeat password",
     "required": "*",
     "alreadyHaveAccount": "Already have an account?",
@@ -162,7 +168,7 @@
     "errFillFields": "Please fill in all required fields",
     "errInvalidPhone": "Please enter a valid phone number",
     "errPasswordsMismatch": "Passwords do not match",
-    "errPasswordLength": "Password must be at least 6 characters",
+    "errPasswordLength": "Password must be at least 8 characters",
     "errPasswordUppercase": "Password must contain at least one uppercase letter",
     "errRegistration": "Registration failed",
     "errEnterEmail": "Please enter your email",
@@ -189,7 +195,10 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "connecting": "Connecting...",
-    "creatingAccount": "Creating Account..."
+    "creatingAccount": "Creating Account...",
+    "errPasswordLowercase": "Password must contain at least one lowercase letter",
+    "errPasswordDigit": "Password must contain at least one digit",
+    "pwChars": "chars"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",
@@ -517,7 +526,7 @@
     "captchaRequired": "Captcha verification required. Please register directly.",
     "captchaRegister": "Captcha required. Please register at the bookmaker website.",
     "errEmailPhone": "Please enter email or phone",
-    "errPasswordLength": "Password must be at least 6 characters",
+    "errPasswordLength": "Password must be at least 8 characters",
     "connectAccount": "Connect Account",
     "createAccount": "Create Account",
     "loginDesc": "Enter your credentials to connect",
@@ -538,7 +547,11 @@
     "noAccount": "Don't have an account?",
     "registerAt": "Register at {{name}}",
     "emailPlaceholder": "example@email.com",
-    "phonePlaceholder": "+1234567890"
+    "phonePlaceholder": "+1234567890",
+    "passwordPlaceholder": "Min 8 chars (Aa + 0-9)",
+    "errPasswordLowercase": "Password must contain at least one lowercase letter",
+    "errPasswordDigit": "Password must contain at least one digit",
+    "pwChars": "chars"
   },
   "share": {
     "sharePrediction": "Share Prediction",

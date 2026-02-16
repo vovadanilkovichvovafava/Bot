@@ -26,7 +26,13 @@
     "aiAnalysis": "AI Analizi",
     "getAnalysis": "AI Analizi Al",
     "analyzing": "Analiz ediliyor...",
-    "viewAll": "Tümünü Gör"
+    "viewAll": "Tümünü Gör",
+    "aiPromoAsk": "AI {{team}} kazanacak diyor — nedenini sor?",
+    "aiPromoNoMatch": "AI'ya bugünün en iyi bahislerini sor!",
+    "aiPromoTry": "AI'yı dene",
+    "aiNudgeTitle": "Hoş geldin! AI asistanımızı dene",
+    "aiNudgeDesc": "Maçlar, tahminler ve bahis ipuçları hakkında her şeyi sor — AI yardım edecek!",
+    "aiNudgeCta": "AI ile sohbet"
   },
   "matches": {
     "today": "Bugün",
@@ -73,7 +79,12 @@
     "noAccount": "Hesabınız yok mu?",
     "hasAccount": "Zaten hesabınız var mı?",
     "connecting": "Bağlanıyor...",
-    "creatingAccount": "Hesap oluşturuluyor..."
+    "creatingAccount": "Hesap oluşturuluyor...",
+    "errPasswordLength": "Şifre en az 8 karakter olmalıdır",
+    "passwordPlaceholder": "Min 8 kar. (Aa + 0-9)",
+    "errPasswordLowercase": "Şifre en az bir küçük harf içermelidir",
+    "errPasswordDigit": "Şifre en az bir rakam içermelidir",
+    "pwChars": "kar."
   },
   "bonus": {
     "welcomeBonus": "Hoş Geldin Bonusu",

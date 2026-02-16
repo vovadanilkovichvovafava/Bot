@@ -26,7 +26,13 @@
     "aiAnalysis": "Análise IA",
     "getAnalysis": "Obter Análise IA",
     "analyzing": "Analisando...",
-    "viewAll": "Ver Tudo"
+    "viewAll": "Ver Tudo",
+    "aiPromoAsk": "A IA acha que {{team}} vai ganhar — pergunte por quê?",
+    "aiPromoNoMatch": "Pergunte à IA sobre as melhores apostas de hoje!",
+    "aiPromoTry": "Testar IA",
+    "aiNudgeTitle": "Bem-vindo! Experimente nosso assistente de IA",
+    "aiNudgeDesc": "Pergunte sobre jogos, previsões e dicas — a IA vai ajudar!",
+    "aiNudgeCta": "Chat com IA"
   },
   "matches": {
     "today": "Hoje",
@@ -73,7 +79,12 @@
     "noAccount": "Não tem conta?",
     "hasAccount": "Já tem conta?",
     "connecting": "Conectando...",
-    "creatingAccount": "Criando Conta..."
+    "creatingAccount": "Criando Conta...",
+    "errPasswordLength": "A senha deve ter pelo menos 8 caracteres",
+    "passwordPlaceholder": "Mín 8 car. (Aa + 0-9)",
+    "errPasswordLowercase": "A senha deve conter pelo menos uma letra minúscula",
+    "errPasswordDigit": "A senha deve conter pelo menos um dígito",
+    "pwChars": "car."
   },
   "bonus": {
     "welcomeBonus": "Bônus de Boas-vindas",

@@ -80,7 +80,13 @@
     "freeBetUpTo": "Freebet do {{bonus}}",
     "betOnMatch": "Obstawiaj dowolny mecz",
     "freeBetOnMatch": "Freebet {{bonus}} na ten mecz!",
-    "placeBet": "Postaw Zakład"
+    "placeBet": "Postaw Zakład",
+    "aiPromoAsk": "AI uważa że {{team}} wygra — zapytaj dlaczego?",
+    "aiPromoNoMatch": "Zapytaj AI o najlepsze zakłady na dziś!",
+    "aiPromoTry": "Wypróbuj AI",
+    "aiNudgeTitle": "Witaj! Wypróbuj naszego asystenta AI",
+    "aiNudgeDesc": "Pytaj o mecze, prognozy i porady — AI pomoże!",
+    "aiNudgeCta": "Czat z AI"
   },
   "matches": {
     "today": "Dziś",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Potwierdź hasło",
     "emailPlaceholder": "przyklad@email.com",
     "optionalPlaceholder": "Opcjonalnie",
-    "passwordPlaceholder": "Min. 6 znaków, 1 wielka litera",
+    "passwordPlaceholder": "Min 8 zn. (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Powtórz hasło",
     "required": "*",
     "alreadyHaveAccount": "Masz już konto?",
@@ -162,7 +168,7 @@
     "errFillFields": "Wypełnij wszystkie wymagane pola",
     "errInvalidPhone": "Podaj prawidłowy numer telefonu",
     "errPasswordsMismatch": "Hasła nie pasują do siebie",
-    "errPasswordLength": "Hasło musi mieć co najmniej 6 znaków",
+    "errPasswordLength": "Hasło musi mieć co najmniej 8 znaków",
     "errPasswordUppercase": "Hasło musi zawierać co najmniej jedną wielką literę",
     "errRegistration": "Rejestracja nie powiodła się",
     "errEnterEmail": "Podaj swój adres email",
@@ -189,7 +195,10 @@
     "noAccount": "Nie masz konta?",
     "hasAccount": "Masz już konto?",
     "connecting": "Łączenie...",
-    "creatingAccount": "Tworzenie konta..."
+    "creatingAccount": "Tworzenie konta...",
+    "errPasswordLowercase": "Hasło musi zawierać co najmniej jedną małą literę",
+    "errPasswordDigit": "Hasło musi zawierać co najmniej jedną cyfrę",
+    "pwChars": "zn."
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",
@@ -508,7 +517,7 @@
     "captchaRequired": "Wymagana weryfikacja captcha. Zarejestruj się bezpośrednio.",
     "captchaRegister": "Wymagana captcha. Zarejestruj się na stronie bukmachera.",
     "errEmailPhone": "Wprowadź email lub telefon",
-    "errPasswordLength": "Hasło musi mieć minimum 6 znaków",
+    "errPasswordLength": "Hasło musi mieć co najmniej 8 znaków",
     "connectAccount": "Podłącz Konto",
     "createAccount": "Utwórz Konto",
     "loginDesc": "Wprowadź dane logowania",
@@ -529,7 +538,11 @@
     "noAccount": "Nie masz konta?",
     "registerAt": "Zarejestruj się w {{name}}",
     "emailPlaceholder": "przyklad@email.com",
-    "phonePlaceholder": "+1234567890"
+    "phonePlaceholder": "+1234567890",
+    "passwordPlaceholder": "Min 8 zn. (Aa + 0-9)",
+    "errPasswordLowercase": "Hasło musi zawierać co najmniej jedną małą literę",
+    "errPasswordDigit": "Hasło musi zawierać co najmniej jedną cyfrę",
+    "pwChars": "zn."
   },
   "share": {
     "sharePrediction": "Udostępnij Prognozę",

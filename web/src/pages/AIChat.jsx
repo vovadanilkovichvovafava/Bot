@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
@@ -23,11 +23,13 @@ const SECONDARY_QUESTIONS = [
 
 export default function AIChat() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [prefillHandled, setPrefillHandled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [showQuick, setShowQuick] = useState(true);
@@ -57,6 +59,16 @@ export default function AIChat() {
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
   }, []);
+
+  // Handle pre-filled question from Home AI promo card
+  useEffect(() => {
+    if (!prefillHandled && location.state?.prefill) {
+      setInput(location.state.prefill);
+      setPrefillHandled(true);
+      // Clear the state so back/forward doesn't re-trigger
+      window.history.replaceState({}, '');
+    }
+  }, [location.state, prefillHandled]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {

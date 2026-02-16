@@ -13,7 +13,6 @@ import useKeyboardScroll from '../hooks/useKeyboardScroll';
 export default function Register() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
@@ -64,12 +63,20 @@ export default function Register() {
       setError(t('auth.errInvalidPhone'));
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t('auth.errPasswordLength'));
       return;
     }
     if (!/[A-Z]/.test(password)) {
       setError(t('auth.errPasswordUppercase'));
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setError(t('auth.errPasswordLowercase'));
+      return;
+    }
+    if (!/\d/.test(password)) {
+      setError(t('auth.errPasswordDigit'));
       return;
     }
     if (password !== confirmPassword) {
@@ -81,10 +88,10 @@ export default function Register() {
     track('register_submit');
     try {
       const fullPhone = phone && phoneCountry ? fullPhoneNumber(phone, phoneCountry) : null;
-      await register(email, password, username || undefined, referralCode, fullPhone);
+      await register(email, password, undefined, referralCode, fullPhone);
       track('register_success');
-      clearReferralCode(); // Clear the referral code after successful registration
-      navigate('/', { replace: true });
+      clearReferralCode();
+      navigate('/', { replace: true, state: { justRegistered: true } });
     } catch (err) {
       track('register_error', { error: err.message });
       setError(err.message || t('auth.errRegistration'));
@@ -167,24 +174,6 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.usernameLabel')}</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder={t('auth.optionalPlaceholder')}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.passwordLabel')} {t('auth.required')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -216,6 +205,23 @@ export default function Register() {
                   </svg>
                 </button>
               </div>
+              {/* Inline password requirements */}
+              {password.length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 px-1">
+                  <span className={`text-[11px] ${password.length >= 8 ? 'text-green-500' : 'text-gray-400'}`}>
+                    {password.length >= 8 ? '✓' : '○'} 8+ {t('auth.pwChars')}
+                  </span>
+                  <span className={`text-[11px] ${/[A-Z]/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/[A-Z]/.test(password) ? '✓' : '○'} A-Z
+                  </span>
+                  <span className={`text-[11px] ${/[a-z]/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/[a-z]/.test(password) ? '✓' : '○'} a-z
+                  </span>
+                  <span className={`text-[11px] ${/\d/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/\d/.test(password) ? '✓' : '○'} 0-9
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>

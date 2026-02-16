@@ -80,7 +80,13 @@
     "freeBetUpTo": "Apuesta gratis hasta {{bonus}}",
     "betOnMatch": "Apuesta en cualquier partido",
     "freeBetOnMatch": "¡Apuesta gratis de {{bonus}} en este partido!",
-    "placeBet": "Apostar"
+    "placeBet": "Apostar",
+    "aiPromoAsk": "La IA cree que {{team}} ganará — ¿pregunta por qué?",
+    "aiPromoNoMatch": "¡Pregunta a la IA sobre las mejores apuestas de hoy!",
+    "aiPromoTry": "Probar IA",
+    "aiNudgeTitle": "¡Bienvenido! Prueba nuestro asistente de IA",
+    "aiNudgeDesc": "Pregunta sobre partidos, pronósticos y consejos — ¡la IA te ayudará!",
+    "aiNudgeCta": "Chatear con IA"
   },
   "matches": {
     "today": "Hoy",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Confirmar contraseña",
     "emailPlaceholder": "ejemplo@email.com",
     "optionalPlaceholder": "Opcional",
-    "passwordPlaceholder": "Mín. 6 caracteres, 1 mayúscula",
+    "passwordPlaceholder": "Mín 8 car. (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Repetir contraseña",
     "required": "*",
     "alreadyHaveAccount": "¿Ya tienes cuenta?",
@@ -162,7 +168,7 @@
     "errFillFields": "Completa todos los campos obligatorios",
     "errInvalidPhone": "Introduce un número de teléfono válido",
     "errPasswordsMismatch": "Las contraseñas no coinciden",
-    "errPasswordLength": "La contraseña debe tener al menos 6 caracteres",
+    "errPasswordLength": "La contraseña debe tener al menos 8 caracteres",
     "errPasswordUppercase": "La contraseña debe contener al menos una letra mayúscula",
     "errRegistration": "Error en el registro",
     "errEnterEmail": "Introduce tu correo electrónico",
@@ -189,7 +195,10 @@
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
     "connecting": "Conectando...",
-    "creatingAccount": "Creando Cuenta..."
+    "creatingAccount": "Creando Cuenta...",
+    "errPasswordLowercase": "La contraseña debe contener al menos una letra minúscula",
+    "errPasswordDigit": "La contraseña debe contener al menos un dígito",
+    "pwChars": "car."
   },
   "bonus": {
     "welcomeBonus": "Bono de Bienvenida",
@@ -517,7 +526,7 @@
     "captchaRequired": "Verificación captcha requerida. Regístrate directamente.",
     "captchaRegister": "Captcha requerido. Regístrate en el sitio web de la casa de apuestas.",
     "errEmailPhone": "Introduce correo o teléfono",
-    "errPasswordLength": "La contraseña debe tener al menos 6 caracteres",
+    "errPasswordLength": "La contraseña debe tener al menos 8 caracteres",
     "connectAccount": "Conectar Cuenta",
     "createAccount": "Crear Cuenta",
     "loginDesc": "Introduce tus credenciales para conectar",
@@ -538,7 +547,11 @@
     "noAccount": "¿No tienes cuenta?",
     "registerAt": "Registrarse en {{name}}",
     "emailPlaceholder": "ejemplo@email.com",
-    "phonePlaceholder": "+1234567890"
+    "phonePlaceholder": "+1234567890",
+    "passwordPlaceholder": "Mín 8 car. (Aa + 0-9)",
+    "errPasswordLowercase": "La contraseña debe contener al menos una letra minúscula",
+    "errPasswordDigit": "La contraseña debe contener al menos un dígito",
+    "pwChars": "car."
   },
   "share": {
     "sharePrediction": "Compartir Predicción",

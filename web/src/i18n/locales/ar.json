@@ -26,7 +26,13 @@
     "aiAnalysis": "تحليل AI",
     "getAnalysis": "احصل على تحليل AI",
     "analyzing": "جاري التحليل...",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "aiPromoAsk": "يعتقد الذكاء الاصطناعي أن {{team}} سيفوز — اسأل لماذا؟",
+    "aiPromoNoMatch": "اسأل الذكاء الاصطناعي عن أفضل الرهانات اليوم!",
+    "aiPromoTry": "جرّب AI",
+    "aiNudgeTitle": "مرحباً! جرّب مساعد الذكاء الاصطناعي",
+    "aiNudgeDesc": "اسأل عن المباريات والتوقعات والنصائح — الذكاء الاصطناعي سيساعدك!",
+    "aiNudgeCta": "دردش مع AI"
   },
   "matches": {
     "today": "اليوم",
@@ -73,7 +79,12 @@
     "noAccount": "ليس لديك حساب؟",
     "hasAccount": "لديك حساب بالفعل؟",
     "connecting": "جاري الاتصال...",
-    "creatingAccount": "جاري إنشاء الحساب..."
+    "creatingAccount": "جاري إنشاء الحساب...",
+    "errPasswordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
+    "passwordPlaceholder": "8 أحرف على الأقل (Aa + 0-9)",
+    "errPasswordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
+    "errPasswordDigit": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
+    "pwChars": "حرف"
   },
   "bonus": {
     "welcomeBonus": "مكافأة الترحيب",

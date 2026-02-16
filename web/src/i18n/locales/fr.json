@@ -80,7 +80,13 @@
     "freeBetUpTo": "Pari gratuit jusqu'à {{bonus}}",
     "betOnMatch": "Pariez sur n'importe quel match",
     "freeBetOnMatch": "Pari gratuit {{bonus}} sur ce match !",
-    "placeBet": "Parier"
+    "placeBet": "Parier",
+    "aiPromoAsk": "L'IA pense que {{team}} gagne — demandez pourquoi ?",
+    "aiPromoNoMatch": "Demandez à l'IA les meilleurs paris d'aujourd'hui !",
+    "aiPromoTry": "Essayer l'IA",
+    "aiNudgeTitle": "Bienvenue ! Essayez notre assistant IA",
+    "aiNudgeDesc": "Posez des questions sur les matchs, pronostics et conseils — l'IA vous aidera !",
+    "aiNudgeCta": "Discuter avec l'IA"
   },
   "matches": {
     "today": "Aujourd'hui",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Confirmer le mot de passe",
     "emailPlaceholder": "exemple@email.com",
     "optionalPlaceholder": "Facultatif",
-    "passwordPlaceholder": "Min. 6 caract., 1 majuscule",
+    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Répéter le mot de passe",
     "required": "*",
     "alreadyHaveAccount": "Vous avez déjà un compte ?",
@@ -162,7 +168,7 @@
     "errFillFields": "Veuillez remplir tous les champs obligatoires",
     "errInvalidPhone": "Veuillez entrer un numéro de téléphone valide",
     "errPasswordsMismatch": "Les mots de passe ne correspondent pas",
-    "errPasswordLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "errPasswordLength": "Le mot de passe doit contenir au moins 8 caractères",
     "errPasswordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
     "errRegistration": "Échec de l'inscription",
     "errEnterEmail": "Veuillez entrer votre e-mail",
@@ -189,7 +195,10 @@
     "noAccount": "Pas de compte ?",
     "hasAccount": "Déjà un compte ?",
     "connecting": "Connexion...",
-    "creatingAccount": "Création du compte..."
+    "creatingAccount": "Création du compte...",
+    "errPasswordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+    "errPasswordDigit": "Le mot de passe doit contenir au moins un chiffre",
+    "pwChars": "car."
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bienvenue",
@@ -517,7 +526,7 @@
     "captchaRequired": "Vérification captcha requise. Veuillez vous inscrire directement.",
     "captchaRegister": "Captcha requis. Veuillez vous inscrire sur le site du bookmaker.",
     "errEmailPhone": "Veuillez entrer l'e-mail ou le téléphone",
-    "errPasswordLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "errPasswordLength": "Le mot de passe doit contenir au moins 8 caractères",
     "connectAccount": "Connecter le Compte",
     "createAccount": "Créer un Compte",
     "loginDesc": "Entrez vos identifiants pour vous connecter",
@@ -538,7 +547,11 @@
     "noAccount": "Pas de compte ?",
     "registerAt": "S'inscrire chez {{name}}",
     "emailPlaceholder": "exemple@email.com",
-    "phonePlaceholder": "+33123456789"
+    "phonePlaceholder": "+33123456789",
+    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
+    "errPasswordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+    "errPasswordDigit": "Le mot de passe doit contenir au moins un chiffre",
+    "pwChars": "car."
   },
   "share": {
     "sharePrediction": "Partager le Pronostic",
