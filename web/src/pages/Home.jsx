@@ -109,7 +109,7 @@ export default function Home() {
             </div>
           </div>
           {!user?.is_premium && (
-            <button onClick={() => navigate('/pro-tools')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+            <button onClick={() => navigate('/pro-access')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
               {t('home.getUnlimited')}
             </button>
           )}
