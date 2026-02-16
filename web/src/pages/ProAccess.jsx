@@ -8,21 +8,6 @@ import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 
-// Country to language mapping
-const countryToLanguage = {
-  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
-  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
-  PT: 'pt', BR: 'pt',
-  DE: 'de', AT: 'de', CH: 'de',
-  FR: 'fr', BE: 'fr', CA: 'fr',
-  IT: 'it',
-  PL: 'pl',
-  RO: 'ro', MD: 'ro',
-  TR: 'tr',
-  IN: 'hi',
-  CN: 'zh', TW: 'zh', HK: 'zh',
-  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
-};
 
 // Download icon for CTA button
 const DownloadIcon = () => (
@@ -36,7 +21,7 @@ const DownloadIcon = () => (
 export default function ProAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
@@ -51,11 +36,6 @@ export default function ProAccess() {
       setLoadingLink(true);
       try {
         const geo = await geoService.getGeoInfo();
-
-        const geoLang = countryToLanguage[geo.country];
-        if (geoLang && i18n.language !== geoLang) {
-          i18n.changeLanguage(geoLang);
-        }
 
         const userId = user?.id || `anon_${Date.now()}`;
         const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
@@ -76,7 +56,7 @@ export default function ProAccess() {
     }
 
     fetchGeoAndLink();
-  }, [user?.id, i18n]);
+  }, [user?.id]);
 
   const benefits = [
     { emoji: '\u267E\uFE0F', titleKey: 'proAccess.benefit1Title', descKey: 'proAccess.benefit1Desc', highlight: true },

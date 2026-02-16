@@ -8,21 +8,6 @@ import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 
-// Country to language mapping
-const countryToLanguage = {
-  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
-  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
-  PT: 'pt', BR: 'pt',
-  DE: 'de', AT: 'de', CH: 'de',
-  FR: 'fr', BE: 'fr', CA: 'fr',
-  IT: 'it',
-  PL: 'pl',
-  RO: 'ro', MD: 'ro',
-  TR: 'tr',
-  IN: 'hi',
-  CN: 'zh', TW: 'zh', HK: 'zh',
-  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
-};
 
 // SVG Icons
 const ChartIcon = () => (
@@ -63,7 +48,7 @@ const RocketIcon = () => (
 
 export default function BookmakerPromo() {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
@@ -81,12 +66,6 @@ export default function BookmakerPromo() {
       try {
         const geo = await geoService.getGeoInfo();
         setGeoInfo(geo);
-
-        // Set language based on geo
-        const geoLang = countryToLanguage[geo.country];
-        if (geoLang && i18n.language !== geoLang) {
-          i18n.changeLanguage(geoLang);
-        }
 
         // Get tracking link from PostbackAPI (with all sub_ids)
         const userId = user?.id || `anon_${Date.now()}`;
@@ -107,7 +86,7 @@ export default function BookmakerPromo() {
     }
 
     fetchGeoAndLink();
-  }, [user?.id, banner, i18n]);
+  }, [user?.id, banner]);
 
   const benefits = [
     {
