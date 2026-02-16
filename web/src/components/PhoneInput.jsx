@@ -6,9 +6,10 @@ import {
   detectCountry,
   getCountryByCode,
 } from '../utils/phoneUtils';
-import geoService from '../services/geoService';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
 export default function PhoneInput({ value, onChange, onCountryChange, className = '' }) {
+  const { countryCode: geoCountryCode } = useAdvertiser();
   const [country, setCountry] = useState(() => {
     const initial = getCountryByCode(detectCountry());
     if (onCountryChange) setTimeout(() => onCountryChange(initial), 0);
@@ -18,21 +19,15 @@ export default function PhoneInput({ value, onChange, onCountryChange, className
   const [manuallySelected, setManuallySelected] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Try to detect country by IP (more accurate), override only if user hasn't picked manually
+  // Use country from AdvertiserContext GeoIP (ipapi.co, ip-api.com, ipwho.is)
   useEffect(() => {
-    let cancelled = false;
-    geoService.getGeoInfo().then((geo) => {
-      if (cancelled || manuallySelected) return;
-      if (geo?.country && geo.country !== 'UNKNOWN') {
-        const found = COUNTRIES.find((c) => c.code === geo.country);
-        if (found) {
-          setCountry(found);
-          if (onCountryChange) onCountryChange(found);
-        }
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (manuallySelected || !geoCountryCode) return;
+    const found = COUNTRIES.find((c) => c.code === geoCountryCode);
+    if (found) {
+      setCountry(found);
+      if (onCountryChange) onCountryChange(found);
+    }
+  }, [geoCountryCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
   useEffect(() => {
