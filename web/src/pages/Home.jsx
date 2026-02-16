@@ -7,7 +7,6 @@ import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 
 
 const FREE_AI_LIMIT = 3;
@@ -69,7 +68,6 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
-        <img src={logoWhite} alt="PVA" className="w-36 h-36 mb-6 drop-shadow-lg object-contain" />
         <FootballSpinner size="lg" text={t('home.loadingMatches')} light />
       </div>
     );
@@ -81,7 +79,6 @@ export default function Home() {
       <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <img src={logoWhite} alt="PVA" className="w-14 h-14 drop-shadow object-contain" />
             <div>
               <p className="text-primary-100 text-sm">{getGreeting()}</p>
               <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>

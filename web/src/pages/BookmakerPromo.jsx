@@ -6,7 +6,6 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
@@ -154,7 +153,6 @@ export default function BookmakerPromo() {
 
         {/* Partner badge */}
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <img src={logoWhite} alt="PVA" className="w-8 h-8 object-contain" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 

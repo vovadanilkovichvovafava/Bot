@@ -6,7 +6,6 @@ import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 
 
 export default function Register() {
@@ -76,9 +75,6 @@ export default function Register() {
         <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
 
         <div className="relative text-center">
-          {/* Logo */}
-          <img src={logoWhite} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg object-contain" />
-
           <h1 className="text-2xl font-bold text-white mb-1">{t('auth.createAccount')}</h1>
           <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>
         </div>
