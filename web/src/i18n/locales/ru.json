@@ -861,6 +861,9 @@
     "fullTime": "Конец"
   },
   "matchDetail": {
+    "tabOverview": "Обзор",
+    "tabStats": "Статистика",
+    "tabLineups": "Составы",
     "overview": "Обзор",
     "h2h": "Личные встречи",
     "standings": "Таблица",
@@ -967,6 +970,10 @@
     "winProbability": "Вероятность победы"
   },
   "liveMatch": {
+    "tabOverview": "Обзор",
+    "tabStats": "Статистика",
+    "tabEvents": "События",
+    "tabLineups": "Составы",
     "overview": "Обзор",
     "events": "События",
     "stats": "Статистика",

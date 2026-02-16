@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
 import { saveTrackingParams } from './services/trackingService';
@@ -60,6 +60,16 @@ function SplashScreen() {
 export default function App() {
   const { loading, user } = useAuth();
   const trackingSaved = useRef(false);
+  const location = useLocation();
+
+  // Яндекс Метрика — SPA pageview tracking
+  useEffect(() => {
+    if (typeof window.ym === 'function') {
+      window.ym(106847617, 'hit', window.location.pathname + window.location.search, {
+        title: document.title,
+      });
+    }
+  }, [location]);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
   useEffect(() => {
