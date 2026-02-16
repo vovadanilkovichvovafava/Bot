@@ -1,3 +1,4 @@
+import json
 import logging
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
@@ -48,7 +49,7 @@ async def track_event(event: AnalyticsEvent, request: Request):
                     "country": event.country,
                     "user_agent": user_agent,
                     "referrer": event.referrer,
-                    "metadata": str(event.metadata or {}).replace("'", '"'),
+                    "metadata": json.dumps(event.metadata or {}),
                 },
             )
     except Exception as e:
