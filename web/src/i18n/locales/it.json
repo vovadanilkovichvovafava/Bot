@@ -432,7 +432,8 @@
     "contactSupport": "Contatta il supporto",
     "helpLink": "Hai bisogno di aiuto? Scrivi al supporto",
     "ctaButton": "Installa l'app del bookmaker",
-    "ctaSubtext": "Gratuito • PRO si attiva automaticamente"
+    "ctaSubtext": "Gratuito • PRO si attiva automaticamente",
+    "threeSteps": "3 passaggi"
   },
   "aiChat": {
     "title": "Assistente AI",
