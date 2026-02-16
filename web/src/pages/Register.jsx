@@ -7,6 +7,7 @@ import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import { track } from '../services/analytics';
+import useKeyboardScroll from '../hooks/useKeyboardScroll';
 
 
 export default function Register() {
@@ -22,8 +23,20 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
   const [formTouched, setFormTouched] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const formRef = useKeyboardScroll();
+
+  // Detect keyboard open/close to collapse hero section
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const threshold = window.innerHeight * 0.75;
+    const onResize = () => setKeyboardOpen(vv.height < threshold);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
 
   // Track first interaction with form
   const onFormTouch = () => {
@@ -81,37 +94,43 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
-      {/* Hero Section — compact like Login */}
-      <div className="relative flex-shrink-0 pt-8 pb-8 px-6">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
+      {/* Hero Section — collapses when keyboard is open */}
+      <div className={`relative flex-shrink-0 px-6 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-8'}`}>
         {/* Background decorations */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
-        <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+        {!keyboardOpen && (
+          <>
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
+            <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+          </>
+        )}
 
         <div className="relative text-center">
-          <h1 className="text-2xl font-bold text-white mb-1">{t('auth.createAccount')}</h1>
-          <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>
+          <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>{t('auth.createAccount')}</h1>
+          {!keyboardOpen && <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>}
         </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-6 pb-6">
+      <div className={`flex-1 bg-white rounded-t-[32px] px-6 pb-6 transition-all duration-200 ${keyboardOpen ? 'pt-3' : 'pt-6'}`}>
         <div className="max-w-sm mx-auto">
-          {/* Benefits */}
-          <div className="flex justify-center gap-4 mb-5">
-            <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
-              <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
+          {/* Benefits — hidden when keyboard is open to save space */}
+          {!keyboardOpen && (
+            <div className="flex justify-center gap-4 mb-5">
+              <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
+                <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
+              </div>
+              <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
+                <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
+              </div>
+              <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
+                <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
+              </div>
             </div>
-            <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
-            </div>
-            <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
-            </div>
-          </div>
+          )}
 
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
@@ -122,7 +141,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.emailLabel')} {t('auth.required')}</label>
               <div className="relative">

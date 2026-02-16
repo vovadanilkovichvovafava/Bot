@@ -34,10 +34,29 @@ export default function AIChat() {
   const [questionsExpanded, setQuestionsExpanded] = useState(false);
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const containerRef = useRef(null);
 
   const isPremium = user?.is_premium;
+
+  // Track visual viewport height for mobile keyboard support
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      setViewportHeight(vv.height);
+      // Scroll input into view when keyboard opens
+      if (document.activeElement === inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -234,7 +253,11 @@ export default function AIChat() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      ref={containerRef}
+      className="flex flex-col"
+      style={{ height: viewportHeight ? `${viewportHeight}px` : '100%' }}
+    >
       {/* Header */}
       <div className="bg-white px-5 py-4 flex items-center justify-between border-b border-gray-100 shrink-0">
         <div className="flex items-center gap-2">
