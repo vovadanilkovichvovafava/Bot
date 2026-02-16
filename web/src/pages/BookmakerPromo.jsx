@@ -154,7 +154,7 @@ export default function BookmakerPromo() {
 
         {/* Partner badge */}
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <img src={logoPng} alt="PVA" className="w-5 h-5 rounded-full object-cover" />
+          <img src={logoPng} alt="PVA" className="w-8 h-8 rounded-lg object-cover" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 
