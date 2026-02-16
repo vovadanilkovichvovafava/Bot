@@ -61,14 +61,21 @@ export default function App() {
   const { loading, user } = useAuth();
   const trackingSaved = useRef(false);
   const location = useLocation();
+  const prevLocationRef = useRef(null);
 
-  // Яндекс Метрика — SPA pageview tracking
+  // Яндекс Метрика — SPA pageview tracking (defer:true в init, hit вручную)
   useEffect(() => {
     if (typeof window.ym === 'function') {
-      window.ym(106847617, 'hit', window.location.pathname + window.location.search, {
+      const url = location.pathname + location.search;
+      const referer = prevLocationRef.current
+        ? prevLocationRef.current.pathname + prevLocationRef.current.search
+        : document.referrer;
+      window.ym(106847617, 'hit', url, {
         title: document.title,
+        referer,
       });
     }
+    prevLocationRef.current = location;
   }, [location]);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
