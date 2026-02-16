@@ -120,16 +120,6 @@ async def get_odds(fixture_id: int) -> List[Dict]:
 
 # === Teams ===
 
-@router.get("/teams/{team_id}")
-async def get_team(team_id: int) -> Optional[Dict]:
-    """Get team info"""
-    try:
-        return await api_football.get_team(team_id)
-    except Exception as e:
-        logger.error(f"Error fetching team {team_id}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch team")
-
-
 @router.get("/teams/search")
 async def search_teams(name: str = Query(..., min_length=2)) -> List[Dict]:
     """Search teams by name"""
@@ -138,6 +128,16 @@ async def search_teams(name: str = Query(..., min_length=2)) -> List[Dict]:
     except Exception as e:
         logger.error(f"Error searching teams for '{name}': {e}")
         raise HTTPException(status_code=502, detail="Failed to search teams")
+
+
+@router.get("/teams/{team_id}")
+async def get_team(team_id: int) -> Optional[Dict]:
+    """Get team info"""
+    try:
+        return await api_football.get_team(team_id)
+    except Exception as e:
+        logger.error(f"Error fetching team {team_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch team")
 
 
 # === Injuries ===
