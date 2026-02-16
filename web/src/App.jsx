@@ -15,7 +15,6 @@ import Settings from './pages/Settings';
 import Statistics from './pages/Statistics';
 import Favourites from './pages/Favourites';
 import LeagueMatches from './pages/LeagueMatches';
-import Premium from './pages/Premium';
 import ValueFinder from './pages/ValueFinder';
 import PredictionHistory from './pages/PredictionHistory';
 import OddsConverter from './pages/OddsConverter';
@@ -107,9 +106,7 @@ export default function App() {
       <Route path="/live/:id" element={
         <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
       } />
-      <Route path="/premium" element={
-        <ProtectedRoute><Premium /></ProtectedRoute>
-      } />
+      <Route path="/premium" element={<Navigate to="/pro-access" replace />} />
       <Route path="/value-finder" element={
         <ProtectedRoute><ValueFinder /></ProtectedRoute>
       } />
