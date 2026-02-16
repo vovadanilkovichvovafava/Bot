@@ -14,57 +14,12 @@ import {
 } from '../services/notificationStore';
 import { isPushSupported, unsubscribeFromPush } from '../services/pushNotificationService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoSvg from '../assets/logo.svg';
+import logoPng from '../assets/logo.png';
 
 // Default stats while loading
 const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
 
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
-
-const RISK_OPTIONS = [
-  {
-    key: 'low',
-    label: 'LOW',
-    labelColor: 'text-green-600',
-    summary: 'Safer bets \u2022 1-2% stakes',
-    desc: 'Double chance, under goals, low odds favorites',
-    bg: 'bg-green-50',
-    borderActive: 'border-green-400',
-    icon: (
-      <svg className="w-7 h-7 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-        <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.932 9.563 12.348a.749.749 0 00.374 0c5.499-1.416 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516 11.209 11.209 0 01-7.877-3.08zm3.044 7.89a.75.75 0 10-1.12-.998l-3.236 3.636L9.53 11.022a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.09-.03l3.75-4.242z" clipRule="evenodd"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'medium',
-    label: 'MEDIUM',
-    labelColor: 'text-amber-600',
-    summary: 'Balanced \u2022 2-5% stakes',
-    desc: '1X2, over/under, BTTS, moderate odds',
-    bg: 'bg-amber-50',
-    borderActive: 'border-amber-400',
-    icon: (
-      <svg className="w-7 h-7 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'high',
-    label: 'HIGH',
-    labelColor: 'text-red-600',
-    summary: 'Aggressive \u2022 5-10% stakes',
-    desc: 'Accumulators, correct scores, value picks',
-    bg: 'bg-red-50',
-    borderActive: 'border-red-400',
-    icon: (
-      <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
-      </svg>
-    ),
-  },
-];
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -90,6 +45,51 @@ export default function Settings() {
   const [riskLevel, setRiskLevel] = useState(user?.risk_level || 'medium');
   const [referralStats, setReferralStats] = useState(DEFAULT_REFERRAL_STATS);
   const [referralCopied, setReferralCopied] = useState(false);
+
+  const RISK_OPTIONS = [
+    {
+      key: 'low',
+      label: t('settings.riskLow'),
+      labelColor: 'text-green-600',
+      summary: t('settings.riskLowSummary'),
+      desc: t('settings.riskLowDesc'),
+      bg: 'bg-green-50',
+      borderActive: 'border-green-400',
+      icon: (
+        <svg className="w-7 h-7 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+          <path fillRule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.932 9.563 12.348a.749.749 0 00.374 0c5.499-1.416 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516 11.209 11.209 0 01-7.877-3.08zm3.044 7.89a.75.75 0 10-1.12-.998l-3.236 3.636L9.53 11.022a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.09-.03l3.75-4.242z" clipRule="evenodd"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'medium',
+      label: t('settings.riskMedium'),
+      labelColor: 'text-amber-600',
+      summary: t('settings.riskMediumSummary'),
+      desc: t('settings.riskMediumDesc'),
+      bg: 'bg-amber-50',
+      borderActive: 'border-amber-400',
+      icon: (
+        <svg className="w-7 h-7 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'high',
+      label: t('settings.riskHigh'),
+      labelColor: 'text-red-600',
+      summary: t('settings.riskHighSummary'),
+      desc: t('settings.riskHighDesc'),
+      bg: 'bg-red-50',
+      borderActive: 'border-red-400',
+      icon: (
+        <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+        </svg>
+      ),
+    },
+  ];
 
   // Load referral stats from backend
   useEffect(() => {
@@ -175,8 +175,8 @@ export default function Settings() {
     <div>
       <div className="bg-white px-5 pt-6 pb-4">
         <div className="flex items-center justify-center gap-2">
-          <img src={logoSvg} alt="PVA" className="w-8 h-8" />
-          <h1 className="text-xl font-bold">Settings</h1>
+          <img src={logoPng} alt="PVA" className="w-8 h-8 rounded-full object-cover" />
+          <h1 className="text-xl font-bold">{t('settings.title')}</h1>
         </div>
       </div>
 
@@ -198,8 +198,8 @@ export default function Settings() {
 
         {/* Bookmaker Partner Status */}
         <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">Partner</p>
-          <p className="text-xs text-gray-500 mb-3">{advertiser.name} registration status</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.partner')}</p>
+          <p className="text-xs text-gray-500 mb-3">{t('settings.registrationStatus', { name: advertiser.name })}</p>
         </div>
 
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
@@ -214,31 +214,31 @@ export default function Settings() {
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                     </svg>
-                    Registered
+                    {t('settings.registered')}
                   </p>
-                  <p className="text-xs text-gray-600">PRO access active</p>
+                  <p className="text-xs text-gray-600">{t('settings.proAccessActive')}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">Bonus {advertiser.bonus}</p>
-                  <p className="text-xs text-gray-600">Register to get PRO access</p>
+                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonus })}</p>
+                  <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
                 </>
               )}
             </div>
             {!user?.is_premium && (
               <button
-                onClick={() => navigate('/promo')}
+                onClick={() => navigate('/promo?banner=settings_get_pro')}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
               >
-                Get It
+                {t('settings.getIt')}
               </button>
             )}
           </div>
           {!user?.is_premium && (
             <div className="mt-3 pt-3 border-t border-amber-200/50">
               <p className="text-xs text-amber-700">
-                <span className="font-semibold">Important:</span> PRO activates only with a NEW {advertiser.name} account.
-                Already have an account? <button onClick={() => setShowVerificationModal(true)} className="underline font-medium">Request manual verification</button>
+                <span className="font-semibold">Important:</span> {t('settings.proActivationNote', { name: advertiser.name })}
+                {' '}<button onClick={() => setShowVerificationModal(true)} className="underline font-medium">{t('settings.manualVerification')}</button>
               </p>
             </div>
           )}
@@ -246,8 +246,8 @@ export default function Settings() {
 
         {/* One-Click Betting */}
         <div className="mb-3 mt-4">
-          <p className="text-primary-600 font-semibold text-sm mb-1">One-Click Betting</p>
-          <p className="text-xs text-gray-500 mb-3">Connect your account to place bets instantly</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.oneClickBetting')}</p>
+          <p className="text-xs text-gray-500 mb-3">{t('settings.oneClickDesc')}</p>
         </div>
 
         {bookmakerAccount ? (
@@ -259,11 +259,11 @@ export default function Settings() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-green-700">Account Connected</p>
+                <p className="text-sm font-semibold text-green-700">{t('settings.accountConnected')}</p>
                 <p className="text-xs text-gray-600">{bookmakerAccount.login}</p>
                 {bookmakerBalance && (
                   <p className="text-xs text-green-600 font-medium mt-0.5">
-                    Balance: ${bookmakerBalance.amount}
+                    {t('settings.balance')}: ${bookmakerBalance.amount}
                   </p>
                 )}
               </div>
@@ -271,7 +271,7 @@ export default function Settings() {
                 onClick={disconnectBookmaker}
                 className="text-red-500 text-xs font-medium px-2 py-1"
               >
-                Disconnect
+                {t('settings.disconnect')}
               </button>
             </div>
           </div>
@@ -286,8 +286,8 @@ export default function Settings() {
               </svg>
             </div>
             <div className="flex-1 text-left">
-              <p className="font-semibold">Connect Account</p>
-              <p className="text-xs text-white/80">Place bets directly from the app</p>
+              <p className="font-semibold">{t('settings.connectAccount')}</p>
+              <p className="text-xs text-white/80">{t('settings.placeBetsFromApp')}</p>
             </div>
             <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -299,23 +299,23 @@ export default function Settings() {
 
         <SettingsItem
           icon={<span className="text-lg">💬</span>}
-          label="Contact Support"
-          value="Help with registration & PRO"
+          label={t('settings.contactSupport')}
+          value={t('settings.helpWithRegistration')}
           onClick={() => setShowSupportChat(true)}
         />
 
         <SettingsItem
           icon={<span className="text-lg">📚</span>}
-          label="Beginner's Guide"
-          value="10 tips to get started"
+          label={t('settings.beginnersGuide')}
+          value={t('settings.tipsToStart')}
           onClick={() => navigate('/guide')}
         />
 
         <SettingsItem
           icon={<span className="text-lg">🎁</span>}
-          label="Promo Page"
-          value={`${advertiser.name} bonuses`}
-          onClick={() => navigate('/promo')}
+          label={t('settings.promoPage')}
+          value={t('settings.bonuses', { name: advertiser.name })}
+          onClick={() => navigate('/promo?banner=settings_promo_page')}
         />
 
         <div className="h-3"/>
@@ -323,10 +323,10 @@ export default function Settings() {
         {/* Notifications */}
         <div className="mb-3">
           <p className="text-primary-600 font-semibold text-sm mb-1">
-            {t('settings.notifications', 'Notifications')}
+            {t('settings.notifications')}
           </p>
           <p className="text-xs text-gray-500 mb-3">
-            {t('settings.notificationsDesc', 'Get alerts when your teams play')}
+            {t('settings.notificationsDesc')}
           </p>
         </div>
 
@@ -340,19 +340,19 @@ export default function Settings() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-green-700">
-                  {t('settings.notificationsEnabled', 'Notifications Enabled')}
+                  {t('settings.notificationsEnabled')}
                 </p>
                 <p className="text-xs text-gray-600">
                   {notificationSettings.favoriteTeams?.length > 0
-                    ? t('settings.teamsTracked', '{{count}} team(s) tracked', { count: notificationSettings.favoriteTeams.length })
-                    : t('settings.noTeamsSelected', 'No teams selected')}
+                    ? t('settings.teamsTracked', { count: notificationSettings.favoriteTeams.length })
+                    : t('settings.noTeamsSelected')}
                 </p>
               </div>
               <button
                 onClick={() => setShowNotificationModal(true)}
                 className="text-primary-600 text-xs font-medium px-2 py-1"
               >
-                {t('settings.edit', 'Edit')}
+                {t('settings.edit')}
               </button>
             </div>
             {notificationSettings.favoriteTeams?.length > 0 && (
@@ -376,7 +376,7 @@ export default function Settings() {
               onClick={handleDisableNotifications}
               className="mt-3 text-xs text-gray-500 hover:text-red-500"
             >
-              {t('settings.disableNotifications', 'Disable notifications')}
+              {t('settings.disableNotifications')}
             </button>
           </div>
         ) : (
@@ -390,8 +390,8 @@ export default function Settings() {
               </svg>
             </div>
             <div className="flex-1 text-left">
-              <p className="font-semibold">{t('settings.enableNotifications', 'Enable Notifications')}</p>
-              <p className="text-xs text-white/80">{t('settings.enableNotificationsDesc', 'Get alerts for your favorite teams')}</p>
+              <p className="font-semibold">{t('settings.enableNotifications')}</p>
+              <p className="text-xs text-white/80">{t('settings.enableNotificationsDesc')}</p>
             </div>
             <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -403,26 +403,26 @@ export default function Settings() {
 
         {/* AI Betting Preferences */}
         <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">AI Betting Preferences</p>
-          <p className="text-xs text-gray-500 mb-3">These settings personalize AI recommendations for you</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.aiBettingPrefs')}</p>
+          <p className="text-xs text-gray-500 mb-3">{t('settings.aiBettingPrefsDesc')}</p>
         </div>
 
         <SettingsItem
           icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181"/></svg>}
-          label="Minimum Odds"
+          label={t('settings.minOdds')}
           value={minOdds.toFixed(1)}
           onClick={() => setShowOddsModal('min')}
         />
         <SettingsItem
           icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>}
-          label="Maximum Odds"
+          label={t('settings.maxOdds')}
           value={maxOdds.toFixed(1)}
           onClick={() => setShowOddsModal('max')}
         />
         <SettingsItem
           icon={<svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
-          label="Risk Level"
-          value={`${riskInfo.label} \u2022 ${riskLevel === 'low' ? '1-2%' : riskLevel === 'medium' ? '2-5%' : '5-10%'} stakes`}
+          label={t('settings.riskLevel')}
+          value={`${riskInfo.label} • ${riskLevel === 'low' ? '1-2%' : riskLevel === 'medium' ? '2-5%' : '5-10%'} stakes`}
           onClick={() => setShowRiskModal(true)}
         />
 
@@ -430,8 +430,8 @@ export default function Settings() {
 
         {/* Referral Program */}
         <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">Referral Program</p>
-          <p className="text-xs text-gray-500 mb-3">Invite friends and earn free AI requests</p>
+          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.referralProgram')}</p>
+          <p className="text-xs text-gray-500 mb-3">{t('settings.referralDesc')}</p>
         </div>
 
         <button
@@ -444,11 +444,11 @@ export default function Settings() {
             </svg>
           </div>
           <div className="flex-1 text-left">
-            <p className="font-semibold">Invite Friends</p>
+            <p className="font-semibold">{t('settings.inviteFriends')}</p>
             <p className="text-xs text-white/80">
               {referralStats?.totalReferrals > 0
-                ? `${referralStats.totalReferrals} friends invited`
-                : 'Get +1 free AI request per invite'}
+                ? t('settings.friendsInvited', { count: referralStats.totalReferrals })
+                : t('settings.freeRequestPerInvite')}
             </p>
           </div>
           <div className="text-right">
@@ -464,14 +464,14 @@ export default function Settings() {
 
         <SettingsItem
           icon={<svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"/></svg>}
-          label="Upgrade to Premium"
-          value="Unlimited predictions"
+          label={t('settings.upgradePremium')}
+          value={t('settings.unlimitedPredictions')}
           onClick={() => navigate('/premium')}
         />
 
         <SettingsItem
           icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>}
-          label="About"
+          label={t('settings.about')}
           value="Version 1.0.2"
         />
 
@@ -484,7 +484,7 @@ export default function Settings() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
           </svg>
-          Sign Out
+          {t('settings.signOut')}
         </button>
       </div>
 
@@ -492,8 +492,8 @@ export default function Settings() {
       {showRiskModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowRiskModal(false)}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Risk Level</h3>
-            <p className="text-sm text-gray-500 mb-5">Choose how aggressive AI recommendations should be:</p>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{t('settings.riskLevelTitle')}</h3>
+            <p className="text-sm text-gray-500 mb-5">{t('settings.riskLevelDesc')}</p>
 
             <div className="space-y-3">
               {RISK_OPTIONS.map(opt => (
@@ -532,7 +532,7 @@ export default function Settings() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowOddsModal(null)}>
           <div className="bg-[#F0F2F5] w-full max-w-xs rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-gray-900 mb-4">
-              {showOddsModal === 'min' ? 'Minimum Odds' : 'Maximum Odds'}
+              {showOddsModal === 'min' ? t('settings.minOdds') : t('settings.maxOdds')}
             </h3>
             <div className="space-y-1">
               {ODDS_VALUES.map(v => {
@@ -577,7 +577,7 @@ export default function Settings() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Connect Account</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('settings.connectAccountTitle')}</h3>
               <button onClick={() => setShowBookmakerModal(false)} className="text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -587,29 +587,29 @@ export default function Settings() {
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
               <p className="text-xs text-amber-700">
-                <span className="font-semibold">Note:</span> Enter your {advertiser.name} credentials.
-                Data is stored locally and used only for placing bets.
+                <span className="font-semibold">Note:</span> {t('settings.enterCredentials', { name: advertiser.name })}
+                {' '}{t('settings.dataStoredLocally')}
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Login / Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.loginEmail')}</label>
                 <input
                   type="text"
                   value={bookmakerLogin}
                   onChange={(e) => setBookmakerLogin(e.target.value)}
-                  placeholder="Enter login"
+                  placeholder={t('settings.enterLogin')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label>
                 <input
                   type="password"
                   value={bookmakerPassword}
                   onChange={(e) => setBookmakerPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder={t('settings.enterPassword')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -623,14 +623,14 @@ export default function Settings() {
               {connectingBookmaker ? (
                 <>
                   <FootballSpinner size="xs" light />
-                  Connecting...
+                  {t('settings.connecting')}
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                   </svg>
-                  Connect
+                  {t('settings.connect')}
                 </>
               )}
             </button>
@@ -646,7 +646,7 @@ export default function Settings() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Invite Friends</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('settings.inviteFriends')}</h3>
               <button onClick={() => setShowReferralModal(false)} className="text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -663,8 +663,8 @@ export default function Settings() {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-bold text-purple-800">Earn Free AI Requests</p>
-                  <p className="text-xs text-purple-600">+1 request per friend who joins</p>
+                  <p className="font-bold text-purple-800">{t('settings.earnFreeRequests')}</p>
+                  <p className="text-xs text-purple-600">{t('settings.requestPerFriend')}</p>
                 </div>
               </div>
             </div>
@@ -673,21 +673,21 @@ export default function Settings() {
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{referralStats.totalReferrals}</p>
-                <p className="text-xs text-gray-500">Invited</p>
+                <p className="text-xs text-gray-500">{t('settings.invited')}</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{referralStats.activeReferrals}</p>
-                <p className="text-xs text-gray-500">Active</p>
+                <p className="text-xs text-gray-500">{t('settings.active')}</p>
               </div>
               <div className="bg-green-50 rounded-xl p-3 text-center">
                 <p className="text-2xl font-bold text-green-600">+{referralStats.freeRequests}</p>
-                <p className="text-xs text-green-600">Earned</p>
+                <p className="text-xs text-green-600">{t('settings.earned')}</p>
               </div>
             </div>
 
             {/* Referral code */}
             <div className="mb-5">
-              <p className="text-sm font-medium text-gray-700 mb-2">Your Referral Code</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('settings.yourReferralCode')}</p>
               <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-3">
                 <code className="flex-1 text-lg font-mono font-bold text-gray-900">{referralStats.code}</code>
                 <button
@@ -702,7 +702,7 @@ export default function Settings() {
                       : 'bg-primary-500 text-white hover:bg-primary-600'
                   }`}
                 >
-                  {referralCopied ? 'Copied!' : 'Copy Link'}
+                  {referralCopied ? t('settings.copied') : t('settings.copyLink')}
                 </button>
               </div>
             </div>
@@ -766,7 +766,7 @@ export default function Settings() {
             </div>
 
             <p className="text-center text-xs text-gray-400">
-              Share your link with friends and earn rewards when they sign up!
+              {t('settings.shareReferralDesc')}
             </p>
           </div>
         </div>
@@ -780,7 +780,7 @@ export default function Settings() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Manual Verification</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('settings.verificationTitle')}</h3>
               <button onClick={() => !verificationSubmitting && setShowVerificationModal(false)} className="text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -795,9 +795,9 @@ export default function Settings() {
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Request Submitted!</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">{t('settings.requestSubmitted')}</h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  We'll verify your deposit and activate PRO within 24 hours.
+                  {t('settings.verifyAndActivate')}
                 </p>
                 <button
                   onClick={() => {
@@ -807,38 +807,37 @@ export default function Settings() {
                   }}
                   className="px-6 py-2 bg-primary-500 text-white font-medium rounded-xl"
                 >
-                  Got it
+                  {t('settings.gotIt')}
                 </button>
               </div>
             ) : (
               <>
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5">
                   <p className="text-xs text-blue-700">
-                    <span className="font-semibold">How it works:</span> Enter your {advertiser.name} account ID and we'll verify your deposit manually.
-                    PRO will be activated within 24 hours after verification.
+                    <span className="font-semibold">How it works:</span> {t('settings.howItWorks', { name: advertiser.name })}
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Your {advertiser.name} ID
+                      {t('settings.yourAccountId', { name: advertiser.name })}
                     </label>
                     <input
                       type="text"
                       value={verificationId}
                       onChange={(e) => setVerificationId(e.target.value)}
-                      placeholder="Enter your account ID"
+                      placeholder={t('settings.enterAccountId')}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Find it in your {advertiser.name} profile settings
+                      {t('settings.findInProfile', { name: advertiser.name })}
                     </p>
                   </div>
 
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                     <p className="text-xs text-amber-700">
-                      <span className="font-semibold">Requirements:</span> Minimum deposit of $20 USD to activate PRO access.
+                      <span className="font-semibold">Requirements:</span> {t('settings.verificationReq')}
                     </p>
                   </div>
                 </div>
@@ -851,10 +850,10 @@ export default function Settings() {
                   {verificationSubmitting ? (
                     <>
                       <FootballSpinner size="xs" light />
-                      Submitting...
+                      {t('settings.submitting')}
                     </>
                   ) : (
-                    'Submit for Verification'
+                    t('settings.submitVerification')
                   )}
                 </button>
               </>

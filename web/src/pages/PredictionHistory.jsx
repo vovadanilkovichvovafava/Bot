@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getPredictions, getStats, verifyPredictions } from '../services/predictionStore';
 
 export default function PredictionHistory() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [predictions, setPredictions] = useState([]);
   const [stats, setStats] = useState({ total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
@@ -73,7 +75,7 @@ export default function PredictionHistory() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
               </svg>
             </button>
-            <h1 className="text-lg font-bold text-gray-900">Prediction History</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t('predictionHistory.title')}</h1>
             <button
               onClick={handleRefresh}
               disabled={verifying}
@@ -108,16 +110,16 @@ export default function PredictionHistory() {
                     <span className={`text-2xl font-bold ${stats.accuracy >= 50 ? 'text-green-500' : stats.verified > 0 ? 'text-red-500' : 'text-gray-400'}`}>
                       {stats.verified > 0 ? `${stats.accuracy}%` : '--'}
                     </span>
-                    <span className="text-[10px] text-gray-400">Accuracy</span>
+                    <span className="text-[10px] text-gray-400">{t('predictionHistory.accuracy')}</span>
                   </div>
                 </div>
 
                 {/* Stats Grid */}
                 <div className="flex-1 grid grid-cols-2 gap-3">
-                  <StatBox label="Total" value={stats.total} color="text-primary-600" bg="bg-primary-50"/>
-                  <StatBox label="Correct" value={stats.correct} color="text-green-600" bg="bg-green-50"/>
-                  <StatBox label="Wrong" value={stats.wrong} color="text-red-500" bg="bg-red-50"/>
-                  <StatBox label="Pending" value={stats.pending} color="text-amber-500" bg="bg-amber-50"/>
+                  <StatBox label={t('predictionHistory.total')} value={stats.total} color="text-primary-600" bg="bg-primary-50"/>
+                  <StatBox label={t('predictionHistory.correct')} value={stats.correct} color="text-green-600" bg="bg-green-50"/>
+                  <StatBox label={t('predictionHistory.wrong')} value={stats.wrong} color="text-red-500" bg="bg-red-50"/>
+                  <StatBox label={t('predictionHistory.pending')} value={stats.pending} color="text-amber-500" bg="bg-amber-50"/>
                 </div>
               </div>
             </div>
@@ -126,10 +128,10 @@ export default function PredictionHistory() {
           {/* Filter tabs */}
           <div className="flex gap-2">
             {[
-              { key: 'all', label: 'All', count: predictions.length },
-              { key: 'correct', label: 'Correct', count: stats.correct },
-              { key: 'wrong', label: 'Wrong', count: stats.wrong },
-              { key: 'pending', label: 'Pending', count: stats.pending },
+              { key: 'all', label: t('predictionHistory.all'), count: predictions.length },
+              { key: 'correct', label: t('predictionHistory.correct'), count: stats.correct },
+              { key: 'wrong', label: t('predictionHistory.wrong'), count: stats.wrong },
+              { key: 'pending', label: t('predictionHistory.pending'), count: stats.pending },
             ].map(f => (
               <button
                 key={f.key}
@@ -166,7 +168,7 @@ export default function PredictionHistory() {
               ))}
               {verifying && (
                 <p className="text-center text-gray-400 text-sm mt-2">
-                  Checking match results...
+                  {t('predictionHistory.checkingResults')}
                 </p>
               )}
             </>
@@ -179,27 +181,27 @@ export default function PredictionHistory() {
               </div>
               {predictions.length === 0 ? (
                 <>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">No Predictions Yet</h3>
-                  <p className="text-gray-500 text-sm mb-4">Get AI analysis on a match to start tracking your predictions</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{t('predictionHistory.noPredictionsYet')}</h3>
+                  <p className="text-gray-500 text-sm mb-4">{t('predictionHistory.noPredictionsDesc')}</p>
                   <button onClick={() => navigate('/matches')} className="btn-primary inline-flex items-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
                     </svg>
-                    Browse Matches
+                    {t('predictionHistory.browseMatches')}
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">No {filter} predictions</h3>
-                  <p className="text-gray-500 text-sm">Try changing the filter</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{t('predictionHistory.noFilteredPredictions', { filter })}</h3>
+                  <p className="text-gray-500 text-sm">{t('predictionHistory.tryChangingFilter')}</p>
                 </>
               )}
             </div>
           ) : (
             <>
-              <p className="text-xs text-gray-400">{filtered.length} prediction{filtered.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-400">{t('predictionHistory.predictionCount', { count: filtered.length })}</p>
               {filtered.map(pred => (
-                <PredictionCard key={pred.id} pred={pred} navigate={navigate}/>
+                <PredictionCard key={pred.id} pred={pred} navigate={navigate} t={t}/>
               ))}
             </>
           )}
@@ -209,7 +211,7 @@ export default function PredictionHistory() {
   );
 }
 
-function PredictionCard({ pred, navigate }) {
+function PredictionCard({ pred, navigate, t }) {
   const result = pred.result;
   const hasResult = !!result;
   const isCorrect = result?.isCorrect;
@@ -287,27 +289,27 @@ function PredictionCard({ pred, navigate }) {
       <div className={`rounded-xl p-3 ${statusBg}`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-gray-400 uppercase">Prediction</p>
+            <p className="text-[10px] text-gray-400 uppercase">{t('predictionHistory.prediction')}</p>
             <p className={`font-bold text-sm ${statusColor}`}>{pred.prediction.winnerName}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-gray-400">Confidence</p>
+            <p className="text-[10px] text-gray-400">{t('predictionHistory.confidence')}</p>
             <p className="font-bold text-sm text-gray-900">{pred.prediction.confidence}%</p>
           </div>
         </div>
 
         {/* Probability bars (mini) */}
         <div className="flex gap-2 mt-2">
-          <MiniProbBar label="H" pct={pred.prediction.homePct} highlight={pred.prediction.winnerName === pred.homeTeam.name}/>
-          <MiniProbBar label="D" pct={pred.prediction.drawPct} highlight={pred.prediction.winnerName === 'Draw'}/>
-          <MiniProbBar label="A" pct={pred.prediction.awayPct} highlight={pred.prediction.winnerName === pred.awayTeam.name}/>
+          <MiniProbBar label={t('predictionHistory.homeShort')} pct={pred.prediction.homePct} highlight={pred.prediction.winnerName === pred.homeTeam.name}/>
+          <MiniProbBar label={t('predictionHistory.drawShort')} pct={pred.prediction.drawPct} highlight={pred.prediction.winnerName === 'Draw'}/>
+          <MiniProbBar label={t('predictionHistory.awayShort')} pct={pred.prediction.awayPct} highlight={pred.prediction.winnerName === pred.awayTeam.name}/>
         </div>
 
         {/* Result comparison */}
         {hasResult && (
           <div className={`mt-2 pt-2 border-t ${isCorrect ? 'border-green-200' : 'border-red-200'}`}>
             <p className={`text-xs font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-              {isCorrect ? 'Correct prediction!' : `Result: ${result.actualResult}`}
+              {isCorrect ? t('predictionHistory.correctPrediction') : t('predictionHistory.result', { result: result.actualResult })}
             </p>
           </div>
         )}

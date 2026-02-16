@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
+import { saveTrackingParams } from './services/trackingService';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -46,7 +48,16 @@ function SplashScreen() {
 }
 
 export default function App() {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
+  const trackingSaved = useRef(false);
+
+  // Сохранить fbclid/utm параметры из URL при первом заходе
+  useEffect(() => {
+    if (user?.id && !trackingSaved.current) {
+      trackingSaved.current = true;
+      saveTrackingParams(user.id);
+    }
+  }, [user?.id]);
 
   if (loading) return <SplashScreen />;
 

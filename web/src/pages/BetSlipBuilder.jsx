@@ -45,7 +45,7 @@ export default function BetSlipBuilder() {
     const selection = {
       id: Date.now(),
       event: newSelection.event,
-      selection: newSelection.selection || 'Win',
+      selection: newSelection.selection || t('betSlip.win'),
       odds: odds,
     };
 
@@ -138,22 +138,22 @@ export default function BetSlipBuilder() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-xl font-bold">Bet Slip Builder</h1>
+          <h1 className="text-xl font-bold">{t('betSlip.title')}</h1>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-blue-50 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-blue-600">{data.selections.length}</p>
-            <p className="text-xs text-blue-600/70">Selections</p>
+            <p className="text-xs text-blue-600/70">{t('betSlip.selections')}</p>
           </div>
           <div className="bg-purple-50 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-purple-600">{totalOdds.toFixed(2)}</p>
-            <p className="text-xs text-purple-600/70">Total Odds</p>
+            <p className="text-xs text-purple-600/70">{t('betSlip.totalOdds')}</p>
           </div>
           <div className="bg-green-50 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-green-600">{data.savedSlips.length}</p>
-            <p className="text-xs text-green-600/70">Saved</p>
+            <p className="text-xs text-green-600/70">{t('betSlip.saved')}</p>
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function BetSlipBuilder() {
               !showSavedSlips ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            Current Slip
+            {t('betSlip.currentSlip')}
           </button>
           <button
             onClick={() => setShowSavedSlips(true)}
@@ -176,7 +176,7 @@ export default function BetSlipBuilder() {
               showSavedSlips ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            Saved Slips ({data.savedSlips.length})
+            {t('betSlip.savedSlips', { count: data.savedSlips.length })}
           </button>
         </div>
 
@@ -191,8 +191,8 @@ export default function BetSlipBuilder() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-2">No selections yet</p>
-                  <p className="text-sm text-gray-400">Add selections to build your bet slip</p>
+                  <p className="text-gray-500 mb-2">{t('betSlip.noSelectionsYet')}</p>
+                  <p className="text-sm text-gray-400">{t('betSlip.addSelectionsHint')}</p>
                 </div>
               ) : (
                 data.selections.map((selection) => (
@@ -227,14 +227,14 @@ export default function BetSlipBuilder() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
               </svg>
-              Add Selection
+              {t('betSlip.addSelection')}
             </button>
 
             {/* Stake & Returns */}
             {data.selections.length > 0 && (
               <div className="bg-white rounded-2xl p-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('betting.stake')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('betSlip.stake')}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
@@ -263,19 +263,19 @@ export default function BetSlipBuilder() {
                 {/* Summary */}
                 <div className="border-t border-gray-100 pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Total Odds</span>
+                    <span className="text-gray-500">{t('betSlip.totalOdds')}</span>
                     <span className="font-semibold">{totalOdds.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t('betting.stake')}</span>
+                    <span className="text-gray-500">{t('betSlip.stake')}</span>
                     <span className="font-semibold">${parseFloat(data.stake || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{t('betting.potentialWin')}</span>
+                    <span className="text-gray-500">{t('betSlip.potentialWin')}</span>
                     <span className="font-bold text-green-600 text-lg">${potentialWin.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Profit</span>
+                    <span className="text-gray-500">{t('betSlip.profit')}</span>
                     <span className="font-semibold text-green-600">+${profit.toFixed(2)}</span>
                   </div>
                 </div>
@@ -286,7 +286,7 @@ export default function BetSlipBuilder() {
                     onClick={clearSlip}
                     className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
                   >
-                    Clear
+                    {t('betSlip.clear')}
                   </button>
                   <button
                     onClick={saveSlip}
@@ -295,7 +295,7 @@ export default function BetSlipBuilder() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"/>
                     </svg>
-                    Save Slip
+                    {t('betSlip.saveSlip')}
                   </button>
                 </div>
               </div>
@@ -311,8 +311,8 @@ export default function BetSlipBuilder() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"/>
                   </svg>
                 </div>
-                <p className="text-gray-500 mb-2">No saved slips</p>
-                <p className="text-sm text-gray-400">Save bet slips to access them later</p>
+                <p className="text-gray-500 mb-2">{t('betSlip.noSavedSlips')}</p>
+                <p className="text-sm text-gray-400">{t('betSlip.saveSlipsHint')}</p>
               </div>
             ) : (
               data.savedSlips.map((slip) => (
@@ -320,7 +320,7 @@ export default function BetSlipBuilder() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="font-semibold text-gray-900">
-                        {slip.selections.length} Selection{slip.selections.length !== 1 ? 's' : ''}
+                        {t('betSlip.selectionCount', { count: slip.selections.length })}
                       </p>
                       <p className="text-xs text-gray-500">
                         {new Date(slip.date).toLocaleDateString()}
@@ -328,7 +328,7 @@ export default function BetSlipBuilder() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-purple-600">{slip.totalOdds.toFixed(2)}</p>
-                      <p className="text-xs text-gray-500">odds</p>
+                      <p className="text-xs text-gray-500">{t('betSlip.odds')}</p>
                     </div>
                   </div>
 
@@ -339,7 +339,7 @@ export default function BetSlipBuilder() {
                       </p>
                     ))}
                     {slip.selections.length > 3 && (
-                      <p className="text-sm text-gray-400">+{slip.selections.length - 3} more</p>
+                      <p className="text-sm text-gray-400">{t('betSlip.moreSelections', { count: slip.selections.length - 3 })}</p>
                     )}
                   </div>
 
@@ -348,7 +348,7 @@ export default function BetSlipBuilder() {
                       onClick={() => loadSlip(slip)}
                       className="flex-1 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg text-sm hover:bg-blue-200 transition-colors"
                     >
-                      Load Slip
+                      {t('betSlip.loadSlip')}
                     </button>
                     <button
                       onClick={() => deleteSavedSlip(slip.id)}
@@ -376,40 +376,40 @@ export default function BetSlipBuilder() {
           >
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"/>
 
-            <h3 className="text-xl font-bold mb-6">Add Selection</h3>
+            <h3 className="text-xl font-bold mb-6">{t('betSlip.addSelection')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Event / Match</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('betSlip.eventMatch')}</label>
                 <input
                   type="text"
                   value={newSelection.event}
                   onChange={(e) => setNewSelection(prev => ({ ...prev, event: e.target.value }))}
-                  placeholder="e.g., Arsenal vs Chelsea"
+                  placeholder={t('betSlip.eventPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Selection</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('betSlip.selection')}</label>
                 <input
                   type="text"
                   value={newSelection.selection}
                   onChange={(e) => setNewSelection(prev => ({ ...prev, selection: e.target.value }))}
-                  placeholder="e.g., Arsenal Win, Over 2.5"
+                  placeholder={t('betSlip.selectionPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Odds (Decimal)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('betSlip.oddsDecimal')}</label>
                 <input
                   type="number"
                   step="0.01"
                   min="1.01"
                   value={newSelection.odds}
                   onChange={(e) => setNewSelection(prev => ({ ...prev, odds: e.target.value }))}
-                  placeholder="e.g., 1.95"
+                  placeholder={t('betSlip.oddsPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -419,7 +419,7 @@ export default function BetSlipBuilder() {
                 disabled={!newSelection.event || !newSelection.odds}
                 className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add to Slip
+                {t('betSlip.addToSlip')}
               </button>
             </div>
           </div>

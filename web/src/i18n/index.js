@@ -33,6 +33,53 @@ const resources = {
   it: { translation: it },
 };
 
+// GeoIP → language mapping (for auto-detection by country)
+const COUNTRY_TO_LANG = {
+  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
+  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
+  PT: 'pt', BR: 'pt',
+  DE: 'de', AT: 'de', CH: 'de',
+  FR: 'fr', BE: 'fr',
+  IT: 'it',
+  PL: 'pl',
+  RO: 'ro', MD: 'ro',
+  TR: 'tr',
+  IN: 'hi',
+  CN: 'zh', TW: 'zh', HK: 'zh',
+  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
+};
+
+// Detect language from GeoIP (async, updates after init)
+function detectLanguageFromGeo() {
+  // Don't override if user manually selected a language
+  const manualLang = localStorage.getItem('i18nManualLang');
+  if (manualLang) return;
+
+  const GEOIP_SERVICES = [
+    { url: 'https://ipapi.co/json/', getCountry: (d) => d.country_code },
+    { url: 'https://ip-api.com/json/?fields=countryCode', getCountry: (d) => d.countryCode },
+  ];
+
+  (async () => {
+    for (const service of GEOIP_SERVICES) {
+      try {
+        const resp = await fetch(service.url, { signal: AbortSignal.timeout(4000) });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const country = service.getCountry(data);
+        if (country && COUNTRY_TO_LANG[country]) {
+          const lang = COUNTRY_TO_LANG[country];
+          if (i18n.language !== lang) {
+            i18n.changeLanguage(lang);
+          }
+          localStorage.setItem('i18nextLng', lang);
+          return;
+        }
+      } catch { continue; }
+    }
+  })();
+}
+
 i18n
   .use(LanguageDetector) // Auto-detect language from browser/phone
   .use(initReactI18next)
@@ -42,9 +89,9 @@ i18n
 
     // Language detection options
     detection: {
-      // Order of detection methods
-      order: ['navigator', 'localStorage', 'htmlTag'],
-      // Cache user language
+      // Order: cached choice first, then browser language
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      // Cache detected language
       caches: ['localStorage'],
     },
 
@@ -52,6 +99,9 @@ i18n
       escapeValue: false, // React already escapes
     },
   });
+
+// After i18n init, try GeoIP detection for better accuracy
+detectLanguageFromGeo();
 
 // Set document direction for RTL languages (Arabic)
 i18n.on('languageChanged', (lng) => {

@@ -1,77 +1,78 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import { useAuth } from '../context/AuthContext';
 
-const getGuideCards = (advertiser) => [
+const getGuideCards = (advertiser, t) => [
   {
     icon: '👋',
-    title: 'Welcome!',
-    subtitle: 'How to use AI Betting Bot',
-    content: 'Our bot analyzes matches using artificial intelligence and provides accurate predictions. Swipe to learn more!',
+    title: t('guide.card1Title'),
+    subtitle: t('guide.card1Subtitle'),
+    content: t('guide.card1Content'),
     color: 'from-primary-500 to-indigo-600',
   },
   {
     icon: '🤖',
-    title: 'How AI Works',
-    subtitle: 'Machine learning + big data',
-    content: 'AI analyzes team statistics, player form, head-to-head history, and dozens of other factors for each prediction.',
+    title: t('guide.card2Title'),
+    subtitle: t('guide.card2Subtitle'),
+    content: t('guide.card2Content'),
     color: 'from-purple-500 to-pink-500',
   },
   {
     icon: '📊',
-    title: 'Understanding Odds',
-    subtitle: 'What do these numbers mean?',
-    content: 'Odds show how much you can win. Odds of 2.0 mean: $100 bet → $200 return (including stake). Higher odds = less likely outcome.',
+    title: t('guide.card3Title'),
+    subtitle: t('guide.card3Subtitle'),
+    content: t('guide.card3Content'),
     color: 'from-green-500 to-emerald-600',
   },
   {
     icon: '🎯',
-    title: 'How to Place Bets',
-    subtitle: '3 simple steps',
-    content: '1. Choose a match in the Matches section\n2. Check the AI prediction and recommendation\n3. Place a bet at the bookmaker on the recommended outcome',
+    title: t('guide.card4Title'),
+    subtitle: t('guide.card4Subtitle'),
+    content: t('guide.card4Content'),
     color: 'from-blue-500 to-cyan-500',
   },
   {
     icon: '💬',
-    title: 'AI Assistant',
-    subtitle: 'Ask anything!',
-    content: 'In the AI Chat section, you can ask about any match, team, or player. AI will give a prediction with real-time data.',
+    title: t('guide.card5Title'),
+    subtitle: t('guide.card5Subtitle'),
+    content: t('guide.card5Content'),
     color: 'from-violet-500 to-purple-600',
   },
   {
     icon: '⚡',
-    title: 'PRO Tools',
-    subtitle: 'For serious bettors',
-    content: 'Value Finder finds undervalued bets. Bankroll Manager helps manage your bankroll. Prediction History shows your stats.',
+    title: t('guide.card6Title'),
+    subtitle: t('guide.card6Subtitle'),
+    content: t('guide.card6Content'),
     color: 'from-amber-500 to-orange-500',
   },
   {
     icon: '💎',
-    title: 'What is Value Bet?',
-    subtitle: 'Bets with an edge',
-    content: "Value Bet is when the real probability is higher than the bookmaker's odds imply. AI finds such bets automatically!",
+    title: t('guide.card7Title'),
+    subtitle: t('guide.card7Subtitle'),
+    content: t('guide.card7Content'),
     color: 'from-teal-500 to-green-500',
   },
   {
     icon: '💰',
-    title: 'Bankroll Management',
-    subtitle: "Don't bet more than 5%",
-    content: 'Golden rule: one bet = 1-5% of your bankroll. This protects you from losses and keeps you profitable long-term.',
+    title: t('guide.card8Title'),
+    subtitle: t('guide.card8Subtitle'),
+    content: t('guide.card8Content'),
     color: 'from-rose-500 to-red-500',
   },
   {
     icon: '🔴',
-    title: 'Live Betting',
-    subtitle: 'Bet during matches',
-    content: 'In the Live section, you see matches in real-time. AI analyzes the game flow and can give live predictions based on the current situation.',
+    title: t('guide.card9Title'),
+    subtitle: t('guide.card9Subtitle'),
+    content: t('guide.card9Content'),
     color: 'from-red-500 to-pink-600',
   },
   {
     icon: '🎁',
-    title: 'Start with a Bonus!',
-    subtitle: `${advertiser.bonus} on first deposit`,
-    content: `Register at ${advertiser.name} and get a bonus of ${advertiser.bonus}. Great start for using AI predictions!`,
+    title: t('guide.card10Title'),
+    subtitle: t('guide.card10Subtitle', { bonus: advertiser.bonus }),
+    content: t('guide.card10Content', { name: advertiser.name, bonus: advertiser.bonus }),
     color: 'from-amber-400 to-orange-500',
     cta: true,
   },
@@ -79,12 +80,13 @@ const getGuideCards = (advertiser) => [
 
 export default function BeginnerGuide() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
   const [currentCard, setCurrentCard] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
 
-  const GUIDE_CARDS = useMemo(() => getGuideCards(advertiser), [advertiser]);
+  const GUIDE_CARDS = useMemo(() => getGuideCards(advertiser, t), [advertiser, t]);
 
   const nextCard = () => {
     if (currentCard < GUIDE_CARDS.length - 1) {
@@ -132,7 +134,7 @@ export default function BeginnerGuide() {
           onClick={() => navigate('/')}
           className="text-white/60 text-sm"
         >
-          Skip
+          {t('guide.skip')}
         </button>
       </div>
 
@@ -180,16 +182,16 @@ export default function BeginnerGuide() {
             {card.cta && (
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => navigate('/promo')}
+                  onClick={() => navigate('/promo?banner=guide_register_cta')}
                   className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"
                 >
-                  Register Now
+                  {t('guide.registerNow')}
                 </button>
                 <button
                   onClick={() => navigate('/')}
                   className="w-full text-white/80 font-medium py-3"
                 >
-                  Start using the bot
+                  {t('guide.startBot')}
                 </button>
               </div>
             )}
@@ -215,7 +217,7 @@ export default function BeginnerGuide() {
             onClick={nextCard}
             className="flex-1 bg-white text-gray-900 font-bold py-4 rounded-2xl text-lg"
           >
-            {isLast ? 'Done!' : 'Next'}
+            {isLast ? t('guide.done') : t('guide.next')}
           </button>
         </div>
       )}

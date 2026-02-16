@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBookmaker } from '../context/BookmakerContext';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
 import FootballSpinner from './FootballSpinner';
 
 export default function BetModal({ isOpen, onClose, bet }) {
+  const { t } = useTranslation();
   const { isConnected, balance, placeBet, loading: bkLoading } = useBookmaker();
   const [stake, setStake] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -31,7 +33,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
 
     const stakeAmount = parseFloat(stake);
     if (stakeAmount > balanceAmount) {
-      setError('Insufficient balance');
+      setError(t('betModal.insufficientBalance'));
       return;
     }
 
@@ -55,7 +57,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
       }, 2500);
     } catch (err) {
       setPlacing(false);
-      setError(err.message || 'Failed to place bet');
+      setError(err.message || t('betModal.failedToPlace'));
     }
   };
 
@@ -76,9 +78,9 @@ export default function BetModal({ isOpen, onClose, bet }) {
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Betting Account</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{t('betModal.connectAccount')}</h3>
               <p className="text-gray-500 text-sm mb-6">
-                Connect your account to place real bets directly from the app
+                {t('betModal.connectDesc')}
               </p>
 
               {/* Bet preview */}
@@ -93,7 +95,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 onClick={() => setShowConnect(true)}
                 className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl shadow-lg shadow-orange-200 mb-3"
               >
-                Connect Account
+                {t('betModal.connectAccount')}
               </button>
 
               <a
@@ -102,7 +104,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 rel="noopener noreferrer"
                 className="block text-sm text-gray-500 hover:text-gray-700"
               >
-                Don't have account? Get {BOOKMAKER.bonus} →
+                {t('betModal.noAccount', { bonus: BOOKMAKER.bonus })} →
               </a>
             </div>
           </div>
@@ -128,12 +130,12 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Bet Placed!</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{t('betModal.betPlaced')}</h3>
             <p className="text-gray-500 text-sm mb-1">
               ${stake} on {bet.type} @ {odds.toFixed(2)}
             </p>
             <p className="text-green-600 font-semibold">
-              Potential win: ${potentialWin}
+              {t('betModal.potentialWin')}: ${potentialWin}
             </p>
           </div>
         </div>
@@ -150,7 +152,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
         {/* Header */}
         <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-gray-900">Place Bet</h3>
+            <h3 className="text-lg font-bold text-gray-900">{t('betModal.placeBet')}</h3>
             <button onClick={onClose} className="text-gray-400 p-1">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -178,7 +180,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Your Bet</p>
+                <p className="text-sm text-gray-600">{t('betModal.yourBet')}</p>
                 <p className="font-bold text-gray-900">{bet.type}</p>
               </div>
               <div className="bg-primary-600 text-white font-bold text-lg px-4 py-2 rounded-lg">
@@ -199,7 +201,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
 
           {/* Stake Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Stake Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('betModal.stakeAmount')}</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xl">$</span>
               <input
@@ -232,14 +234,14 @@ export default function BetModal({ isOpen, onClose, bet }) {
           {/* Potential Win */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Potential Win</span>
+              <span className="text-sm text-gray-600">{t('betModal.potentialWin')}</span>
               <span className="text-xl font-bold text-green-600">${potentialWin}</span>
             </div>
           </div>
 
           {/* Balance Info */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Account Balance:</span>
+            <span className="text-gray-500">{t('betModal.accountBalance')}:</span>
             <span className="font-medium text-gray-700">
               ${balanceAmount.toFixed(2)}
             </span>
@@ -254,21 +256,21 @@ export default function BetModal({ isOpen, onClose, bet }) {
             {placing ? (
               <>
                 <FootballSpinner size="xs" light />
-                Placing Bet...
+                {t('betModal.placingBet')}
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
-                Place Bet {stake ? `$${stake}` : ''}
+                {t('betModal.placeBet')} {stake ? `$${stake}` : ''}
               </>
             )}
           </button>
 
           {/* Disclaimer */}
           <p className="text-xs text-gray-400 text-center">
-            Bet placed via {BOOKMAKER.name}. Please bet responsibly.
+            {t('betModal.disclaimer', { name: BOOKMAKER.name })}
           </p>
         </div>
       </div>

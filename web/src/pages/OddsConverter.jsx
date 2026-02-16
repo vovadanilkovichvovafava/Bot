@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const FORMATS = ['Decimal', 'Fractional', 'American', 'Implied %'];
 
@@ -89,6 +90,7 @@ function impliedToDecimal(pct) {
 
 export default function OddsConverter() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [decimalOdds, setDecimalOdds] = useState(2.0);
   const [activeInput, setActiveInput] = useState('Decimal');
   const [inputValues, setInputValues] = useState({
@@ -148,18 +150,18 @@ export default function OddsConverter() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
               </svg>
             </button>
-            <h1 className="text-lg font-bold">Odds Converter</h1>
+            <h1 className="text-lg font-bold">{t('oddsConverter.title')}</h1>
           </div>
         </div>
 
         <div className="px-5 mt-4 space-y-4 pb-8">
           {/* Conversion Inputs */}
           <div className="card border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">Enter odds in any format</p>
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">{t('oddsConverter.enterOdds')}</p>
             <div className="space-y-3">
               {FORMATS.map(format => (
                 <div key={format}>
-                  <label className="text-xs text-gray-500 mb-1 block">{format}</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t(`oddsConverter.format${format.replace(/[\s%]/g, '')}`)}</label>
                   <input
                     type="text"
                     inputMode={format === 'Fractional' ? 'text' : 'decimal'}
@@ -183,7 +185,7 @@ export default function OddsConverter() {
 
           {/* Quick Presets */}
           <div className="card border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">Quick presets</p>
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">{t('oddsConverter.quickPresets')}</p>
             <div className="grid grid-cols-3 gap-2">
               {PRESETS.map(p => (
                 <button
@@ -198,7 +200,7 @@ export default function OddsConverter() {
                       : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="block text-xs opacity-70">{p.label}</span>
+                  <span className="block text-xs opacity-70">{p.label === 'Evens' ? t('oddsConverter.evens') : p.label}</span>
                   <span className="block font-bold">{p.decimal.toFixed(2)}</span>
                 </button>
               ))}
@@ -207,9 +209,9 @@ export default function OddsConverter() {
 
           {/* Profit Calculator */}
           <div className="card border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">Profit calculator</p>
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">{t('oddsConverter.profitCalculator')}</p>
             <div className="mb-4">
-              <label className="text-xs text-gray-500 mb-1 block">Stake amount</label>
+              <label className="text-xs text-gray-500 mb-1 block">{t('oddsConverter.stakeAmount')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
                 <input
@@ -225,11 +227,11 @@ export default function OddsConverter() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-50 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500">Profit</p>
+                <p className="text-xs text-gray-500">{t('oddsConverter.profit')}</p>
                 <p className="text-lg font-bold text-green-600">${profit.toFixed(2)}</p>
               </div>
               <div className="bg-primary-50 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500">Total Payout</p>
+                <p className="text-xs text-gray-500">{t('oddsConverter.totalPayout')}</p>
                 <p className="text-lg font-bold text-primary-600">${payout.toFixed(2)}</p>
               </div>
             </div>
@@ -237,23 +239,23 @@ export default function OddsConverter() {
 
           {/* Odds Explanation */}
           <div className="card border border-gray-100">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">How odds formats work</p>
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-3">{t('oddsConverter.howOddsWork')}</p>
             <div className="space-y-3 text-sm text-gray-600">
               <div className="flex gap-3">
-                <span className="w-20 shrink-0 font-semibold text-gray-900">Decimal</span>
-                <p>Multiply by stake for total payout. Odds of 2.50 = $2.50 per $1 staked.</p>
+                <span className="w-20 shrink-0 font-semibold text-gray-900">{t('oddsConverter.formatDecimal')}</span>
+                <p>{t('oddsConverter.decimalExplain')}</p>
               </div>
               <div className="flex gap-3">
-                <span className="w-20 shrink-0 font-semibold text-gray-900">Fractional</span>
-                <p>Shows profit relative to stake. 5/2 = $5 profit for every $2 staked.</p>
+                <span className="w-20 shrink-0 font-semibold text-gray-900">{t('oddsConverter.formatFractional')}</span>
+                <p>{t('oddsConverter.fractionalExplain')}</p>
               </div>
               <div className="flex gap-3">
-                <span className="w-20 shrink-0 font-semibold text-gray-900">American</span>
-                <p>+ shows profit on $100 bet. - shows stake needed to win $100.</p>
+                <span className="w-20 shrink-0 font-semibold text-gray-900">{t('oddsConverter.formatAmerican')}</span>
+                <p>{t('oddsConverter.americanExplain')}</p>
               </div>
               <div className="flex gap-3">
-                <span className="w-20 shrink-0 font-semibold text-gray-900">Implied %</span>
-                <p>Bookmaker's estimated probability. Lower % = higher odds = less likely.</p>
+                <span className="w-20 shrink-0 font-semibold text-gray-900">{t('oddsConverter.formatImplied')}</span>
+                <p>{t('oddsConverter.impliedExplain')}</p>
               </div>
             </div>
           </div>

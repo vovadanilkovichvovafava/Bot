@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoSvg from '../assets/logo.svg';
+import logoPng from '../assets/logo.png';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState('email'); // 'email' | 'phone'
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -22,21 +24,21 @@ export default function Login() {
     e.preventDefault();
 
     if (mode === 'email' && !email) {
-      setError('Please enter your email');
+      setError(t('auth.errEnterEmail'));
       return;
     }
     if (mode === 'phone') {
       if (!phone) {
-        setError('Please enter your phone number');
+        setError(t('auth.errEnterPhone'));
         return;
       }
       if (!isValidPhone(phone, phoneCountry)) {
-        setError('Please enter a valid phone number');
+        setError(t('auth.errInvalidPhone'));
         return;
       }
     }
     if (!password) {
-      setError('Please enter your password');
+      setError(t('auth.errEnterPassword'));
       return;
     }
 
@@ -47,7 +49,7 @@ export default function Login() {
       await login(identifier, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || t('auth.errLogin'));
     } finally {
       setLoading(false);
     }
@@ -68,10 +70,10 @@ export default function Login() {
 
         <div className="relative text-center">
           {/* Logo */}
-          <img src={logoSvg} alt="PVA" className="w-20 h-20 mx-auto mb-4 drop-shadow-lg" />
+          <img src={logoPng} alt="PVA" className="w-20 h-20 mx-auto mb-4 drop-shadow-lg rounded-full object-cover" />
 
-          <h1 className="text-2xl font-bold text-white mb-1">PVA Betting</h1>
-          <p className="text-gray-400 text-sm">Sign in to continue</p>
+          <h1 className="text-2xl font-bold text-white mb-1">{t('auth.appName')}</h1>
+          <p className="text-gray-400 text-sm">{t('auth.signInSubtitle')}</p>
         </div>
       </div>
 
@@ -82,15 +84,15 @@ export default function Login() {
           <div className="flex justify-center gap-4 mb-5">
             <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
               <p className="text-green-600 font-bold text-lg">73%</p>
-              <p className="text-green-600/70 text-[10px] uppercase font-medium">Win Rate</p>
+              <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.winRate')}</p>
             </div>
             <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-amber-600 font-bold text-lg">PRO</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Access</p>
+              <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
+              <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-purple-600 font-bold text-lg">AI</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">Predictions</p>
+              <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
+              <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
             </div>
           </div>
 
@@ -101,14 +103,14 @@ export default function Login() {
               onClick={() => switchMode('email')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'email' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
             >
-              Email
+              {t('auth.email')}
             </button>
             <button
               type="button"
               onClick={() => switchMode('phone')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'phone' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
             >
-              Phone
+              {t('auth.phone')}
             </button>
           </div>
 
@@ -124,7 +126,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'email' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -133,7 +135,7 @@ export default function Login() {
                   </span>
                   <input
                     type="email"
-                    placeholder="example@email.com"
+                    placeholder={t('auth.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -142,13 +144,13 @@ export default function Login() {
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phone')}</label>
                 <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.password')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -190,7 +192,7 @@ export default function Login() {
                 <FootballSpinner size="xs" light />
               ) : (
                 <>
-                  Sign In
+                  {t('auth.signIn')}
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -200,9 +202,9 @@ export default function Login() {
           </form>
 
           <p className="text-center text-gray-500 text-sm mt-5">
-            Don't have an account?{' '}
+            {t('auth.dontHaveAccount')}{' '}
             <Link to="/register" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-              Sign Up
+              {t('auth.signUp')}
             </Link>
           </p>
 
@@ -212,14 +214,14 @@ export default function Login() {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd"/>
               </svg>
-              Secure
+              {t('auth.secure')}
             </div>
             <div className="w-1 h-1 bg-gray-300 rounded-full"/>
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
               </svg>
-              Verified
+              {t('auth.verified')}
             </div>
             <div className="w-1 h-1 bg-gray-300 rounded-full"/>
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">

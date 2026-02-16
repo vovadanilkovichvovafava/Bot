@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useBookmaker } from '../context/BookmakerContext';
 import FootballSpinner from './FootballSpinner';
@@ -16,6 +17,7 @@ export const BOOKMAKER = {
 };
 
 export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [login, setLogin] = useState('');
@@ -46,7 +48,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
     setLocalError('');
 
     if (!login || !password) {
-      setLocalError('Please enter login and password');
+      setLocalError(t('bkConnect.errLoginPassword'));
       return;
     }
 
@@ -62,7 +64,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
       // If captcha required, show helpful message
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification required. Please try again later or register through the partner app.');
+        setLocalError(t('bkConnect.captchaRequired'));
       } else {
         setLocalError(msg);
       }
@@ -76,11 +78,11 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
     setLocalError('');
 
     if (!email && !phone) {
-      setLocalError('Please enter email or phone');
+      setLocalError(t('bkConnect.errEmailPhone'));
       return;
     }
     if (!password || password.length < 6) {
-      setLocalError('Password must be at least 6 characters');
+      setLocalError(t('bkConnect.errPasswordLength'));
       return;
     }
 
@@ -100,7 +102,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
       const msg = err.message || 'Registration failed';
 
       if (msg.toLowerCase().includes('captcha')) {
-        setLocalError('Captcha verification required. Please register through the partner app and then login here.');
+        setLocalError(t('bkConnect.captchaRegister'));
       } else {
         setLocalError(msg);
       }
@@ -135,10 +137,10 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900">
-            {mode === 'login' ? 'Connect Betting Account' : 'Create Account'}
+            {mode === 'login' ? t('bkConnect.connectAccount') : t('bkConnect.createAccount')}
           </h2>
           <p className="text-gray-500 text-sm mt-1">
-            {mode === 'login' ? 'Login to place real bets' : 'Get bonus ' + BOOKMAKER.bonus}
+            {mode === 'login' ? t('bkConnect.loginDesc') : t('bkConnect.getBonus', { bonus: BOOKMAKER.bonus })}
           </p>
         </div>
 
@@ -152,7 +154,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 : 'text-gray-500'
             }`}
           >
-            Login
+            {t('bkConnect.login')}
           </button>
           <button
             onClick={() => { setMode('register'); setLocalError(''); }}
@@ -162,7 +164,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
                 : 'text-gray-500'
             }`}
           >
-            Register
+            {t('bkConnect.register')}
           </button>
         </div>
 
@@ -181,13 +183,13 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email or Phone
+                {t('bkConnect.emailOrPhone')}
               </label>
               <input
                 type="text"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-                placeholder="example@email.com"
+                placeholder={t('bkConnect.emailPlaceholder')}
                 disabled={isLoading}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
@@ -195,14 +197,14 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('bkConnect.password')}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Your password"
+                  placeholder={t('bkConnect.yourPassword')}
                   disabled={isLoading}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
                 />
@@ -233,11 +235,11 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
               {isLoading ? (
                 <>
                   <FootballSpinner size="xs" light />
-                  Connecting...
+                  {t('bkConnect.connecting')}
                 </>
               ) : (
                 <>
-                  Connect Account
+                  {t('bkConnect.connectAccount')}
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -255,20 +257,20 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
               <span className="text-2xl">🎁</span>
               <div>
-                <p className="font-semibold text-amber-800">Bonus {BOOKMAKER.bonus}</p>
-                <p className="text-xs text-amber-600">Promo code: {BOOKMAKER.promoCode}</p>
+                <p className="font-semibold text-amber-800">{t('bkConnect.bonus', { bonus: BOOKMAKER.bonus })}</p>
+                <p className="text-xs text-amber-600">{t('bkConnect.promoCode')}: {BOOKMAKER.promoCode}</p>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                {t('bkConnect.email')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
+                placeholder={t('bkConnect.emailPlaceholder')}
                 disabled={isLoading}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
@@ -276,13 +278,13 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Or Phone Number
+                {t('bkConnect.orPhone')}
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1234567890"
+                placeholder={t('bkConnect.phonePlaceholder')}
                 disabled={isLoading}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
               />
@@ -290,14 +292,14 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('bkConnect.password')}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder={t('bkConnect.atLeast6Chars')}
                   disabled={isLoading}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-60"
                 />
@@ -328,11 +330,11 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
               {isLoading ? (
                 <>
                   <FootballSpinner size="xs" light />
-                  Creating Account...
+                  {t('bkConnect.creatingAccount')}
                 </>
               ) : (
                 <>
-                  Create Account
+                  {t('bkConnect.createAccount')}
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -341,7 +343,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
             </button>
 
             <p className="text-xs text-gray-400 text-center">
-              By registering, you agree to the terms of service
+              {t('bkConnect.agreeTerms')}
             </p>
           </form>
         )}
@@ -350,13 +352,13 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
         {mode === 'login' && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <p className="text-center text-gray-500 text-sm mb-3">
-              Don't have an account?
+              {t('bkConnect.noAccount')}
             </p>
             <button
-              onClick={() => navigate('/promo')}
+              onClick={() => navigate('/promo?banner=bookmaker_connect_register')}
               className="block w-full text-center text-orange-600 font-semibold py-2 hover:bg-orange-50 rounded-xl transition-colors"
             >
-              Register at {BOOKMAKER.name} →
+              {t('bkConnect.registerAt', { name: BOOKMAKER.name })} →
             </button>
           </div>
         )}

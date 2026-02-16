@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
-import logoSvg from '../assets/logo.svg';
+import logoPng from '../assets/logo.png';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -15,14 +16,8 @@ const VALUE_BET_USED_KEY = 'value_bet_used';
 // Top leagues to show on home
 const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 export default function Home() {
+  const { t } = useTranslation();
   const { user, isDemo } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
@@ -57,6 +52,13 @@ export default function Home() {
     }
   };
 
+  const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return t('home.goodMorning');
+    if (h < 18) return t('home.goodAfternoon');
+    return t('home.goodEvening');
+  };
+
   const isPremium = user?.is_premium;
   const aiRequestCount = parseInt(localStorage.getItem(AI_REQUESTS_KEY) || '0', 10);
   const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
@@ -66,8 +68,8 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
-        <img src={logoSvg} alt="PVA" className="w-24 h-24 mb-6 drop-shadow-lg" />
-        <FootballSpinner size="lg" text="Loading matches..." light />
+        <img src={logoPng} alt="PVA" className="w-24 h-24 mb-6 drop-shadow-lg rounded-full object-cover" />
+        <FootballSpinner size="lg" text={t('home.loadingMatches')} light />
       </div>
     );
   }
@@ -78,7 +80,7 @@ export default function Home() {
       <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <img src={logoSvg} alt="PVA" className="w-10 h-10 drop-shadow" />
+            <img src={logoPng} alt="PVA" className="w-10 h-10 drop-shadow rounded-full object-cover" />
             <div>
               <p className="text-primary-100 text-sm">{getGreeting()}</p>
               <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
@@ -101,13 +103,13 @@ export default function Home() {
               </svg>
             </div>
             <div>
-              <p className="text-primary-100 text-xs">AI Predictions Left</p>
+              <p className="text-primary-100 text-xs">{t('home.aiPredictionsLeft')}</p>
               <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${FREE_AI_LIMIT}`}</span></p>
             </div>
           </div>
           {!user?.is_premium && (
             <button onClick={() => navigate('/pro-tools')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
-              Get Unlimited
+              {t('home.getUnlimited')}
             </button>
           )}
         </div>
@@ -127,8 +129,8 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-bold text-lg">Ask AI Assistant</h3>
-                <p className="text-white/80 text-sm">Get predictions, tips & match analysis</p>
+                <h3 className="font-bold text-lg">{t('home.askAI')}</h3>
+                <p className="text-white/80 text-sm">{t('home.askAIDesc')}</p>
               </div>
             </div>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -158,7 +160,7 @@ export default function Home() {
             </div>
             {!isPremium && !valueBetUsed && (
               <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
-                1 FREE TRY
+                {t('home.freeTry')}
               </span>
             )}
             {!isPremium && valueBetUsed && (
@@ -171,23 +173,23 @@ export default function Home() {
             )}
           </div>
 
-          <h3 className="text-xl font-bold text-white mb-2">Value Bet Finder</h3>
+          <h3 className="text-xl font-bold text-white mb-2">{t('home.valueBetFinder')}</h3>
           <p className="text-white/80 text-sm mb-4">
-            AI finds bets where actual probability is higher than bookmaker odds. Professional bettors' secret.
+            {t('home.valueBetDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-white/10 rounded-lg p-2 text-center">
               <p className="text-white font-bold text-lg">87%</p>
-              <p className="text-white/60 text-xs">Accuracy</p>
+              <p className="text-white/60 text-xs">{t('home.accuracy')}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-2 text-center">
               <p className="text-white font-bold text-lg">+12%</p>
-              <p className="text-white/60 text-xs">Avg. Edge</p>
+              <p className="text-white/60 text-xs">{t('home.avgEdge')}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-2 text-center">
               <p className="text-white font-bold text-lg">50+</p>
-              <p className="text-white/60 text-xs">Daily Bets</p>
+              <p className="text-white/60 text-xs">{t('home.dailyBets')}</p>
             </div>
           </div>
 
@@ -196,10 +198,10 @@ export default function Home() {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
               </svg>
-              {isPremium ? 'Unlimited scans' : valueBetUsed ? 'Deposit to unlock' : 'Try it free now!'}
+              {isPremium ? t('home.unlimitedScans') : valueBetUsed ? t('home.depositToUnlock') : t('home.tryFreeNow')}
             </div>
             <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
-              {isPremium || !valueBetUsed ? 'Find Value Bets' : 'Unlock'}
+              {isPremium || !valueBetUsed ? t('home.findValueBets') : t('home.unlock')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
               </svg>
@@ -210,7 +212,7 @@ export default function Home() {
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900">Your Stats</h3>
+            <h3 className="font-bold text-gray-900">{t('home.yourStats')}</h3>
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>
@@ -223,7 +225,7 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-2xl font-bold text-gray-900">{localStats.total}</p>
-              <p className="text-xs text-gray-500">Predictions</p>
+              <p className="text-xs text-gray-500">{t('home.predictions')}</p>
             </div>
             <div>
               <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
@@ -232,7 +234,7 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-2xl font-bold text-green-500">{localStats.correct}</p>
-              <p className="text-xs text-gray-500">Wins</p>
+              <p className="text-xs text-gray-500">{t('home.wins')}</p>
             </div>
             <div>
               <div className="w-8 h-8 mx-auto mb-1 text-red-500 flex items-center justify-center">
@@ -241,11 +243,11 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-2xl font-bold text-red-500">{localStats.accuracy}%</p>
-              <p className="text-xs text-gray-500">Accuracy</p>
+              <p className="text-xs text-gray-500">{t('home.accuracy')}</p>
             </div>
           </div>
           {localStats.pending > 0 && (
-            <p className="text-xs text-amber-600 text-center mt-2">{localStats.pending} pending verification</p>
+            <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
           )}
         </div>
 
@@ -258,8 +260,8 @@ export default function Home() {
             <span className="text-xl">📚</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm">Beginner's Guide</p>
-            <p className="text-xs text-gray-500">10 tips to get started</p>
+            <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
+            <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
           </div>
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -268,7 +270,7 @@ export default function Home() {
 
         {/* Pro Tools */}
         <div>
-          <h3 className="section-title mb-3">Pro Tools</h3>
+          <h3 className="section-title mb-3">{t('home.proTools')}</h3>
           <div className="grid grid-cols-3 gap-3">
             <div onClick={() => navigate('/matches')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5">
               <div className="w-10 h-10 mx-auto mb-2 bg-green-50 rounded-xl flex items-center justify-center">
@@ -276,7 +278,7 @@ export default function Home() {
                   <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
                 </svg>
               </div>
-              <p className="text-xs font-medium text-gray-700">Matches</p>
+              <p className="text-xs font-medium text-gray-700">{t('home.matches')}</p>
             </div>
             <div onClick={() => navigate(user?.is_premium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
               {!user?.is_premium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
@@ -285,7 +287,7 @@ export default function Home() {
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
                 </svg>
               </div>
-              <p className="text-xs font-medium text-gray-700">Value Finder</p>
+              <p className="text-xs font-medium text-gray-700">{t('home.valueFinder')}</p>
             </div>
             <div onClick={() => navigate('/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
               <span className="badge-pro absolute -top-2 right-1">PRO</span>
@@ -294,7 +296,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                 </svg>
               </div>
-              <p className="text-xs font-medium text-gray-700">Bankroll</p>
+              <p className="text-xs font-medium text-gray-700">{t('home.bankroll')}</p>
             </div>
           </div>
         </div>
@@ -302,9 +304,9 @@ export default function Home() {
         {/* Today's Matches */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="section-title">Today's Matches</h3>
+            <h3 className="section-title">{t('home.todaysMatches')}</h3>
             <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-medium flex items-center gap-1">
-              See All
+              {t('home.seeAll')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
               </svg>
@@ -313,7 +315,7 @@ export default function Home() {
 
           {matches.length === 0 ? (
             <div className="card text-center py-8">
-              <p className="text-gray-500">No matches scheduled for today</p>
+              <p className="text-gray-500">{t('home.noMatchesToday')}</p>
             </div>
           ) : (
             <div className="bg-white rounded-xl overflow-hidden shadow-sm">
@@ -392,13 +394,14 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Get the first match from top leagues as featured match
   const featuredMatch = matches?.[0];
 
-  // Get localized texts from advertiser config
+  // Get localized texts from advertiser config (with i18n fallbacks)
+  const bonus = advertiser.bonusAmount || '';
   const texts = advertiser.texts || {
-    freeBet: `Free bet up to ${advertiser.bonusAmount || '€1,500'}`,
-    betOnMatch: 'Bet on any match',
-    ctaButton: `Get ${advertiser.bonusAmount || '€1,500'}`,
-    promoTitle: `${advertiser.bonusAmount || '€1,500'} free bet on this match!`,
-    promoCta: 'Place bet',
+    freeBet: t('home.freeBetUpTo', { bonus }),
+    betOnMatch: t('home.betOnMatch'),
+    ctaButton: t('home.getBonus', { bonus }),
+    promoTitle: t('home.freeBetOnMatch', { bonus }),
+    promoCta: t('home.placeBet'),
   };
 
   const link = 'https://pwa-production-20b5.up.railway.app/promo';
@@ -410,7 +413,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
 
     return (
       <div
-        onClick={() => navigate('/promo')}
+        onClick={() => navigate('/promo?banner=home_featured_match')}
         className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
         style={{ minHeight: '140px' }}
       >
@@ -497,7 +500,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Fallback: Simple banner without match (similar to old design)
   return (
     <div
-      onClick={() => navigate('/promo')}
+      onClick={() => navigate('/promo?banner=home_fallback_banner')}
       className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] cursor-pointer"
     >
       {/* Animated shine effect */}

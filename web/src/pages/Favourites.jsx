@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   getFavouriteTeams,
   getFavouriteLeagues,
@@ -23,6 +24,7 @@ const QUICK_ADD_LEAGUES = [
 
 export default function Favourites() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tab, setTab] = useState('teams');
   const [teams, setTeams] = useState([]);
   const [leagues, setLeagues] = useState([]);
@@ -86,24 +88,24 @@ export default function Favourites() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold">Favourites</h1>
+          <h1 className="text-lg font-bold">{t('favourites.title')}</h1>
         </div>
         <div className="flex border-b border-gray-100">
-          {['teams', 'leagues'].map(t => (
+          {['teams', 'leagues'].map(tabKey => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-3 text-sm font-medium relative capitalize ${
-                tab === t ? 'text-primary-600' : 'text-gray-400'
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              className={`flex-1 py-3 text-sm font-medium relative ${
+                tab === tabKey ? 'text-primary-600' : 'text-gray-400'
               }`}
             >
-              {t}
-              {(t === 'teams' ? teams.length : leagues.length) > 0 && (
+              {t(`favourites.tabs.${tabKey}`)}
+              {(tabKey === 'teams' ? teams.length : leagues.length) > 0 && (
                 <span className="ml-1 text-xs bg-gray-200 px-1.5 py-0.5 rounded-full">
-                  {t === 'teams' ? teams.length : leagues.length}
+                  {tabKey === 'teams' ? teams.length : leagues.length}
                 </span>
               )}
-              {tab === t && <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-600 rounded-full"/>}
+              {tab === tabKey && <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-600 rounded-full"/>}
             </button>
           ))}
         </div>
@@ -132,7 +134,7 @@ export default function Favourites() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{team.name}</p>
-                      <p className="text-xs text-gray-500">Added {new Date(team.addedAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500">{t('favourites.addedDate', { date: new Date(team.addedAt).toLocaleDateString() })}</p>
                     </div>
                     <button
                       onClick={() => handleRemoveTeam(team.id)}
@@ -151,7 +153,7 @@ export default function Favourites() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                   </svg>
-                  Add team
+                  {t('favourites.addTeam')}
                 </button>
               </div>
             )}
@@ -203,7 +205,7 @@ export default function Favourites() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                   </svg>
-                  Add league
+                  {t('favourites.addLeague')}
                 </button>
               </div>
             )}
@@ -225,7 +227,7 @@ export default function Favourites() {
             setSearchResults([]);
           }}
           onAdded={loadFavourites}
-          existingIds={tab === 'teams' ? teams.map(t => t.id) : leagues.map(l => l.id)}
+          existingIds={tab === 'teams' ? teams.map(item => item.id) : leagues.map(l => l.id)}
         />
       )}
     </div>
@@ -233,16 +235,17 @@ export default function Favourites() {
 }
 
 function EmptyState({ type, onAdd }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <svg className="w-16 h-16 text-gray-200 mb-4" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
       </svg>
       <h3 className="text-lg font-bold text-gray-900 mb-1">
-        No favourite {type}
+        {t(`favourites.noFavourite.${type}`)}
       </h3>
       <p className="text-gray-500 text-sm mb-6">
-        Add {type} for quick access and filtering
+        {t(`favourites.addForAccess.${type}`)}
       </p>
       <button
         onClick={onAdd}
@@ -251,13 +254,14 @@ function EmptyState({ type, onAdd }) {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
-        Add {type === 'teams' ? 'team' : 'league'}
+        {type === 'teams' ? t('favourites.addTeam') : t('favourites.addLeague')}
       </button>
     </div>
   );
 }
 
 function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClose, onAdded, existingIds }) {
+  const { t } = useTranslation();
   const handleAdd = (item) => {
     if (type === 'teams') {
       addFavouriteTeam(item);
@@ -274,7 +278,7 @@ function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClo
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Add {type === 'teams' ? 'Team' : 'League'}</h3>
+          <h3 className="text-xl font-bold text-gray-900">{type === 'teams' ? t('favourites.addTeam') : t('favourites.addLeague')}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -290,7 +294,7 @@ function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClo
             type="text"
             value={searchQuery}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder={`Search ${type}...`}
+            placeholder={t(`favourites.search.${type}`)}
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
@@ -298,19 +302,19 @@ function AddModal({ type, searchQuery, searchResults, searching, onSearch, onClo
         <div className="flex-1 overflow-y-auto space-y-2">
           {searching && (
             <div className="text-center py-8 text-gray-500">
-              <FootballSpinner size="sm" text="Searching..." />
+              <FootballSpinner size="sm" text={t('favourites.searching')} />
             </div>
           )}
 
           {!searching && searchResults.length === 0 && searchQuery.length >= 2 && (
             <div className="text-center py-8 text-gray-500">
-              No {type} found
+              {t(`favourites.notFound.${type}`)}
             </div>
           )}
 
           {!searching && searchResults.length === 0 && searchQuery.length < 2 && type === 'leagues' && (
             <>
-              <p className="text-xs text-gray-500 mb-2">Popular leagues:</p>
+              <p className="text-xs text-gray-500 mb-2">{t('favourites.popularLeagues')}</p>
               {QUICK_ADD_LEAGUES.filter(l => !existingIds.includes(l.id)).map(league => (
                 <button
                   key={league.id}

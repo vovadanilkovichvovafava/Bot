@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import footballApi from '../api/footballApi';
 import MatchCard from '../components/MatchCard';
 import { useAdvertiser } from '../context/AdvertiserContext';
@@ -59,6 +60,7 @@ export default function Matches() {
   const [favouriteTeamIds, setFavouriteTeamIds] = useState([]);
   const [favouriteLeagueIds, setFavouriteLeagueIds] = useState([]);
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const liveInterval = useRef(null);
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
@@ -170,16 +172,16 @@ export default function Matches() {
   const hasFavourites = favouriteTeamIds.length > 0 || favouriteLeagueIds.length > 0;
 
   const tabs = [
-    { key: 'today', label: 'Today', count: todayFixtures.length },
-    { key: 'live', label: 'Live', count: liveFixtures.length, isLive: true },
-    { key: 'leagues', label: 'Leagues' },
+    { key: 'today', label: t('matches.today'), count: todayFixtures.length },
+    { key: 'live', label: t('matches.live'), count: liveFixtures.length, isLive: true },
+    { key: 'leagues', label: t('matches.leagues') },
   ];
 
   return (
     <div className="pb-4">
       {/* Header */}
       <div className="bg-white px-5 pt-6 pb-0 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-center mb-4">Matches</h1>
+        <h1 className="text-xl font-bold text-center mb-4">{t('matches.title')}</h1>
         <div className="flex border-b border-gray-100">
           {tabs.map(t => (
             <button
@@ -208,14 +210,14 @@ export default function Matches() {
       <div className="px-5 pt-4">
         {/* Partner Banner */}
         <div
-          onClick={() => navigate('/promo')}
+          onClick={() => navigate('/promo?banner=matches_partner_banner')}
           className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
         >
           <span className="text-lg">🎯</span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-medium">Bonus {advertiser.bonus} at {advertiser.name}</p>
+            <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser.bonus, name: advertiser.name })}</p>
           </div>
-          <span className="text-slate-400 text-xs">Get It →</span>
+          <span className="text-slate-400 text-xs">{t('matches.getIt')} →</span>
         </div>
 
         {/* TODAY TAB */}
@@ -224,7 +226,7 @@ export default function Matches() {
             {loading ? (
               <LoadingSkeleton />
             ) : todayFixtures.length === 0 ? (
-              <EmptyState title="No matches today" subtitle="Check back later"/>
+              <EmptyState title={t('matches.noMatchesToday')} subtitle={t('matches.checkBackLater')}/>
             ) : (
               <>
                 {/* Filter toggle */}
@@ -245,9 +247,9 @@ export default function Matches() {
                     <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                     </svg>
-                    <p className="text-amber-700 font-medium">No matches for your favourites today</p>
+                    <p className="text-amber-700 font-medium">{t('matches.noFavouritesToday')}</p>
                     <button onClick={() => setShowFavouritesOnly(false)} className="text-amber-600 text-sm underline mt-2">
-                      Show all matches
+                      {t('matches.showAllMatches')}
                     </button>
                   </div>
                 )}
@@ -283,13 +285,13 @@ export default function Matches() {
             {liveLoading ? (
               <LoadingSkeleton />
             ) : liveFixtures.length === 0 ? (
-              <EmptyState title="No live matches" subtitle="No matches are being played right now"/>
+              <EmptyState title={t('matches.noLiveMatches')} subtitle={t('matches.noMatchesNow')}/>
             ) : (
               <>
                 {/* Live indicator */}
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-4">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
-                  Updates every 60 sec
+                  {t('matches.updatesEvery60')}
                 </div>
 
                 {/* Filter toggle */}
@@ -310,9 +312,9 @@ export default function Matches() {
                     <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                     </svg>
-                    <p className="text-amber-700 font-medium">No live matches for your favourites</p>
+                    <p className="text-amber-700 font-medium">{t('matches.noFavouritesLive')}</p>
                     <button onClick={() => setShowFavouritesOnly(false)} className="text-amber-600 text-sm underline mt-2">
-                      Show all live matches
+                      {t('matches.showAllLive')}
                     </button>
                   </div>
                 )}
@@ -341,12 +343,12 @@ export default function Matches() {
                 {/* No popular leagues live */}
                 {Object.keys(liveGrouped.popular).length === 0 && !showAllLeagues && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 text-sm mb-3">No matches in top leagues</p>
+                    <p className="text-gray-500 text-sm mb-3">{t('matches.noTopLeagueMatches')}</p>
                     <button
                       onClick={() => setShowAllLeagues(true)}
                       className="text-primary-600 text-sm font-medium"
                     >
-                      Show all {liveGrouped.otherCount} matches →
+                      {t('matches.showAllCount', { count: liveGrouped.otherCount })} →
                     </button>
                   </div>
                 )}
@@ -361,7 +363,7 @@ export default function Matches() {
             {/* Popular */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                ⭐ Top 5 Leagues
+                ⭐ {t('matches.top5Leagues')}
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.popular.map(league => (
@@ -373,7 +375,7 @@ export default function Matches() {
             {/* Euro */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                🏆 European Cups
+                🏆 {t('matches.europeanCups')}
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.euro.map(league => (
@@ -385,7 +387,7 @@ export default function Matches() {
             {/* Other popular */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                🌍 Other Popular
+                🌍 {t('matches.otherPopular')}
               </h3>
               <div className="space-y-2">
                 {LEAGUES_INFO.other.map(league => (
@@ -401,6 +403,7 @@ export default function Matches() {
 }
 
 function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavouritesOnly, setShowFavouritesOnly, hasFavourites, navigate }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2 mb-4 flex-wrap">
       {hasFavourites && (
@@ -415,7 +418,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
           </svg>
-          Favourites
+          {t('matches.favourites')}
         </button>
       )}
       {!hasFavourites && (
@@ -426,7 +429,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
           </svg>
-          Add Favourites
+          {t('matches.addFavourites')}
         </button>
       )}
       <button
@@ -437,7 +440,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        Top Leagues ({popularCount})
+        {t('matches.topLeagues')} ({popularCount})
       </button>
       <button
         onClick={() => { setShowAll(true); setShowFavouritesOnly(false); }}
@@ -447,13 +450,14 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        All ({popularCount + otherCount})
+        {t('matches.all')} ({popularCount + otherCount})
       </button>
     </div>
   );
 }
 
 function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular }) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(!collapsed);
   const leagueList = Object.values(leagues);
 
@@ -471,10 +475,10 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular 
         <div className="flex items-center gap-2">
           <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
           <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
-            {isPopular ? 'Top Leagues' : 'Other Leagues'}
+            {isPopular ? t('matches.topLeagues') : t('matches.otherLeagues')}
           </h3>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
-            {matchCount} matches
+            {matchCount} {t('matches.matchesCount')}
           </span>
         </div>
         <svg

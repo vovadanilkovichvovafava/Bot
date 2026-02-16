@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoSvg from '../assets/logo.svg';
+import logoPng from '../assets/logo.png';
+import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
 const countryToLanguage = {
@@ -71,12 +72,8 @@ export default function BookmakerPromo() {
   const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
 
-  // Build tracking link for PWA service
-  const buildTrackingLink = (baseLink, userId) => {
-    // PWA service link with sub_id_10 for user tracking
-    // pixel parameter left empty - will be filled by PWA service
-    return `https://bootballgame.shop/?sub_id_10=${userId}&pixel={pixel}`;
-  };
+  const [searchParams] = useSearchParams();
+  const banner = searchParams.get('banner') || '';
 
   // Fetch geo info and build tracking link on mount
   useEffect(() => {
@@ -92,26 +89,26 @@ export default function BookmakerPromo() {
           i18n.changeLanguage(geoLang);
         }
 
-        // Build tracking link directly with userId
+        // Get tracking link from PostbackAPI (with all sub_ids)
         const userId = user?.id || `anon_${Date.now()}`;
-        console.log('[BookmakerPromo] user object:', user);
-        console.log('[BookmakerPromo] user.id:', user?.id);
-        console.log('[BookmakerPromo] final userId for link:', userId);
-        const trackingLink = buildTrackingLink(advertiser.link, userId);
-        console.log('[BookmakerPromo] trackingLink:', trackingLink);
-        setBookmakerLink(trackingLink);
+        const link = await getTrackingLink(userId, banner);
+        if (link) {
+          setBookmakerLink(link);
+        } else {
+          // Fallback если API недоступен
+          setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
+        }
       } catch (error) {
         console.error('Failed to fetch geo/link:', error);
-        // Fallback: still build tracking link
         const userId = user?.id || `anon_${Date.now()}`;
-        setBookmakerLink(buildTrackingLink(advertiser.link, userId));
+        setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
       } finally {
         setLoadingLink(false);
       }
     }
 
     fetchGeoAndLink();
-  }, [user?.id, advertiser.link, i18n]);
+  }, [user?.id, banner, i18n]);
 
   const benefits = [
     {
@@ -157,13 +154,13 @@ export default function BookmakerPromo() {
 
         {/* Partner badge */}
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <img src={logoSvg} alt="PVA" className="w-5 h-5" />
+          <img src={logoPng} alt="PVA" className="w-5 h-5 rounded-full object-cover" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 
         {/* Hero text */}
         <h1 className="text-2xl font-bold mb-2">
-          {t('promo.heroTitle1')} <span className="text-amber-400">1 500€</span> {t('promo.heroTitle2')}
+          {t('promo.heroTitle1')} <span className="text-amber-400">{advertiser.bonusAmount}</span> {t('promo.heroTitle2')}
         </h1>
         <p className="text-white/60 text-sm mb-6">
           {t('promo.heroSubtitle')}
@@ -173,7 +170,7 @@ export default function BookmakerPromo() {
         <div className="bg-white rounded-2xl p-4 text-gray-900">
           <div className="text-center mb-4">
             <p className="text-xs text-gray-500 mb-1">{t('promo.upTo')}</p>
-            <p className="text-4xl font-black text-amber-500">1 500<span className="text-2xl">€</span></p>
+            <p className="text-4xl font-black text-amber-500">{advertiser.bonusAmount}</p>
             <p className="text-xs text-gray-500">{t('promo.bonusDesc')}</p>
           </div>
 

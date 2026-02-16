@@ -73,6 +73,8 @@ app.add_middleware(InjectionDetectionMiddleware)
 # Note: When allow_credentials=True, cannot use wildcard "*" for origins
 # Instead, we list specific origins or use allow_origin_regex
 CORS_ORIGINS = [
+    "https://sportscoreai.com",
+    "https://www.sportscoreai.com",
     "https://pwa-production-20b5.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
     "http://localhost:3000",
