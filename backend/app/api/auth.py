@@ -105,9 +105,10 @@ async def register(
 
     client_ip = get_client_ip(request)
 
-    # Check if IP already registered
-    ip_check = await db.execute(select(User).where(User.registration_ip == client_ip))
-    if ip_check.scalar_one_or_none():
+    # Check if IP already registered (max 5 accounts per IP)
+    from sqlalchemy import func
+    ip_count = await db.execute(select(func.count()).where(User.registration_ip == client_ip))
+    if ip_count.scalar() >= 5:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Registration limit reached"
