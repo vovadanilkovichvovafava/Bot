@@ -8,6 +8,7 @@ import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import logoWhite from '../assets/logo_wight.png';
 
+
 export default function Register() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');

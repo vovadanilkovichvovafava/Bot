@@ -5,16 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import SupportChat from '../components/SupportChat';
-import NotificationSetupModal from '../components/NotificationSetupModal';
 import { getReferralStats, copyReferralLink, getReferralLink } from '../services/referralStore';
-import {
-  getNotificationSettings,
-  getNotificationTeams,
-  disableNotifications as disableNotificationsStore,
-} from '../services/notificationStore';
-import { isPushSupported, unsubscribeFromPush } from '../services/pushNotificationService';
 import FootballSpinner from '../components/FootballSpinner';
 import logoBlack from '../assets/logo_black.png';
+
 
 // Default stats while loading
 const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
@@ -32,8 +26,6 @@ export default function Settings() {
   const [showBookmakerModal, setShowBookmakerModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState({ enabled: false, favoriteTeams: [] });
   const [verificationId, setVerificationId] = useState('');
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [verificationSubmitted, setVerificationSubmitted] = useState(false);
@@ -99,24 +91,6 @@ export default function Settings() {
       });
     }
   }, [user?.id]);
-
-  // Load notification settings
-  useEffect(() => {
-    const settings = getNotificationSettings();
-    setNotificationSettings(settings);
-  }, [showNotificationModal]);
-
-  // Refresh notification settings when modal closes
-  const handleNotificationModalClose = () => {
-    setShowNotificationModal(false);
-    setNotificationSettings(getNotificationSettings());
-  };
-
-  const handleDisableNotifications = async () => {
-    await unsubscribeFromPush();
-    disableNotificationsStore();
-    setNotificationSettings(getNotificationSettings());
-  };
 
   const riskInfo = RISK_OPTIONS.find(r => r.key === riskLevel) || RISK_OPTIONS[1];
 
@@ -320,87 +294,6 @@ export default function Settings() {
 
         <div className="h-3"/>
 
-        {/* Notifications */}
-        <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">
-            {t('settings.notifications')}
-          </p>
-          <p className="text-xs text-gray-500 mb-3">
-            {t('settings.notificationsDesc')}
-          </p>
-        </div>
-
-        {notificationSettings.enabled ? (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-green-700">
-                  {t('settings.notificationsEnabled')}
-                </p>
-                <p className="text-xs text-gray-600">
-                  {notificationSettings.favoriteTeams?.length > 0
-                    ? t('settings.teamsTracked', { count: notificationSettings.favoriteTeams.length })
-                    : t('settings.noTeamsSelected')}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowNotificationModal(true)}
-                className="text-primary-600 text-xs font-medium px-2 py-1"
-              >
-                {t('settings.edit')}
-              </button>
-            </div>
-            {notificationSettings.favoriteTeams?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {notificationSettings.favoriteTeams.slice(0, 4).map(team => (
-                  <div key={team.id} className="flex items-center gap-1 bg-white/80 rounded-full px-2 py-1">
-                    {team.logo && <img src={team.logo} alt="" className="w-4 h-4 object-contain"/>}
-                    <span className="text-[10px] font-medium text-gray-700">{team.name}</span>
-                  </div>
-                ))}
-                {notificationSettings.favoriteTeams.length > 4 && (
-                  <div className="bg-white/80 rounded-full px-2 py-1">
-                    <span className="text-[10px] font-medium text-gray-500">
-                      +{notificationSettings.favoriteTeams.length - 4}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-            <button
-              onClick={handleDisableNotifications}
-              className="mt-3 text-xs text-gray-500 hover:text-red-500"
-            >
-              {t('settings.disableNotifications')}
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowNotificationModal(true)}
-            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl p-4 mb-3 flex items-center gap-3"
-          >
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-semibold">{t('settings.enableNotifications')}</p>
-              <p className="text-xs text-white/80">{t('settings.enableNotificationsDesc')}</p>
-            </div>
-            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </button>
-        )}
-
-        <div className="h-3"/>
-
         {/* AI Betting Preferences */}
         <div className="mb-3">
           <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.aiBettingPrefs')}</p>
@@ -562,12 +455,6 @@ export default function Settings() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showSupportChat} onClose={() => setShowSupportChat(false)} />
-
-      {/* Notification Setup Modal */}
-      <NotificationSetupModal
-        isOpen={showNotificationModal}
-        onClose={handleNotificationModalClose}
-      />
 
       {/* Bookmaker Connection Modal */}
       {showBookmakerModal && (

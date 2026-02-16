@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import logoBlack from '../assets/logo_black.png';
 
+
 export default function Premium() {
   const navigate = useNavigate();
   const { t } = useTranslation();

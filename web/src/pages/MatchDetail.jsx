@@ -551,10 +551,10 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
   const limitReached = !isPremium && aiRequestCount >= FREE_AI_LIMIT;
   const remainingRequests = Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
-  // Get localized texts from advertiser config
-  const adTexts = advertiser?.texts || {
-    promoTitle: t('matchDetail.ad1Title'),
-    promoCtaFree: t('matchDetail.ad1Cta', { bonus: advertiser?.bonusAmount || '' }),
+  // Use i18n for all promo texts (never use advertiser.texts directly)
+  const adTexts = {
+    promoTitle: t('advertiser.promoTitle', { bonus: advertiser?.bonusAmount || '' }),
+    promoCtaFree: t('advertiser.promoCtaFree'),
   };
   const affiliateLink = 'https://pwa-production-20b5.up.railway.app/promo';
 
@@ -705,7 +705,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
               </svg>
-              {t('matchDetail.freeRequestsLeft', { remaining: remainingRequests, total: 3 })}
+              {t('matchDetail.freeRequestsLeft', { count: remainingRequests, total: 3 })}
             </div>
           )}
 

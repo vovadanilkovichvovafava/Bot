@@ -7,6 +7,7 @@ import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import logoWhite from '../assets/logo_wight.png';
 
+
 export default function Login() {
   const { t } = useTranslation();
   const [mode, setMode] = useState('email'); // 'email' | 'phone'

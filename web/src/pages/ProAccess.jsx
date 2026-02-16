@@ -138,7 +138,7 @@ export default function ProAccess() {
       <div className="px-4 pt-6">
         <div className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-[0_2px_8px_rgba(0,0,0,0.04)] animate-[fadeUp_0.4s_ease_0.2s_both]">
           <h2 className="text-[17px] font-extrabold text-[#1B3A5C] mb-4 flex items-center gap-2">
-            {'\uD83D\uDCF2'} {t('proAccess.howToTitle')} — 3 {i18n.language === 'ru' ? '\u0448\u0430\u0433\u0430' : 'steps'}
+            {'\uD83D\uDCF2'} {t('proAccess.howToTitle')} — {t('proAccess.threeSteps')}
           </h2>
 
           <div className="space-y-0">

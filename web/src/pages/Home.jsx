@@ -9,6 +9,7 @@ import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
 import logoWhite from '../assets/logo_wight.png';
 
+
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
 const VALUE_BET_USED_KEY = 'value_bet_used';
