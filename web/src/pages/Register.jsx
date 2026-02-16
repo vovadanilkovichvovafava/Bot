@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
@@ -7,6 +8,7 @@ import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 
 export default function Register() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,19 +33,23 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password || !phone) {
-      setError('Please fill in all required fields');
+      setError(t('auth.errFillFields'));
       return;
     }
     if (!isValidPhone(phone, phoneCountry)) {
-      setError('Please enter a valid phone number');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.errInvalidPhone'));
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.errPasswordLength'));
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError(t('auth.errPasswordUppercase'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t('auth.errPasswordsMismatch'));
       return;
     }
     setError('');
@@ -53,7 +59,7 @@ export default function Register() {
       clearReferralCode(); // Clear the referral code after successful registration
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || t('auth.errRegistration'));
     } finally {
       setLoading(false);
     }
@@ -78,8 +84,8 @@ export default function Register() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
-          <p className="text-gray-400 text-sm">Sign up to get started</p>
+          <h1 className="text-2xl font-bold text-white mb-1">{t('auth.createAccount')}</h1>
+          <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>
         </div>
       </div>
 
@@ -89,16 +95,16 @@ export default function Register() {
           {/* Benefits */}
           <div className="flex justify-center gap-4 mb-5">
             <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-green-600 font-bold text-lg">Free</p>
-              <p className="text-green-600/70 text-[10px] uppercase font-medium">Start</p>
+              <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
+              <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
             </div>
             <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-amber-600 font-bold text-lg">PRO</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">Access</p>
+              <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
+              <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-purple-600 font-bold text-lg">AI</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">Predictions</p>
+              <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
+              <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
             </div>
           </div>
 
@@ -113,7 +119,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.emailLabel')} {t('auth.required')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -122,7 +128,7 @@ export default function Register() {
                 </span>
                 <input
                   type="email"
-                  placeholder="example@email.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -131,12 +137,12 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phoneLabel')} {t('auth.required')}</label>
               <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.usernameLabel')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -145,7 +151,7 @@ export default function Register() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Optional"
+                  placeholder={t('auth.optionalPlaceholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -154,7 +160,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.passwordLabel')} {t('auth.required')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -163,7 +169,7 @@ export default function Register() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="At least 6 characters"
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -188,7 +194,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.confirmPasswordLabel')} {t('auth.required')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -197,7 +203,7 @@ export default function Register() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Repeat password"
+                  placeholder={t('auth.repeatPasswordPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -214,7 +220,7 @@ export default function Register() {
                 <FootballSpinner size="xs" light />
               ) : (
                 <>
-                  Create Account
+                  {t('auth.createAccount')}
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -224,13 +230,13 @@ export default function Register() {
           </form>
 
           <p className="text-center text-gray-400 text-xs mt-3">
-            By registering, you agree to the terms of service
+            {t('auth.agreeTerms')}
           </p>
 
           <p className="text-center text-gray-500 text-sm mt-4">
-            Already have an account?{' '}
+            {t('auth.alreadyHaveAccount')}{' '}
             <Link to="/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
-              Sign In
+              {t('auth.signIn')}
             </Link>
           </p>
         </div>

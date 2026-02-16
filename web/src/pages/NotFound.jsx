@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function NotFound() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center px-6 text-center">
@@ -24,10 +26,10 @@ export default function NotFound() {
 
       {/* Text */}
       <h2 className="text-2xl font-bold text-white mb-2">
-        Page Not Found
+        {t('notFound.title')}
       </h2>
       <p className="text-gray-400 mb-8 max-w-sm">
-        Oops! Looks like this page is on a break. Try going back to the home page.
+        {t('notFound.description')}
       </p>
 
       {/* Actions */}
@@ -36,13 +38,13 @@ export default function NotFound() {
           onClick={() => navigate('/')}
           className="w-full bg-gradient-to-r from-primary-500 to-purple-500 text-white font-semibold py-3.5 rounded-xl"
         >
-          Go Home
+          {t('notFound.goHome')}
         </button>
         <button
           onClick={() => navigate(-1)}
           className="w-full bg-gray-800 text-gray-300 font-medium py-3.5 rounded-xl border border-gray-700"
         >
-          Go Back
+          {t('notFound.goBack')}
         </button>
       </div>
 
@@ -50,11 +52,11 @@ export default function NotFound() {
       <div className="mt-12 flex gap-8 text-center">
         <div>
           <p className="text-3xl font-bold text-primary-400">99%</p>
-          <p className="text-xs text-gray-500">pages work</p>
+          <p className="text-xs text-gray-500">{t('notFound.pagesWork')}</p>
         </div>
         <div>
           <p className="text-3xl font-bold text-purple-400">1</p>
-          <p className="text-xs text-gray-500">unlucky</p>
+          <p className="text-xs text-gray-500">{t('notFound.unlucky')}</p>
         </div>
       </div>
     </div>

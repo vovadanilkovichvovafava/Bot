@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 
 // Local storage key
@@ -31,6 +32,7 @@ const saveData = (data) => {
 
 export default function BankrollTracker() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [data, setData] = useState(loadData);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -65,7 +67,7 @@ export default function BankrollTracker() {
         type: 'deposit',
         amount: startAmount,
         date: new Date().toISOString(),
-        note: 'Initial bankroll',
+        note: t('bankroll.initialBankroll'),
       }],
     });
     setShowSetup(false);
@@ -104,10 +106,10 @@ export default function BankrollTracker() {
 
   const getDefaultNote = (type) => {
     const notes = {
-      deposit: 'Deposit',
-      withdraw: 'Withdrawal',
-      bet_win: 'Bet won',
-      bet_loss: 'Bet lost',
+      deposit: t('bankroll.deposit'),
+      withdraw: t('bankroll.withdrawal'),
+      bet_win: t('bankroll.betWon'),
+      bet_loss: t('bankroll.betLost'),
     };
     return notes[type] || '';
   };
@@ -131,7 +133,7 @@ export default function BankrollTracker() {
   };
 
   const resetAll = () => {
-    if (confirm('Reset all bankroll data? This cannot be undone.')) {
+    if (confirm(t('bankroll.resetConfirm'))) {
       setData(getDefaultData());
       setShowSetup(true);
     }
@@ -196,7 +198,7 @@ export default function BankrollTracker() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold">Bankroll Tracker</h1>
+          <h1 className="text-lg font-bold">{t('bankroll.title')}</h1>
         </div>
 
         <div className="flex-1 flex items-center justify-center p-6">
@@ -207,12 +209,12 @@ export default function BankrollTracker() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Set Your Bankroll</h2>
-              <p className="text-gray-500 text-sm">Enter your starting bankroll to begin tracking</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('bankroll.setYourBankroll')}</h2>
+              <p className="text-gray-500 text-sm">{t('bankroll.enterStartingBankroll')}</p>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Starting Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bankroll.startingAmount')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">$</span>
                 <input
@@ -230,7 +232,7 @@ export default function BankrollTracker() {
               disabled={!setupAmount || parseFloat(setupAmount) <= 0}
               className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl disabled:opacity-50"
             >
-              Start Tracking
+              {t('bankroll.startTracking')}
             </button>
           </div>
         </div>
@@ -248,28 +250,28 @@ export default function BankrollTracker() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold">Bankroll Tracker</h1>
+          <h1 className="text-lg font-bold">{t('bankroll.title')}</h1>
         </div>
-        <button onClick={resetAll} className="text-gray-400 text-sm">Reset</button>
+        <button onClick={resetAll} className="text-gray-400 text-sm">{t('bankroll.reset')}</button>
       </div>
 
       {/* Current Bankroll Card */}
       <div className="px-5 mt-4">
         <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg">
-          <p className="text-green-100 text-sm mb-1">Current Bankroll</p>
+          <p className="text-green-100 text-sm mb-1">{t('bankroll.currentBankroll')}</p>
           <p className="text-4xl font-bold mb-4">${data.currentBankroll.toFixed(2)}</p>
 
           <div className="flex gap-3">
             <div className={`flex-1 rounded-xl p-3 ${profitLoss >= 0 ? 'bg-white/20' : 'bg-red-500/30'}`}>
-              <p className="text-xs text-green-100">P/L</p>
+              <p className="text-xs text-green-100">{t('bankroll.pl')}</p>
               <p className="text-lg font-bold">{profitLoss >= 0 ? '+' : ''}{profitLoss.toFixed(2)}</p>
             </div>
             <div className="flex-1 bg-white/20 rounded-xl p-3">
-              <p className="text-xs text-green-100">ROI</p>
+              <p className="text-xs text-green-100">{t('bankroll.roi')}</p>
               <p className="text-lg font-bold">{roi}%</p>
             </div>
             <div className="flex-1 bg-white/20 rounded-xl p-3">
-              <p className="text-xs text-green-100">Win Rate</p>
+              <p className="text-xs text-green-100">{t('bankroll.winRate')}</p>
               <p className="text-lg font-bold">{winRate}%</p>
             </div>
           </div>
@@ -281,28 +283,28 @@ export default function BankrollTracker() {
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-green-500">↓</span>
-            <span className="text-xs text-gray-500">Deposits</span>
+            <span className="text-xs text-gray-500">{t('bankroll.deposits')}</span>
           </div>
           <p className="text-lg font-bold text-gray-900">${totalDeposits.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-orange-500">↑</span>
-            <span className="text-xs text-gray-500">Withdrawals</span>
+            <span className="text-xs text-gray-500">{t('bankroll.withdrawals')}</span>
           </div>
           <p className="text-lg font-bold text-gray-900">${totalWithdrawals.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-green-500">✓</span>
-            <span className="text-xs text-gray-500">Bets Won ({betsWon})</span>
+            <span className="text-xs text-gray-500">{t('bankroll.betsWon')} ({betsWon})</span>
           </div>
           <p className="text-lg font-bold text-green-600">+${totalWins.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-red-500">✗</span>
-            <span className="text-xs text-gray-500">Bets Lost ({betsLost})</span>
+            <span className="text-xs text-gray-500">{t('bankroll.betsLost')} ({betsLost})</span>
           </div>
           <p className="text-lg font-bold text-red-600">-${totalLosses.toFixed(2)}</p>
         </div>
@@ -311,13 +313,13 @@ export default function BankrollTracker() {
       {/* Recent Transactions */}
       <div className="px-5 mt-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-900">Recent Transactions</h2>
+          <h2 className="font-bold text-gray-900">{t('bankroll.recentTransactions')}</h2>
           <span className="text-xs text-gray-400">{data.transactions.length} total</span>
         </div>
 
         {data.transactions.length === 0 ? (
           <div className="bg-white rounded-xl p-8 text-center">
-            <p className="text-gray-400">No transactions yet</p>
+            <p className="text-gray-400">{t('bankroll.noTransactions')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl divide-y divide-gray-100">
@@ -368,15 +370,15 @@ export default function BankrollTracker() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
           <div className="bg-white w-full max-w-md rounded-t-3xl p-6">
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"/>
-            <h3 className="text-lg font-bold text-center mb-4">Add Transaction</h3>
+            <h3 className="text-lg font-bold text-center mb-4">{t('bankroll.addTransaction')}</h3>
 
             {/* Type selector */}
             <div className="grid grid-cols-4 gap-2 mb-4">
               {[
-                { type: 'deposit', label: 'Deposit', icon: '↓', color: 'blue' },
-                { type: 'withdraw', label: 'Withdraw', icon: '↑', color: 'orange' },
-                { type: 'bet_win', label: 'Win', icon: '✓', color: 'green' },
-                { type: 'bet_loss', label: 'Loss', icon: '✗', color: 'red' },
+                { type: 'deposit', label: t('bankroll.deposit'), icon: '↓', color: 'blue' },
+                { type: 'withdraw', label: t('bankroll.withdraw'), icon: '↑', color: 'orange' },
+                { type: 'bet_win', label: t('bankroll.win'), icon: '✓', color: 'green' },
+                { type: 'bet_loss', label: t('bankroll.loss'), icon: '✗', color: 'red' },
               ].map((item) => (
                 <button
                   key={item.type}
@@ -395,7 +397,7 @@ export default function BankrollTracker() {
 
             {/* Amount */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('bankroll.amount')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                 <input
@@ -410,7 +412,7 @@ export default function BankrollTracker() {
 
             {/* Note */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('bankroll.noteOptional')}</label>
               <input
                 type="text"
                 value={note}
@@ -426,14 +428,14 @@ export default function BankrollTracker() {
                 onClick={() => setShowAddModal(false)}
                 className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl"
               >
-                Cancel
+                {t('bankroll.cancel')}
               </button>
               <button
                 onClick={handleAddTransaction}
                 disabled={!amount || parseFloat(amount) <= 0}
                 className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl disabled:opacity-50"
               >
-                Add
+                {t('bankroll.add')}
               </button>
             </div>
           </div>

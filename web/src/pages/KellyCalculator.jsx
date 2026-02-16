@@ -59,10 +59,10 @@ export default function KellyCalculator() {
   };
 
   const fractionOptions = [
-    { value: 1, label: 'Full Kelly', desc: '100%' },
-    { value: 0.5, label: 'Half Kelly', desc: '50%' },
-    { value: 0.25, label: 'Quarter Kelly', desc: '25%' },
-    { value: 0.1, label: 'Tenth Kelly', desc: '10%' },
+    { value: 1, label: t('kelly.fullKelly'), desc: '100%' },
+    { value: 0.5, label: t('kelly.halfKelly'), desc: '50%' },
+    { value: 0.25, label: t('kelly.quarterKelly'), desc: '25%' },
+    { value: 0.1, label: t('kelly.tenthKelly'), desc: '10%' },
   ];
 
   return (
@@ -76,8 +76,8 @@ export default function KellyCalculator() {
             </svg>
           </button>
           <div>
-            <h1 className="text-xl font-bold">Kelly Calculator</h1>
-            <p className="text-sm text-gray-500">Optimal bet sizing</p>
+            <h1 className="text-xl font-bold">{t('kelly.title')}</h1>
+            <p className="text-sm text-gray-500">{t('kelly.subtitle')}</p>
           </div>
         </div>
 
@@ -90,9 +90,9 @@ export default function KellyCalculator() {
               </svg>
             </div>
             <div>
-              <p className="font-semibold mb-1">Kelly Criterion</p>
+              <p className="font-semibold mb-1">{t('kelly.criterion')}</p>
               <p className="text-sm text-white/80">
-                Mathematically optimal bet sizing to maximize long-term growth while minimizing risk of ruin.
+                {t('kelly.criterionDescription')}
               </p>
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function KellyCalculator() {
           {/* Odds Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Decimal Odds
+              {t('kelly.decimalOdds')}
             </label>
             <input
               type="number"
@@ -113,16 +113,16 @@ export default function KellyCalculator() {
               min="1.01"
               value={odds}
               onChange={(e) => setOdds(e.target.value)}
-              placeholder="e.g., 2.50"
+              placeholder={t('kelly.oddsPlaceholder')}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
             />
-            <p className="text-xs text-gray-400 mt-1">The odds offered by the bookmaker</p>
+            <p className="text-xs text-gray-400 mt-1">{t('kelly.oddsHint')}</p>
           </div>
 
           {/* Win Probability Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Estimated Win Probability (%)
+              {t('kelly.winProbability')}
             </label>
             <div className="relative">
               <input
@@ -132,18 +132,18 @@ export default function KellyCalculator() {
                 max="99"
                 value={probability}
                 onChange={(e) => setProbability(e.target.value)}
-                placeholder="e.g., 45"
+                placeholder={t('kelly.probabilityPlaceholder')}
                 className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Your estimation of the true winning probability</p>
+            <p className="text-xs text-gray-400 mt-1">{t('kelly.probabilityHint')}</p>
           </div>
 
           {/* Bankroll Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bankroll (Optional)
+              {t('kelly.bankroll')}
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
@@ -153,17 +153,17 @@ export default function KellyCalculator() {
                 min="1"
                 value={bankroll}
                 onChange={(e) => setBankroll(e.target.value)}
-                placeholder="e.g., 1000"
+                placeholder={t('kelly.bankrollPlaceholder')}
                 className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">Your total betting bankroll for stake calculation</p>
+            <p className="text-xs text-gray-400 mt-1">{t('kelly.bankrollHint')}</p>
           </div>
 
           {/* Kelly Fraction Selector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kelly Fraction
+              {t('kelly.kellyFraction')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {fractionOptions.map((opt) => (
@@ -182,7 +182,7 @@ export default function KellyCalculator() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2">
-              Half or quarter Kelly is often recommended to reduce variance
+              {t('kelly.fractionHint')}
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export default function KellyCalculator() {
             disabled={!odds || !probability}
             className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Calculate Kelly
+            {t('kelly.calculate')}
           </button>
         </div>
 
@@ -204,24 +204,24 @@ export default function KellyCalculator() {
                 <svg className="w-12 h-12 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                 </svg>
-                <p className="font-semibold text-red-700">Invalid Input</p>
-                <p className="text-sm text-red-600">Please check your values</p>
+                <p className="font-semibold text-red-700">{t('kelly.invalidInput')}</p>
+                <p className="text-sm text-red-600">{t('kelly.checkValues')}</p>
               </div>
             ) : !result.isPositive ? (
               <div className="text-center py-4">
                 <svg className="w-12 h-12 text-yellow-500 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                 </svg>
-                <p className="font-semibold text-yellow-700">No Value Bet</p>
-                <p className="text-sm text-yellow-600">Kelly suggests not betting (negative edge)</p>
+                <p className="font-semibold text-yellow-700">{t('kelly.noValueBet')}</p>
+                <p className="text-sm text-yellow-600">{t('kelly.negativeEdge')}</p>
                 <p className="mt-2 text-xs text-yellow-600">
-                  Edge: {result.edge.toFixed(2)}%
+                  {t('kelly.edge')}: {result.edge.toFixed(2)}%
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="text-center">
-                  <p className="text-sm text-green-600 font-medium mb-1">Recommended Stake</p>
+                  <p className="text-sm text-green-600 font-medium mb-1">{t('kelly.recommendedStake')}</p>
                   <p className="text-4xl font-bold text-green-700">
                     {result.adjustedKelly.toFixed(2)}%
                   </p>
@@ -235,18 +235,18 @@ export default function KellyCalculator() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-gray-900">{result.kelly.toFixed(2)}%</p>
-                    <p className="text-xs text-gray-500">Full Kelly</p>
+                    <p className="text-xs text-gray-500">{t('kelly.fullKelly')}</p>
                   </div>
                   <div className="bg-white rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-blue-600">+{result.edge.toFixed(2)}%</p>
-                    <p className="text-xs text-gray-500">Edge</p>
+                    <p className="text-xs text-gray-500">{t('kelly.edge')}</p>
                   </div>
                 </div>
 
                 {bankroll && (
                   <div className="bg-white rounded-xl p-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Expected Value</span>
+                      <span className="text-gray-600">{t('kelly.expectedValue')}</span>
                       <span className="font-bold text-green-600">+${result.ev.toFixed(2)}</span>
                     </div>
                   </div>
@@ -257,7 +257,7 @@ export default function KellyCalculator() {
                     onClick={resetForm}
                     className="text-blue-600 font-semibold text-sm"
                   >
-                    Calculate Again
+                    {t('kelly.calculateAgain')}
                   </button>
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function KellyCalculator() {
 
         {/* Educational Section */}
         <div className="bg-white rounded-2xl p-4 space-y-4">
-          <h3 className="font-bold text-gray-900">Understanding Kelly Criterion</h3>
+          <h3 className="font-bold text-gray-900">{t('kelly.understandingTitle')}</h3>
 
           <div className="space-y-3">
             <div className="flex gap-3">
@@ -275,8 +275,8 @@ export default function KellyCalculator() {
                 <span className="font-bold text-blue-600">1</span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Find Your Edge</p>
-                <p className="text-sm text-gray-500">Compare your probability estimate to implied odds</p>
+                <p className="font-medium text-gray-900">{t('kelly.step1Title')}</p>
+                <p className="text-sm text-gray-500">{t('kelly.step1Desc')}</p>
               </div>
             </div>
 
@@ -285,8 +285,8 @@ export default function KellyCalculator() {
                 <span className="font-bold text-blue-600">2</span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Calculate Optimal Stake</p>
-                <p className="text-sm text-gray-500">Kelly tells you exactly how much to bet</p>
+                <p className="font-medium text-gray-900">{t('kelly.step2Title')}</p>
+                <p className="text-sm text-gray-500">{t('kelly.step2Desc')}</p>
               </div>
             </div>
 
@@ -295,8 +295,8 @@ export default function KellyCalculator() {
                 <span className="font-bold text-blue-600">3</span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">Use Fractional Kelly</p>
-                <p className="text-sm text-gray-500">Half or quarter Kelly reduces variance significantly</p>
+                <p className="font-medium text-gray-900">{t('kelly.step3Title')}</p>
+                <p className="text-sm text-gray-500">{t('kelly.step3Desc')}</p>
               </div>
             </div>
           </div>
@@ -307,8 +307,7 @@ export default function KellyCalculator() {
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
               </svg>
               <p className="text-sm text-amber-800">
-                <strong>Pro Tip:</strong> Only use Kelly when you have a genuine edge.
-                Overestimating your probability leads to overbetting.
+                <strong>{t('kelly.proTip')}</strong> {t('kelly.proTipText')}
               </p>
             </div>
           </div>

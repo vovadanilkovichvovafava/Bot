@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
@@ -11,17 +12,18 @@ const AI_REQUESTS_KEY = 'ai_requests_count';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
-// Secondary questions - shown on expand
+// Secondary questions - shown on expand (keys for i18n)
 const SECONDARY_QUESTIONS = [
-  { label: "Live matches now", emoji: '🔴' },
-  { label: 'Premier League today', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { label: 'La Liga today', emoji: '🇪🇸' },
-  { label: 'Champions League', emoji: '⭐' },
-  { label: 'Serie A today', emoji: '🇮🇹' },
+  { key: 'liveMatchesNow', emoji: '🔴' },
+  { key: 'premierLeagueToday', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { key: 'laLigaToday', emoji: '🇪🇸' },
+  { key: 'championsLeague', emoji: '⭐' },
+  { key: 'serieAToday', emoji: '🇮🇹' },
 ];
 
 export default function AIChat() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const [messages, setMessages] = useState([]);
@@ -89,7 +91,7 @@ export default function AIChat() {
     const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',
-      content: `Welcome to **AI Football Assistant**!\n\nI have access to **real-time data** from 900+ leagues:\n\n\u2022 \uD83D\uDCCA **Match predictions** with real probabilities & odds\n\u2022 \uD83D\uDD34 **Live scores** and match statistics\n\u2022 \uD83C\uDFAF **Betting recommendations** based on actual data\n\u2022 \uD83E\uDE7A **Injuries & lineups** for upcoming matches\n\u2022 \uD83D\uDCC5 **Today's overview** with AI predictions\n\n**Try asking:**\n\u2022 "Arsenal vs Chelsea prediction"\n\u2022 "Best bets for today"\n\u2022 "Live matches now"\n\u2022 "Premier League today"`,
+      content: t('aiChat.welcomeMessage'),
     };
 
     if (cachedMessages && cachedMessages.length > 0) {
@@ -202,13 +204,13 @@ export default function AIChat() {
       const errStr = typeof e === 'string' ? e : (e?.message || String(e));
       let errorMsg;
       if (errStr.includes('402') || errStr.includes('limit')) {
-        errorMsg = 'You have reached your daily AI request limit. Upgrade to Premium for unlimited access.';
+        errorMsg = t('aiChat.errLimit');
       } else if (errStr.includes('401') || errStr.includes('Unauthorized')) {
-        errorMsg = 'Authentication error. Please try logging in again.';
+        errorMsg = t('aiChat.errAuth');
       } else if (errStr.includes('500')) {
-        errorMsg = 'Server error. Please try again later.';
+        errorMsg = t('aiChat.errServer');
       } else {
-        errorMsg = `Error: ${errStr}`;
+        errorMsg = `${t('aiChat.error')}: ${errStr}`;
       }
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
@@ -225,7 +227,7 @@ export default function AIChat() {
     setMessages([{
       id: 'welcome',
       role: 'assistant',
-      content: 'Chat cleared. How can I help you with football analysis?',
+      content: t('aiChat.chatCleared'),
     }]);
     setShowQuick(true);
     localStorage.removeItem(CHAT_HISTORY_KEY);
@@ -242,8 +244,8 @@ export default function AIChat() {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-none">AI Assistant</h1>
-            <p className="text-[10px] text-green-500 font-medium">Real-time data</p>
+            <h1 className="text-lg font-bold text-gray-900 leading-none">{t('aiChat.title')}</h1>
+            <p className="text-[10px] text-green-500 font-medium">{t('aiChat.realTimeData')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -278,9 +280,9 @@ export default function AIChat() {
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                       </svg>
-                      Real-time data
+                      {t('aiChat.realTimeData')}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-600 font-medium">AI Analysis</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-600 font-medium">{t('aiChat.aiAnalysis')}</span>
                   </div>
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
@@ -310,7 +312,7 @@ export default function AIChat() {
                             <svg className="w-4 h-4 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                             </svg>
-                            <span className="text-xs font-semibold text-emerald-100">Recommended</span>
+                            <span className="text-xs font-semibold text-emerald-100">{t('aiChat.recommended')}</span>
                           </div>
                           <span className="bg-white text-emerald-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
                             {msg.bet.odds.toFixed(2)}
@@ -380,8 +382,8 @@ export default function AIChat() {
                     <span className="text-white font-bold text-xs">{advertiser.currency}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">Bet on AI predictions!</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Get {advertiser.bonus} bonus at {advertiser.name}</p>
+                    <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonus, name: advertiser.name })}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -389,13 +391,13 @@ export default function AIChat() {
                     onClick={() => navigate('/promo?banner=aichat_ad_get_bonus')}
                     className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                   >
-                    Get Bonus
+                    {t('aiChat.getBonus2')}
                   </button>
                   <button
                     onClick={() => navigate('/promo?banner=aichat_ad_learn_more')}
                     className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
                   >
-                    Learn More
+                    {t('aiChat.learnMore')}
                   </button>
                 </div>
               </div>
@@ -408,12 +410,12 @@ export default function AIChat() {
               {enriching ? (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <FootballSpinner size="xs" />
-                  Fetching real-time data...
+                  {t('aiChat.fetchingData')}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <FootballSpinner size="xs" />
-                  Analyzing...
+                  {t('aiChat.analyzing')}
                 </div>
               )}
             </div>
@@ -434,7 +436,7 @@ export default function AIChat() {
               {advertiser.texts.bonusButton}
             </button>
             <button
-              onClick={() => sendMessage("Today's best bets")}
+              onClick={() => sendMessage(t('aiChat.todaysBestBets'))}
               disabled={loading}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium disabled:opacity-50 bg-primary-600 text-white"
             >
@@ -447,12 +449,12 @@ export default function AIChat() {
             <div className="flex flex-wrap gap-2 mb-2">
               {SECONDARY_QUESTIONS.map(q => (
                 <button
-                  key={q.label}
-                  onClick={() => sendMessage(q.label)}
+                  key={q.key}
+                  onClick={() => sendMessage(t(`aiChat.${q.key}`))}
                   disabled={loading}
                   className="bg-white text-gray-700 text-sm px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  {q.emoji} {q.label}
+                  {q.emoji} {t(`aiChat.${q.key}`)}
                 </button>
               ))}
             </div>
@@ -468,14 +470,14 @@ export default function AIChat() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
                 </svg>
-                Show less
+                {t('aiChat.showLess')}
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                 </svg>
-                More questions
+                {t('aiChat.moreQuestions')}
               </>
             )}
           </button>
@@ -491,7 +493,7 @@ export default function AIChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !loading && sendMessage(input)}
-            placeholder="Ask about any match, league, or team..."
+            placeholder={t('aiChat.inputPlaceholder')}
             className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
             disabled={loading}
           />
@@ -531,16 +533,16 @@ export default function AIChat() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Free Limit Reached</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('aiChat.freeLimitReached')}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                You've used all {FREE_AI_LIMIT} free AI requests
+                {t('aiChat.usedAllRequests', { count: FREE_AI_LIMIT })}
               </p>
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
-              <p className="text-sm font-medium text-green-800 mb-1">Unlock Unlimited AI</p>
+              <p className="text-sm font-medium text-green-800 mb-1">{t('aiChat.unlockUnlimitedAI')}</p>
               <p className="text-xs text-green-600">
-                Make a deposit at {advertiser.name} → Unlimited AI requests
+                {t('aiChat.depositForUnlimited', { name: advertiser.name })}
               </p>
             </div>
 
@@ -549,13 +551,13 @@ export default function AIChat() {
                 onClick={() => { setShowLimitModal(false); navigate('/promo?banner=aichat_limit_unlock'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
               >
-                Deposit & Unlock
+                {t('aiChat.depositAndUnlock')}
               </button>
               <button
                 onClick={() => setShowLimitModal(false)}
                 className="w-full text-gray-500 text-sm py-2"
               >
-                Maybe Later
+                {t('aiChat.maybeLater')}
               </button>
             </div>
           </div>

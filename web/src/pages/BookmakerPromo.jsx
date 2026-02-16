@@ -159,7 +159,7 @@ export default function BookmakerPromo() {
 
         {/* Hero text */}
         <h1 className="text-2xl font-bold mb-2">
-          {t('promo.heroTitle1')} <span className="text-amber-400">1 500€</span> {t('promo.heroTitle2')}
+          {t('promo.heroTitle1')} <span className="text-amber-400">{advertiser.bonusAmount}</span> {t('promo.heroTitle2')}
         </h1>
         <p className="text-white/60 text-sm mb-6">
           {t('promo.heroSubtitle')}
@@ -169,7 +169,7 @@ export default function BookmakerPromo() {
         <div className="bg-white rounded-2xl p-4 text-gray-900">
           <div className="text-center mb-4">
             <p className="text-xs text-gray-500 mb-1">{t('promo.upTo')}</p>
-            <p className="text-4xl font-black text-amber-500">1 500<span className="text-2xl">€</span></p>
+            <p className="text-4xl font-black text-amber-500">{advertiser.bonusAmount}</p>
             <p className="text-xs text-gray-500">{t('promo.bonusDesc')}</p>
           </div>
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getPredictions, getStats, verifyPredictions } from '../services/predictionStore';
 
 export default function Statistics() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [recentPreds, setRecentPreds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function Statistics() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold">Statistics</h1>
+          <h1 className="text-lg font-bold">{t('statistics.title')}</h1>
         </div>
       </div>
 
@@ -56,9 +58,9 @@ export default function Statistics() {
               <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
               </svg>
-              <span className="font-bold">AI Predictions</span>
+              <span className="font-bold">{t('statistics.aiPredictions')}</span>
             </div>
-            {!user?.is_premium && <span className="badge-pro">PRO</span>}
+            {!user?.is_premium && <span className="badge-pro">{t('statistics.pro')}</span>}
           </div>
 
           {/* Circular Progress */}
@@ -71,7 +73,7 @@ export default function Statistics() {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className={`text-3xl font-bold ${parseFloat(accuracy) > 50 ? 'text-green-500' : 'text-red-500'}`}>{accuracy}%</span>
-                <span className="text-xs text-gray-400">Accuracy</span>
+                <span className="text-xs text-gray-400">{t('statistics.accuracy')}</span>
               </div>
             </div>
           </div>
@@ -80,15 +82,15 @@ export default function Statistics() {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xl font-bold text-primary-600">{total}</p>
-              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-xs text-gray-500">{t('statistics.total')}</p>
             </div>
             <div>
               <p className="text-xl font-bold text-green-500">{correct}</p>
-              <p className="text-xs text-gray-500">Correct</p>
+              <p className="text-xs text-gray-500">{t('statistics.correct')}</p>
             </div>
             <div>
               <p className="text-xl font-bold text-amber-500">{wrong}</p>
-              <p className="text-xs text-gray-500">Wrong</p>
+              <p className="text-xs text-gray-500">{t('statistics.wrong')}</p>
             </div>
           </div>
         </div>
@@ -100,11 +102,11 @@ export default function Statistics() {
               <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
-              <h3 className="font-bold">Recent Predictions</h3>
+              <h3 className="font-bold">{t('statistics.recentPredictions')}</h3>
             </div>
             {recentPreds.length > 0 && (
               <button onClick={() => navigate('/prediction-history')} className="text-primary-600 text-sm font-semibold">
-                View All
+                {t('statistics.viewAll')}
               </button>
             )}
           </div>
@@ -114,8 +116,8 @@ export default function Statistics() {
               <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
-              <p className="font-semibold text-gray-700">No predictions yet</p>
-              <p className="text-sm text-gray-400">Get AI analysis on a match to start tracking</p>
+              <p className="font-semibold text-gray-700">{t('statistics.noPredictionsYet')}</p>
+              <p className="text-sm text-gray-400">{t('statistics.noPredictionsDesc')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -170,8 +172,8 @@ export default function Statistics() {
               <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd"/>
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800">{localStats.pending} prediction{localStats.pending !== 1 ? 's' : ''} awaiting results</p>
-              <p className="text-xs text-amber-600">Results are verified automatically after matches finish</p>
+              <p className="text-sm font-medium text-amber-800">{t('statistics.pendingAwaiting', { count: localStats.pending })}</p>
+              <p className="text-xs text-amber-600">{t('statistics.resultsVerifiedAuto')}</p>
             </div>
           </div>
         )}

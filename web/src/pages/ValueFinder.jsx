@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../components/FootballSpinner';
@@ -40,6 +41,7 @@ function valuePct(predicted, odd) {
 
 export default function ValueFinder() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [valueBets, setValueBets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function ValueFinder() {
 
   const loadValueBets = async () => {
     try {
-      setProgress({ current: 0, total: 0, phase: 'Loading matches...' });
+      setProgress({ current: 0, total: 0, phase: t('valueFinder.loadingMatches') });
 
       const today = new Date().toISOString().split('T')[0];
       const fixtures = await footballApi.getFixturesByDate(today);
@@ -82,7 +84,7 @@ export default function ValueFinder() {
         ...otherMatches.slice(0, 15),
       ];
 
-      setProgress({ current: 0, total: prioritized.length, phase: 'Analyzing matches...' });
+      setProgress({ current: 0, total: prioritized.length, phase: t('valueFinder.analyzingMatches') });
 
       // Process in smaller batches to show progress
       const allResults = [];
@@ -143,7 +145,7 @@ export default function ValueFinder() {
         );
 
         allResults.push(...batchResults);
-        setProgress({ current: Math.min(i + BATCH_SIZE, prioritized.length), total: prioritized.length, phase: 'Analyzing matches...' });
+        setProgress({ current: Math.min(i + BATCH_SIZE, prioritized.length), total: prioritized.length, phase: t('valueFinder.analyzingMatches') });
       }
 
       const valid = allResults
@@ -182,7 +184,7 @@ export default function ValueFinder() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
               </svg>
             </button>
-            <h1 className="text-lg font-bold text-gray-900">Value Bet Finder</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t('valueFinder.title')}</h1>
             <div className="w-10"/>
           </div>
 
@@ -192,19 +194,19 @@ export default function ValueFinder() {
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
               </svg>
-              <span className="font-bold">How it works</span>
+              <span className="font-bold">{t('valueFinder.howItWorks')}</span>
             </div>
             <p className="text-sm text-white/90">
-              We compare AI prediction probabilities with bookmaker odds. When our predicted probability is higher than the bookmaker implies — that's a value bet.
+              {t('valueFinder.howItWorksDescription')}
             </p>
           </div>
 
           {/* Filter tabs */}
           <div className="flex gap-2">
             {[
-              { key: 'all', label: 'All' },
-              { key: 'high', label: 'High Value (10%+)' },
-              { key: 'medium', label: 'Medium (5-10%)' },
+              { key: 'all', label: t('valueFinder.filterAll') },
+              { key: 'high', label: t('valueFinder.filterHigh') },
+              { key: 'medium', label: t('valueFinder.filterMedium') },
             ].map(f => (
               <button
                 key={f.key}
@@ -234,7 +236,7 @@ export default function ValueFinder() {
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{progress.phase}</p>
                     {progress.total > 0 && (
-                      <p className="text-sm text-gray-500">{progress.current} / {progress.total} matches</p>
+                      <p className="text-sm text-gray-500">{progress.current} / {progress.total} {t('valueFinder.matches')}</p>
                     )}
                   </div>
                 </div>
@@ -258,7 +260,7 @@ export default function ValueFinder() {
               ))}
 
               <p className="text-center text-gray-400 text-xs mt-4">
-                Priority: Top leagues (EPL, La Liga, Serie A...) → Others
+                {t('valueFinder.priorityText')}
               </p>
             </>
           ) : filtered.length === 0 ? (
@@ -266,23 +268,23 @@ export default function ValueFinder() {
               <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
               </svg>
-              <p className="font-medium text-gray-500">No value bets found</p>
+              <p className="font-medium text-gray-500">{t('valueFinder.noValueBets')}</p>
               <p className="text-sm text-gray-400 mt-1">
-                {filter !== 'all' ? 'Try changing the filter' : 'Check back later for new opportunities'}
+                {filter !== 'all' ? t('valueFinder.tryChangingFilter') : t('valueFinder.checkBackLater')}
               </p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-400">{filtered.length} value bet{filtered.length !== 1 ? 's' : ''} found</p>
+                <p className="text-xs text-gray-400">{t('valueFinder.valueBetsFound', { count: filtered.length })}</p>
                 {filtered.some(v => v.isTopLeague) && (
                   <p className="text-xs text-amber-600 font-medium">
-                    {filtered.filter(v => v.isTopLeague).length} from top leagues
+                    {t('valueFinder.fromTopLeagues', { count: filtered.filter(v => v.isTopLeague).length })}
                   </p>
                 )}
               </div>
               {filtered.map((item, idx) => (
-                <ValueBetCard key={idx} item={item} navigate={navigate} />
+                <ValueBetCard key={idx} item={item} navigate={navigate} t={t} />
               ))}
             </>
           )}
@@ -292,7 +294,7 @@ export default function ValueFinder() {
   );
 }
 
-function ValueBetCard({ item, navigate }) {
+function ValueBetCard({ item, navigate, t }) {
   const { fixture, bestBet, bets, bookmaker, prediction, isTopLeague } = item;
   const time = new Date(fixture.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const league = fixture.league.name;
@@ -339,7 +341,7 @@ function ValueBetCard({ item, navigate }) {
         <div className={`rounded-xl p-3 mb-3 ${isHighValue ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200' : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-gray-500 font-medium">Best Value Bet</p>
+              <p className="text-[10px] uppercase tracking-wide text-gray-500 font-medium">{t('valueFinder.bestValueBet')}</p>
               <p className="font-bold text-gray-900 text-lg">{bestBet.team}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs text-gray-600">AI: <strong className="text-gray-900">{bestBet.pred}%</strong></span>
@@ -351,7 +353,7 @@ function ValueBetCard({ item, navigate }) {
               <p className={`text-2xl font-bold ${isHighValue ? 'text-green-600' : 'text-amber-600'}`}>
                 +{bestBet.value.toFixed(1)}%
               </p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">value edge</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">{t('valueFinder.valueEdge')}</p>
             </div>
           </div>
         </div>
@@ -398,7 +400,7 @@ function ValueBetCard({ item, navigate }) {
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <p className="text-[10px] text-gray-400">Source: {bookmaker}</p>
           <div className="flex items-center gap-1 text-primary-600">
-            <span className="text-xs font-medium">View details</span>
+            <span className="text-xs font-medium">{t('valueFinder.viewDetails')}</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>

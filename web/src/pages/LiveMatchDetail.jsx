@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../components/FootballSpinner';
 
-const TABS = ['Overview', 'Stats', 'Events', 'Lineups'];
+const TAB_KEYS = ['overview', 'stats', 'events', 'lineups'];
 
 // AI request tracking
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -24,13 +25,14 @@ const incrementAIRequestCount = () => {
 export default function LiveMatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [lineups, setLineups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState('overview');
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -133,7 +135,7 @@ export default function LiveMatchDetail() {
       setAiAnalysis(data.response);
     } catch (e) {
       console.error(e);
-      setAiAnalysis('Failed to get live analysis. Please try again.');
+      setAiAnalysis(t('liveMatch.analysisFailed'));
     } finally {
       setAnalyzing(false);
     }
@@ -143,7 +145,7 @@ export default function LiveMatchDetail() {
     return (
       <div className="h-screen flex flex-col bg-gray-50">
         <div className="flex-1 flex items-center justify-center">
-          <FootballSpinner size="lg" text="Loading live match..." />
+          <FootballSpinner size="lg" text={t('liveMatch.loading')} />
         </div>
       </div>
     );
@@ -153,8 +155,8 @@ export default function LiveMatchDetail() {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Match not found</p>
-          <button onClick={() => navigate(-1)} className="text-primary-600">Go back</button>
+          <p className="text-gray-500 mb-4">{t('liveMatch.notFound')}</p>
+          <button onClick={() => navigate(-1)} className="text-primary-600">{t('liveMatch.goBack')}</button>
         </div>
       </div>
     );
@@ -197,12 +199,12 @@ export default function LiveMatchDetail() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"/>
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"/>
                   </span>
-                  <span className="text-red-600 text-xs font-bold">LIVE</span>
+                  <span className="text-red-600 text-xs font-bold">{t('liveMatch.live')}</span>
                 </div>
               )}
               {isFinished && (
                 <div className="bg-gray-100 px-3 py-1.5 rounded-full">
-                  <span className="text-gray-500 text-xs font-bold">FT</span>
+                  <span className="text-gray-500 text-xs font-bold">{t('liveMatch.ft')}</span>
                 </div>
               )}
             </div>
@@ -230,11 +232,11 @@ export default function LiveMatchDetail() {
                   <div className="mt-3">
                     {isHalfTime ? (
                       <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-sm font-bold">
-                        HT
+                        {t('liveMatch.ht')}
                       </span>
                     ) : isFinished ? (
                       <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold">
-                        Full Time
+                        {t('liveMatch.fullTime')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm font-bold animate-pulse">
@@ -257,14 +259,14 @@ export default function LiveMatchDetail() {
               {/* Quick Stats Row */}
               {stats?.length >= 2 && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
-                  <QuickStats stats={stats} />
+                  <QuickStats stats={stats} t={t} />
                 </div>
               )}
             </div>
 
             {/* Last Update */}
             <p className="text-center text-gray-400 text-xs mt-3">
-              Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refresh every 30s
+              {t('liveMatch.lastUpdated', { time: lastUpdate.toLocaleTimeString() })}
             </p>
           </div>
         </div>
@@ -272,7 +274,7 @@ export default function LiveMatchDetail() {
         {/* Tabs */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
           <div className="flex">
-            {TABS.map(tab => (
+            {TAB_KEYS.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -280,7 +282,7 @@ export default function LiveMatchDetail() {
                   activeTab === tab ? 'text-primary-600' : 'text-gray-400'
                 }`}
               >
-                {tab}
+                {t(`liveMatch.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
                 {activeTab === tab && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary-600 rounded-full"/>
                 )}
@@ -291,7 +293,7 @@ export default function LiveMatchDetail() {
 
         {/* Content */}
         <div className="px-5 py-4 space-y-4 pb-8">
-          {activeTab === 'Overview' && (
+          {activeTab === 'overview' && (
             <OverviewTab
               fixture={fixture}
               stats={stats}
@@ -301,16 +303,17 @@ export default function LiveMatchDetail() {
               getLiveAnalysis={getLiveAnalysis}
               user={user}
               isFinished={isFinished}
+              t={t}
             />
           )}
-          {activeTab === 'Stats' && (
-            <StatsTab stats={stats} home={home} away={away} />
+          {activeTab === 'stats' && (
+            <StatsTab stats={stats} home={home} away={away} t={t} />
           )}
-          {activeTab === 'Events' && (
-            <EventsTab events={events} home={home} away={away} />
+          {activeTab === 'events' && (
+            <EventsTab events={events} home={home} away={away} t={t} />
           )}
-          {activeTab === 'Lineups' && (
-            <LineupsTab lineups={lineups} />
+          {activeTab === 'lineups' && (
+            <LineupsTab lineups={lineups} t={t} />
           )}
         </div>
       </div>
@@ -319,7 +322,7 @@ export default function LiveMatchDetail() {
 }
 
 // Quick Stats in Header
-function QuickStats({ stats }) {
+function QuickStats({ stats, t }) {
   const homePoss = stats[0]?.statistics?.find(s => s.type === 'Ball Possession')?.value || '50%';
   const awayPoss = stats[1]?.statistics?.find(s => s.type === 'Ball Possession')?.value || '50%';
   const homeShots = stats[0]?.statistics?.find(s => s.type === 'Total Shots')?.value || 0;
@@ -335,7 +338,7 @@ function QuickStats({ stats }) {
           <span className="text-gray-300">-</span>
           <span>{awayPoss}</span>
         </div>
-        <p className="text-gray-500 text-xs mt-1">Possession</p>
+        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.possession')}</p>
       </div>
       <div>
         <div className="flex items-center justify-center gap-2 text-gray-900 font-bold">
@@ -343,7 +346,7 @@ function QuickStats({ stats }) {
           <span className="text-gray-300">-</span>
           <span>{awayShots}</span>
         </div>
-        <p className="text-gray-500 text-xs mt-1">Shots</p>
+        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.shots')}</p>
       </div>
       <div>
         <div className="flex items-center justify-center gap-2 text-gray-900 font-bold">
@@ -351,14 +354,14 @@ function QuickStats({ stats }) {
           <span className="text-gray-300">-</span>
           <span>{awayOnTarget}</span>
         </div>
-        <p className="text-gray-500 text-xs mt-1">On Target</p>
+        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.onTarget')}</p>
       </div>
     </div>
   );
 }
 
 // Overview Tab
-function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished }) {
+function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, t }) {
   const recentEvents = events.slice(-5).reverse();
 
   // Parse AI recommended bet from analysis
@@ -387,8 +390,8 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
             </svg>
           </div>
           <div>
-            <h3 className="text-gray-900 font-bold">AI Live Analysis</h3>
-            <p className="text-gray-500 text-xs">Real-time match insights</p>
+            <h3 className="text-gray-900 font-bold">{t('liveMatch.aiLiveAnalysis')}</h3>
+            <p className="text-gray-500 text-xs">{t('liveMatch.realTimeInsights')}</p>
           </div>
         </div>
 
@@ -409,7 +412,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                     <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                     </svg>
-                    <p className="text-xs text-green-700 font-semibold uppercase">AI Live Bet Recommendation</p>
+                    <p className="text-xs text-green-700 font-semibold uppercase">{t('liveMatch.aiLiveBetRecommendation')}</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-gray-900">{recommendedBet.type}</p>
@@ -430,14 +433,14 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
             {analyzing ? (
               <>
                 <FootballSpinner size="xs" light />
-                Analyzing match...
+                {t('liveMatch.analyzingMatch')}
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
                 </svg>
-                Get {isFinished ? 'Post-Match' : 'Live'} Analysis
+                {isFinished ? t('liveMatch.getPostMatchAnalysis') : t('liveMatch.getLiveAnalysis')}
               </>
             )}
           </button>
@@ -445,7 +448,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
 
         {!aiAnalysis && (
           <p className="text-gray-400 text-xs text-center mt-3">
-            Uses 1 of your 3 free AI requests
+            {t('liveMatch.usesOneOfFreeRequests')}
           </p>
         )}
       </div>
@@ -457,11 +460,11 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
             <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
               <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd"/>
             </svg>
-            Recent Events
+            {t('liveMatch.recentEvents')}
           </h3>
           <div className="space-y-3">
             {recentEvents.map((event, i) => (
-              <EventItem key={i} event={event} />
+              <EventItem key={i} event={event} t={t} />
             ))}
           </div>
         </div>
@@ -469,14 +472,14 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
 
       {/* Match Momentum */}
       {stats?.length >= 2 && (
-        <MomentumCard stats={stats} />
+        <MomentumCard stats={stats} t={t} />
       )}
     </>
   );
 }
 
 // Event Item
-function EventItem({ event }) {
+function EventItem({ event, t }) {
   const getEventIcon = (type, detail) => {
     if (type === 'Goal') {
       return detail === 'Own Goal'
@@ -506,7 +509,7 @@ function EventItem({ event }) {
       <div className="flex-1">
         <p className="text-gray-900 text-sm font-medium">{event.player?.name}</p>
         <p className="text-gray-500 text-xs">
-          {event.team?.name} {event.assist?.name && `• Assist: ${event.assist.name}`}
+          {event.team?.name} {event.assist?.name && `• ${t('liveMatch.assist')}: ${event.assist.name}`}
         </p>
       </div>
     </div>
@@ -514,7 +517,7 @@ function EventItem({ event }) {
 }
 
 // Momentum Card
-function MomentumCard({ stats }) {
+function MomentumCard({ stats, t }) {
   const homeDanger = parseInt(stats[0]?.statistics?.find(s => s.type === 'Dangerous Attacks')?.value) || 0;
   const awayDanger = parseInt(stats[1]?.statistics?.find(s => s.type === 'Dangerous Attacks')?.value) || 0;
   const total = homeDanger + awayDanger || 1;
@@ -526,13 +529,13 @@ function MomentumCard({ stats }) {
         <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
           <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72v5.69a.75.75 0 001.5 0v-5.69l1.72 1.72a.75.75 0 101.06-1.06l-3-3z" clipRule="evenodd"/>
         </svg>
-        Match Momentum
+        {t('liveMatch.matchMomentum')}
       </h3>
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-blue-600 font-semibold">{homePct}%</span>
-          <span className="text-gray-500">Dangerous Attacks</span>
+          <span className="text-gray-500">{t('liveMatch.dangerousAttacks')}</span>
           <span className="text-red-600 font-semibold">{100 - homePct}%</span>
         </div>
         <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
@@ -551,15 +554,15 @@ function MomentumCard({ stats }) {
 }
 
 // Stats Tab
-function StatsTab({ stats, home, away }) {
+function StatsTab({ stats, home, away, t }) {
   if (!stats?.length) {
     return (
       <div className="card border border-gray-100 p-8 text-center">
         <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/>
         </svg>
-        <p className="text-gray-500 font-medium">Statistics not available yet</p>
-        <p className="text-gray-400 text-sm mt-1">Stats will appear as the match progresses</p>
+        <p className="text-gray-500 font-medium">{t('liveMatch.statsNotAvailable')}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.statsWillAppear')}</p>
       </div>
     );
   }
@@ -631,21 +634,21 @@ function StatBar({ label, home, away }) {
 }
 
 // Events Tab
-function EventsTab({ events, home, away }) {
+function EventsTab({ events, home, away, t }) {
   if (!events?.length) {
     return (
       <div className="card border border-gray-100 p-8 text-center">
         <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <p className="text-gray-500 font-medium">No events yet</p>
-        <p className="text-gray-400 text-sm mt-1">Match events will appear here</p>
+        <p className="text-gray-500 font-medium">{t('liveMatch.noEventsYet')}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.eventsWillAppear')}</p>
       </div>
     );
   }
 
   const groupedEvents = events.reduce((acc, event) => {
-    const period = event.time?.elapsed <= 45 ? '1st Half' : '2nd Half';
+    const period = event.time?.elapsed <= 45 ? t('liveMatch.firstHalf') : t('liveMatch.secondHalf');
     if (!acc[period]) acc[period] = [];
     acc[period].push(event);
     return acc;
@@ -662,7 +665,7 @@ function EventsTab({ events, home, away }) {
 
             <div className="space-y-4">
               {periodEvents.map((event, i) => (
-                <TimelineEvent key={i} event={event} home={home} away={away} />
+                <TimelineEvent key={i} event={event} home={home} away={away} t={t} />
               ))}
             </div>
           </div>
@@ -672,7 +675,7 @@ function EventsTab({ events, home, away }) {
   );
 }
 
-function TimelineEvent({ event, home, away }) {
+function TimelineEvent({ event, home, away, t }) {
   const isHome = event.team?.id === home?.id;
 
   const getEventStyle = (type, detail) => {
@@ -680,21 +683,21 @@ function TimelineEvent({ event, home, away }) {
       return {
         bg: detail === 'Own Goal' ? 'bg-red-500' : 'bg-green-500',
         icon: '⚽',
-        text: detail === 'Own Goal' ? 'Own Goal' : 'GOAL!'
+        text: detail === 'Own Goal' ? t('liveMatch.ownGoal') : t('liveMatch.goal')
       };
     }
     if (type === 'Card') {
       return {
         bg: detail === 'Yellow Card' ? 'bg-yellow-400' : 'bg-red-500',
         icon: '',
-        text: detail
+        text: detail === 'Yellow Card' ? t('liveMatch.yellowCard') : t('liveMatch.redCard')
       };
     }
     if (type === 'subst') {
-      return { bg: 'bg-blue-500', icon: '⇄', text: 'Substitution' };
+      return { bg: 'bg-blue-500', icon: '⇄', text: t('liveMatch.substitution') };
     }
     if (type === 'Var') {
-      return { bg: 'bg-purple-500', icon: '', text: 'VAR Decision' };
+      return { bg: 'bg-purple-500', icon: '', text: t('liveMatch.varDecision') };
     }
     return { bg: 'bg-gray-300', icon: '•', text: type };
   };
@@ -714,7 +717,7 @@ function TimelineEvent({ event, home, away }) {
         </div>
         <p className="text-gray-500 text-xs mt-0.5">
           {style.text}
-          {event.assist?.name && ` • Assist: ${event.assist.name}`}
+          {event.assist?.name && ` • ${t('liveMatch.assist')}: ${event.assist.name}`}
         </p>
       </div>
     </div>
@@ -722,15 +725,15 @@ function TimelineEvent({ event, home, away }) {
 }
 
 // Lineups Tab
-function LineupsTab({ lineups }) {
+function LineupsTab({ lineups, t }) {
   if (!lineups?.length) {
     return (
       <div className="card border border-gray-100 p-8 text-center">
         <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
         </svg>
-        <p className="text-gray-500 font-medium">Lineups not available yet</p>
-        <p className="text-gray-400 text-sm mt-1">Usually appear ~1 hour before kick-off</p>
+        <p className="text-gray-500 font-medium">{t('liveMatch.lineupsNotAvailable')}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.lineupsAppearBefore')}</p>
       </div>
     );
   }
@@ -749,13 +752,13 @@ function LineupsTab({ lineups }) {
 
           {team.coach?.name && (
             <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
-              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">Coach</span>
+              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{t('liveMatch.coach')}</span>
               <span>{team.coach.name}</span>
             </div>
           )}
 
           <div className="mb-4">
-            <p className="text-gray-400 text-xs uppercase font-semibold mb-3">Starting XI</p>
+            <p className="text-gray-400 text-xs uppercase font-semibold mb-3">{t('liveMatch.startingXI')}</p>
             <div className="space-y-2">
               {team.startXI?.map((p, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
@@ -771,7 +774,7 @@ function LineupsTab({ lineups }) {
 
           {team.substitutes?.length > 0 && (
             <div>
-              <p className="text-gray-400 text-xs uppercase font-semibold mb-3">Substitutes</p>
+              <p className="text-gray-400 text-xs uppercase font-semibold mb-3">{t('liveMatch.substitutes')}</p>
               <div className="space-y-2">
                 {team.substitutes.map((p, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
@@ -10,7 +11,7 @@ import { generateMatchShareText } from '../services/shareUtils';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
 
-const TABS = ['Overview', 'Stats', 'Lineups'];
+const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
@@ -66,6 +67,7 @@ const saveCachedPrediction = (matchId, data) => {
 export default function MatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const [match, setMatch] = useState(null);
@@ -74,7 +76,7 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true);
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     loadMatch();
@@ -341,7 +343,7 @@ export default function MatchDetail() {
       // Still show API-Football prediction even if Claude fails
       setPrediction({
         apiPrediction: enriched?.prediction || null,
-        claudeAnalysis: 'Failed to get AI analysis. Please try again.',
+        claudeAnalysis: t('matchDetail.aiAnalysisFailed'),
       });
     } finally {
       setPredicting(false);
@@ -365,8 +367,8 @@ export default function MatchDetail() {
   const formatTime = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const statusLabel = (s) => {
-    if (!s) return 'Upcoming';
-    const map = { scheduled: 'Upcoming', timed: 'Upcoming', in_play: 'Live', paused: 'Half Time', finished: 'Finished' };
+    if (!s) return t('matchDetail.statusUpcoming');
+    const map = { scheduled: t('matchDetail.statusUpcoming'), timed: t('matchDetail.statusUpcoming'), in_play: t('matchDetail.statusLive'), paused: t('matchDetail.statusHalfTime'), finished: t('matchDetail.statusFinished') };
     return map[s.toLowerCase()] || s;
   };
 
@@ -374,7 +376,7 @@ export default function MatchDetail() {
     return (
       <div className="h-screen flex flex-col bg-[#F0F2F5]">
         <div className="flex-1 flex items-center justify-center">
-          <FootballSpinner size="lg" text="Loading match..." />
+          <FootballSpinner size="lg" text={t('matchDetail.loading')} />
         </div>
       </div>
     );
@@ -388,7 +390,7 @@ export default function MatchDetail() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
-            Back
+            {t('matchDetail.back')}
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -398,13 +400,13 @@ export default function MatchDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Match Not Found</h2>
-            <p className="text-gray-500 text-sm mb-6">The match may have ended or data is unavailable</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">{t('matchDetail.notFound')}</h2>
+            <p className="text-gray-500 text-sm mb-6">{t('matchDetail.notFoundDesc')}</p>
             <button
               onClick={() => navigate('/matches')}
               className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl"
             >
-              Back to Matches
+              {t('matchDetail.backToMatches')}
             </button>
           </div>
         </div>
@@ -442,7 +444,7 @@ export default function MatchDetail() {
             </div>
 
             <div className="px-4 text-center">
-              <span className="text-2xl font-bold text-gray-300">VS</span>
+              <span className="text-2xl font-bold text-gray-300">{t('matchDetail.vs')}</span>
               <p className={`text-xs mt-1 font-medium ${statusLabel(match.status) === 'Live' ? 'text-red-500' : 'text-amber-500'}`}>
                 {statusLabel(match.status)}
               </p>
@@ -464,21 +466,21 @@ export default function MatchDetail() {
                   onClick={() => navigate('/promo?banner=match_odds_home')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
-                  <p className="text-[10px] text-blue-500 uppercase font-medium">Home</p>
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.home')}</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
                 </div>
                 <div
                   onClick={() => navigate('/promo?banner=match_odds_draw')}
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
                 >
-                  <p className="text-[10px] text-gray-500 uppercase font-medium">Draw</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">{t('matchDetail.draw')}</p>
                   <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
                 </div>
                 <div
                   onClick={() => navigate('/promo?banner=match_odds_away')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
-                  <p className="text-[10px] text-blue-500 uppercase font-medium">Away</p>
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.away')}</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.away}</p>
                 </div>
               </div>
@@ -488,7 +490,7 @@ export default function MatchDetail() {
 
         {/* Tabs */}
         <div className="flex mt-4 border-b border-gray-200">
-          {TABS.map(tab => (
+          {TAB_KEYS.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -498,14 +500,14 @@ export default function MatchDetail() {
                   : 'text-gray-400 border-transparent'
               }`}
             >
-              {tab}
+              {t(`matchDetail.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="px-5 mt-4 space-y-4 pb-8">
-        {activeTab === 'Overview' && (
+        {activeTab === 'overview' && (
           <OverviewTab
             match={match}
             enriched={enriched}
@@ -521,13 +523,14 @@ export default function MatchDetail() {
             advertiser={advertiser}
             trackClick={trackClick}
             navigate={navigate}
+            t={t}
           />
         )}
-        {activeTab === 'Stats' && (
-          <StatsTab enriched={enriched} loading={enrichedLoading} match={match} />
+        {activeTab === 'stats' && (
+          <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
         )}
-        {activeTab === 'Lineups' && (
-          <LineupsTab enriched={enriched} loading={enrichedLoading} />
+        {activeTab === 'lineups' && (
+          <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
         )}
       </div>
      </div>
@@ -538,7 +541,7 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -550,8 +553,8 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
 
   // Get localized texts from advertiser config
   const adTexts = advertiser?.texts || {
-    promoTitle: '€1,500 free bet on this match!',
-    promoCtaFree: 'Place free bet',
+    promoTitle: t('matchDetail.ad1Title'),
+    promoCtaFree: t('matchDetail.ad1Cta', { bonus: advertiser?.bonusAmount || '' }),
   };
   const affiliateLink = 'https://pwa-production-20b5.up.railway.app/promo';
 
@@ -583,9 +586,9 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
             </svg>
-            <h3 className="font-bold text-gray-900">AI Analysis</h3>
+            <h3 className="font-bold text-gray-900">{t('matchDetail.aiAnalysis')}</h3>
             <div className="ml-auto flex gap-1.5 items-center">
-              {pred && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">Data</span>}
+              {pred && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">{t('matchDetail.data')}</span>}
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-medium">Claude AI</span>
               <ShareButton
                 variant="icon"
@@ -604,10 +607,10 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
           {/* API-Football Prediction - win probability */}
           {pred?.predictions?.percent && (
             <div className="mb-4">
-              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Win Probability</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.winProbability')}</p>
               <div className="space-y-2">
                 <ProbBar label={match.home_team?.name} pct={parseInt(pred.predictions.percent.home)} color="bg-blue-500"/>
-                <ProbBar label="Draw" pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
+                <ProbBar label={t('matchDetail.draw')} pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
                 <ProbBar label={match.away_team?.name} pct={parseInt(pred.predictions.percent.away)} color="bg-red-500"/>
               </div>
             </div>
@@ -623,17 +626,17 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
           {/* Team comparison */}
           {pred?.comparison && (
             <div className="mb-4 space-y-2">
-              <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Team Comparison</p>
-              <CompareBar label="Form" home={pred.comparison.form?.home} away={pred.comparison.form?.away}/>
-              <CompareBar label="Attack" home={pred.comparison.att?.home} away={pred.comparison.att?.away}/>
-              <CompareBar label="Defense" home={pred.comparison.def?.home} away={pred.comparison.def?.away}/>
-              <CompareBar label="Overall" home={pred.comparison.total?.home} away={pred.comparison.total?.away}/>
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-1">{t('matchDetail.teamComparison')}</p>
+              <CompareBar label={t('matchDetail.form')} home={pred.comparison.form?.home} away={pred.comparison.form?.away}/>
+              <CompareBar label={t('matchDetail.attack')} home={pred.comparison.att?.home} away={pred.comparison.att?.away}/>
+              <CompareBar label={t('matchDetail.defense')} home={pred.comparison.def?.home} away={pred.comparison.def?.away}/>
+              <CompareBar label={t('matchDetail.overall')} home={pred.comparison.total?.home} away={pred.comparison.total?.away}/>
             </div>
           )}
 
           {/* Claude AI Analysis text */}
           {(pred?.predictions || pred?.comparison) && <div className="border-t border-gray-100 my-4"/>}
-          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Expert Analysis</p>
+          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.expertAnalysis')}</p>
           <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {prediction.claudeAnalysis?.split('\n').map((line, i) => {
               const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -649,7 +652,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
                   <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                   </svg>
-                  <p className="text-xs text-green-700 font-semibold uppercase">AI Recommended Bet</p>
+                  <p className="text-xs text-green-700 font-semibold uppercase">{t('matchDetail.aiRecommendedBet')}</p>
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-gray-900">{recommendedBet.type}</p>
@@ -677,9 +680,9 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
             </svg>
           </div>
-          <h3 className="font-bold text-lg mb-1">AI Analysis</h3>
+          <h3 className="font-bold text-lg mb-1">{t('matchDetail.aiAnalysis')}</h3>
           <p className="text-gray-500 text-sm mb-1">
-            {enriched ? 'Win probabilities, team comparison & expert analysis' : 'Get detailed prediction & betting recommendation'}
+            {enriched ? t('matchDetail.aiDescEnriched') : t('matchDetail.aiDescBasic')}
           </p>
 
           {/* Limit info badge */}
@@ -688,21 +691,21 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
               </svg>
-              Free limit reached — unlock PRO for unlimited
+              {t('matchDetail.freeLimitReached')}
             </div>
           ) : isPremium ? (
             <div className="bg-green-50 text-green-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
               </svg>
-              PRO — Unlimited AI requests
+              {t('matchDetail.proUnlimited')}
             </div>
           ) : (
             <div className="bg-blue-50 text-primary-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
               </svg>
-              {remainingRequests} of 3 free AI requests left
+              {t('matchDetail.freeRequestsLeft', { remaining: remainingRequests, total: 3 })}
             </div>
           )}
 
@@ -715,21 +718,21 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
               </svg>
-              Unlock PRO Access
+              {t('matchDetail.unlockPro')}
             </button>
           ) : (
             <button onClick={getAnalysis} disabled={predicting} className="btn-primary flex items-center justify-center gap-2 max-w-xs mx-auto">
               {predicting ? (
                 <>
                   <FootballSpinner size="xs" light />
-                  Analyzing...
+                  {t('matchDetail.analyzing')}
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
                   </svg>
-                  Get AI Analysis
+                  {t('matchDetail.getAiAnalysis')}
                 </>
               )}
             </button>
@@ -753,7 +756,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
             </svg>
-            Injuries & Suspensions
+            {t('matchDetail.injuries')}
           </h3>
           <div className="space-y-2">
             {enriched.injuries.map((inj, i) => (
@@ -769,29 +772,29 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
 
       {/* Match Info */}
       <div className="card border border-gray-100">
-        <h3 className="font-bold text-lg mb-4">Match Info</h3>
+        <h3 className="font-bold text-lg mb-4">{t('matchDetail.matchInfo')}</h3>
         <div className="space-y-3">
-          <InfoRow icon="trophy" label="Competition" value={match.league}/>
-          <InfoRow icon="calendar" label="Date" value={formatDate(match.match_date)}/>
-          <InfoRow icon="clock" label="Time" value={formatTime(match.match_date)}/>
-          <InfoRow icon="info" label="Status" value={statusLabel(match.status)}/>
+          <InfoRow icon="trophy" label={t('matchDetail.competition')} value={match.league}/>
+          <InfoRow icon="calendar" label={t('matchDetail.date')} value={formatDate(match.match_date)}/>
+          <InfoRow icon="clock" label={t('matchDetail.time')} value={formatTime(match.match_date)}/>
+          <InfoRow icon="info" label={t('matchDetail.status')} value={statusLabel(match.status)}/>
         </div>
 
         {match.head_to_head && match.head_to_head.total_matches > 0 && (
           <div className="border-t border-gray-100 mt-4 pt-4">
-            <h4 className="font-semibold mb-3">Head to Head ({match.head_to_head.total_matches} matches)</h4>
+            <h4 className="font-semibold mb-3">{t('matchDetail.headToHead', { count: match.head_to_head.total_matches })}</h4>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-xl font-bold text-primary-600">{match.head_to_head.home_wins}</p>
-                <p className="text-xs text-gray-500">Home Wins</p>
+                <p className="text-xs text-gray-500">{t('matchDetail.homeWins')}</p>
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-500">{match.head_to_head.draws}</p>
-                <p className="text-xs text-gray-500">Draws</p>
+                <p className="text-xs text-gray-500">{t('matchDetail.draws')}</p>
               </div>
               <div>
                 <p className="text-xl font-bold text-red-500">{match.head_to_head.away_wins}</p>
-                <p className="text-xs text-gray-500">Away Wins</p>
+                <p className="text-xs text-gray-500">{t('matchDetail.awayWins')}</p>
               </div>
             </div>
           </div>
@@ -799,7 +802,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
       </div>
 
       <p className="text-center text-gray-400 text-xs px-4">
-        Please bet responsibly. Predictions do not guarantee results.
+        {t('matchDetail.disclaimer')}
       </p>
     </>
   );
@@ -808,7 +811,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
 // ============================
 // Stats Tab
 // ============================
-function StatsTab({ enriched, loading, match }) {
+function StatsTab({ enriched, loading, match, t }) {
   if (loading) {
     return (
       <div className="card border border-gray-100 space-y-4">
@@ -823,8 +826,8 @@ function StatsTab({ enriched, loading, match }) {
         <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
         </svg>
-        <p className="text-gray-500 font-medium">Statistics not available yet</p>
-        <p className="text-gray-400 text-sm mt-1">Stats appear during and after the match</p>
+        <p className="text-gray-500 font-medium">{t('matchDetail.statsNotAvailable')}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('matchDetail.statsAppearDuring')}</p>
       </div>
     );
   }
@@ -863,7 +866,7 @@ function StatsTab({ enriched, loading, match }) {
 // ============================
 // Lineups Tab
 // ============================
-function LineupsTab({ enriched, loading }) {
+function LineupsTab({ enriched, loading, t }) {
   if (loading) {
     return (
       <div className="card border border-gray-100 space-y-3">
@@ -878,8 +881,8 @@ function LineupsTab({ enriched, loading }) {
         <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
         </svg>
-        <p className="text-gray-500 font-medium">Lineups not available yet</p>
-        <p className="text-gray-400 text-sm mt-1">Lineups usually appear ~1 hour before kick-off</p>
+        <p className="text-gray-500 font-medium">{t('matchDetail.lineupsNotAvailable')}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('matchDetail.lineupsAppearBefore')}</p>
       </div>
     );
   }
@@ -899,14 +902,14 @@ function LineupsTab({ enriched, loading }) {
           {/* Coach */}
           {team.coach?.name && (
             <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">Coach</span>
+              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{t('matchDetail.coach')}</span>
               <span>{team.coach.name}</span>
             </div>
           )}
 
           {/* Starting XI */}
           <div className="mb-3">
-            <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Starting XI</p>
+            <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.startingXI')}</p>
             <div className="space-y-1.5">
               {team.startXI?.map((p, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
@@ -923,7 +926,7 @@ function LineupsTab({ enriched, loading }) {
           {/* Substitutes */}
           {team.substitutes?.length > 0 && (
             <div>
-              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Substitutes</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.substitutes')}</p>
               <div className="space-y-1.5">
                 {team.substitutes.map((p, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
@@ -1028,6 +1031,7 @@ function InfoRow({ icon, label, value }) {
 // Match Bonus Card with team colors diagonal split
 function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Get team IDs from enriched data or match data
   const homeTeamId = enriched?.homeId || enriched?.fixture?.teams?.home?.id;
   const awayTeamId = enriched?.awayId || enriched?.fixture?.teams?.away?.id;
@@ -1093,12 +1097,12 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
 
         {/* Center - Promo text */}
         <div className="flex-1 flex flex-col items-center justify-center z-10 px-2">
-          <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+          <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">{t('matchDetail.vs')}</span>
           <p className="font-black text-sm sm:text-base leading-tight drop-shadow-lg text-center mb-2 max-w-[160px]">
-            {adTexts?.promoTitle || `${advertiser?.bonusAmount || '€1,500'} free bet!`}
+            {adTexts?.promoTitle || t('matchDetail.ad1Title')}
           </p>
           <div className="bg-white text-gray-800 font-bold px-4 py-1.5 rounded-xl text-xs shadow-lg hover:bg-gray-100 transition-colors">
-            {adTexts?.promoCtaFree || 'Place free bet'}
+            {adTexts?.promoCtaFree || t('matchDetail.ad1Cta', { bonus: advertiser?.bonusAmount || '' })}
           </div>
         </div>
 
@@ -1123,67 +1127,69 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
 
 // Native Ad Block with rotating ad texts
 function NativeAdBlock({ advertiser, affiliateLink, matchId }) {
+  const { t } = useTranslation();
+  const bonus = advertiser?.bonusAmount || '';
   // 6 ad text variants for rotation (based on match ID for consistency)
   const adVariants = [
     // Variant 1: Main (recommended)
     {
-      title: '⚽ Where to place your bet?',
-      body: 'To play this prediction, we recommend using our trusted partner. A reliable licensed bookmaker with the best odds on the market and fast payouts.',
+      title: t('matchDetail.ad1Title'),
+      body: t('matchDetail.ad1Body'),
       features: [
-        { icon: '🎁', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} for new players` },
-        { icon: '⚡', text: 'Fast payouts — withdrawals from 15 minutes' },
-        { icon: '📱', text: 'Convenient app — bet from your phone in two clicks' },
-        { icon: '🔒', text: 'Reliability — licensed bookmaker, trusted by thousands' },
+        { icon: '🎁', text: t('matchDetail.ad1Feature1', { bonus }) },
+        { icon: '⚡', text: t('matchDetail.ad1Feature2') },
+        { icon: '📱', text: t('matchDetail.ad1Feature3') },
+        { icon: '🔒', text: t('matchDetail.ad1Feature4') },
       ],
-      cta: `Go to bookmaker and get ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad1Cta', { bonus }),
     },
     // Variant 2: Short
     {
-      title: '⚽ Place a bet on this prediction',
-      body: `We recommend betting with our trusted partner — best odds, bonus up to ${advertiser?.bonusAmount || '€1,500'} and payouts from 15 minutes.`,
+      title: t('matchDetail.ad2Title'),
+      body: t('matchDetail.ad2Body', { bonus }),
       features: [],
-      cta: `Place bet — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad2Cta', { bonus }),
     },
     // Variant 3: Motivational
     {
-      title: '🚀 Prediction ready — time to bet!',
-      body: 'You already have the AI analysis. Now it\'s time to play this prediction and earn. We recommend our partner — a reliable licensed bookmaker used by thousands of our users.',
+      title: t('matchDetail.ad3Title'),
+      body: t('matchDetail.ad3Body'),
       features: [
-        { icon: '•', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} on first deposit` },
-        { icon: '•', text: 'Best odds on top leagues' },
-        { icon: '•', text: 'Withdrawal from 15 minutes' },
+        { icon: '•', text: t('matchDetail.ad3Feature1', { bonus }) },
+        { icon: '•', text: t('matchDetail.ad3Feature2') },
+        { icon: '•', text: t('matchDetail.ad3Feature3') },
       ],
-      cta: `Register and get ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad3Cta', { bonus }),
     },
     // Variant 4: Social proof
     {
-      title: '🏆 Where do our users bet?',
-      body: 'Most AI Betting Bot users place their bets with our trusted partner. Why there?',
+      title: t('matchDetail.ad4Title'),
+      body: t('matchDetail.ad4Body'),
       features: [
-        { icon: '✔', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'} on registration` },
-        { icon: '✔', text: 'High odds — more profit from each bet' },
-        { icon: '✔', text: 'Payouts from 15 minutes — get money fast' },
-        { icon: '✔', text: 'Reliable licensed bookmaker' },
+        { icon: '✔', text: t('matchDetail.ad4Feature1', { bonus }) },
+        { icon: '✔', text: t('matchDetail.ad4Feature2') },
+        { icon: '✔', text: t('matchDetail.ad4Feature3') },
+        { icon: '✔', text: t('matchDetail.ad4Feature4') },
       ],
-      cta: `Join — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad4Cta', { bonus }),
     },
     // Variant 5: Urgency (for matches starting soon)
     {
-      title: '⏰ Match starts soon — place your bet!',
-      body: 'Prediction received, odds are still good — don\'t miss the moment. The closer to kickoff, the more lines can change.',
+      title: t('matchDetail.ad5Title'),
+      body: t('matchDetail.ad5Body'),
       features: [
-        { icon: '⚡', text: 'Quick registration in 2 minutes' },
-        { icon: '🎁', text: `Bonus up to ${advertiser?.bonusAmount || '€1,500'}` },
-        { icon: '✓', text: 'Instant bet confirmation' },
+        { icon: '⚡', text: t('matchDetail.ad5Feature1') },
+        { icon: '🎁', text: t('matchDetail.ad5Feature2', { bonus }) },
+        { icon: '✓', text: t('matchDetail.ad5Feature3') },
       ],
-      cta: `Place bet now — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad5Cta', { bonus }),
     },
     // Variant 6: Focus on odds
     {
-      title: '📈 Best odds for this bet',
-      body: `Our AI found the optimal odds at our partner. This bookmaker is our trusted partner: license, fast payouts from 15 minutes and bonus up to ${advertiser?.bonusAmount || '€1,500'} on registration.`,
+      title: t('matchDetail.ad6Title'),
+      body: t('matchDetail.ad6Body', { bonus }),
       features: [],
-      cta: `Bet at best odds — ${advertiser?.bonusAmount || '€1,500'} bonus`,
+      cta: t('matchDetail.ad6Cta', { bonus }),
     },
   ];
 

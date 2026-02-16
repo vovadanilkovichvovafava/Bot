@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import footballApi from '../api/footballApi';
 
 // Map league codes to API-Football league IDs
@@ -22,6 +23,7 @@ const LEAGUE_MAP = {
 export default function LeagueMatches() {
   const { code } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +85,7 @@ export default function LeagueMatches() {
           </div>
         ) : Object.keys(groupedFixtures).length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500">No upcoming matches</p>
+            <p className="text-gray-500">{t('leagueMatches.noUpcomingMatches')}</p>
           </div>
         ) : (
           Object.entries(groupedFixtures).map(([date, dayFixtures]) => (
@@ -95,6 +97,7 @@ export default function LeagueMatches() {
                     key={f.fixture.id}
                     fixture={f}
                     onClick={() => navigate(`/match/${f.fixture.id}`)}
+                    t={t}
                   />
                 ))}
               </div>
@@ -107,7 +110,7 @@ export default function LeagueMatches() {
   );
 }
 
-function FixtureCard({ fixture, onClick }) {
+function FixtureCard({ fixture, onClick, t }) {
   const f = fixture;
   const date = new Date(f.fixture.date);
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -151,7 +154,7 @@ function FixtureCard({ fixture, onClick }) {
             <div className="flex flex-col items-end">
               <span className="text-sm font-bold text-gray-900">{f.goals.home}</span>
               <span className="text-sm font-bold text-gray-900">{f.goals.away}</span>
-              <span className="text-[10px] text-gray-400 mt-0.5">FT</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">{t('leagueMatches.fullTime')}</span>
             </div>
           ) : ['1H', '2H', 'HT', 'ET', 'P'].includes(status) ? (
             <div className="flex flex-col items-end">
