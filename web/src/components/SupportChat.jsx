@@ -119,8 +119,8 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   };
 
   const openBookmakerLink = () => {
-    const link = user?.id ? trackClick(user.id) : advertiser.link;
-    window.open(link, '_blank');
+    if (user?.id) trackClick(user.id);
+    navigate('/promo?banner=support_chat_bonus');
   };
 
   if (!isOpen) return null;
