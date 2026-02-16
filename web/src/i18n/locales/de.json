@@ -852,6 +852,9 @@
     "fullTime": "Ende"
   },
   "matchDetail": {
+    "tabOverview": "Übersicht",
+    "tabStats": "Statistiken",
+    "tabLineups": "Aufstellungen",
     "overview": "Übersicht",
     "h2h": "Direktvergleich",
     "standings": "Tabelle",
@@ -958,6 +961,10 @@
     "winProbability": "Gewinnwahrscheinlichkeit"
   },
   "liveMatch": {
+    "tabOverview": "Übersicht",
+    "tabStats": "Statistiken",
+    "tabEvents": "Ereignisse",
+    "tabLineups": "Aufstellungen",
     "overview": "Übersicht",
     "events": "Ereignisse",
     "stats": "Statistiken",

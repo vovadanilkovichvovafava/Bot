@@ -861,6 +861,9 @@
     "fullTime": "FT"
   },
   "matchDetail": {
+    "tabOverview": "Overview",
+    "tabStats": "Stats",
+    "tabLineups": "Lineups",
     "overview": "Overview",
     "h2h": "H2H",
     "standings": "Standings",
@@ -967,6 +970,10 @@
     "winProbability": "Win Probability"
   },
   "liveMatch": {
+    "tabOverview": "Overview",
+    "tabStats": "Stats",
+    "tabEvents": "Events",
+    "tabLineups": "Lineups",
     "overview": "Overview",
     "events": "Events",
     "stats": "Stats",

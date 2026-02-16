@@ -865,6 +865,9 @@
     "fullTime": "FT"
   },
   "matchDetail": {
+    "tabOverview": "Panoramica",
+    "tabStats": "Statistiche",
+    "tabLineups": "Formazioni",
     "overview": "Panoramica",
     "h2h": "Scontri Diretti",
     "standings": "Classifica",
@@ -971,6 +974,10 @@
     "winProbability": "Probabilità di Vittoria"
   },
   "liveMatch": {
+    "tabOverview": "Panoramica",
+    "tabStats": "Statistiche",
+    "tabEvents": "Eventi",
+    "tabLineups": "Formazioni",
     "overview": "Panoramica",
     "events": "Eventi",
     "stats": "Statistiche",
