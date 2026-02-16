@@ -278,15 +278,16 @@ export default function BookmakerPromo() {
           onClick={() => {
             track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
             if (!bookmakerLink) return;
-            // In standalone PWA mode, use location.href to open in system browser
-            // so that the bookmaker's PWA can install properly
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-              || window.navigator.standalone === true;
-            if (isStandalone) {
-              window.location.href = bookmakerLink;
-            } else {
-              window.open(bookmakerLink, '_blank', 'noopener,noreferrer');
-            }
+            // Always open in a new browser context so bookmaker PWA can install
+            // On Android standalone PWA: window.open forces system Chrome
+            // On iOS standalone PWA: creates a temp <a> with target=_blank
+            const a = document.createElement('a');
+            a.href = bookmakerLink;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           }}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >

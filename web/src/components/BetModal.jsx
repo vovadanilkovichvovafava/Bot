@@ -100,13 +100,13 @@ export default function BetModal({ isOpen, onClose, bet }) {
 
               <button
                 onClick={() => {
-                  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-                    || window.navigator.standalone === true;
-                  if (isStandalone) {
-                    window.location.href = BOOKMAKER.link;
-                  } else {
-                    window.open(BOOKMAKER.link, '_blank', 'noopener,noreferrer');
-                  }
+                  const a = document.createElement('a');
+                  a.href = BOOKMAKER.link;
+                  a.target = '_blank';
+                  a.rel = 'noopener noreferrer';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
                 }}
                 className="block text-sm text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer"
               >

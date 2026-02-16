@@ -194,13 +194,13 @@ export default function ProAccess() {
           onClick={() => {
             track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') });
             if (!bookmakerLink) return;
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-              || window.navigator.standalone === true;
-            if (isStandalone) {
-              window.location.href = bookmakerLink;
-            } else {
-              window.open(bookmakerLink, '_blank', 'noopener,noreferrer');
-            }
+            const a = document.createElement('a');
+            a.href = bookmakerLink;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           }}
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
