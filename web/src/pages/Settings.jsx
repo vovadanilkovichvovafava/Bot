@@ -175,7 +175,7 @@ export default function Settings() {
     <div>
       <div className="bg-white px-5 pt-6 pb-4">
         <div className="flex items-center justify-center gap-2">
-          <img src={logoBlack} alt="PVA" className="w-12 h-12 rounded-2xl object-cover" />
+          <img src={logoBlack} alt="PVA" className="w-12 h-12 object-contain" />
           <h1 className="text-xl font-bold">{t('settings.title')}</h1>
         </div>
       </div>
