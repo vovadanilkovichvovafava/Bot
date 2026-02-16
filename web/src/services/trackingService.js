@@ -13,17 +13,27 @@ export async function saveTrackingParams(userId) {
   if (!userId) return;
 
   const urlParams = new URLSearchParams(window.location.search);
-  const fbclid = urlParams.get('fbclid');
-  const utm_source = urlParams.get('utm_source');
-  const utm_medium = urlParams.get('utm_medium');
-  const utm_campaign = urlParams.get('utm_campaign');
-  const utm_content = urlParams.get('utm_content');
-  const utm_term = urlParams.get('utm_term');
+
+  // Берём из URL, а если нет — из sessionStorage (сохранены до редиректа)
+  const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || null;
+
+  const fbclid = getParam('fbclid');
+  const utm_source = getParam('utm_source');
+  const utm_medium = getParam('utm_medium');
+  const utm_campaign = getParam('utm_campaign');
+  const utm_content = getParam('utm_content');
+  const utm_term = getParam('utm_term');
 
   // Если нет ни одного параметра — не отправляем
   if (!fbclid && !utm_source && !utm_medium && !utm_campaign && !utm_content && !utm_term) {
     return;
   }
+
+  // Очищаем sessionStorage после использования
+  try {
+    ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
+      .forEach(key => sessionStorage.removeItem(`tracking_${key}`));
+  } catch {}
 
   try {
     const body = { user_id: userId };

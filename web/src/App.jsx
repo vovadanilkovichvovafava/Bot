@@ -56,6 +56,19 @@ function SplashScreen() {
   );
 }
 
+// Сохранить fbclid/utm из URL в sessionStorage ДО любых редиректов
+// (при редиректе на /register или /login query string теряется)
+(function persistTrackingParams() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const keys = ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    keys.forEach(key => {
+      const val = params.get(key);
+      if (val) sessionStorage.setItem(`tracking_${key}`, val);
+    });
+  } catch {}
+})();
+
 export default function App() {
   const { loading, user } = useAuth();
   const trackingSaved = useRef(false);
