@@ -220,7 +220,7 @@ export default function Settings() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonus })}</p>
+                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonusAmount })}</p>
                   <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
                 </>
               )}

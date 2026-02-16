@@ -1,4 +1,20 @@
 {
+  "advertiser": {
+    "freeBet": "Бесплатная ставка до {{bonus}}",
+    "freeBetLabel": "Фрибет",
+    "betOnMatch": "Ставь на любой матч",
+    "ctaButton": "Получить {{bonus}}",
+    "promoTitle": "{{bonus}} бесплатная ставка на этот матч!",
+    "promoCta": "Сделать ставку",
+    "promoCtaFree": "Сделать бесплатную ставку",
+    "bonusButton": "Бонус {{bonus}}",
+    "bestBets": "Лучшие ставки",
+    "useFreeBet": "Используй фрибет и выиграй",
+    "potentialWin": "Выигрыш",
+    "betAndTakeIt": "Используй прямо сейчас!",
+    "bonusUpTo": "Бонус до {{bonus}}",
+    "getBonus": "Получить бонус"
+  },
   "common": {
     "loading": "Загрузка...",
     "error": "Ошибка",

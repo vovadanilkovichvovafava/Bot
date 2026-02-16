@@ -332,7 +332,7 @@ export default function AIChat() {
                         <div className="flex items-center justify-between">
                           <div>
                             {/* Free bet label */}
-                            <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{advertiser.texts.freeBetLabel || 'Free bet'}</span>
+                            <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{t('advertiser.freeBetLabel')}</span>
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
                               <span className="text-emerald-200 text-sm">×</span>
@@ -346,10 +346,10 @@ export default function AIChat() {
                               >
                                 {advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}
                               </span>
-                              <span className="text-emerald-200 text-xs ml-1">{advertiser.texts.potentialWin}</span>
+                              <span className="text-emerald-200 text-xs ml-1">{t('advertiser.potentialWin')}</span>
                             </div>
                             {/* Call to action text */}
-                            <p className="text-white text-xs font-medium mt-1.5 opacity-90">{advertiser.texts.betAndTakeIt || 'Bet and take it!'}</p>
+                            <p className="text-white text-xs font-medium mt-1.5 opacity-90">{t('advertiser.betAndTakeIt')}</p>
                           </div>
                           <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -366,7 +366,7 @@ export default function AIChat() {
                     onClick={() => navigate('/promo?banner=aichat_promo_link')}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
-                    {advertiser.texts.freeBet}
+                    {t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -383,7 +383,7 @@ export default function AIChat() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonus, name: advertiser.name })}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonusAmount, name: advertiser.name })}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -433,14 +433,14 @@ export default function AIChat() {
               onClick={() => navigate('/promo?banner=aichat_bonus_button')}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
             >
-              {advertiser.texts.bonusButton}
+              {t('advertiser.bonusButton', { bonus: advertiser.bonusAmount })}
             </button>
             <button
               onClick={() => sendMessage(t('aiChat.todaysBestBets'))}
               disabled={loading}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium disabled:opacity-50 bg-primary-600 text-white"
             >
-              🎯 {advertiser.texts.bestBets}
+              🎯 {t('advertiser.bestBets')}
             </button>
           </div>
 

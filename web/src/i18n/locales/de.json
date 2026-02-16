@@ -1,4 +1,20 @@
 {
+  "advertiser": {
+    "freeBet": "Gratiswette bis zu {{bonus}}",
+    "freeBetLabel": "Gratiswette",
+    "betOnMatch": "Wette auf jedes Spiel",
+    "ctaButton": "{{bonus}} erhalten",
+    "promoTitle": "{{bonus}} Gratiswette auf dieses Spiel!",
+    "promoCta": "Wette platzieren",
+    "promoCtaFree": "Gratiswette platzieren",
+    "bonusButton": "Bonus {{bonus}}",
+    "bestBets": "Beste Wetten",
+    "useFreeBet": "Nutze die Gratiswette und gewinne",
+    "potentialWin": "Gewinn",
+    "betAndTakeIt": "Jetzt nutzen!",
+    "bonusUpTo": "Bonus bis zu {{bonus}}",
+    "getBonus": "Bonus holen"
+  },
   "common": {
     "loading": "Laden...",
     "error": "Fehler",

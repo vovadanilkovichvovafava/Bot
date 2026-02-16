@@ -71,8 +71,8 @@ const getGuideCards = (advertiser, t) => [
   {
     icon: '🎁',
     title: t('guide.card10Title'),
-    subtitle: t('guide.card10Subtitle', { bonus: advertiser.bonus }),
-    content: t('guide.card10Content', { name: advertiser.name, bonus: advertiser.bonus }),
+    subtitle: t('guide.card10Subtitle', { bonus: advertiser.bonusAmount }),
+    content: t('guide.card10Content', { name: advertiser.name, bonus: advertiser.bonusAmount }),
     color: 'from-amber-400 to-orange-500',
     cta: true,
   },

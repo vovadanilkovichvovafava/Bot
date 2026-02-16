@@ -1,4 +1,20 @@
 {
+  "advertiser": {
+    "freeBet": "Free bet up to {{bonus}}",
+    "freeBetLabel": "Free bet",
+    "betOnMatch": "Bet on any match",
+    "ctaButton": "Get {{bonus}}",
+    "promoTitle": "{{bonus}} free bet on this match!",
+    "promoCta": "Place bet",
+    "promoCtaFree": "Place free bet",
+    "bonusButton": "Bonus {{bonus}}",
+    "bestBets": "Best bets",
+    "useFreeBet": "Use your free bet and win",
+    "potentialWin": "Win",
+    "betAndTakeIt": "Use it right now!",
+    "bonusUpTo": "Bonus up to {{bonus}}",
+    "getBonus": "Get bonus"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

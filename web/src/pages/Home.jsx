@@ -394,14 +394,14 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Get the first match from top leagues as featured match
   const featuredMatch = matches?.[0];
 
-  // Get localized texts from advertiser config (with i18n fallbacks)
+  // Use i18n for all advertiser texts (bonus amount comes from advertiser config)
   const bonus = advertiser.bonusAmount || '';
-  const texts = advertiser.texts || {
-    freeBet: t('home.freeBetUpTo', { bonus }),
-    betOnMatch: t('home.betOnMatch'),
-    ctaButton: t('home.getBonus', { bonus }),
-    promoTitle: t('home.freeBetOnMatch', { bonus }),
-    promoCta: t('home.placeBet'),
+  const texts = {
+    freeBet: t('advertiser.freeBet', { bonus }),
+    betOnMatch: t('advertiser.betOnMatch'),
+    ctaButton: t('advertiser.ctaButton', { bonus }),
+    promoTitle: t('advertiser.promoTitle', { bonus }),
+    promoCta: t('advertiser.promoCta'),
   };
 
   const link = 'https://pwa-production-20b5.up.railway.app/promo';

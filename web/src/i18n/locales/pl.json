@@ -1,4 +1,20 @@
 {
+  "advertiser": {
+    "freeBet": "Darmowy zakład do {{bonus}}",
+    "freeBetLabel": "Darmowy zakład",
+    "betOnMatch": "Obstawiaj dowolny mecz",
+    "ctaButton": "Odbierz {{bonus}}",
+    "promoTitle": "{{bonus}} darmowy zakład na ten mecz!",
+    "promoCta": "Postaw zakład",
+    "promoCtaFree": "Postaw darmowy zakład",
+    "bonusButton": "Bonus {{bonus}}",
+    "bestBets": "Najlepsze zakłady",
+    "useFreeBet": "Użyj darmowego zakładu i wygraj",
+    "potentialWin": "Wygrana",
+    "betAndTakeIt": "Użyj go teraz!",
+    "bonusUpTo": "Bonus do {{bonus}}",
+    "getBonus": "Odbierz bonus"
+  },
   "common": {
     "loading": "Ładowanie...",
     "error": "Błąd",
