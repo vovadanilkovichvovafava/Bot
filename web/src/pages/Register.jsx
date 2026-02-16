@@ -6,6 +6,7 @@ import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
+import { track } from '../services/analytics';
 
 
 export default function Register() {
@@ -20,8 +21,17 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
+  const [formTouched, setFormTouched] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Track first interaction with form
+  const onFormTouch = () => {
+    if (!formTouched) {
+      setFormTouched(true);
+      track('register_form_started');
+    }
+  };
 
   // Check for referral code on mount
   useEffect(() => {
@@ -55,12 +65,15 @@ export default function Register() {
     }
     setError('');
     setLoading(true);
+    track('register_submit');
     try {
       const fullPhone = phone && phoneCountry ? fullPhoneNumber(phone, phoneCountry) : null;
       await register(email, password, username || undefined, referralCode, fullPhone);
+      track('register_success');
       clearReferralCode(); // Clear the referral code after successful registration
       navigate('/', { replace: true });
     } catch (err) {
+      track('register_error', { error: err.message });
       setError(err.message || t('auth.errRegistration'));
     } finally {
       setLoading(false);
@@ -123,6 +136,7 @@ export default function Register() {
                   placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={onFormTouch}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                 />
               </div>

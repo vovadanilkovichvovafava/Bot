@@ -7,6 +7,7 @@ import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
+import { track } from '../services/analytics';
 
 
 // SVG Icons
@@ -277,6 +278,7 @@ export default function BookmakerPromo() {
           href={bookmakerLink}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
           {loadingLink ? (

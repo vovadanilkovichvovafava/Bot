@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
+import { track } from '../services/analytics';
 
 
 export default function Login() {
@@ -44,11 +45,14 @@ export default function Login() {
 
     setError('');
     setLoading(true);
+    track('login_submit', { mode });
     try {
       const identifier = mode === 'email' ? email : fullPhoneNumber(phone, phoneCountry);
       await login(identifier, password);
+      track('login_success', { mode });
       navigate('/', { replace: true });
     } catch (err) {
+      track('login_error', { mode, error: err.message });
       setError(err.message || t('auth.errLogin'));
     } finally {
       setLoading(false);
