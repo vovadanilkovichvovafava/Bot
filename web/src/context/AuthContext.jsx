@@ -42,6 +42,15 @@ export function AuthProvider({ children }) {
     const token = api.getToken();
 
     if (!token) {
+      // No token — check by IP if account already exists
+      try {
+        const { exists } = await api.checkIp();
+        if (exists) {
+          safeSetItem('hasAccount', 'true');
+        }
+      } catch {
+        // Network error — keep existing hasAccount flag as-is
+      }
       setLoading(false);
       return;
     }

@@ -75,6 +75,10 @@ class ApiService {
   }
 
   // Auth
+  async checkIp() {
+    return this.request('/auth/check-ip');
+  }
+
   async login(email, password) {
     const data = await this.request('/auth/login', {
       method: 'POST',

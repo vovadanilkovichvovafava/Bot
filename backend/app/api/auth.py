@@ -79,6 +79,15 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str):
     )
 
 
+@router.get("/check-ip")
+async def check_ip(request: Request, db: AsyncSession = Depends(get_db)):
+    """Check if an account already exists for the client's IP address"""
+    client_ip = get_client_ip(request)
+    result = await db.execute(select(User).where(User.registration_ip == client_ip))
+    exists = result.scalar_one_or_none() is not None
+    return {"exists": exists}
+
+
 @router.post("/register", response_model=TokenResponse)
 async def register(
     user: UserRegister,
