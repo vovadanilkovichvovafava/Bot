@@ -56,7 +56,8 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, username || undefined, referralCode);
+      const fullPhone = phone && phoneCountry ? fullPhoneNumber(phone, phoneCountry) : null;
+      await register(email, password, username || undefined, referralCode, fullPhone);
       clearReferralCode(); // Clear the referral code after successful registration
       navigate('/', { replace: true });
     } catch (err) {

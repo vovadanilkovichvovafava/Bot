@@ -20,6 +20,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     public_id = Column(String, unique=True, index=True, nullable=False, default=generate_public_id)
     email = Column(String, unique=True, index=True, nullable=False)
+    phone = Column(String, unique=True, index=True, nullable=True)
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     registration_ip = Column(String, index=True, nullable=True)

@@ -79,19 +79,27 @@ class ApiService {
     return this.request('/auth/check-ip');
   }
 
-  async login(email, password) {
+  async login(identifier, password) {
+    // identifier can be email or phone number
+    const body = { password };
+    if (identifier.includes('@')) {
+      body.email = identifier;
+    } else {
+      body.phone = identifier;
+    }
     const data = await this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     this.setToken(data.access_token);
     try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
     return data;
   }
 
-  async register(email, password, username, referralCode = null) {
+  async register(email, password, username, referralCode = null, phone = null) {
     const body = { email, password, username };
     if (referralCode) body.referral_code = referralCode;
+    if (phone) body.phone = phone;
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
