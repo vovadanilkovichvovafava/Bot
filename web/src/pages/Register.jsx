@@ -6,7 +6,7 @@ import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
+
 
 export default function Register() {
   const { t } = useTranslation();
@@ -76,7 +76,14 @@ export default function Register() {
 
         <div className="relative text-center">
           {/* Logo */}
-          <img src={logoWhite} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg object-contain" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-4 shadow-lg shadow-primary-500/30">
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
 
           <h1 className="text-2xl font-bold text-white mb-1">{t('auth.createAccount')}</h1>
           <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>

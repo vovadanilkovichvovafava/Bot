@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import logoBlack from '../assets/logo_black.png';
+
 
 export default function Premium() {
   const navigate = useNavigate();
@@ -109,7 +109,14 @@ export default function Premium() {
         <div className="px-5 pt-4 pb-8 space-y-6">
           {/* Hero card */}
           <div className="bg-amber-50 rounded-2xl p-6 text-center">
-            <img src={logoBlack} alt="PVA" className="w-24 h-24 mx-auto mb-3 object-contain" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl mb-3 shadow-lg shadow-primary-500/30 mx-auto">
+              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('premium.premiumAccess')}</h2>
             <p className="text-gray-600">{t('premium.premiumDescription')}</p>
           </div>
