@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -32,6 +32,8 @@ export default function Favourites() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
+  const searchIdRef = useRef(0);
 
   useEffect(() => {
     loadFavourites();
@@ -52,31 +54,51 @@ export default function Favourites() {
     setLeagues(getFavouriteLeagues());
   };
 
-  const handleSearch = async (query) => {
+  const executeSearch = useCallback(async (query, currentTab) => {
+    const id = ++searchIdRef.current;
+    setSearching(true);
+    try {
+      let results = [];
+      if (currentTab === 'teams') {
+        // Force backend to be re-enabled before team search
+        footballApi.useBackend = true;
+        results = await footballApi.searchTeams(query);
+      } else {
+        results = QUICK_ADD_LEAGUES.filter(l =>
+          l.name.toLowerCase().includes(query.toLowerCase()) ||
+          l.country.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      // Only update if this is still the latest search
+      if (id === searchIdRef.current) {
+        setSearchResults(results.slice(0, 10));
+      }
+    } catch (e) {
+      console.error('Search failed:', e);
+      if (id === searchIdRef.current) {
+        setSearchResults([]);
+      }
+    } finally {
+      if (id === searchIdRef.current) {
+        setSearching(false);
+      }
+    }
+  }, []);
+
+  const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.length < 2) {
       setSearchResults([]);
+      setSearching(false);
+      clearTimeout(searchTimer.current);
       return;
     }
 
     setSearching(true);
-    try {
-      if (tab === 'teams') {
-        const results = await footballApi.searchTeams(query);
-        setSearchResults(results.slice(0, 10));
-      } else {
-        // For leagues, filter from popular list
-        const filtered = QUICK_ADD_LEAGUES.filter(l =>
-          l.name.toLowerCase().includes(query.toLowerCase()) ||
-          l.country.toLowerCase().includes(query.toLowerCase())
-        );
-        setSearchResults(filtered);
-      }
-    } catch (e) {
-      console.error('Search failed:', e);
-    } finally {
-      setSearching(false);
-    }
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      executeSearch(query, tab);
+    }, 400);
   };
 
   return (
