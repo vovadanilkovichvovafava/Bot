@@ -50,7 +50,12 @@ class ApiService {
     if (response.status === 401) {
       this.setToken(null);
       try { localStorage.removeItem('refresh_token'); } catch {}
-      window.location.href = '/login';
+      try {
+        const hasAccount = localStorage.getItem('hasAccount') === 'true';
+        window.location.href = hasAccount ? '/login' : '/register';
+      } catch {
+        window.location.href = '/login';
+      }
       throw new Error('Unauthorized');
     }
 

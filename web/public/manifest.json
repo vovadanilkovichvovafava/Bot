@@ -1,6 +1,6 @@
 {
-  "name": "AI Betting Bot",
-  "short_name": "AI Bet Bot",
+  "name": "PVA Betting",
+  "short_name": "PVA Bet",
   "description": "Football predictions powered by AI",
   "start_url": "/",
   "display": "standalone",

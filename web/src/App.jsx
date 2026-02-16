@@ -29,13 +29,23 @@ import BetSlipBuilder from './pages/BetSlipBuilder';
 import KellyCalculator from './pages/KellyCalculator';
 import NotFound from './pages/NotFound';
 
+function hasAccountFlag() {
+  try { return localStorage.getItem('hasAccount') === 'true'; } catch { return false; }
+}
+
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <SplashScreen />;
   if (!isAuthenticated) {
-    const hasAccount = localStorage.getItem('has_account');
-    return <Navigate to={hasAccount ? '/login' : '/register'} replace />;
+    return <Navigate to={hasAccountFlag() ? "/login" : "/register"} replace />;
   }
+  return children;
+}
+
+function GuestRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <SplashScreen />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -63,8 +73,8 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+      <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/" element={
         <ProtectedRoute><Layout /></ProtectedRoute>
       }>

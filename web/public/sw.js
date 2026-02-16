@@ -49,8 +49,8 @@ self.addEventListener('push', event => {
   let data = {
     title: 'PVA Betting',
     body: 'You have a new notification',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     tag: 'default',
     data: { url: '/' },
   };
@@ -68,8 +68,8 @@ self.addEventListener('push', event => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/icons/icon-192x192.png',
-    badge: data.badge || '/icons/badge-72x72.png',
+    icon: data.icon || '/icon.svg',
+    badge: data.badge || '/icon.svg',
     tag: data.tag || 'default',
     vibrate: data.vibrate || [100, 50, 100],
     data: data.data || { url: '/' },

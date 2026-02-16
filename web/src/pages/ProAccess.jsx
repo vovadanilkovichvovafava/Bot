@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
@@ -105,12 +106,12 @@ export default function ProAccess() {
         <div className="absolute -top-20 -right-12 w-48 h-48 rounded-full" style={{ background: 'rgba(232,163,23,0.06)' }} />
         <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.03)' }} />
 
-        {/* PRO icon */}
+        {/* PRO icon with logo */}
         <div
-          className="w-16 h-16 rounded-[20px] flex items-center justify-center mx-auto mb-4 text-3xl relative z-10 animate-[fadeUp_0.4s_ease_both]"
+          className="w-24 h-24 rounded-[20px] flex items-center justify-center mx-auto mb-4 relative z-10 animate-[fadeUp_0.4s_ease_both] overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 20px rgba(232,163,23,0.3)' }}
         >
-          \u2B50
+          <img src={logoWhite} alt="PVA" className="w-22 h-22 object-contain" />
         </div>
 
         <h1 className="text-2xl font-extrabold text-white leading-tight mb-2 relative z-10 animate-[fadeUp_0.4s_ease_0.05s_both]">

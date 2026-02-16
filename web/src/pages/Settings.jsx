@@ -14,6 +14,7 @@ import {
 } from '../services/notificationStore';
 import { isPushSupported, unsubscribeFromPush } from '../services/pushNotificationService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoBlack from '../assets/logo_black.png';
 
 // Default stats while loading
 const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
@@ -173,7 +174,10 @@ export default function Settings() {
   return (
     <div>
       <div className="bg-white px-5 pt-6 pb-4">
-        <h1 className="text-xl font-bold text-center">{t('settings.title')}</h1>
+        <div className="flex items-center justify-center gap-2">
+          <img src={logoBlack} alt="PVA" className="w-12 h-12 object-contain" />
+          <h1 className="text-xl font-bold">{t('settings.title')}</h1>
+        </div>
       </div>
 
       <div className="px-5 pt-4 pb-8 space-y-0">
@@ -216,7 +220,7 @@ export default function Settings() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonus })}</p>
+                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonusAmount })}</p>
                   <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
                 </>
               )}

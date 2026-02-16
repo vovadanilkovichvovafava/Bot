@@ -48,7 +48,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   // Simulate manager response (localized)
   const getManagerResponse = (userMessage) => {
     const lower = userMessage.toLowerCase();
-    const vars = { name: advertiser.name, bonus: advertiser.bonus, minDeposit: advertiser.minDeposit };
+    const vars = { name: advertiser.name, bonus: advertiser.bonusAmount, minDeposit: advertiser.minDeposit };
 
     // PRO access questions
     if (lower.includes('pro') || lower.includes('access') || lower.includes('unlock') || lower.includes('premium')) {
@@ -201,7 +201,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
             >
               <span>🎁</span>
-              {t('support.getBonus', { bonus: advertiser.bonus })}
+              {t('support.getBonus', { bonus: advertiser.bonusAmount })}
             </button>
             <button
               onClick={() => setInput(t('support.wantPro'))}
