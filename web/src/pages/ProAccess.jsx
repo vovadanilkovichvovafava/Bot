@@ -190,11 +190,18 @@ export default function ProAccess() {
 
       {/* ===== STICKY CTA ===== */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] px-4 pt-3 bg-white/95 backdrop-blur-[12px] border-t border-[#E2E8F0] z-50" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 8px))' }}>
-        <a
-          href={bookmakerLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') })}
+        <button
+          onClick={() => {
+            track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') });
+            if (!bookmakerLink) return;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+              || window.navigator.standalone === true;
+            if (isStandalone) {
+              window.location.href = bookmakerLink;
+            } else {
+              window.open(bookmakerLink, '_blank', 'noopener,noreferrer');
+            }
+          }}
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
         >
@@ -206,7 +213,7 @@ export default function ProAccess() {
               {t('proAccess.ctaButton')}
             </>
           )}
-        </a>
+        </button>
         <p className="text-center text-[11px] text-[#5A6B80] mt-1.5">{t('proAccess.ctaSubtext')}</p>
       </div>
 

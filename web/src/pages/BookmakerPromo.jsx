@@ -274,11 +274,20 @@ export default function BookmakerPromo() {
 
       {/* Fixed CTA Button at bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3 z-50">
-        <a
-          href={bookmakerLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
+        <button
+          onClick={() => {
+            track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
+            if (!bookmakerLink) return;
+            // In standalone PWA mode, use location.href to open in system browser
+            // so that the bookmaker's PWA can install properly
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+              || window.navigator.standalone === true;
+            if (isStandalone) {
+              window.location.href = bookmakerLink;
+            } else {
+              window.open(bookmakerLink, '_blank', 'noopener,noreferrer');
+            }
+          }}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
           {loadingLink ? (
@@ -294,7 +303,7 @@ export default function BookmakerPromo() {
               {t('promo.ctaButton')}
             </span>
           )}
-        </a>
+        </button>
         <p className="text-center text-xs text-gray-400 mt-1">
           {t('promo.ctaSubtext')}
         </p>
