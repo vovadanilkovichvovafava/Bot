@@ -26,9 +26,10 @@ i18n
     resources,
     supportedLngs: SUPPORTED_LANGS,
     fallbackLng: 'en',
+    load: 'languageOnly',
 
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['navigator', 'localStorage', 'htmlTag'],
       caches: ['localStorage'],
     },
 
