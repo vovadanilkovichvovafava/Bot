@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
@@ -153,14 +154,7 @@ export default function BookmakerPromo() {
 
         {/* Partner badge */}
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <div className="inline-flex items-center justify-center w-5 h-5 bg-gradient-to-br from-primary-400 to-primary-600 rounded">
-            <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-              <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
-              <circle cx="12" cy="12" r="2" fill="currentColor"/>
-              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
+          <img src={logoWhite} alt="PVA" className="w-8 h-8 object-contain" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 

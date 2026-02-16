@@ -7,6 +7,7 @@ import api from '../api';
 import SupportChat from '../components/SupportChat';
 import { getReferralStats, copyReferralLink, getReferralLink } from '../services/referralStore';
 import FootballSpinner from '../components/FootballSpinner';
+import logoBlack from '../assets/logo_black.png';
 
 
 // Default stats while loading
@@ -147,7 +148,10 @@ export default function Settings() {
   return (
     <div>
       <div className="bg-white px-5 pt-6 pb-4">
-        <h1 className="text-xl font-bold text-center">{t('settings.title')}</h1>
+        <div className="flex items-center justify-center gap-2">
+          <img src={logoBlack} alt="PVA" className="w-12 h-12 object-contain" />
+          <h1 className="text-xl font-bold">{t('settings.title')}</h1>
+        </div>
       </div>
 
       <div className="px-5 pt-4 pb-8 space-y-0">
