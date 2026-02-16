@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useBookmaker } from '../context/BookmakerContext';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
 import FootballSpinner from './FootballSpinner';
+import { openExternalLink } from '../utils/openExternalLink';
 
 export default function BetModal({ isOpen, onClose, bet }) {
   const { t } = useTranslation();
@@ -99,15 +100,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
               </button>
 
               <button
-                onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = BOOKMAKER.link;
-                  a.target = '_blank';
-                  a.rel = 'noopener noreferrer';
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                }}
+                onClick={() => openExternalLink(BOOKMAKER.link)}
                 className="block text-sm text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer"
               >
                 {t('betModal.noAccount', { bonus: BOOKMAKER.bonus })} →

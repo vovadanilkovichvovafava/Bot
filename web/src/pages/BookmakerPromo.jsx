@@ -8,6 +8,7 @@ import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
+import { openExternalLink } from '../utils/openExternalLink';
 
 
 // SVG Icons
@@ -277,17 +278,7 @@ export default function BookmakerPromo() {
         <button
           onClick={() => {
             track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
-            if (!bookmakerLink) return;
-            // Always open in a new browser context so bookmaker PWA can install
-            // On Android standalone PWA: window.open forces system Chrome
-            // On iOS standalone PWA: creates a temp <a> with target=_blank
-            const a = document.createElement('a');
-            a.href = bookmakerLink;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            openExternalLink(bookmakerLink);
           }}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
