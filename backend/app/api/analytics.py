@@ -42,7 +42,7 @@ async def track_event(
             text("""
                 INSERT INTO analytics_events
                 (event, page, user_id, session_id, ip, country, user_agent, referrer, metadata)
-                VALUES (:event, :page, :user_id, :session_id, :ip, :country, :user_agent, :referrer, :metadata::jsonb)
+                VALUES (:event, :page, :user_id, :session_id, :ip, :country, :user_agent, :referrer, CAST(:metadata AS jsonb))
             """),
             {
                 "event": event.event,
