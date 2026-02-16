@@ -8,8 +8,6 @@ import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
-import { openExternalLink } from '../utils/openExternalLink';
-import OfferIframe from '../components/OfferIframe';
 
 
 // SVG Icons
@@ -58,7 +56,6 @@ export default function BookmakerPromo() {
   const [geoInfo, setGeoInfo] = useState(null);
   const [bookmakerLink, setBookmakerLink] = useState(null);
   const [loadingLink, setLoadingLink] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
 
   const [searchParams] = useSearchParams();
   const banner = searchParams.get('banner') || '';
@@ -277,12 +274,11 @@ export default function BookmakerPromo() {
 
       {/* Fixed CTA Button at bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-5 py-3 z-50">
-        <button
-          onClick={() => {
-            track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
-            const opened = openExternalLink(bookmakerLink);
-            if (!opened) setShowIframe(true);
-          }}
+        <a
+          href={bookmakerLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
           {loadingLink ? (
@@ -298,7 +294,7 @@ export default function BookmakerPromo() {
               {t('promo.ctaButton')}
             </span>
           )}
-        </button>
+        </a>
         <p className="text-center text-xs text-gray-400 mt-1">
           {t('promo.ctaSubtext')}
         </p>
@@ -306,9 +302,6 @@ export default function BookmakerPromo() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showChat} onClose={() => setShowChat(false)} />
-
-      {/* Iframe overlay for standalone PWA — opens bootballgame.shop inside our app */}
-      <OfferIframe url={bookmakerLink} isOpen={showIframe} onClose={() => setShowIframe(false)} />
     </div>
   );
 }

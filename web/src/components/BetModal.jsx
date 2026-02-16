@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useBookmaker } from '../context/BookmakerContext';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
 import FootballSpinner from './FootballSpinner';
-import { openExternalLink } from '../utils/openExternalLink';
-import OfferIframe from './OfferIframe';
 
 export default function BetModal({ isOpen, onClose, bet }) {
   const { t } = useTranslation();
@@ -14,7 +12,6 @@ export default function BetModal({ isOpen, onClose, bet }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [showConnect, setShowConnect] = useState(false);
-  const [showOfferIframe, setShowOfferIframe] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -101,15 +98,14 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 {t('betModal.connectAccount')}
               </button>
 
-              <button
-                onClick={() => {
-                  const opened = openExternalLink(BOOKMAKER.link);
-                  if (!opened) setShowOfferIframe(true);
-                }}
-                className="block text-sm text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer"
+              <a
+                href={BOOKMAKER.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm text-gray-500 hover:text-gray-700"
               >
                 {t('betModal.noAccount', { bonus: BOOKMAKER.bonus })} →
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -119,8 +115,6 @@ export default function BetModal({ isOpen, onClose, bet }) {
           onClose={() => setShowConnect(false)}
           onSuccess={() => setShowConnect(false)}
         />
-
-        <OfferIframe url={BOOKMAKER.link} isOpen={showOfferIframe} onClose={() => setShowOfferIframe(false)} />
       </>
     );
   }
