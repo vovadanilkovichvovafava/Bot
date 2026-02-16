@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoSvg from '../assets/logo.svg';
 
 // Country to language mapping
 const countryToLanguage = {
@@ -155,8 +156,8 @@ export default function BookmakerPromo() {
         </button>
 
         {/* Partner badge */}
-        <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <span className="w-2 h-2 bg-green-400 rounded-full"/>
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
+          <img src={logoSvg} alt="PVA" className="w-5 h-5" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 

@@ -14,6 +14,7 @@ import {
 } from '../services/notificationStore';
 import { isPushSupported, unsubscribeFromPush } from '../services/pushNotificationService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoSvg from '../assets/logo.svg';
 
 // Default stats while loading
 const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
@@ -173,7 +174,10 @@ export default function Settings() {
   return (
     <div>
       <div className="bg-white px-5 pt-6 pb-4">
-        <h1 className="text-xl font-bold text-center">Settings</h1>
+        <div className="flex items-center justify-center gap-2">
+          <img src={logoSvg} alt="PVA" className="w-8 h-8" />
+          <h1 className="text-xl font-bold">Settings</h1>
+        </div>
       </div>
 
       <div className="px-5 pt-4 pb-8 space-y-0">

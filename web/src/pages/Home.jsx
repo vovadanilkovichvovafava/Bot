@@ -6,6 +6,7 @@ import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
+import logoSvg from '../assets/logo.svg';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -65,6 +66,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
+        <img src={logoSvg} alt="PVA" className="w-24 h-24 mb-6 drop-shadow-lg" />
         <FootballSpinner size="lg" text="Loading matches..." light />
       </div>
     );
@@ -75,9 +77,12 @@ export default function Home() {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-primary-100 text-sm">{getGreeting()}</p>
-            <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
+          <div className="flex items-center gap-3">
+            <img src={logoSvg} alt="PVA" className="w-10 h-10 drop-shadow" />
+            <div>
+              <p className="text-primary-100 text-sm">{getGreeting()}</p>
+              <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
+            </div>
           </div>
           <button onClick={() => navigate('/settings')} className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">

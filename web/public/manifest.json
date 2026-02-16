@@ -1,6 +1,6 @@
 {
-  "name": "AI Betting Bot",
-  "short_name": "AI Bet Bot",
+  "name": "PVA Betting",
+  "short_name": "PVA Bet",
   "description": "Football predictions powered by AI",
   "start_url": "/",
   "display": "standalone",
@@ -8,6 +8,12 @@
   "theme_color": "#1565C0",
   "orientation": "portrait",
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

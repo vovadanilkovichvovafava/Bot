@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
+import logoSvg from '../assets/logo.svg';
 
 // Country to language mapping
 const countryToLanguage = {
@@ -182,10 +183,8 @@ export default function ProAccess() {
         </button>
 
         {/* PRO badge */}
-        <div className="inline-flex items-center gap-1.5 bg-amber-500/20 rounded-full px-3 py-1 mb-4">
-          <div className="text-amber-400">
-            <StarIcon />
-          </div>
+        <div className="inline-flex items-center gap-2 bg-amber-500/20 rounded-full px-3 py-1 mb-4">
+          <img src={logoSvg} alt="PVA" className="w-6 h-6" />
           <span className="text-xs font-medium text-amber-400">PRO Access</span>
         </div>
 

@@ -130,8 +130,8 @@ export async function showLocalNotification(title, options = {}) {
     const registration = await navigator.serviceWorker.ready;
 
     await registration.showNotification(title, {
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/badge-72x72.png',
+      icon: '/icon.svg',
+      badge: '/icon.svg',
       vibrate: [100, 50, 100],
       ...options,
     });
