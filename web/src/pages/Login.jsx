@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoPng from '../assets/logo.png';
+import logoWhite from '../assets/logo_wight.png';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -70,7 +70,7 @@ export default function Login() {
 
         <div className="relative text-center">
           {/* Logo */}
-          <img src={logoPng} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg rounded-2xl object-cover" />
+          <img src={logoWhite} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg rounded-2xl object-cover" />
 
           <h1 className="text-2xl font-bold text-white mb-1">{t('auth.appName')}</h1>
           <p className="text-gray-400 text-sm">{t('auth.signInSubtitle')}</p>

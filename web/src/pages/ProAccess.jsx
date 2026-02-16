@@ -6,7 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoPng from '../assets/logo.png';
+import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
 
 // Country to language mapping
@@ -111,7 +111,7 @@ export default function ProAccess() {
           className="w-24 h-24 rounded-[20px] flex items-center justify-center mx-auto mb-4 relative z-10 animate-[fadeUp_0.4s_ease_both] overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 20px rgba(232,163,23,0.3)' }}
         >
-          <img src={logoPng} alt="PVA" className="w-22 h-22 rounded-2xl object-cover" />
+          <img src={logoWhite} alt="PVA" className="w-22 h-22 rounded-2xl object-cover" />
         </div>
 
         <h1 className="text-2xl font-extrabold text-white leading-tight mb-2 relative z-10 animate-[fadeUp_0.4s_ease_0.05s_both]">
