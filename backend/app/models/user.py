@@ -1,7 +1,7 @@
 import secrets
 import string
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -41,6 +41,7 @@ class User(Base):
 
     total_predictions = Column(Integer, default=0)
     correct_predictions = Column(Integer, default=0)
+    predictions_data = Column(Text, nullable=True)  # JSON array of predictions
 
     # Referral system
     referral_code = Column(String, unique=True, index=True, nullable=True)

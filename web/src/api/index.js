@@ -133,6 +133,17 @@ class ApiService {
     return this.request('/users/me/referral');
   }
 
+  async getMyPredictions() {
+    return this.request('/users/me/predictions');
+  }
+
+  async saveMyPredictions(predictions) {
+    return this.request('/users/me/predictions', {
+      method: 'PUT',
+      body: JSON.stringify({ predictions }),
+    });
+  }
+
   // Matches
   async getTodayMatches(league) {
     const params = league ? `?league=${league}` : '';

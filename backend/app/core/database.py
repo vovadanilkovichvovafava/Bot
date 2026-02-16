@@ -44,6 +44,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_requests INTEGER DEFAULT 0",
             # Public ID for tracking (secure, non-guessable)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR UNIQUE",
+            # Predictions sync (JSON array stored as text)
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS predictions_data TEXT",
         ]
 
         for migration in migrations:

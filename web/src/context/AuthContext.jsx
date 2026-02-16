@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api';
+import { loadFromBackend } from '../services/predictionStore';
 
 const AuthContext = createContext(null);
 
@@ -61,6 +62,8 @@ export function AuthProvider({ children }) {
     try {
       const userData = await api.getMe();
       setUser(userData);
+      // Sync predictions from backend to localStorage
+      loadFromBackend().catch(() => {});
     } catch (e) {
       api.logout();
     } finally {
@@ -77,6 +80,7 @@ export function AuthProvider({ children }) {
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    loadFromBackend().catch(() => {});
     return userData;
   };
 
@@ -85,6 +89,7 @@ export function AuthProvider({ children }) {
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    loadFromBackend().catch(() => {});
     return userData;
   };
 

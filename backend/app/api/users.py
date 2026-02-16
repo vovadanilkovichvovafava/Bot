@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import os
+import json
 
 from app.core.security import get_current_user
 from app.core.database import get_db
@@ -116,6 +117,63 @@ async def update_user(
     await db.refresh(user)
 
     return {"message": "User updated successfully"}
+
+
+class PredictionsSync(BaseModel):
+    predictions: List[dict]
+
+
+@router.get("/me/predictions")
+async def get_predictions(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get saved predictions for the current user"""
+    user_id = current_user.get("user_id")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    predictions = []
+    if user.predictions_data:
+        try:
+            predictions = json.loads(user.predictions_data)
+        except (json.JSONDecodeError, TypeError):
+            predictions = []
+
+    return {"predictions": predictions}
+
+
+@router.put("/me/predictions")
+async def save_predictions(
+    body: PredictionsSync,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Save/sync predictions for the current user"""
+    user_id = current_user.get("user_id")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Keep max 100 predictions
+    predictions = body.predictions[:100]
+
+    user.predictions_data = json.dumps(predictions, ensure_ascii=False)
+
+    # Update stats counters
+    verified = [p for p in predictions if p.get("result")]
+    correct = [p for p in verified if p.get("result", {}).get("isCorrect")]
+    user.total_predictions = len(predictions)
+    user.correct_predictions = len(correct)
+
+    await db.commit()
+
+    return {"synced": len(predictions)}
 
 
 class PremiumActivation(BaseModel):
