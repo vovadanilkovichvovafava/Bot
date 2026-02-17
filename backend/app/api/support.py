@@ -395,15 +395,15 @@ def build_system_prompt(lang: str, knowledge_context: str) -> str:
 
 # === Request/Response Models ===
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class SupportChatRequest(BaseModel):
     message: str
     history: Optional[List[ChatMessage]] = None
     locale: Optional[str] = None  # "en", "it", "de", "pl"
-
-
-class ChatMessage(BaseModel):
-    role: str
-    content: str
 
 
 class SupportChatResponse(BaseModel):
