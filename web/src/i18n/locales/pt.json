@@ -26,13 +26,7 @@
     "aiAnalysis": "Análise IA",
     "getAnalysis": "Obter Análise IA",
     "analyzing": "Analisando...",
-    "viewAll": "Ver Tudo",
-    "aiPromoAsk": "A IA acha que {{team}} vai ganhar — pergunte por quê?",
-    "aiPromoNoMatch": "Pergunte à IA sobre as melhores apostas de hoje!",
-    "aiPromoTry": "Testar IA",
-    "aiNudgeTitle": "Bem-vindo! Experimente nosso assistente de IA",
-    "aiNudgeDesc": "Pergunte sobre jogos, previsões e dicas — a IA vai ajudar!",
-    "aiNudgeCta": "Chat com IA"
+    "viewAll": "Ver Tudo"
   },
   "matches": {
     "today": "Hoje",
@@ -80,12 +74,8 @@
     "hasAccount": "Já tem conta?",
     "connecting": "Conectando...",
     "creatingAccount": "Criando Conta...",
-    "errPasswordLength": "A senha deve ter pelo menos 6 caracteres",
     "passwordPlaceholder": "Mín. 6 caracteres",
-    "errPasswordLowercase": "A senha deve conter pelo menos uma letra minúscula",
-    "errPasswordDigit": "A senha deve conter pelo menos um dígito",
-    "pwChars": "car.",
-    "minChars": "Mínimo de {{count}} caracteres"
+    "minChars": "Mínimo {{count}} caracteres"
   },
   "bonus": {
     "welcomeBonus": "Bônus de Boas-vindas",
@@ -113,7 +103,10 @@
     "typeMessage": "Digite sua mensagem...",
     "guestWelcome": "Oi! Sou {{name}}, gerente de suporte. Precisa de ajuda com senha ou conta?",
     "forgotMyPassword": "Esqueci minha senha",
-    "cantLogin": "Não consigo entrar"
+    "cantLogin": "Não consigo entrar",
+    "guestTitle": "Recuperação de conta",
+    "resetPassword": "Redefinir senha",
+    "changePhone": "Mudei meu número de telefone"
   },
   "errors": {
     "somethingWrong": "Algo deu errado",
@@ -194,13 +187,34 @@
   },
   "welcome": {
     "step1Title": "Registro concluído!",
-    "step1Desc": "Agora você tem acesso a previsões AI gratuitas.",
+    "step1Desc": "Agora você tem acesso a previsões AI gratuitas. Experimente!",
     "step2Title": "Quer acesso ilimitado?",
-    "step2Desc": "Registre-se na casa de apostas pelo link e faça um depósito para desbloquear PRO.",
+    "step2Desc": "Registre-se na casa de apostas parceira pelo link no app e faça um depósito para desbloquear PRO.",
     "step3Title": "Como obter PRO",
-    "step3Desc": "1. Toque no link\n2. Registre-se\n3. Faça qualquer depósito\n4. PRO ativa automaticamente!",
+    "step3Desc": "1. Toque no link no app\n2. Registre-se na casa de apostas\n3. Faça qualquer depósito\n4. PRO ativa automaticamente!",
     "goToPromo": "Obter PRO agora",
     "later": "Talvez depois",
     "next": "Próximo"
+  },
+  "bkReminder": {
+    "step1": "Registro",
+    "step2": "Depósito",
+    "later": "Mais tarde",
+    "congrats": {
+      "title": "Quase lá!",
+      "regDone": "Registro concluído",
+      "desc": "Ótimo, você se registrou! Agora faça seu primeiro depósito para desbloquear previsões PRO e todos os recursos premium.",
+      "cta": "Fazer depósito"
+    },
+    "reminder1": {
+      "title": "Não perca!",
+      "desc": "Você se registrou mas ainda não fez um depósito. Desbloqueie previsões PRO e tenha acesso a todos os recursos premium!",
+      "cta": "Depositar agora"
+    },
+    "reminder2": {
+      "title": "Última chance!",
+      "desc": "Seu acesso PRO está a apenas um passo! Faça um depósito para desbloquear previsões de IA ilimitadas e value bets.",
+      "cta": "Desbloquear PRO"
+    }
   }
 }

@@ -80,13 +80,7 @@
     "freeBetUpTo": "Free bet up to {{bonus}}",
     "betOnMatch": "Bet on any match",
     "freeBetOnMatch": "Free bet {{bonus}} on this match!",
-    "placeBet": "Place Bet",
-    "aiPromoAsk": "AI thinks {{team}} wins — ask why?",
-    "aiPromoNoMatch": "Ask AI about today's best bets!",
-    "aiPromoTry": "Try AI",
-    "aiNudgeTitle": "Welcome! Try our AI Assistant",
-    "aiNudgeDesc": "Ask anything about matches, predictions, and betting tips — AI will help!",
-    "aiNudgeCta": "Chat with AI"
+    "placeBet": "Place Bet"
   },
   "matches": {
     "today": "Today",
@@ -196,9 +190,6 @@
     "hasAccount": "Already have an account?",
     "connecting": "Connecting...",
     "creatingAccount": "Creating Account...",
-    "errPasswordLowercase": "Password must contain at least one lowercase letter",
-    "errPasswordDigit": "Password must contain at least one digit",
-    "pwChars": "chars",
     "minChars": "Minimum {{count}} characters"
   },
   "bonus": {
@@ -240,7 +231,10 @@
     "replyDefault": "Got it! 👍\n\nIf you're interested in PRO access or bookmaker registration — I can help with that.\n\nJust write:\n• \"I want PRO\" — I'll explain how to get it free\n• \"How to register\" — I'll guide you step by step\n• \"Tell me about the bonus\" — I'll share current offers\n\nOr ask any question! 💬",
     "guestWelcome": "Hi! I'm {{name}}, support manager. Need help with your password or account? I'm here to help!",
     "forgotMyPassword": "I forgot my password",
-    "cantLogin": "I can't log in"
+    "cantLogin": "I can't log in",
+    "guestTitle": "Account Recovery",
+    "resetPassword": "Reset my password",
+    "changePhone": "I changed my phone number"
   },
   "errors": {
     "somethingWrong": "Something went wrong",
@@ -333,8 +327,7 @@
     "verifyAndActivate": "We'll verify your deposit and activate PRO within 24 hours.",
     "gotIt": "Got it",
     "beginnersGuide": "Beginner's Guide",
-    "tipsToStart": "10 tips to get started",
-    "enterUsername": "Enter username"
+    "tipsToStart": "10 tips to get started"
   },
   "notifications": {
     "setupTitle": "Stay updated!",
@@ -472,15 +465,11 @@
     "moreQuestions": "More questions",
     "inputPlaceholder": "Ask about any match, league, or team...",
     "freeLimitReached": "Free Limit Reached",
-    "usedAllRequests": "You've used all {{count}} free AI requests for today",
+    "usedAllRequests": "You've used all {{count}} free AI requests",
     "unlockUnlimitedAI": "Unlock Unlimited AI",
     "depositForUnlimited": "Make a deposit at {{name}} → Unlimited AI requests",
     "depositAndUnlock": "Deposit & Unlock",
-    "maybeLater": "Maybe Later",
-    "newRequestsIn": "New requests available in {{time}}",
-    "tomorrowYouGet": "Tomorrow you'll get {{count}} free requests",
-    "dailyFreeRequest": "1 free request every day",
-    "resetsNow": "Refreshing soon"
+    "maybeLater": "Maybe Later"
   },
   "proTools": {
     "getPro": "Get PRO",
@@ -556,11 +545,7 @@
     "noAccount": "Don't have an account?",
     "registerAt": "Register at {{name}}",
     "emailPlaceholder": "example@email.com",
-    "phonePlaceholder": "+1234567890",
-    "passwordPlaceholder": "Min 8 chars (Aa + 0-9)",
-    "errPasswordLowercase": "Password must contain at least one lowercase letter",
-    "errPasswordDigit": "Password must contain at least one digit",
-    "pwChars": "chars"
+    "phonePlaceholder": "+1234567890"
   },
   "share": {
     "sharePrediction": "Share Prediction",
@@ -1172,5 +1157,26 @@
     "goToPromo": "Get PRO now",
     "later": "Maybe later",
     "next": "Next"
+  },
+  "bkReminder": {
+    "step1": "Register",
+    "step2": "Deposit",
+    "later": "Later",
+    "congrats": {
+      "title": "You're almost there!",
+      "regDone": "Registration complete",
+      "desc": "Great job registering! Now just make your first deposit to unlock PRO predictions and all premium features.",
+      "cta": "Make deposit"
+    },
+    "reminder1": {
+      "title": "Don't miss out!",
+      "desc": "You registered but haven't made a deposit yet. Unlock PRO predictions and get access to all premium features!",
+      "cta": "Deposit now"
+    },
+    "reminder2": {
+      "title": "Last chance!",
+      "desc": "Your PRO access is just one step away! Make a deposit to unlock unlimited AI predictions and value bets.",
+      "cta": "Unlock PRO"
+    }
   }
 }

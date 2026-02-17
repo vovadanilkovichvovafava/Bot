@@ -26,13 +26,7 @@
     "aiAnalysis": "Analiză AI",
     "getAnalysis": "Obține Analiză AI",
     "analyzing": "Se analizează...",
-    "viewAll": "Vezi Tot",
-    "aiPromoAsk": "AI crede că {{team}} câștigă — întreabă de ce?",
-    "aiPromoNoMatch": "Întreabă AI despre cele mai bune pariuri de azi!",
-    "aiPromoTry": "Încearcă AI",
-    "aiNudgeTitle": "Bun venit! Încearcă asistentul nostru AI",
-    "aiNudgeDesc": "Întreabă orice despre meciuri, predicții și sfaturi — AI te va ajuta!",
-    "aiNudgeCta": "Chat cu AI"
+    "viewAll": "Vezi Tot"
   },
   "matches": {
     "today": "Azi",
@@ -80,12 +74,8 @@
     "hasAccount": "Ai deja cont?",
     "connecting": "Se conectează...",
     "creatingAccount": "Se creează contul...",
-    "errPasswordLength": "Parola trebuie să aibă cel puțin 6 caractere",
     "passwordPlaceholder": "Min 6 caractere",
-    "errPasswordLowercase": "Parola trebuie să conțină cel puțin o literă mică",
-    "errPasswordDigit": "Parola trebuie să conțină cel puțin o cifră",
-    "pwChars": "car.",
-    "minChars": "Minimum {{count}} caractere"
+    "minChars": "Minim {{count}} caractere"
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bun Venit",
@@ -113,7 +103,10 @@
     "typeMessage": "Scrie mesajul...",
     "guestWelcome": "Salut! Sunt {{name}}, manager suport. Ai nevoie de ajutor cu parola sau contul?",
     "forgotMyPassword": "Am uitat parola",
-    "cantLogin": "Nu mă pot conecta"
+    "cantLogin": "Nu mă pot conecta",
+    "guestTitle": "Recuperare cont",
+    "resetPassword": "Resetează parola",
+    "changePhone": "Mi-am schimbat numărul de telefon"
   },
   "errors": {
     "somethingWrong": "Ceva nu a mers bine",
@@ -194,13 +187,34 @@
   },
   "welcome": {
     "step1Title": "Înregistrare finalizată!",
-    "step1Desc": "Acum ai acces la predicții AI gratuite.",
+    "step1Desc": "Acum ai acces la predicții AI gratuite. Încearcă-le!",
     "step2Title": "Vrei acces nelimitat?",
-    "step2Desc": "Înregistrează-te la casa de pariuri prin link și depune pentru PRO.",
+    "step2Desc": "Înregistrează-te la casa de pariuri parteneră prin linkul din app și depune pentru a debloca PRO.",
     "step3Title": "Cum obții PRO",
-    "step3Desc": "1. Apasă pe link\n2. Înregistrează-te\n3. Fă orice depunere\n4. PRO se activează automat!",
-    "goToPromo": "Obține PRO",
+    "step3Desc": "1. Apasă pe link în app\n2. Înregistrează-te la casa de pariuri\n3. Fă orice depunere\n4. PRO se activează automat!",
+    "goToPromo": "Obține PRO acum",
     "later": "Poate mai târziu",
     "next": "Următorul"
+  },
+  "bkReminder": {
+    "step1": "Înregistrare",
+    "step2": "Depozit",
+    "later": "Mai târziu",
+    "congrats": {
+      "title": "Aproape gata!",
+      "regDone": "Înregistrare finalizată",
+      "desc": "Excelent, te-ai înregistrat! Acum fă primul depozit pentru a debloca predicțiile PRO și toate funcțiile premium.",
+      "cta": "Fă un depozit"
+    },
+    "reminder1": {
+      "title": "Nu rata!",
+      "desc": "Te-ai înregistrat dar încă nu ai făcut un depozit. Deblochează predicțiile PRO și obține acces la toate funcțiile premium!",
+      "cta": "Depune acum"
+    },
+    "reminder2": {
+      "title": "Ultima șansă!",
+      "desc": "Accesul tău PRO este la un singur pas! Fă un depozit pentru a debloca predicții AI nelimitate și value bets.",
+      "cta": "Deblochează PRO"
+    }
   }
 }

@@ -80,13 +80,7 @@
     "freeBetUpTo": "Freiwette bis zu {{bonus}}",
     "betOnMatch": "Wette auf jedes Spiel",
     "freeBetOnMatch": "Freiwette {{bonus}} auf dieses Spiel!",
-    "placeBet": "Wette platzieren",
-    "aiPromoAsk": "KI denkt {{team}} gewinnt — frag warum?",
-    "aiPromoNoMatch": "Frag die KI nach den besten Wetten heute!",
-    "aiPromoTry": "KI testen",
-    "aiNudgeTitle": "Willkommen! Teste unseren KI-Assistenten",
-    "aiNudgeDesc": "Frag alles über Spiele, Vorhersagen und Wetttipps — die KI hilft dir!",
-    "aiNudgeCta": "Mit KI chatten"
+    "placeBet": "Wette platzieren"
   },
   "matches": {
     "today": "Heute",
@@ -168,7 +162,7 @@
     "errFillFields": "Bitte fülle alle Pflichtfelder aus",
     "errInvalidPhone": "Bitte gib eine gültige Telefonnummer ein",
     "errPasswordsMismatch": "Passwörter stimmen nicht überein",
-    "errPasswordLength": "Passwort muss mindestens 6 Zeichen lang sein",
+    "errPasswordLength": "Das Passwort muss mindestens 6 Zeichen lang sein",
     "errPasswordUppercase": "Das Passwort muss mindestens einen Großbuchstaben enthalten",
     "errRegistration": "Registrierung fehlgeschlagen",
     "errEnterEmail": "Bitte gib deine E-Mail ein",
@@ -196,9 +190,6 @@
     "hasAccount": "Bereits ein Konto?",
     "connecting": "Verbinden...",
     "creatingAccount": "Konto wird erstellt...",
-    "errPasswordLowercase": "Passwort muss mindestens einen Kleinbuchstaben enthalten",
-    "errPasswordDigit": "Passwort muss mindestens eine Ziffer enthalten",
-    "pwChars": "Zeichen",
     "minChars": "Mindestens {{count}} Zeichen"
   },
   "bonus": {
@@ -240,7 +231,10 @@
     "replyDefault": "Verstanden! 👍\n\nWenn dich PRO-Zugang oder die Registrierung beim Buchmacher interessiert — ich kann dir dabei helfen.\n\nSchreib einfach:\n• „Ich will PRO“ — ich erkläre dir, wie du es gratis bekommst\n• „Wie registriere ich mich“ — ich führe dich Schritt für Schritt\n• „Erzähl mir vom Bonus“ — ich zeige dir die aktuellen Angebote\n\nOder stell einfach eine Frage! 💬",
     "guestWelcome": "Hallo! Ich bin {{name}}, Support-Manager. Brauchen Sie Hilfe mit Passwort oder Account?",
     "forgotMyPassword": "Passwort vergessen",
-    "cantLogin": "Ich kann mich nicht anmelden"
+    "cantLogin": "Ich kann mich nicht anmelden",
+    "guestTitle": "Kontowiederherstellung",
+    "resetPassword": "Passwort zurücksetzen",
+    "changePhone": "Ich habe meine Telefonnummer geändert"
   },
   "errors": {
     "somethingWrong": "Etwas ist schiefgelaufen",
@@ -333,8 +327,7 @@
     "verifyAndActivate": "Wir überprüfen deine Einzahlung und aktivieren PRO innerhalb von 24 Stunden.",
     "gotIt": "Verstanden",
     "beginnersGuide": "Anfänger-Leitfaden",
-    "tipsToStart": "10 Tipps für den Einstieg",
-    "enterUsername": "Benutzernamen eingeben"
+    "tipsToStart": "10 Tipps für den Einstieg"
   },
   "notifications": {
     "setupTitle": "Bleib auf dem Laufenden!",
@@ -462,16 +455,12 @@
     "showLess": "Weniger anzeigen",
     "moreQuestions": "Mehr Fragen",
     "inputPlaceholder": "Frage zu jedem Spiel, Liga oder Team...",
-    "freeLimitReached": "Tageslimit erreicht",
-    "usedAllRequests": "Du hast alle {{count}} kostenlosen AI-Anfragen für heute verwendet",
+    "freeLimitReached": "Kostenloses Limit erreicht",
+    "usedAllRequests": "Du hast alle {{count}} kostenlosen AI-Anfragen verwendet",
     "unlockUnlimitedAI": "Unbegrenztes AI freischalten",
     "depositForUnlimited": "Einzahlung bei {{name}} → Unbegrenzte AI-Anfragen",
     "depositAndUnlock": "Einzahlen & Freischalten",
-    "maybeLater": "Vielleicht später",
-    "newRequestsIn": "Neue Anfragen verfügbar in {{time}}",
-    "tomorrowYouGet": "Morgen erhältst du {{count}} kostenlose Anfragen",
-    "dailyFreeRequest": "1 kostenlose Anfrage jeden Tag",
-    "resetsNow": "Bald"
+    "maybeLater": "Vielleicht später"
   },
   "proTools": {
     "getPro": "PRO holen",
@@ -526,7 +515,7 @@
     "captchaRequired": "Captcha-Verifizierung erforderlich. Bitte direkt registrieren.",
     "captchaRegister": "Captcha erforderlich. Bitte auf der Buchmacher-Website registrieren.",
     "errEmailPhone": "Bitte E-Mail oder Telefon eingeben",
-    "errPasswordLength": "Passwort muss mindestens 6 Zeichen lang sein",
+    "errPasswordLength": "Passwort muss mindestens 6 Zeichen haben",
     "connectAccount": "Konto verbinden",
     "createAccount": "Konto erstellen",
     "loginDesc": "Zugangsdaten eingeben",
@@ -547,11 +536,7 @@
     "noAccount": "Kein Konto?",
     "registerAt": "Bei {{name}} registrieren",
     "emailPlaceholder": "beispiel@email.com",
-    "phonePlaceholder": "+1234567890",
-    "passwordPlaceholder": "Min 8 Zeichen (Aa + 0-9)",
-    "errPasswordLowercase": "Passwort muss mindestens einen Kleinbuchstaben enthalten",
-    "errPasswordDigit": "Passwort muss mindestens eine Ziffer enthalten",
-    "pwChars": "Zeichen"
+    "phonePlaceholder": "+1234567890"
   },
   "share": {
     "sharePrediction": "Vorhersage teilen",
@@ -1155,13 +1140,34 @@
   },
   "welcome": {
     "step1Title": "Registrierung abgeschlossen!",
-    "step1Desc": "Du hast jetzt Zugang zu kostenlosen KI-Vorhersagen.",
+    "step1Desc": "Du hast jetzt Zugang zu kostenlosen KI-Vorhersagen. Probier sie aus!",
     "step2Title": "Unbegrenzten Zugang?",
-    "step2Desc": "Registriere dich beim Buchmacher über den Link und zahle ein, um PRO freizuschalten.",
+    "step2Desc": "Registriere dich beim Buchmacher über den Link in der App und zahle ein, um PRO freizuschalten.",
     "step3Title": "So bekommst du PRO",
-    "step3Desc": "1. Link in der App antippen\n2. Beim Buchmacher registrieren\n3. Einzahlung tätigen\n4. PRO wird automatisch aktiviert!",
+    "step3Desc": "1. Tippe auf den Link in der App\n2. Registriere dich beim Buchmacher\n3. Tätige eine Einzahlung\n4. PRO wird automatisch aktiviert!",
     "goToPromo": "PRO jetzt holen",
     "later": "Vielleicht später",
     "next": "Weiter"
+  },
+  "bkReminder": {
+    "step1": "Registrierung",
+    "step2": "Einzahlung",
+    "later": "Später",
+    "congrats": {
+      "title": "Fast geschafft!",
+      "regDone": "Registrierung abgeschlossen",
+      "desc": "Super, du hast dich registriert! Mach jetzt deine erste Einzahlung, um PRO-Prognosen und alle Premium-Funktionen freizuschalten.",
+      "cta": "Einzahlung machen"
+    },
+    "reminder1": {
+      "title": "Nicht verpassen!",
+      "desc": "Du hast dich registriert, aber noch keine Einzahlung gemacht. Schalte PRO-Prognosen frei und erhalte Zugang zu allen Premium-Funktionen!",
+      "cta": "Jetzt einzahlen"
+    },
+    "reminder2": {
+      "title": "Letzte Chance!",
+      "desc": "Dein PRO-Zugang ist nur einen Schritt entfernt! Mach eine Einzahlung, um unbegrenzte KI-Prognosen und Value Bets freizuschalten.",
+      "cta": "PRO freischalten"
+    }
   }
 }

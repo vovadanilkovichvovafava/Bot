@@ -231,7 +231,10 @@
     "replyDefault": "¡Entendido! 👍\n\nSi te interesa el acceso PRO o el registro en la casa de apuestas — puedo ayudarte con eso.\n\nSolo escribe:\n• \"Quiero PRO\" — te explico cómo obtenerlo gratis\n• \"Cómo registrarme\" — te guío paso a paso\n• \"Cuéntame del bono\" — te comparto las ofertas actuales\n\n¡O haz cualquier pregunta! 💬",
     "guestWelcome": "Hola! Soy {{name}}, gerente de soporte. Necesitas ayuda con tu contraseña o cuenta?",
     "forgotMyPassword": "Olvidé mi contraseña",
-    "cantLogin": "No puedo iniciar sesión"
+    "cantLogin": "No puedo iniciar sesión",
+    "guestTitle": "Recuperación de cuenta",
+    "resetPassword": "Restablecer contraseña",
+    "changePhone": "Cambié mi número de teléfono"
   },
   "errors": {
     "somethingWrong": "Algo salió mal",
@@ -324,8 +327,7 @@
     "verifyAndActivate": "Verificaremos tu depósito y activaremos PRO en 24 horas.",
     "gotIt": "Entendido",
     "beginnersGuide": "Guía para Principiantes",
-    "tipsToStart": "10 consejos para empezar",
-    "enterUsername": "Ingresa nombre de usuario"
+    "tipsToStart": "10 consejos para empezar"
   },
   "notifications": {
     "setupTitle": "¡Mantente al día!",
@@ -1147,13 +1149,34 @@
   },
   "welcome": {
     "step1Title": "Registro completado!",
-    "step1Desc": "Ahora tienes acceso a predicciones AI gratis.",
+    "step1Desc": "Ahora tienes acceso a predicciones AI gratis. Pruébalas!",
     "step2Title": "Quieres acceso ilimitado?",
-    "step2Desc": "Regístrate en la casa de apuestas a través del enlace y haz un depósito para desbloquear PRO.",
+    "step2Desc": "Regístrate en la casa de apuestas a través del enlace en la app y haz un depósito para desbloquear PRO.",
     "step3Title": "Cómo obtener PRO",
-    "step3Desc": "1. Toca el enlace\n2. Regístrate\n3. Haz cualquier depósito\n4. PRO se activa automáticamente!",
+    "step3Desc": "1. Toca el enlace en la app\n2. Regístrate en la casa de apuestas\n3. Haz cualquier depósito\n4. PRO se activa automáticamente!",
     "goToPromo": "Obtener PRO ahora",
     "later": "Quizás después",
     "next": "Siguiente"
+  },
+  "bkReminder": {
+    "step1": "Registro",
+    "step2": "Depósito",
+    "later": "Más tarde",
+    "congrats": {
+      "title": "¡Casi listo!",
+      "regDone": "Registro completado",
+      "desc": "¡Genial, te has registrado! Ahora haz tu primer depósito para desbloquear pronósticos PRO y todas las funciones premium.",
+      "cta": "Hacer depósito"
+    },
+    "reminder1": {
+      "title": "¡No te lo pierdas!",
+      "desc": "Te registraste pero aún no has hecho un depósito. ¡Desbloquea pronósticos PRO y accede a todas las funciones premium!",
+      "cta": "Depositar ahora"
+    },
+    "reminder2": {
+      "title": "¡Última oportunidad!",
+      "desc": "¡Tu acceso PRO está a un solo paso! Haz un depósito para desbloquear pronósticos IA ilimitados y value bets.",
+      "cta": "Desbloquear PRO"
+    }
   }
 }

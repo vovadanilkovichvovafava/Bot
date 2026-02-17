@@ -80,13 +80,7 @@
     "freeBetUpTo": "Freebet do {{bonus}}",
     "betOnMatch": "Obstawiaj dowolny mecz",
     "freeBetOnMatch": "Freebet {{bonus}} na ten mecz!",
-    "placeBet": "Postaw Zakład",
-    "aiPromoAsk": "AI uważa że {{team}} wygra — zapytaj dlaczego?",
-    "aiPromoNoMatch": "Zapytaj AI o najlepsze zakłady na dziś!",
-    "aiPromoTry": "Wypróbuj AI",
-    "aiNudgeTitle": "Witaj! Wypróbuj naszego asystenta AI",
-    "aiNudgeDesc": "Pytaj o mecze, prognozy i porady — AI pomoże!",
-    "aiNudgeCta": "Czat z AI"
+    "placeBet": "Postaw Zakład"
   },
   "matches": {
     "today": "Dziś",
@@ -196,9 +190,6 @@
     "hasAccount": "Masz już konto?",
     "connecting": "Łączenie...",
     "creatingAccount": "Tworzenie konta...",
-    "errPasswordLowercase": "Hasło musi zawierać co najmniej jedną małą literę",
-    "errPasswordDigit": "Hasło musi zawierać co najmniej jedną cyfrę",
-    "pwChars": "zn.",
     "minChars": "Minimum {{count}} znaków"
   },
   "bonus": {
@@ -240,7 +231,10 @@
     "replyDefault": "Rozumiem! 👍\n\nJeśli interesuje Cię dostęp PRO lub rejestracja u bukmachera — mogę w tym pomóc.\n\nPo prostu napisz:\n• \"Chcę PRO\" — wyjaśnię, jak go dostać za darmo\n• \"Jak się zarejestrować\" — poprowadzę Cię krok po kroku\n• \"Opowiedz o bonusie\" — pokażę aktualne oferty\n\nAlbo zadaj dowolne pytanie! 💬",
     "guestWelcome": "Cześć! Jestem {{name}}, manager wsparcia. Potrzebujesz pomocy z hasłem lub kontem?",
     "forgotMyPassword": "Zapomniałem hasła",
-    "cantLogin": "Nie mogę się zalogować"
+    "cantLogin": "Nie mogę się zalogować",
+    "guestTitle": "Odzyskiwanie konta",
+    "resetPassword": "Zresetuj hasło",
+    "changePhone": "Zmieniłem numer telefonu"
   },
   "errors": {
     "somethingWrong": "Coś poszło nie tak",
@@ -333,8 +327,7 @@
     "verifyAndActivate": "Zweryfikujemy Twój depozyt i aktywujemy PRO w ciągu 24 godzin.",
     "gotIt": "Rozumiem",
     "beginnersGuide": "Poradnik dla początkujących",
-    "tipsToStart": "10 wskazówek na start",
-    "enterUsername": "Wprowadź nazwę użytkownika"
+    "tipsToStart": "10 wskazówek na start"
   },
   "notifications": {
     "setupTitle": "Bądź na bieżąco!",
@@ -462,16 +455,12 @@
     "showLess": "Pokaż mniej",
     "moreQuestions": "Więcej pytań",
     "inputPlaceholder": "Zapytaj o dowolny mecz, ligę lub drużynę...",
-    "freeLimitReached": "Dzienny limit wyczerpany",
-    "usedAllRequests": "Wykorzystałeś wszystkie {{count}} darmowe zapytania AI na dziś",
+    "freeLimitReached": "Darmowy limit wyczerpany",
+    "usedAllRequests": "Wykorzystałeś wszystkie {{count}} darmowe zapytania AI",
     "unlockUnlimitedAI": "Odblokuj nielimitowane AI",
     "depositForUnlimited": "Wpłać depozyt w {{name}} → Nielimitowane zapytania AI",
     "depositAndUnlock": "Wpłać i odblokuj",
-    "maybeLater": "Może później",
-    "newRequestsIn": "Nowe zapytania dostępne za {{time}}",
-    "tomorrowYouGet": "Jutro otrzymasz {{count}} darmowych zapytań",
-    "dailyFreeRequest": "1 darmowe zapytanie każdego dnia",
-    "resetsNow": "Wkrótce"
+    "maybeLater": "Może później"
   },
   "proTools": {
     "getPro": "Zdobądź PRO",
@@ -526,7 +515,7 @@
     "captchaRequired": "Wymagana weryfikacja captcha. Zarejestruj się bezpośrednio.",
     "captchaRegister": "Wymagana captcha. Zarejestruj się na stronie bukmachera.",
     "errEmailPhone": "Wprowadź email lub telefon",
-    "errPasswordLength": "Hasło musi mieć co najmniej 6 znaków",
+    "errPasswordLength": "Hasło musi mieć minimum 6 znaków",
     "connectAccount": "Podłącz Konto",
     "createAccount": "Utwórz Konto",
     "loginDesc": "Wprowadź dane logowania",
@@ -547,11 +536,7 @@
     "noAccount": "Nie masz konta?",
     "registerAt": "Zarejestruj się w {{name}}",
     "emailPlaceholder": "przyklad@email.com",
-    "phonePlaceholder": "+1234567890",
-    "passwordPlaceholder": "Min 8 zn. (Aa + 0-9)",
-    "errPasswordLowercase": "Hasło musi zawierać co najmniej jedną małą literę",
-    "errPasswordDigit": "Hasło musi zawierać co najmniej jedną cyfrę",
-    "pwChars": "zn."
+    "phonePlaceholder": "+1234567890"
   },
   "share": {
     "sharePrediction": "Udostępnij Prognozę",
@@ -1155,13 +1140,34 @@
   },
   "welcome": {
     "step1Title": "Rejestracja zakończona!",
-    "step1Desc": "Masz teraz dostęp do darmowych prognoz AI.",
+    "step1Desc": "Masz teraz dostęp do darmowych prognoz AI. Wypróbuj!",
     "step2Title": "Chcesz nielimitowany dostęp?",
-    "step2Desc": "Zarejestruj się u bukmachera przez link i wpłać depozyt, aby odblokować PRO.",
+    "step2Desc": "Zarejestruj się u naszego partnera bukmacherskiego przez link w aplikacji i wpłać depozyt, aby odblokować PRO.",
     "step3Title": "Jak zdobyć PRO",
     "step3Desc": "1. Kliknij link w aplikacji\n2. Zarejestruj się u bukmachera\n3. Wpłać dowolny depozyt\n4. PRO aktywuje się automatycznie!",
     "goToPromo": "Zdobądź PRO",
     "later": "Może później",
     "next": "Dalej"
+  },
+  "bkReminder": {
+    "step1": "Rejestracja",
+    "step2": "Depozyt",
+    "later": "Później",
+    "congrats": {
+      "title": "Prawie gotowe!",
+      "regDone": "Rejestracja zakończona",
+      "desc": "Świetnie, zarejestrowałeś się! Teraz wpłać pierwszy depozyt, aby odblokować prognozy PRO i wszystkie funkcje premium.",
+      "cta": "Wpłać depozyt"
+    },
+    "reminder1": {
+      "title": "Nie przegap!",
+      "desc": "Zarejestrowałeś się, ale jeszcze nie wpłaciłeś depozytu. Odblokuj prognozy PRO i uzyskaj dostęp do wszystkich funkcji premium!",
+      "cta": "Wpłać teraz"
+    },
+    "reminder2": {
+      "title": "Ostatnia szansa!",
+      "desc": "Dostęp PRO jest o jeden krok! Wpłać depozyt, aby odblokować nieograniczone prognozy AI i value bets.",
+      "cta": "Odblokuj PRO"
+    }
   }
 }

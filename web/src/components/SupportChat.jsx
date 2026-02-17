@@ -47,10 +47,13 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   // Welcome message on first open
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      const welcomeText = guest
+        ? t('support.guestWelcome', { name: agentName, defaultValue: `Hi! I'm ${agentName}, support manager. Need help with your password or account? I'm here to help!` })
+        : t('support.welcomeMessage', { name: agentName });
       setMessages([{
         id: 1,
         from: 'manager',
-        text: t('support.welcomeMessage', { name: agentName }),
+        text: welcomeText,
         time: new Date(),
       }]);
     }
@@ -242,15 +245,25 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         style={{ maxHeight: viewportHeight ? `${viewportHeight * 0.92}px` : '90vh' }}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+        <div className={`flex items-center gap-3 px-5 py-4 border-b border-gray-100 ${guest ? 'bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-3xl' : ''}`}>
           <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
-              {agentName[0]}
-            </div>
+            {guest ? (
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
+                </svg>
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                {agentName[0]}
+              </div>
+            )}
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"/>
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-gray-900">{agentName}</h3>
+            <h3 className="font-bold text-gray-900">
+              {guest ? t('support.guestTitle', { defaultValue: 'Account Recovery' }) : agentName}
+            </h3>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full"/>
               {t('support.online')}
@@ -280,8 +293,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                 </div>
               </div>
 
-              {/* Simple promo link under each manager response (not for PRO) */}
-              {!isPro && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
+              {/* Simple promo link under each manager response (not for PRO or guest) */}
+              {!guest && !isPro && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
                 <div className="flex justify-start mt-1">
                   <button
                     onClick={() => navigate('/promo?banner=support_promo_link')}
@@ -342,30 +355,62 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
           <div ref={messagesEndRef}/>
         </div>
 
-        {/* Quick Actions */}
-        <div className="px-5 py-2 border-t border-gray-100">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <button
-              onClick={openBookmakerLink}
-              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
-            >
-              <span>🎁</span>
-              {t('support.getBonus', { bonus: advertiser.bonusAmount })}
-            </button>
-            <button
-              onClick={() => setInput(t('support.wantPro'))}
-              className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-            >
-              {t('support.wantPro')}
-            </button>
-            <button
-              onClick={() => setInput(t('support.howToStart'))}
-              className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-            >
-              {t('support.howToStart')}
-            </button>
+        {/* Quick Actions — different for guest vs authenticated */}
+        {!guest && (
+          <div className="px-5 py-2 border-t border-gray-100">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button
+                onClick={openBookmakerLink}
+                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
+              >
+                <span>🎁</span>
+                {t('support.getBonus', { bonus: advertiser.bonusAmount })}
+              </button>
+              <button
+                onClick={() => setInput(t('support.wantPro'))}
+                className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+              >
+                {t('support.wantPro')}
+              </button>
+              <button
+                onClick={() => setInput(t('support.howToStart'))}
+                className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+              >
+                {t('support.howToStart')}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+        {guest && (
+          <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
+            <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+              <button
+                onClick={() => setInput(t('support.forgotMyPassword', { defaultValue: 'I forgot my password' }))}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-white border border-amber-200 text-gray-700 text-[11px] font-medium rounded-full shadow-sm"
+              >
+                {t('support.forgotMyPassword', { defaultValue: 'Forgot password' })}
+              </button>
+              <button
+                onClick={() => setInput(t('support.cantLogin', { defaultValue: "I can't log in" }))}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-white border border-amber-200 text-gray-700 text-[11px] font-medium rounded-full shadow-sm"
+              >
+                {t('support.cantLogin', { defaultValue: "Can't log in" })}
+              </button>
+              <button
+                onClick={() => setInput(t('support.resetPassword', { defaultValue: 'Reset my password' }))}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-white border border-amber-200 text-gray-700 text-[11px] font-medium rounded-full shadow-sm"
+              >
+                {t('support.resetPassword', { defaultValue: 'Reset password' })}
+              </button>
+              <button
+                onClick={() => setInput(t('support.changePhone', { defaultValue: 'I changed my phone number' }))}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-white border border-amber-200 text-gray-700 text-[11px] font-medium rounded-full shadow-sm"
+              >
+                {t('support.changePhone', { defaultValue: 'Changed number' })}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Input */}
         <div className="px-5 pt-3 pb-3 border-t border-gray-100 bg-white">

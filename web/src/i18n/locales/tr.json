@@ -26,13 +26,7 @@
     "aiAnalysis": "AI Analizi",
     "getAnalysis": "AI Analizi Al",
     "analyzing": "Analiz ediliyor...",
-    "viewAll": "Tümünü Gör",
-    "aiPromoAsk": "AI {{team}} kazanacak diyor — nedenini sor?",
-    "aiPromoNoMatch": "AI'ya bugünün en iyi bahislerini sor!",
-    "aiPromoTry": "AI'yı dene",
-    "aiNudgeTitle": "Hoş geldin! AI asistanımızı dene",
-    "aiNudgeDesc": "Maçlar, tahminler ve bahis ipuçları hakkında her şeyi sor — AI yardım edecek!",
-    "aiNudgeCta": "AI ile sohbet"
+    "viewAll": "Tümünü Gör"
   },
   "matches": {
     "today": "Bugün",
@@ -80,12 +74,8 @@
     "hasAccount": "Zaten hesabınız var mı?",
     "connecting": "Bağlanıyor...",
     "creatingAccount": "Hesap oluşturuluyor...",
-    "errPasswordLength": "Şifre en az 6 karakter olmalıdır",
     "passwordPlaceholder": "Min 6 karakter",
-    "errPasswordLowercase": "Şifre en az bir küçük harf içermelidir",
-    "errPasswordDigit": "Şifre en az bir rakam içermelidir",
-    "pwChars": "kar.",
-    "minChars": "En az {{count}} karakter"
+    "minChars": "Minimum {{count}} karakter"
   },
   "bonus": {
     "welcomeBonus": "Hoş Geldin Bonusu",
@@ -113,7 +103,10 @@
     "typeMessage": "Mesajınızı yazın...",
     "guestWelcome": "Merhaba! Ben {{name}}, destek yöneticisi. Şifre veya hesap konusunda yardım mı gerekiyor?",
     "forgotMyPassword": "Şifremi unuttum",
-    "cantLogin": "Giriş yapamıyorum"
+    "cantLogin": "Giriş yapamıyorum",
+    "guestTitle": "Hesap kurtarma",
+    "resetPassword": "Şifremi sıfırla",
+    "changePhone": "Telefon numaramı değiştirdim"
   },
   "errors": {
     "somethingWrong": "Bir şeyler yanlış gitti",
@@ -194,13 +187,34 @@
   },
   "welcome": {
     "step1Title": "Kayıt tamamlandı!",
-    "step1Desc": "Artık ücretsiz AI tahminlerine erişiminiz var.",
+    "step1Desc": "Artık ücretsiz AI tahminlerine erişiminiz var. Deneyin!",
     "step2Title": "Sınırsız erişim?",
-    "step2Desc": "Linke tıklayıp bahis şirketine kaydolun ve PRO açmak için yatırım yapın.",
+    "step2Desc": "Uygulamadaki link üzerinden bahis şirketimize kaydolun ve PRO açmak için yatırım yapın.",
     "step3Title": "PRO nasıl alınır",
-    "step3Desc": "1. Linke dokunun\n2. Kaydolun\n3. Herhangi bir yatırım yapın\n4. PRO otomatik aktif!",
+    "step3Desc": "1. Uygulamadaki linke dokunun\n2. Bahis şirketine kaydolun\n3. Herhangi bir yatırım yapın\n4. PRO otomatik aktif olur!",
     "goToPromo": "PRO al",
     "later": "Belki sonra",
     "next": "İleri"
+  },
+  "bkReminder": {
+    "step1": "Kayıt",
+    "step2": "Depozito",
+    "later": "Daha sonra",
+    "congrats": {
+      "title": "Neredeyse tamam!",
+      "regDone": "Kayıt tamamlandı",
+      "desc": "Harika, kayıt oldun! Şimdi PRO tahminleri ve tüm premium özellikleri açmak için ilk depozitoyu yap.",
+      "cta": "Depozito yap"
+    },
+    "reminder1": {
+      "title": "Kaçırma!",
+      "desc": "Kayıt oldun ama henüz depozito yapmadın. PRO tahminleri aç ve tüm premium özelliklere eriş!",
+      "cta": "Şimdi yatır"
+    },
+    "reminder2": {
+      "title": "Son şans!",
+      "desc": "PRO erişimin sadece bir adım uzakta! Sınırsız AI tahminleri ve value bets'i açmak için depozito yap.",
+      "cta": "PRO'yu aç"
+    }
   }
 }

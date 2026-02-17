@@ -30,9 +30,13 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
   const isLast = step === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl mx-6 max-w-sm w-full overflow-hidden shadow-2xl">
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl sm:mx-6 max-w-sm w-full overflow-hidden shadow-2xl animate-slideUp pb-safe">
+        {/* Drag handle (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
         {/* Progress dots */}
         <div className="flex justify-center gap-2 pt-5">
           {steps.map((_, i) => (

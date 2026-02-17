@@ -80,13 +80,7 @@
     "freeBetUpTo": "Scommessa gratuita fino a {{bonus}}",
     "betOnMatch": "Scommetti su qualsiasi partita",
     "freeBetOnMatch": "Scommessa gratuita {{bonus}} su questa partita!",
-    "placeBet": "Piazza Scommessa",
-    "aiPromoAsk": "L'AI pensa che {{team}} vinca — chiedi perché?",
-    "aiPromoNoMatch": "Chiedi all'AI le migliori scommesse di oggi!",
-    "aiPromoTry": "Prova AI",
-    "aiNudgeTitle": "Benvenuto! Prova il nostro Assistente AI",
-    "aiNudgeDesc": "Chiedi qualsiasi cosa su partite, pronostici e consigli — l'AI ti aiuterà!",
-    "aiNudgeCta": "Chatta con l'AI"
+    "placeBet": "Piazza Scommessa"
   },
   "matches": {
     "today": "Oggi",
@@ -168,7 +162,7 @@
     "errFillFields": "Compila tutti i campi obbligatori",
     "errInvalidPhone": "Inserisci un numero di telefono valido",
     "errPasswordsMismatch": "Le password non corrispondono",
-    "errPasswordLength": "La password deve avere almeno 6 caratteri",
+    "errPasswordLength": "La password deve contenere almeno 6 caratteri",
     "errPasswordUppercase": "La password deve contenere almeno una lettera maiuscola",
     "errRegistration": "Registrazione fallita",
     "errEnterEmail": "Inserisci la tua email",
@@ -196,9 +190,6 @@
     "hasAccount": "Hai già un account?",
     "connecting": "Connessione...",
     "creatingAccount": "Creazione account...",
-    "errPasswordLowercase": "La password deve contenere almeno una lettera minuscola",
-    "errPasswordDigit": "La password deve contenere almeno un numero",
-    "pwChars": "car.",
     "minChars": "Minimo {{count}} caratteri"
   },
   "bonus": {
@@ -240,7 +231,10 @@
     "replyDefault": "Capito! 👍\n\nSe ti interessa l'accesso PRO o la registrazione al bookmaker — posso aiutarti.\n\nScrivi semplicemente:\n• \"Voglio PRO\" — ti spiego come ottenerlo gratis\n• \"Come mi registro\" — ti guido passo per passo\n• \"Parlami del bonus\" — ti mostro le offerte attuali\n\nO fai qualsiasi domanda! 💬",
     "guestWelcome": "Ciao! Sono {{name}}, manager del supporto. Hai bisogno di aiuto con la password o l'account?",
     "forgotMyPassword": "Ho dimenticato la password",
-    "cantLogin": "Non riesco ad accedere"
+    "cantLogin": "Non riesco ad accedere",
+    "guestTitle": "Recupero account",
+    "resetPassword": "Reimposta la password",
+    "changePhone": "Ho cambiato numero di telefono"
   },
   "errors": {
     "somethingWrong": "Qualcosa è andato storto",
@@ -333,8 +327,7 @@
     "verifyAndActivate": "Verificheremo il tuo deposito e attiveremo PRO entro 24 ore.",
     "gotIt": "Capito",
     "beginnersGuide": "Guida per principianti",
-    "tipsToStart": "10 consigli per iniziare",
-    "enterUsername": "Inserisci nome utente"
+    "tipsToStart": "10 consigli per iniziare"
   },
   "notifications": {
     "setupTitle": "Rimani aggiornato!",
@@ -475,16 +468,12 @@
     "showLess": "Mostra meno",
     "moreQuestions": "Altre domande",
     "inputPlaceholder": "Chiedi di qualsiasi partita, campionato o squadra...",
-    "freeLimitReached": "Limite giornaliero raggiunto",
-    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite di oggi",
+    "freeLimitReached": "Limite gratuito raggiunto",
+    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite",
     "unlockUnlimitedAI": "Sblocca AI illimitato",
     "depositForUnlimited": "Deposita su {{name}} → Richieste AI illimitate",
     "depositAndUnlock": "Deposita e sblocca",
-    "maybeLater": "Più tardi",
-    "newRequestsIn": "Nuove richieste disponibili tra {{time}}",
-    "tomorrowYouGet": "Domani avrai {{count}} richieste gratuite",
-    "dailyFreeRequest": "1 richiesta gratuita ogni giorno",
-    "resetsNow": "In aggiornamento"
+    "maybeLater": "Più tardi"
   },
   "proTools": {
     "getPro": "Ottieni PRO",
@@ -539,7 +528,7 @@
     "captchaRequired": "Verifica captcha richiesta. Registrati direttamente.",
     "captchaRegister": "Captcha richiesto. Registrati sul sito del bookmaker.",
     "errEmailPhone": "Inserisci email o telefono",
-    "errPasswordLength": "La password deve avere almeno 6 caratteri",
+    "errPasswordLength": "La password deve essere di almeno 6 caratteri",
     "connectAccount": "Collega Conto",
     "createAccount": "Crea Conto",
     "loginDesc": "Inserisci le credenziali per collegarti",
@@ -560,11 +549,7 @@
     "noAccount": "Non hai un conto?",
     "registerAt": "Registrati su {{name}}",
     "emailPlaceholder": "esempio@email.com",
-    "phonePlaceholder": "+1234567890",
-    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
-    "errPasswordLowercase": "La password deve contenere almeno una lettera minuscola",
-    "errPasswordDigit": "La password deve contenere almeno un numero",
-    "pwChars": "car."
+    "phonePlaceholder": "+1234567890"
   },
   "share": {
     "sharePrediction": "Condividi Pronostico",
@@ -1170,11 +1155,32 @@
     "step1Title": "Registrazione completata!",
     "step1Desc": "Ora hai accesso alle previsioni AI gratuite. Prova!",
     "step2Title": "Vuoi accesso illimitato?",
-    "step2Desc": "Registrati dal bookmaker partner tramite il link e fai un deposito per sbloccare PRO.",
+    "step2Desc": "Registrati dal bookmaker partner tramite il link nell app e fai un deposito per sbloccare le funzioni PRO.",
     "step3Title": "Come ottenere PRO",
-    "step3Desc": "1. Tocca il link\n2. Registrati dal bookmaker\n3. Fai un deposito\n4. PRO si attiva automaticamente!",
+    "step3Desc": "1. Tocca il link nell app\n2. Registrati dal bookmaker\n3. Fai un deposito qualsiasi\n4. PRO si attiva automaticamente!",
     "goToPromo": "Ottieni PRO ora",
     "later": "Forse dopo",
     "next": "Avanti"
+  },
+  "bkReminder": {
+    "step1": "Registrazione",
+    "step2": "Deposito",
+    "later": "Più tardi",
+    "congrats": {
+      "title": "Ci sei quasi!",
+      "regDone": "Registrazione completata",
+      "desc": "Ottimo, ti sei registrato! Ora fai il tuo primo deposito per sbloccare le previsioni PRO e tutte le funzionalità premium.",
+      "cta": "Fai un deposito"
+    },
+    "reminder1": {
+      "title": "Non perdere l'occasione!",
+      "desc": "Ti sei registrato ma non hai ancora fatto un deposito. Sblocca le previsioni PRO e accedi a tutte le funzionalità premium!",
+      "cta": "Deposita ora"
+    },
+    "reminder2": {
+      "title": "Ultima possibilità!",
+      "desc": "Il tuo accesso PRO è a un solo passo! Fai un deposito per sbloccare previsioni AI illimitate e value bets.",
+      "cta": "Sblocca PRO"
+    }
   }
 }

@@ -231,7 +231,10 @@
     "replyDefault": "Bien reçu ! 👍\n\nSi vous êtes intéressé par l'accès PRO ou l'inscription chez un bookmaker — je peux vous aider.\n\nÉcrivez simplement :\n• \"Je veux PRO\" — je vous expliquerai comment l'obtenir gratuitement\n• \"Comment s'inscrire\" — je vous guiderai étape par étape\n• \"Parlez-moi du bonus\" — je partagerai les offres en cours\n\nOu posez n'importe quelle question ! 💬",
     "guestWelcome": "Salut! Je suis {{name}}, responsable du support. Besoin d'aide avec votre mot de passe?",
     "forgotMyPassword": "J'ai oublié mon mot de passe",
-    "cantLogin": "Je ne peux pas me connecter"
+    "cantLogin": "Je ne peux pas me connecter",
+    "guestTitle": "Récupération de compte",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "changePhone": "J'ai changé de numéro"
   },
   "errors": {
     "somethingWrong": "Une erreur s'est produite",
@@ -324,8 +327,7 @@
     "verifyAndActivate": "Nous vérifierons votre dépôt et activerons PRO dans les 24 heures.",
     "gotIt": "Compris",
     "beginnersGuide": "Guide du Débutant",
-    "tipsToStart": "10 conseils pour bien démarrer",
-    "enterUsername": "Entrez le nom d'utilisateur"
+    "tipsToStart": "10 conseils pour bien démarrer"
   },
   "notifications": {
     "setupTitle": "Restez informé !",
@@ -1147,13 +1149,34 @@
   },
   "welcome": {
     "step1Title": "Inscription terminée!",
-    "step1Desc": "Tu as maintenant accès aux prédictions IA gratuites.",
+    "step1Desc": "Tu as maintenant accès aux prédictions IA gratuites. Essaie-les!",
     "step2Title": "Accès illimité?",
-    "step2Desc": "Inscris-toi chez le bookmaker via le lien et fais un dépôt pour débloquer PRO.",
+    "step2Desc": "Inscris-toi chez notre bookmaker partenaire via le lien dans l app et fais un dépôt pour débloquer PRO.",
     "step3Title": "Comment obtenir PRO",
-    "step3Desc": "1. Appuie sur le lien\n2. Inscris-toi\n3. Fais un dépôt\n4. PRO s active automatiquement!",
-    "goToPromo": "Obtenir PRO",
-    "later": "Plus tard",
+    "step3Desc": "1. Appuie sur le lien dans l app\n2. Inscris-toi chez le bookmaker\n3. Fais un dépôt\n4. PRO s active automatiquement!",
+    "goToPromo": "Obtenir PRO maintenant",
+    "later": "Peut-être plus tard",
     "next": "Suivant"
+  },
+  "bkReminder": {
+    "step1": "Inscription",
+    "step2": "Dépôt",
+    "later": "Plus tard",
+    "congrats": {
+      "title": "Vous y êtes presque !",
+      "regDone": "Inscription terminée",
+      "desc": "Super, vous êtes inscrit ! Faites votre premier dépôt pour débloquer les pronostics PRO et toutes les fonctionnalités premium.",
+      "cta": "Faire un dépôt"
+    },
+    "reminder1": {
+      "title": "Ne manquez pas !",
+      "desc": "Vous êtes inscrit mais n'avez pas encore fait de dépôt. Débloquez les pronostics PRO et accédez à toutes les fonctionnalités premium !",
+      "cta": "Déposer maintenant"
+    },
+    "reminder2": {
+      "title": "Dernière chance !",
+      "desc": "Votre accès PRO n'est qu'à un pas ! Faites un dépôt pour débloquer les pronostics IA illimités et les value bets.",
+      "cta": "Débloquer PRO"
+    }
   }
 }

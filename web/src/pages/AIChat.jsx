@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
@@ -7,6 +7,8 @@ import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
 import FootballSpinner from '../components/FootballSpinner';
 
+const FREE_AI_LIMIT = 3;
+const AI_REQUESTS_KEY = 'ai_requests_count';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
@@ -21,79 +23,51 @@ const SECONDARY_QUESTIONS = [
 
 export default function AIChat() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [prefillHandled, setPrefillHandled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [showQuick, setShowQuick] = useState(true);
   const [questionsExpanded, setQuestionsExpanded] = useState(false);
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(window.visualViewport?.height || window.innerHeight);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Server-side limit state (degressive: Day1=3, Day2=2, Day3+=1)
-  const [limitInfo, setLimitInfo] = useState({
-    remaining: 3,
-    limit: 3,
-    day_number: 1,
-    resets_at: null,
-    is_premium: false,
-  });
-  const [limitLoading, setLimitLoading] = useState(true);
+  const isPremium = user?.is_premium;
 
-  const isPremium = user?.is_premium || limitInfo.is_premium;
-
-  // Fetch chat limits from server on mount
-  const fetchLimits = useCallback(async () => {
-    try {
-      const data = await api.getChatLimit();
-      setLimitInfo(data);
-    } catch (e) {
-      console.error('Failed to fetch chat limits:', e);
-      // Fallback: show 0 remaining so user isn't stuck
-    } finally {
-      setLimitLoading(false);
-    }
-  }, []);
-
+  // Track visual viewport height (keyboard open/close)
   useEffect(() => {
-    fetchLimits();
-  }, [fetchLimits]);
-
-  // Track visual viewport height for mobile keyboard support
-  useEffect(() => {
-    if (!window.visualViewport) return;
     const vv = window.visualViewport;
+    if (!vv) return;
+    const threshold = window.innerHeight * 0.75;
     const onResize = () => {
       setViewportHeight(vv.height);
-      // Scroll input into view when keyboard opens
-      if (document.activeElement === inputRef.current) {
-        setTimeout(() => {
-          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50);
-      }
+      const isKb = vv.height < threshold;
+      setKeyboardOpen(isKb);
+      // Hide/show bottom nav when keyboard opens/closes
+      const nav = document.querySelector('nav.fixed.bottom-0');
+      if (nav) nav.style.display = isKb ? 'none' : '';
+      // Adjust parent container padding
+      const parent = containerRef.current?.parentElement;
+      if (parent) parent.style.paddingBottom = isKb ? '0' : '';
     };
     vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      // Restore nav on unmount
+      const nav = document.querySelector('nav.fixed.bottom-0');
+      if (nav) nav.style.display = '';
+      const parent = containerRef.current?.parentElement;
+      if (parent) parent.style.paddingBottom = '';
+    };
   }, []);
-
-  // Handle pre-filled question from Home AI promo card
-  useEffect(() => {
-    if (!prefillHandled && location.state?.prefill) {
-      setInput(location.state.prefill);
-      setPrefillHandled(true);
-      // Clear the state so back/forward doesn't re-trigger
-      window.history.replaceState({}, '');
-    }
-  }, [location.state, prefillHandled]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -126,20 +100,20 @@ export default function AIChat() {
     }
   };
 
-  // Format time until reset (e.g. "5h 23m")
-  const getResetTimeString = () => {
-    if (!limitInfo.resets_at) return '';
-    const resetDate = new Date(limitInfo.resets_at);
-    const now = new Date();
-    const diffMs = resetDate - now;
-    if (diffMs <= 0) return t('aiChat.resetsNow', 'Soon');
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+  // Get AI request count from localStorage (for free users)
+  const getAIRequestCount = () => {
+    const count = localStorage.getItem(AI_REQUESTS_KEY);
+    return count ? parseInt(count, 10) : 0;
   };
 
-  const remaining = isPremium ? 999 : limitInfo.remaining;
+  const incrementAIRequestCount = () => {
+    const newCount = getAIRequestCount() + 1;
+    localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
+    return newCount;
+  };
+
+  const aiRequestCount = getAIRequestCount();
+  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
   useEffect(() => {
     // Try to load cached chat history first
@@ -161,7 +135,7 @@ export default function AIChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, viewportHeight]);
 
   // Build user preferences string
   const getUserPreferencesPrompt = () => {
@@ -196,8 +170,8 @@ export default function AIChat() {
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return;
 
-    // Check server-side limit for non-premium users
-    if (!isPremium && limitInfo.remaining <= 0) {
+    // Check free limit for non-premium users
+    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
       setShowLimitModal(true);
       return;
     }
@@ -210,6 +184,7 @@ export default function AIChat() {
 
     try {
       // Build conversation history (exclude welcome message)
+      // Filter out any invalid messages to prevent 422 validation errors
       const history = messages
         .filter(m => m.id !== 'welcome' && m.role && m.content)
         .map(m => ({ role: String(m.role), content: String(m.content) }));
@@ -223,6 +198,7 @@ export default function AIChat() {
       let matchContext = null;
       try {
         const enriched = await enrichMessage(text);
+        // Ensure match_context is always a string or null (prevent 422 validation errors)
         matchContext = enriched ? String(enriched) : null;
       } catch (e) {
         console.error('Enrichment failed:', e);
@@ -231,15 +207,9 @@ export default function AIChat() {
 
       const data = await api.aiChat(textWithPrefs, history, matchContext);
 
-      // Update limits from server response (backend returns remaining/limit/etc)
-      if (data.remaining !== undefined) {
-        setLimitInfo(prev => ({
-          ...prev,
-          remaining: data.remaining,
-          limit: data.limit || prev.limit,
-          day_number: data.day_number || prev.day_number,
-          resets_at: data.resets_at || prev.resets_at,
-        }));
+      // Increment counter for free users only AFTER successful response
+      if (!isPremium) {
+        incrementAIRequestCount();
       }
 
       const newCount = responseCount + 1;
@@ -260,13 +230,10 @@ export default function AIChat() {
       saveChatHistory(newMessages);
     } catch (e) {
       console.error('AI Chat error:', e);
+      // Safely extract error message
       const errStr = typeof e === 'string' ? e : (e?.message || String(e));
       let errorMsg;
-
-      if (errStr.includes('402') || errStr.includes('daily_limit_reached')) {
-        // Server returned limit reached — show modal and refresh limits
-        setShowLimitModal(true);
-        fetchLimits();
+      if (errStr.includes('402') || errStr.includes('limit')) {
         errorMsg = t('aiChat.errLimit');
       } else if (errStr.includes('401') || errStr.includes('Unauthorized')) {
         errorMsg = t('aiChat.errAuth');
@@ -300,10 +267,10 @@ export default function AIChat() {
     <div
       ref={containerRef}
       className="flex flex-col"
-      style={{ height: viewportHeight ? `${viewportHeight}px` : '100%' }}
+      style={{ height: keyboardOpen ? `${viewportHeight}px` : '100%' }}
     >
       {/* Header */}
-      <div className="bg-white px-5 py-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+      <div className={`bg-white px-5 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-2' : 'py-4'}`}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -316,41 +283,12 @@ export default function AIChat() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* Remaining requests badge with reset timer */}
-          {limitLoading ? (
-            <span className="flex items-center gap-1 bg-gray-50 text-gray-400 text-sm font-medium px-2.5 py-1 rounded-lg">
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-            </span>
-          ) : isPremium ? (
-            <span className="flex items-center gap-1 bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1 rounded-lg">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm4.707 3.707a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 10H13a1 1 0 100-2H8.414l1.293-1.293z" clipRule="evenodd"/>
-              </svg>
-              PRO
-            </span>
-          ) : (
-            <button
-              onClick={() => remaining <= 0 && setShowLimitModal(true)}
-              className={`flex items-center gap-1 text-sm font-medium px-2.5 py-1 rounded-lg ${
-                remaining > 0
-                  ? 'bg-primary-50 text-primary-600'
-                  : 'bg-red-50 text-red-500'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-              </svg>
-              {remaining}
-              {remaining <= 0 && limitInfo.resets_at && (
-                <span className="text-[10px] text-red-400 ml-0.5">
-                  ({getResetTimeString()})
-                </span>
-              )}
-            </button>
-          )}
+          <span className="flex items-center gap-1 bg-primary-50 text-primary-600 text-sm font-medium px-2.5 py-1 rounded-lg">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+            </svg>
+            {remaining}
+          </span>
           <button onClick={clearChat} className="w-8 h-8 flex items-center justify-center text-gray-400">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
@@ -520,8 +458,8 @@ export default function AIChat() {
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Quick Questions - Compact */}
-      {showQuick && messages.length <= 1 && (
+      {/* Quick Questions - Compact (hidden when keyboard is open) */}
+      {showQuick && messages.length <= 1 && !keyboardOpen && (
         <div className="px-5 pb-2 shrink-0">
           {/* Primary Questions - Always visible */}
           <div className="flex gap-2 mb-2">
@@ -581,7 +519,7 @@ export default function AIChat() {
       )}
 
       {/* Input */}
-      <div className="px-5 py-3 bg-white border-t border-gray-100 shrink-0">
+      <div className={`px-5 bg-white border-t border-gray-100 shrink-0 ${keyboardOpen ? 'py-2' : 'py-3'}`}>
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -609,7 +547,7 @@ export default function AIChat() {
         </div>
       </div>
 
-      {/* Limit Reached Modal — with degressive info and reset timer */}
+      {/* Limit Reached Modal */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setShowLimitModal(false)}>
           <div className="absolute inset-0 bg-black/40"/>
@@ -631,24 +569,9 @@ export default function AIChat() {
               </div>
               <h3 className="text-lg font-bold text-gray-900">{t('aiChat.freeLimitReached')}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                {t('aiChat.usedAllRequests', { count: limitInfo.limit || 3 })}
+                {t('aiChat.usedAllRequests', { count: FREE_AI_LIMIT })}
               </p>
             </div>
-
-            {/* Reset timer — KEY new UX element */}
-            {limitInfo.resets_at && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 text-center">
-                <p className="text-sm font-medium text-blue-800">
-                  {t('aiChat.newRequestsIn', { time: getResetTimeString() })}
-                </p>
-                <p className="text-xs text-blue-600 mt-0.5">
-                  {limitInfo.day_number <= 2
-                    ? t('aiChat.tomorrowYouGet', { count: limitInfo.day_number === 1 ? 2 : 1 })
-                    : t('aiChat.dailyFreeRequest', '1 free request every day')
-                  }
-                </p>
-              </div>
-            )}
 
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <p className="text-sm font-medium text-green-800 mb-1">{t('aiChat.unlockUnlimitedAI')}</p>
