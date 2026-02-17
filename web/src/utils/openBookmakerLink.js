@@ -6,10 +6,14 @@
  * so bootballgame.shop can't install the bookmaker PWA and just redirects
  * to the offer URL.
  *
- * Solution: Use Android Intent URL to force opening in FULL Chrome browser
- * (not CCT), where beforeinstallprompt works normally.
- * This is exactly the approach bootballgame.shop itself uses for in-app browsers.
+ * Solution: Route the link through our backend on a DIFFERENT domain
+ * (appbot-production-152e.up.railway.app). Since that domain is outside
+ * our PWA's scope (sportscoreai.com), Chrome opens it in a real browser
+ * tab, not CCT. The backend does a 302 redirect to bootballgame.shop,
+ * which then loads in full Chrome where beforeinstallprompt works.
  */
+
+const BACKEND_URL = 'https://appbot-production-152e.up.railway.app/api/v1';
 
 /**
  * Detect if we're running as an installed PWA (standalone mode)
@@ -22,81 +26,40 @@ function isStandalone() {
 }
 
 /**
- * Detect Android
+ * Build redirect URL through our backend.
+ * Backend does 302 redirect → opens in full Chrome since different domain.
  */
-function isAndroid() {
-  return /Android/i.test(navigator.userAgent);
-}
-
-/**
- * Detect iOS
- */
-function isIOS() {
-  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
-}
-
-/**
- * Detect Samsung Browser
- */
-function isSamsungBrowser() {
-  return /SamsungBrowser/i.test(navigator.userAgent);
-}
-
-/**
- * Build Android intent URL to open a link in full Chrome browser
- * (not Chrome Custom Tab). Uses component= to force the real Chrome activity.
- */
-function buildChromeIntentUrl(url) {
-  const parsed = new URL(url);
-  // intent:// uses the host+path+search from the URL, with scheme specified separately
-  const intentUrl = `intent://${parsed.host}${parsed.pathname}${parsed.search}#Intent;scheme=https;action=android.intent.action.VIEW;component=com.android.chrome/com.google.android.apps.chrome.Main;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome')};end;`;
-  return intentUrl;
-}
-
-/**
- * Build Samsung Browser intent URL
- */
-function buildSamsungIntentUrl(url) {
-  const parsed = new URL(url);
-  return `intent://${parsed.host}${parsed.pathname}${parsed.search}#Intent;scheme=https;package=com.sec.android.app.sbrowser;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.sec.android.app.sbrowser')};end;`;
+function buildRedirectUrl(targetUrl) {
+  return `${BACKEND_URL}/go?url=${encodeURIComponent(targetUrl)}`;
 }
 
 /**
  * Main function: open bookmaker link
- * - If in standalone PWA on Android → use intent URL to open in full Chrome
- * - If in standalone PWA on iOS → window.location.href (Safari will handle it)
+ * - If in standalone PWA → route through backend (different domain = full Chrome)
  * - Otherwise → regular target="_blank" behavior (default <a> click)
  */
 export function openBookmakerLink(url, event) {
   if (!url) return;
 
+  const standalone = isStandalone();
+  console.log('[BookmakerLink] standalone=' + standalone);
+
   // Only intercept when running as standalone PWA
-  if (!isStandalone()) {
+  if (!standalone) {
     // Regular browser — let the default <a target="_blank"> work
     return;
   }
 
-  // We're in standalone PWA — need special handling
+  // We're in standalone PWA — route through backend to escape PWA scope
   if (event) {
     event.preventDefault();
+    event.stopPropagation();
   }
 
-  if (isAndroid()) {
-    // Android standalone PWA → force open in real Chrome via intent
-    const intentUrl = isSamsungBrowser()
-      ? buildSamsungIntentUrl(url)
-      : buildChromeIntentUrl(url);
+  const redirectUrl = buildRedirectUrl(url);
+  console.log('[BookmakerLink] Redirecting via backend:', redirectUrl);
 
-    console.log('[BookmakerLink] Opening via intent:', intentUrl);
-    window.location.href = intentUrl;
-  } else if (isIOS()) {
-    // iOS standalone PWA → open in Safari
-    // x-safari-https:// scheme or just window.location for iOS
-    console.log('[BookmakerLink] iOS standalone, using location.href');
-    window.location.href = url;
-  } else {
-    // Fallback: try window.open
-    console.log('[BookmakerLink] Fallback: window.open');
-    window.open(url, '_blank');
-  }
+  // Open the backend URL — since it's a different domain (outside PWA scope),
+  // Chrome will open it in a real browser tab, not Chrome Custom Tab
+  window.location.href = redirectUrl;
 }
