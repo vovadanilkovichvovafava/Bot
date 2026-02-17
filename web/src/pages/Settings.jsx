@@ -28,6 +28,9 @@ export default function Settings() {
   const [verificationId, setVerificationId] = useState('');
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [verificationSubmitted, setVerificationSubmitted] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [savingUsername, setSavingUsername] = useState(false);
   const [bookmakerLogin, setBookmakerLogin] = useState('');
   const [bookmakerPassword, setBookmakerPassword] = useState('');
   const [connectingBookmaker, setConnectingBookmaker] = useState(false);
@@ -158,12 +161,58 @@ export default function Settings() {
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
               <span className="text-primary-700 font-bold text-lg">
-                {(user?.username || user?.email || 'U')[0].toUpperCase()}
+                {(user?.username || 'U')[0].toUpperCase()}
               </span>
             </div>
-            <div>
-              <p className="font-bold text-gray-900">{user?.username || user?.email?.split('@')[0]}</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+            <div className="flex-1 min-w-0">
+              {editingUsername ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder={t('settings.enterUsername')}
+                    autoFocus
+                    maxLength={30}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newUsername.trim()) return;
+                      setSavingUsername(true);
+                      try {
+                        await api.updateMe({ username: newUsername.trim() });
+                        window.location.reload();
+                      } catch { /* ignore */ }
+                      setSavingUsername(false);
+                      setEditingUsername(false);
+                    }}
+                    disabled={savingUsername || !newUsername.trim()}
+                    className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                  >
+                    {savingUsername ? '...' : 'OK'}
+                  </button>
+                  <button
+                    onClick={() => setEditingUsername(false)}
+                    className="px-2 py-1.5 text-gray-400 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-gray-900">{user?.username || 'User'}</p>
+                  <button
+                    onClick={() => { setNewUsername(user?.username || ''); setEditingUsername(true); }}
+                    className="text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <p className="text-sm text-gray-500">{user?.email?.includes('@phone.local') ? '' : user?.email}</p>
             </div>
           </div>
         </div>

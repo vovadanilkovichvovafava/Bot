@@ -11,8 +11,6 @@ import useKeyboardScroll from '../hooks/useKeyboardScroll';
 
 export default function Login() {
   const { t } = useTranslation();
-  const [mode, setMode] = useState('email'); // 'email' | 'phone'
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
@@ -37,19 +35,13 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (mode === 'email' && !email) {
-      setError(t('auth.errEnterEmail'));
+    if (!phone) {
+      setError(t('auth.errEnterPhone'));
       return;
     }
-    if (mode === 'phone') {
-      if (!phone) {
-        setError(t('auth.errEnterPhone'));
-        return;
-      }
-      if (!isValidPhone(phone, phoneCountry)) {
-        setError(t('auth.errInvalidPhone'));
-        return;
-      }
+    if (!isValidPhone(phone, phoneCountry)) {
+      setError(t('auth.errInvalidPhone'));
+      return;
     }
     if (!password) {
       setError(t('auth.errEnterPassword'));
@@ -58,23 +50,18 @@ export default function Login() {
 
     setError('');
     setLoading(true);
-    track('login_submit', { mode });
+    track('login_submit');
     try {
-      const identifier = mode === 'email' ? email : fullPhoneNumber(phone, phoneCountry);
-      await login(identifier, password);
-      track('login_success', { mode });
+      const fullPhone = fullPhoneNumber(phone, phoneCountry);
+      await login(fullPhone, password);
+      track('login_success');
       navigate('/', { replace: true });
     } catch (err) {
-      track('login_error', { mode, error: err.message });
+      track('login_error', { error: err.message });
       setError(err.message || t('auth.errLogin'));
     } finally {
       setLoading(false);
     }
-  };
-
-  const switchMode = (newMode) => {
-    setMode(newMode);
-    setError('');
   };
 
   return (
@@ -116,24 +103,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* Mode Tabs */}
-          <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
-            <button
-              type="button"
-              onClick={() => switchMode('email')}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'email' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-            >
-              {t('auth.email')}
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('phone')}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'phone' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-            >
-              {t('auth.phone')}
-            </button>
-          </div>
-
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -144,30 +113,10 @@ export default function Login() {
           )}
 
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'email' ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
-                    </svg>
-                  </span>
-                  <input
-                    type="email"
-                    placeholder={t('auth.emailPlaceholder')}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phone')}</label>
-                <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phoneLabel')}</label>
+              <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.password')}</label>
@@ -203,10 +152,17 @@ export default function Login() {
               </div>
             </div>
 
+            {/* Forgot password — opens support chat */}
+            <div className="text-right -mt-1">
+              <Link to="/?openSupport=forgot_password" className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                {t('auth.forgotPassword')}
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <FootballSpinner size="xs" light />

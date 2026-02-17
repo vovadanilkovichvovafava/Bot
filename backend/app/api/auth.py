@@ -13,16 +13,10 @@ router = APIRouter()
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:
-    """Validate password meets security requirements"""
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter"
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter"
-    if not re.search(r"\d", password):
-        return False, "Password must contain at least one digit"
-    return True, "Password is strong"
+    """Validate password meets minimum requirements"""
+    if len(password) < 6:
+        return False, "Password must be at least 6 characters long"
+    return True, "Password is valid"
 
 # Cookie settings
 COOKIE_SECURE = True  # Set to False for local development without HTTPS
@@ -40,26 +34,23 @@ def get_client_ip(request: Request) -> str:
 
 
 class UserRegister(BaseModel):
-    email: EmailStr
+    phone: str
     password: str
-    phone: Optional[str] = None
+    email: Optional[EmailStr] = None  # Optional, for password recovery
     username: Optional[str] = None
-    referral_code: Optional[str] = None  # Code of the user who referred them
+    referral_code: Optional[str] = None
 
     @field_validator("phone")
     @classmethod
     def clean_phone(cls, v):
-        if v is None:
-            return v
-        # Keep only digits and leading +
         cleaned = v.strip()
         if cleaned.startswith("+"):
             cleaned = "+" + re.sub(r"[^\d]", "", cleaned[1:])
         else:
             cleaned = re.sub(r"[^\d]", "", cleaned)
-        if cleaned and len(cleaned) < 7:
+        if not cleaned or len(cleaned) < 7:
             raise ValueError("Phone number too short")
-        return cleaned or None
+        return cleaned
 
 
 class UserLogin(BaseModel):
@@ -124,7 +115,7 @@ async def register(
     response: Response,
     db: AsyncSession = Depends(get_db)
 ):
-    # Validate password strength
+    # Validate password strength (6+ characters)
     is_valid, message = validate_password_strength(user.password)
     if not is_valid:
         raise HTTPException(
@@ -143,22 +134,29 @@ async def register(
             detail="Registration limit reached"
         )
 
-    # Check if email exists
-    result = await db.execute(select(User).where(User.email == user.email))
-    if result.scalar_one_or_none():
+    # Check if phone already exists
+    phone_result = await db.execute(select(User).where(User.phone == user.phone))
+    if phone_result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
+            detail="Phone number already registered"
         )
 
-    # Check if phone exists (if provided)
-    if user.phone:
-        phone_result = await db.execute(select(User).where(User.phone == user.phone))
-        if phone_result.scalar_one_or_none():
+    # Generate email from phone if not provided (for DB unique constraint)
+    email = user.email or f"{user.phone.replace('+', '')}@phone.local"
+
+    # Check if email exists (in case user provided one)
+    if user.email:
+        email_result = await db.execute(select(User).where(User.email == user.email))
+        if email_result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already registered"
+                detail="Email already registered"
             )
+
+    # Auto-generate username from phone last 4 digits
+    phone_suffix = re.sub(r"[^\d]", "", user.phone)[-4:]
+    username = user.username or f"User_{phone_suffix}"
 
     # Check if referral code is valid and get referrer
     referrer = None
@@ -168,11 +166,11 @@ async def register(
         )
         referrer = ref_result.scalar_one_or_none()
 
-    # Create new user with IP
+    # Create new user
     new_user = User(
-        email=user.email,
+        email=email,
         phone=user.phone,
-        username=user.username or user.email.split("@")[0],
+        username=username,
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
         referred_by_id=referrer.id if referrer else None,
@@ -203,8 +201,9 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
-    access_token = create_access_token({"sub": user.email, "user_id": new_user.id})
-    refresh_token = create_access_token({"sub": user.email, "user_id": new_user.id, "refresh": True})
+    # Use phone as JWT subject identifier
+    access_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id})
+    refresh_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id, "refresh": True})
 
     # Set httpOnly cookies
     set_auth_cookies(response, access_token, refresh_token)
@@ -222,14 +221,14 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
     if not user.email and not user.phone:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email or phone number is required"
+            detail="Phone number is required"
         )
 
-    # Find user by email or phone
-    if user.email:
-        result = await db.execute(select(User).where(User.email == user.email))
-    else:
+    # Find user by phone (primary) or email (legacy fallback)
+    if user.phone:
         result = await db.execute(select(User).where(User.phone == user.phone))
+    else:
+        result = await db.execute(select(User).where(User.email == user.email))
     db_user = result.scalar_one_or_none()
 
     if not db_user or not verify_password(user.password, db_user.password_hash):
@@ -238,7 +237,7 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
             detail="Invalid credentials"
         )
 
-    identifier = db_user.email
+    identifier = db_user.phone or db_user.email
     access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
     refresh_token = create_access_token({"sub": identifier, "user_id": db_user.id, "refresh": True})
 

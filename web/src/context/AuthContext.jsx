@@ -75,8 +75,8 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (email, password) => {
-    await api.login(email, password);
+  const login = async (phone, password) => {
+    await api.login(phone, password);
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
@@ -84,8 +84,8 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
-  const register = async (email, password, username, referralCode = null, phone = null) => {
-    await api.register(email, password, username, referralCode, phone);
+  const register = async (phone, password, referralCode = null) => {
+    await api.register(phone, password, referralCode);
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
