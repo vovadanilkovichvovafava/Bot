@@ -143,7 +143,7 @@ export default function YourStats() {
 
                   <div className="flex-1 space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">{t('yourStats.total')}</span>
+                      <span className="text-sm text-gray-500">{t('yourStats.totalPredictions')}</span>
                       <span className="text-sm font-bold text-gray-900">{s.total}</span>
                     </div>
                     <div className="flex justify-between">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
@@ -7,7 +7,6 @@ import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 
 
 const FREE_AI_LIMIT = 3;
@@ -22,13 +21,20 @@ export default function Home() {
   const { user, isDemo } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAiNudge, setShowAiNudge] = useState(false);
   const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
 
   useEffect(() => {
     loadMatches();
     setLocalStats(getStats());
+    // Show AI nudge after registration
+    if (location.state?.justRegistered) {
+      setTimeout(() => setShowAiNudge(true), 1500);
+      window.history.replaceState({}, '');
+    }
   }, []);
 
   const loadMatches = async () => {
@@ -69,7 +75,6 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
-        <img src={logoWhite} alt="PVA" className="w-36 h-36 mb-6 drop-shadow-lg object-contain" />
         <FootballSpinner size="lg" text={t('home.loadingMatches')} light />
       </div>
     );
@@ -81,7 +86,6 @@ export default function Home() {
       <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <img src={logoWhite} alt="PVA" className="w-14 h-14 drop-shadow object-contain" />
             <div>
               <p className="text-primary-100 text-sm">{getGreeting()}</p>
               <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
@@ -117,28 +121,8 @@ export default function Home() {
       </div>
 
       <div className="px-5 -mt-4 space-y-4">
-        {/* AI Assistant Card */}
-        <div
-          onClick={() => navigate('/ai-chat')}
-          className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 rounded-2xl p-5 text-white cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">{t('home.askAI')}</h3>
-                <p className="text-white/80 text-sm">{t('home.askAIDesc')}</p>
-              </div>
-            </div>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-            </svg>
-          </div>
-        </div>
+        {/* AI Promo Card — dynamic with real match or generic */}
+        <AIPromoCard matches={matches} navigate={navigate} />
 
         {/* Featured Match Promo Banner - Moved higher for visibility */}
         <FeaturedMatchBanner
@@ -329,6 +313,35 @@ export default function Home() {
 
         <div className="h-4"/>
       </div>
+
+      {/* AI Onboarding Nudge — shown once after registration */}
+      {showAiNudge && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAiNudge(false)}/>
+          <div className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 rounded-2xl p-6 text-white w-full max-w-sm animate-bounce-in shadow-2xl">
+            <button onClick={() => setShowAiNudge(false)} className="absolute top-3 right-3 text-white/60 hover:text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <div className="text-center">
+              <div className="w-14 h-14 bg-white/20 rounded-2xl mx-auto mb-3 flex items-center justify-center">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-1">{t('home.aiNudgeTitle')}</h3>
+              <p className="text-white/80 text-sm mb-4">{t('home.aiNudgeDesc')}</p>
+              <button
+                onClick={() => { setShowAiNudge(false); navigate('/ai-chat'); }}
+                className="bg-white text-purple-600 font-bold px-6 py-3 rounded-xl text-sm shadow-lg w-full"
+              >
+                {t('home.aiNudgeCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -522,6 +535,62 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
         </div>
         <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">
           {texts.ctaButton}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// AI Promo Card — shows real match with pre-filled AI question
+function AIPromoCard({ matches, navigate }) {
+  const { t } = useTranslation();
+  const topMatch = matches?.[0];
+
+  // Build a pre-filled question for AI chat
+  const handleClick = () => {
+    if (topMatch) {
+      const q = `${topMatch.teams.home.name} vs ${topMatch.teams.away.name} — who will win and why?`;
+      navigate('/ai-chat', { state: { prefill: q } });
+    } else {
+      navigate('/ai-chat');
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="relative overflow-hidden bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 rounded-2xl p-5 text-white cursor-pointer hover:shadow-xl transition-all"
+    >
+      {/* Animated sparkle */}
+      <div className="absolute top-2 right-3 animate-pulse text-yellow-200">✨</div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+            </svg>
+          </div>
+          <div className="min-w-0">
+            {topMatch ? (
+              <>
+                <h3 className="font-bold text-base leading-tight truncate">
+                  {t('home.aiPromoAsk', { team: topMatch.teams.home.name })}
+                </h3>
+                <p className="text-white/70 text-xs mt-0.5 truncate">
+                  {topMatch.teams.home.name} vs {topMatch.teams.away.name}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-bold text-lg">{t('home.aiPromoNoMatch')}</h3>
+                <p className="text-white/80 text-sm">{t('home.askAIDesc')}</p>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="shrink-0 bg-white/20 backdrop-blur text-white font-bold px-4 py-2 rounded-xl text-sm ml-3">
+          {t('home.aiPromoTry')}
         </div>
       </div>
     </div>

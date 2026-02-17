@@ -80,7 +80,13 @@
     "freeBetUpTo": "Фрибет до {{bonus}}",
     "betOnMatch": "Ставь на любой матч",
     "freeBetOnMatch": "Фрибет {{bonus}} на этот матч!",
-    "placeBet": "Сделать ставку"
+    "placeBet": "Сделать ставку",
+    "aiPromoAsk": "ИИ считает что {{team}} победит — спроси почему?",
+    "aiPromoNoMatch": "Спроси ИИ о лучших ставках сегодня!",
+    "aiPromoTry": "Попробуй ИИ",
+    "aiNudgeTitle": "Добро пожаловать! Попробуй ИИ-ассистента",
+    "aiNudgeDesc": "Спрашивай что угодно о матчах, прогнозах и ставках — ИИ поможет!",
+    "aiNudgeCta": "Чат с ИИ"
   },
   "matches": {
     "today": "Сегодня",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Подтвердите пароль",
     "emailPlaceholder": "example@email.com",
     "optionalPlaceholder": "Необязательно",
-    "passwordPlaceholder": "Мин. 6 символов, 1 заглавная",
+    "passwordPlaceholder": "Мин. 8 симв. (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Повторите пароль",
     "required": "*",
     "alreadyHaveAccount": "Уже есть аккаунт?",
@@ -162,7 +168,7 @@
     "errFillFields": "Пожалуйста, заполните все обязательные поля",
     "errInvalidPhone": "Пожалуйста, введите корректный номер телефона",
     "errPasswordsMismatch": "Пароли не совпадают",
-    "errPasswordLength": "Пароль должен быть не менее 6 символов",
+    "errPasswordLength": "Пароль должен содержать минимум 8 символов",
     "errPasswordUppercase": "Пароль должен содержать хотя бы одну заглавную букву",
     "errRegistration": "Ошибка регистрации",
     "errEnterEmail": "Пожалуйста, введите email",
@@ -189,7 +195,10 @@
     "noAccount": "Нет аккаунта?",
     "hasAccount": "Уже есть аккаунт?",
     "connecting": "Подключение...",
-    "creatingAccount": "Создание аккаунта..."
+    "creatingAccount": "Создание аккаунта...",
+    "errPasswordLowercase": "Пароль должен содержать хотя бы одну строчную букву",
+    "errPasswordDigit": "Пароль должен содержать хотя бы одну цифру",
+    "pwChars": "симв."
   },
   "bonus": {
     "welcomeBonus": "Приветственный бонус",
@@ -517,7 +526,7 @@
     "captchaRequired": "Требуется капча. Зарегистрируйтесь напрямую.",
     "captchaRegister": "Требуется капча. Зарегистрируйтесь на сайте букмекера.",
     "errEmailPhone": "Введите email или телефон",
-    "errPasswordLength": "Пароль минимум 6 символов",
+    "errPasswordLength": "Пароль должен содержать минимум 8 символов",
     "connectAccount": "Подключить аккаунт",
     "createAccount": "Создать аккаунт",
     "loginDesc": "Введите данные для подключения",
@@ -538,7 +547,11 @@
     "noAccount": "Нет аккаунта?",
     "registerAt": "Зарегистрироваться в {{name}}",
     "emailPlaceholder": "example@email.com",
-    "phonePlaceholder": "+1234567890"
+    "phonePlaceholder": "+1234567890",
+    "passwordPlaceholder": "Мин. 8 симв. (Aa + 0-9)",
+    "errPasswordLowercase": "Пароль должен содержать хотя бы одну строчную букву",
+    "errPasswordDigit": "Пароль должен содержать хотя бы одну цифру",
+    "pwChars": "симв."
   },
   "share": {
     "sharePrediction": "Поделиться прогнозом",

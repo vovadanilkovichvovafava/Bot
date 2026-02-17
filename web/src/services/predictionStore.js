@@ -1,4 +1,5 @@
 import footballApi from '../api/footballApi';
+import api from '../api';
 
 const STORAGE_KEY = 'pva_predictions';
 
@@ -12,6 +13,49 @@ function getAll() {
 
 function saveAll(predictions) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(predictions));
+}
+
+/**
+ * Push current predictions to the backend (fire-and-forget).
+ */
+function syncToBackend() {
+  try {
+    const predictions = getAll();
+    api.saveMyPredictions(predictions).catch(() => {});
+  } catch {
+    // ignore — sync is best-effort
+  }
+}
+
+/**
+ * Load predictions from backend and merge into localStorage.
+ * Backend is source of truth — if it has data, it replaces local.
+ * If backend is empty but local has data, push local to backend.
+ */
+export async function loadFromBackend() {
+  try {
+    const { predictions: remote } = await api.getMyPredictions();
+    const local = getAll();
+
+    if (remote && remote.length > 0) {
+      // Merge: use remote as base, add any local-only predictions
+      const remoteIds = new Set(remote.map(p => p.matchId));
+      const localOnly = local.filter(p => !remoteIds.has(p.matchId));
+      const merged = [...localOnly, ...remote]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 100);
+      saveAll(merged);
+      // Push merged result back if we added local-only predictions
+      if (localOnly.length > 0) {
+        api.saveMyPredictions(merged).catch(() => {});
+      }
+    } else if (local.length > 0) {
+      // Backend empty, push local data
+      api.saveMyPredictions(local).catch(() => {});
+    }
+  } catch {
+    // Network error — keep local data as-is
+  }
 }
 
 /**
@@ -103,6 +147,7 @@ export function savePrediction({
   if (predictions.length > 100) predictions.length = 100;
 
   saveAll(predictions);
+  syncToBackend();
   return entry;
 }
 
@@ -268,6 +313,7 @@ export async function verifyPredictions() {
 
   if (verifiedCount > 0) {
     saveAll(predictions);
+    syncToBackend();
   }
 
   return verifiedCount;
@@ -285,5 +331,6 @@ export default {
   getPredictions,
   getStats,
   verifyPredictions,
+  loadFromBackend,
   clearAll,
 };

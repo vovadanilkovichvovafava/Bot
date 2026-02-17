@@ -6,13 +6,13 @@ import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
+import { track } from '../services/analytics';
+import useKeyboardScroll from '../hooks/useKeyboardScroll';
 
 
 export default function Register() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
@@ -21,8 +21,29 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
+  const [formTouched, setFormTouched] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const formRef = useKeyboardScroll();
+
+  // Detect keyboard open/close to collapse hero section
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const threshold = window.innerHeight * 0.75;
+    const onResize = () => setKeyboardOpen(vv.height < threshold);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
+
+  // Track first interaction with form
+  const onFormTouch = () => {
+    if (!formTouched) {
+      setFormTouched(true);
+      track('register_form_started');
+    }
+  };
 
   // Check for referral code on mount
   useEffect(() => {
@@ -42,12 +63,20 @@ export default function Register() {
       setError(t('auth.errInvalidPhone'));
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t('auth.errPasswordLength'));
       return;
     }
     if (!/[A-Z]/.test(password)) {
       setError(t('auth.errPasswordUppercase'));
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setError(t('auth.errPasswordLowercase'));
+      return;
+    }
+    if (!/\d/.test(password)) {
+      setError(t('auth.errPasswordDigit'));
       return;
     }
     if (password !== confirmPassword) {
@@ -56,11 +85,15 @@ export default function Register() {
     }
     setError('');
     setLoading(true);
+    track('register_submit');
     try {
-      await register(email, password, username || undefined, referralCode);
-      clearReferralCode(); // Clear the referral code after successful registration
-      navigate('/', { replace: true });
+      const fullPhone = phone && phoneCountry ? fullPhoneNumber(phone, phoneCountry) : null;
+      await register(email, password, undefined, referralCode, fullPhone);
+      track('register_success');
+      clearReferralCode();
+      navigate('/', { replace: true, state: { justRegistered: true } });
     } catch (err) {
+      track('register_error', { error: err.message });
       setError(err.message || t('auth.errRegistration'));
     } finally {
       setLoading(false);
@@ -68,40 +101,43 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
-      {/* Hero Section — compact like Login */}
-      <div className="relative flex-shrink-0 pt-8 pb-8 px-6">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
+      {/* Hero Section — collapses when keyboard is open */}
+      <div className={`relative flex-shrink-0 px-6 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-8'}`}>
         {/* Background decorations */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
-        <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+        {!keyboardOpen && (
+          <>
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
+            <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+          </>
+        )}
 
         <div className="relative text-center">
-          {/* Logo */}
-          <img src={logoWhite} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg object-contain" />
-
-          <h1 className="text-2xl font-bold text-white mb-1">{t('auth.createAccount')}</h1>
-          <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>
+          <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>{t('auth.createAccount')}</h1>
+          {!keyboardOpen && <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>}
         </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-6 pb-6">
+      <div className={`flex-1 bg-white rounded-t-[32px] px-6 pb-6 transition-all duration-200 ${keyboardOpen ? 'pt-3' : 'pt-6'}`}>
         <div className="max-w-sm mx-auto">
-          {/* Benefits */}
-          <div className="flex justify-center gap-4 mb-5">
-            <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
-              <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
+          {/* Benefits — hidden when keyboard is open to save space */}
+          {!keyboardOpen && (
+            <div className="flex justify-center gap-4 mb-5">
+              <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
+                <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
+              </div>
+              <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
+                <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
+              </div>
+              <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
+                <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
+              </div>
             </div>
-            <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
-            </div>
-            <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
-            </div>
-          </div>
+          )}
 
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
@@ -112,7 +148,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.emailLabel')} {t('auth.required')}</label>
               <div className="relative">
@@ -126,6 +162,7 @@ export default function Register() {
                   placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={onFormTouch}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                 />
               </div>
@@ -134,24 +171,6 @@ export default function Register() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phoneLabel')} {t('auth.required')}</label>
               <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.usernameLabel')}</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder={t('auth.optionalPlaceholder')}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                />
-              </div>
             </div>
 
             <div>
@@ -186,6 +205,23 @@ export default function Register() {
                   </svg>
                 </button>
               </div>
+              {/* Inline password requirements */}
+              {password.length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 px-1">
+                  <span className={`text-[11px] ${password.length >= 8 ? 'text-green-500' : 'text-gray-400'}`}>
+                    {password.length >= 8 ? '✓' : '○'} 8+ {t('auth.pwChars')}
+                  </span>
+                  <span className={`text-[11px] ${/[A-Z]/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/[A-Z]/.test(password) ? '✓' : '○'} A-Z
+                  </span>
+                  <span className={`text-[11px] ${/[a-z]/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/[a-z]/.test(password) ? '✓' : '○'} a-z
+                  </span>
+                  <span className={`text-[11px] ${/\d/.test(password) ? 'text-green-500' : 'text-gray-400'}`}>
+                    {/\d/.test(password) ? '✓' : '○'} 0-9
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>

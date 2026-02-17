@@ -18,8 +18,10 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
 
   // Welcome message on first open
   useEffect(() => {
@@ -43,6 +45,23 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
+  }, [isOpen]);
+
+  // Track visual viewport for mobile keyboard
+  useEffect(() => {
+    if (!isOpen || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      setViewportHeight(vv.height);
+      // Keep input visible when keyboard opens
+      if (document.activeElement === inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
   }, [isOpen]);
 
   // Simulate manager response (localized)
@@ -130,8 +149,12 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
 
-      {/* Chat Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col animate-slide-up pb-safe">
+      {/* Chat Panel — uses visualViewport height when keyboard is open */}
+      <div
+        ref={panelRef}
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl flex flex-col animate-slide-up"
+        style={{ maxHeight: viewportHeight ? `${viewportHeight * 0.92}px` : '90vh' }}
+      >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="relative">
@@ -219,7 +242,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
         </div>
 
         {/* Input */}
-        <div className="px-5 pt-4 pb-6 border-t border-gray-100 bg-white">
+        <div className="px-5 pt-3 pb-3 border-t border-gray-100 bg-white">
           <div className="flex items-center gap-3">
             <input
               ref={inputRef}

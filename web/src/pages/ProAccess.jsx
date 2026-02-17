@@ -6,24 +6,9 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
+import { track } from '../services/analytics';
 
-// Country to language mapping
-const countryToLanguage = {
-  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
-  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
-  PT: 'pt', BR: 'pt',
-  DE: 'de', AT: 'de', CH: 'de',
-  FR: 'fr', BE: 'fr', CA: 'fr',
-  IT: 'it',
-  PL: 'pl',
-  RO: 'ro', MD: 'ro',
-  TR: 'tr',
-  IN: 'hi',
-  CN: 'zh', TW: 'zh', HK: 'zh',
-  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
-};
 
 // Download icon for CTA button
 const DownloadIcon = () => (
@@ -37,7 +22,7 @@ const DownloadIcon = () => (
 export default function ProAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
@@ -52,11 +37,6 @@ export default function ProAccess() {
       setLoadingLink(true);
       try {
         const geo = await geoService.getGeoInfo();
-
-        const geoLang = countryToLanguage[geo.country];
-        if (geoLang && i18n.language !== geoLang) {
-          i18n.changeLanguage(geoLang);
-        }
 
         const userId = user?.id || `anon_${Date.now()}`;
         const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
@@ -77,7 +57,7 @@ export default function ProAccess() {
     }
 
     fetchGeoAndLink();
-  }, [user?.id, i18n]);
+  }, [user?.id]);
 
   const benefits = [
     { emoji: '\u267E\uFE0F', titleKey: 'proAccess.benefit1Title', descKey: 'proAccess.benefit1Desc', highlight: true },
@@ -111,7 +91,7 @@ export default function ProAccess() {
           className="w-24 h-24 rounded-[20px] flex items-center justify-center mx-auto mb-4 relative z-10 animate-[fadeUp_0.4s_ease_both] overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 20px rgba(232,163,23,0.3)' }}
         >
-          <img src={logoWhite} alt="PVA" className="w-22 h-22 object-contain" />
+          <span className="text-4xl font-black text-white">PRO</span>
         </div>
 
         <h1 className="text-2xl font-extrabold text-white leading-tight mb-2 relative z-10 animate-[fadeUp_0.4s_ease_0.05s_both]">
@@ -214,6 +194,7 @@ export default function ProAccess() {
           href={bookmakerLink}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') })}
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
         >

@@ -6,24 +6,9 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
 import { getTrackingLink } from '../services/trackingService';
+import { track } from '../services/analytics';
 
-// Country to language mapping
-const countryToLanguage = {
-  RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
-  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
-  PT: 'pt', BR: 'pt',
-  DE: 'de', AT: 'de', CH: 'de',
-  FR: 'fr', BE: 'fr', CA: 'fr',
-  IT: 'it',
-  PL: 'pl',
-  RO: 'ro', MD: 'ro',
-  TR: 'tr',
-  IN: 'hi',
-  CN: 'zh', TW: 'zh', HK: 'zh',
-  SA: 'ar', AE: 'ar', EG: 'ar', MA: 'ar',
-};
 
 // SVG Icons
 const ChartIcon = () => (
@@ -64,7 +49,7 @@ const RocketIcon = () => (
 
 export default function BookmakerPromo() {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
@@ -82,12 +67,6 @@ export default function BookmakerPromo() {
       try {
         const geo = await geoService.getGeoInfo();
         setGeoInfo(geo);
-
-        // Set language based on geo
-        const geoLang = countryToLanguage[geo.country];
-        if (geoLang && i18n.language !== geoLang) {
-          i18n.changeLanguage(geoLang);
-        }
 
         // Get tracking link from PostbackAPI (with all sub_ids)
         const userId = user?.id || `anon_${Date.now()}`;
@@ -108,7 +87,7 @@ export default function BookmakerPromo() {
     }
 
     fetchGeoAndLink();
-  }, [user?.id, banner, i18n]);
+  }, [user?.id, banner]);
 
   const benefits = [
     {
@@ -154,7 +133,6 @@ export default function BookmakerPromo() {
 
         {/* Partner badge */}
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 mb-4">
-          <img src={logoWhite} alt="PVA" className="w-8 h-8 object-contain" />
           <span className="text-xs text-white/80">{t('promo.partnerBadge')}</span>
         </div>
 
@@ -300,6 +278,7 @@ export default function BookmakerPromo() {
           href={bookmakerLink}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
           {loadingLink ? (

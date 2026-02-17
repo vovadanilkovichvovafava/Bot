@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
-import logoWhite from '../assets/logo_wight.png';
+import { track } from '../services/analytics';
+import useKeyboardScroll from '../hooks/useKeyboardScroll';
 
 
 export default function Login() {
@@ -18,8 +19,20 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const formRef = useKeyboardScroll();
+
+  // Detect keyboard open/close to collapse hero section
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    const threshold = window.innerHeight * 0.75;
+    const onResize = () => setKeyboardOpen(vv.height < threshold);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,11 +58,14 @@ export default function Login() {
 
     setError('');
     setLoading(true);
+    track('login_submit', { mode });
     try {
       const identifier = mode === 'email' ? email : fullPhoneNumber(phone, phoneCountry);
       await login(identifier, password);
+      track('login_success', { mode });
       navigate('/', { replace: true });
     } catch (err) {
+      track('login_error', { mode, error: err.message });
       setError(err.message || t('auth.errLogin'));
     } finally {
       setLoading(false);
@@ -62,40 +78,43 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
-      {/* Hero Section */}
-      <div className="relative flex-shrink-0 pt-8 pb-8 px-6">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
+      {/* Hero Section — collapses when keyboard is open */}
+      <div className={`relative flex-shrink-0 px-6 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-8'}`}>
         {/* Background decorations */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
-        <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+        {!keyboardOpen && (
+          <>
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"/>
+            <div className="absolute top-20 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2"/>
+          </>
+        )}
 
         <div className="relative text-center">
-          {/* Logo */}
-          <img src={logoWhite} alt="PVA" className="w-32 h-32 mx-auto mb-4 drop-shadow-lg object-contain" />
-
-          <h1 className="text-2xl font-bold text-white mb-1">{t('auth.appName')}</h1>
-          <p className="text-gray-400 text-sm">{t('auth.signInSubtitle')}</p>
+          <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>{t('auth.appName')}</h1>
+          {!keyboardOpen && <p className="text-gray-400 text-sm">{t('auth.signInSubtitle')}</p>}
         </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 bg-white rounded-t-[32px] px-6 pt-6 pb-6">
+      <div className={`flex-1 bg-white rounded-t-[32px] px-6 pb-6 transition-all duration-200 ${keyboardOpen ? 'pt-3' : 'pt-6'}`}>
         <div className="max-w-sm mx-auto">
-          {/* Stats badges */}
-          <div className="flex justify-center gap-4 mb-5">
-            <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-green-600 font-bold text-lg">73%</p>
-              <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.winRate')}</p>
+          {/* Stats badges — hidden when keyboard is open */}
+          {!keyboardOpen && (
+            <div className="flex justify-center gap-4 mb-5">
+              <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-green-600 font-bold text-lg">73%</p>
+                <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.winRate')}</p>
+              </div>
+              <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
+                <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
+              </div>
+              <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
+                <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
+                <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
+              </div>
             </div>
-            <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
-              <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
-            </div>
-            <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-              <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
-              <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
-            </div>
-          </div>
+          )}
 
           {/* Mode Tabs */}
           <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
@@ -124,7 +143,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             {mode === 'email' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
@@ -209,8 +228,8 @@ export default function Login() {
             </Link>
           </p>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 mt-5 pt-4 border-t border-gray-100">
+          {/* Trust badges — hidden when keyboard is open */}
+          <div className={`flex items-center justify-center gap-4 mt-5 pt-4 border-t border-gray-100 ${keyboardOpen ? 'hidden' : ''}`}>
             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd"/>

@@ -26,7 +26,13 @@
     "aiAnalysis": "AI विश्लेषण",
     "getAnalysis": "AI विश्लेषण प्राप्त करें",
     "analyzing": "विश्लेषण हो रहा है...",
-    "viewAll": "सभी देखें"
+    "viewAll": "सभी देखें",
+    "aiPromoAsk": "AI सोचता है {{team}} जीतेगा — पूछो क्यों?",
+    "aiPromoNoMatch": "AI से आज की सबसे अच्छी बेट के बारे में पूछो!",
+    "aiPromoTry": "AI आज़माएं",
+    "aiNudgeTitle": "स्वागत है! हमारे AI सहायक को आज़माएं",
+    "aiNudgeDesc": "मैचों, भविष्यवाणियों और टिप्स के बारे में कुछ भी पूछें — AI मदद करेगा!",
+    "aiNudgeCta": "AI से चैट करें"
   },
   "matches": {
     "today": "आज",
@@ -73,7 +79,12 @@
     "noAccount": "अकाउंट नहीं है?",
     "hasAccount": "पहले से अकाउंट है?",
     "connecting": "कनेक्ट हो रहा है...",
-    "creatingAccount": "अकाउंट बन रहा है..."
+    "creatingAccount": "अकाउंट बन रहा है...",
+    "errPasswordLength": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
+    "passwordPlaceholder": "कम से कम 8 अक्षर (Aa + 0-9)",
+    "errPasswordLowercase": "पासवर्ड में कम से कम एक छोटा अक्षर होना चाहिए",
+    "errPasswordDigit": "पासवर्ड में कम से कम एक अंक होना चाहिए",
+    "pwChars": "अक्षर"
   },
   "bonus": {
     "welcomeBonus": "वेलकम बोनस",

@@ -75,19 +75,31 @@ class ApiService {
   }
 
   // Auth
-  async login(email, password) {
+  async checkIp() {
+    return this.request('/auth/check-ip');
+  }
+
+  async login(identifier, password) {
+    // identifier can be email or phone number
+    const body = { password };
+    if (identifier.includes('@')) {
+      body.email = identifier;
+    } else {
+      body.phone = identifier;
+    }
     const data = await this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     this.setToken(data.access_token);
     try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
     return data;
   }
 
-  async register(email, password, username, referralCode = null) {
+  async register(email, password, username, referralCode = null, phone = null) {
     const body = { email, password, username };
     if (referralCode) body.referral_code = referralCode;
+    if (phone) body.phone = phone;
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
@@ -119,6 +131,17 @@ class ApiService {
 
   async getReferralStats() {
     return this.request('/users/me/referral');
+  }
+
+  async getMyPredictions() {
+    return this.request('/users/me/predictions');
+  }
+
+  async saveMyPredictions(predictions) {
+    return this.request('/users/me/predictions', {
+      method: 'PUT',
+      body: JSON.stringify({ predictions }),
+    });
   }
 
   // Matches
@@ -167,6 +190,11 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(body),
     });
+  }
+
+  // AI Chat limit (degressive system: Day1=3, Day2=2, Day3+=1/day)
+  async getChatLimit() {
+    return this.request('/predictions/chat/limit');
   }
 }
 

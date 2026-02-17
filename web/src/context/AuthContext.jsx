@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api';
+import { loadFromBackend } from '../services/predictionStore';
 
 const AuthContext = createContext(null);
 
@@ -42,6 +43,15 @@ export function AuthProvider({ children }) {
     const token = api.getToken();
 
     if (!token) {
+      // No token — check by IP if account already exists
+      try {
+        const { exists } = await api.checkIp();
+        if (exists) {
+          safeSetItem('hasAccount', 'true');
+        }
+      } catch {
+        // Network error — keep existing hasAccount flag as-is
+      }
       setLoading(false);
       return;
     }
@@ -52,6 +62,8 @@ export function AuthProvider({ children }) {
     try {
       const userData = await api.getMe();
       setUser(userData);
+      // Sync predictions from backend to localStorage
+      loadFromBackend().catch(() => {});
     } catch (e) {
       api.logout();
     } finally {
@@ -68,14 +80,16 @@ export function AuthProvider({ children }) {
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    loadFromBackend().catch(() => {});
     return userData;
   };
 
-  const register = async (email, password, username, referralCode = null) => {
-    await api.register(email, password, username, referralCode);
+  const register = async (email, password, username, referralCode = null, phone = null) => {
+    await api.register(email, password, username, referralCode, phone);
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    loadFromBackend().catch(() => {});
     return userData;
   };
 

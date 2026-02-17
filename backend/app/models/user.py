@@ -1,7 +1,7 @@
 import secrets
 import string
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -20,6 +20,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     public_id = Column(String, unique=True, index=True, nullable=False, default=generate_public_id)
     email = Column(String, unique=True, index=True, nullable=False)
+    phone = Column(String, unique=True, index=True, nullable=True)
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     registration_ip = Column(String, index=True, nullable=True)
@@ -34,12 +35,18 @@ class User(Base):
     daily_limit = Column(Integer, default=10)
     bonus_predictions = Column(Integer, default=3)
 
+    # Degressive AI chat limits (Day1=3, Day2=2, Day3+=1)
+    daily_chat_requests = Column(Integer, default=0)
+    last_chat_request_date = Column(DateTime, nullable=True)
+    account_day_number = Column(Integer, default=1)  # Tracks which "day" of usage
+
     min_odds = Column(Float, default=1.5)
     max_odds = Column(Float, default=3.0)
     risk_level = Column(String, default="medium")
 
     total_predictions = Column(Integer, default=0)
     correct_predictions = Column(Integer, default=0)
+    predictions_data = Column(Text, nullable=True)  # JSON array of predictions
 
     # Referral system
     referral_code = Column(String, unique=True, index=True, nullable=True)

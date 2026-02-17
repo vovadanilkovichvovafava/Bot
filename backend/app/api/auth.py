@@ -42,13 +42,42 @@ def get_client_ip(request: Request) -> str:
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
+    phone: Optional[str] = None
     username: Optional[str] = None
     referral_code: Optional[str] = None  # Code of the user who referred them
 
+    @field_validator("phone")
+    @classmethod
+    def clean_phone(cls, v):
+        if v is None:
+            return v
+        # Keep only digits and leading +
+        cleaned = v.strip()
+        if cleaned.startswith("+"):
+            cleaned = "+" + re.sub(r"[^\d]", "", cleaned[1:])
+        else:
+            cleaned = re.sub(r"[^\d]", "", cleaned)
+        if cleaned and len(cleaned) < 7:
+            raise ValueError("Phone number too short")
+        return cleaned or None
+
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
     password: str
+
+    @field_validator("phone")
+    @classmethod
+    def clean_phone(cls, v):
+        if v is None:
+            return v
+        cleaned = v.strip()
+        if cleaned.startswith("+"):
+            cleaned = "+" + re.sub(r"[^\d]", "", cleaned[1:])
+        else:
+            cleaned = re.sub(r"[^\d]", "", cleaned)
+        return cleaned or None
 
 
 class TokenResponse(BaseModel):
@@ -79,6 +108,15 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str):
     )
 
 
+@router.get("/check-ip")
+async def check_ip(request: Request, db: AsyncSession = Depends(get_db)):
+    """Check if an account already exists for the client's IP address"""
+    client_ip = get_client_ip(request)
+    result = await db.execute(select(User).where(User.registration_ip == client_ip))
+    exists = result.scalar_one_or_none() is not None
+    return {"exists": exists}
+
+
 @router.post("/register", response_model=TokenResponse)
 async def register(
     user: UserRegister,
@@ -96,9 +134,10 @@ async def register(
 
     client_ip = get_client_ip(request)
 
-    # Check if IP already registered
-    ip_check = await db.execute(select(User).where(User.registration_ip == client_ip))
-    if ip_check.scalar_one_or_none():
+    # Check if IP already registered (max 5 accounts per IP)
+    from sqlalchemy import func
+    ip_count = await db.execute(select(func.count()).where(User.registration_ip == client_ip))
+    if ip_count.scalar() >= 5:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Registration limit reached"
@@ -112,6 +151,15 @@ async def register(
             detail="Email already registered"
         )
 
+    # Check if phone exists (if provided)
+    if user.phone:
+        phone_result = await db.execute(select(User).where(User.phone == user.phone))
+        if phone_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Phone number already registered"
+            )
+
     # Check if referral code is valid and get referrer
     referrer = None
     if user.referral_code:
@@ -123,6 +171,7 @@ async def register(
     # Create new user with IP
     new_user = User(
         email=user.email,
+        phone=user.phone,
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
@@ -169,18 +218,29 @@ async def register(
 
 @router.post("/login", response_model=TokenResponse)
 async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
-    # Find user
-    result = await db.execute(select(User).where(User.email == user.email))
+    # Must provide either email or phone
+    if not user.email and not user.phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email or phone number is required"
+        )
+
+    # Find user by email or phone
+    if user.email:
+        result = await db.execute(select(User).where(User.email == user.email))
+    else:
+        result = await db.execute(select(User).where(User.phone == user.phone))
     db_user = result.scalar_one_or_none()
 
     if not db_user or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            detail="Invalid credentials"
         )
 
-    access_token = create_access_token({"sub": user.email, "user_id": db_user.id})
-    refresh_token = create_access_token({"sub": user.email, "user_id": db_user.id, "refresh": True})
+    identifier = db_user.email
+    access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
+    refresh_token = create_access_token({"sub": identifier, "user_id": db_user.id, "refresh": True})
 
     # Set httpOnly cookies
     set_auth_cookies(response, access_token, refresh_token)

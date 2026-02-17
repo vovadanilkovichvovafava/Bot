@@ -80,7 +80,13 @@
     "freeBetUpTo": "Scommessa gratuita fino a {{bonus}}",
     "betOnMatch": "Scommetti su qualsiasi partita",
     "freeBetOnMatch": "Scommessa gratuita {{bonus}} su questa partita!",
-    "placeBet": "Piazza Scommessa"
+    "placeBet": "Piazza Scommessa",
+    "aiPromoAsk": "L'AI pensa che {{team}} vinca — chiedi perché?",
+    "aiPromoNoMatch": "Chiedi all'AI le migliori scommesse di oggi!",
+    "aiPromoTry": "Prova AI",
+    "aiNudgeTitle": "Benvenuto! Prova il nostro Assistente AI",
+    "aiNudgeDesc": "Chiedi qualsiasi cosa su partite, pronostici e consigli — l'AI ti aiuterà!",
+    "aiNudgeCta": "Chatta con l'AI"
   },
   "matches": {
     "today": "Oggi",
@@ -153,7 +159,7 @@
     "confirmPasswordLabel": "Conferma password",
     "emailPlaceholder": "esempio@email.com",
     "optionalPlaceholder": "Facoltativo",
-    "passwordPlaceholder": "Min 6 caratteri, 1 maiuscola",
+    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
     "repeatPasswordPlaceholder": "Ripeti la password",
     "required": "*",
     "alreadyHaveAccount": "Hai già un account?",
@@ -162,7 +168,7 @@
     "errFillFields": "Compila tutti i campi obbligatori",
     "errInvalidPhone": "Inserisci un numero di telefono valido",
     "errPasswordsMismatch": "Le password non corrispondono",
-    "errPasswordLength": "La password deve contenere almeno 6 caratteri",
+    "errPasswordLength": "La password deve avere almeno 8 caratteri",
     "errPasswordUppercase": "La password deve contenere almeno una lettera maiuscola",
     "errRegistration": "Registrazione fallita",
     "errEnterEmail": "Inserisci la tua email",
@@ -189,7 +195,10 @@
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?",
     "connecting": "Connessione...",
-    "creatingAccount": "Creazione account..."
+    "creatingAccount": "Creazione account...",
+    "errPasswordLowercase": "La password deve contenere almeno una lettera minuscola",
+    "errPasswordDigit": "La password deve contenere almeno un numero",
+    "pwChars": "car."
   },
   "bonus": {
     "welcomeBonus": "Bonus di Benvenuto",
@@ -461,12 +470,16 @@
     "showLess": "Mostra meno",
     "moreQuestions": "Altre domande",
     "inputPlaceholder": "Chiedi di qualsiasi partita, campionato o squadra...",
-    "freeLimitReached": "Limite gratuito raggiunto",
-    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite",
+    "freeLimitReached": "Limite giornaliero raggiunto",
+    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite di oggi",
     "unlockUnlimitedAI": "Sblocca AI illimitato",
     "depositForUnlimited": "Deposita su {{name}} → Richieste AI illimitate",
     "depositAndUnlock": "Deposita e sblocca",
-    "maybeLater": "Più tardi"
+    "maybeLater": "Più tardi",
+    "newRequestsIn": "Nuove richieste disponibili tra {{time}}",
+    "tomorrowYouGet": "Domani avrai {{count}} richieste gratuite",
+    "dailyFreeRequest": "1 richiesta gratuita ogni giorno",
+    "resetsNow": "In aggiornamento"
   },
   "proTools": {
     "getPro": "Ottieni PRO",
@@ -521,7 +534,7 @@
     "captchaRequired": "Verifica captcha richiesta. Registrati direttamente.",
     "captchaRegister": "Captcha richiesto. Registrati sul sito del bookmaker.",
     "errEmailPhone": "Inserisci email o telefono",
-    "errPasswordLength": "La password deve essere di almeno 6 caratteri",
+    "errPasswordLength": "La password deve avere almeno 8 caratteri",
     "connectAccount": "Collega Conto",
     "createAccount": "Crea Conto",
     "loginDesc": "Inserisci le credenziali per collegarti",
@@ -542,7 +555,11 @@
     "noAccount": "Non hai un conto?",
     "registerAt": "Registrati su {{name}}",
     "emailPlaceholder": "esempio@email.com",
-    "phonePlaceholder": "+1234567890"
+    "phonePlaceholder": "+1234567890",
+    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
+    "errPasswordLowercase": "La password deve contenere almeno una lettera minuscola",
+    "errPasswordDigit": "La password deve contenere almeno un numero",
+    "pwChars": "car."
   },
   "share": {
     "sharePrediction": "Condividi Pronostico",

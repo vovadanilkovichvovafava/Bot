@@ -26,7 +26,13 @@
     "aiAnalysis": "Analiză AI",
     "getAnalysis": "Obține Analiză AI",
     "analyzing": "Se analizează...",
-    "viewAll": "Vezi Tot"
+    "viewAll": "Vezi Tot",
+    "aiPromoAsk": "AI crede că {{team}} câștigă — întreabă de ce?",
+    "aiPromoNoMatch": "Întreabă AI despre cele mai bune pariuri de azi!",
+    "aiPromoTry": "Încearcă AI",
+    "aiNudgeTitle": "Bun venit! Încearcă asistentul nostru AI",
+    "aiNudgeDesc": "Întreabă orice despre meciuri, predicții și sfaturi — AI te va ajuta!",
+    "aiNudgeCta": "Chat cu AI"
   },
   "matches": {
     "today": "Azi",
@@ -73,7 +79,12 @@
     "noAccount": "Nu ai cont?",
     "hasAccount": "Ai deja cont?",
     "connecting": "Se conectează...",
-    "creatingAccount": "Se creează contul..."
+    "creatingAccount": "Se creează contul...",
+    "errPasswordLength": "Parola trebuie să aibă cel puțin 8 caractere",
+    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
+    "errPasswordLowercase": "Parola trebuie să conțină cel puțin o literă mică",
+    "errPasswordDigit": "Parola trebuie să conțină cel puțin o cifră",
+    "pwChars": "car."
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bun Venit",
