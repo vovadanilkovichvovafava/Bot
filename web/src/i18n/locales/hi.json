@@ -81,7 +81,7 @@
     "connecting": "कनेक्ट हो रहा है...",
     "creatingAccount": "अकाउंट बन रहा है...",
     "errPasswordLength": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए",
-    "passwordPlaceholder": "कम से कम 8 अक्षर (Aa + 0-9)",
+    "passwordPlaceholder": "कम से कम 6 अक्षर",
     "errPasswordLowercase": "पासवर्ड में कम से कम एक छोटा अक्षर होना चाहिए",
     "errPasswordDigit": "पासवर्ड में कम से कम एक अंक होना चाहिए",
     "pwChars": "अक्षर",

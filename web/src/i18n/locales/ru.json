@@ -159,7 +159,7 @@
     "confirmPasswordLabel": "Подтвердите пароль",
     "emailPlaceholder": "example@email.com",
     "optionalPlaceholder": "Необязательно",
-    "passwordPlaceholder": "Мин. 8 симв. (Aa + 0-9)",
+    "passwordPlaceholder": "Мин. 6 символов",
     "repeatPasswordPlaceholder": "Повторите пароль",
     "required": "*",
     "alreadyHaveAccount": "Уже есть аккаунт?",

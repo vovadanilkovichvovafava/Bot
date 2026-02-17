@@ -159,7 +159,7 @@
     "confirmPasswordLabel": "Passwort bestätigen",
     "emailPlaceholder": "beispiel@email.com",
     "optionalPlaceholder": "Optional",
-    "passwordPlaceholder": "Min 8 Zeichen (Aa + 0-9)",
+    "passwordPlaceholder": "Min. 6 Zeichen",
     "repeatPasswordPlaceholder": "Passwort wiederholen",
     "required": "*",
     "alreadyHaveAccount": "Hast du bereits ein Konto?",

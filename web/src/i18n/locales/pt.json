@@ -81,7 +81,7 @@
     "connecting": "Conectando...",
     "creatingAccount": "Criando Conta...",
     "errPasswordLength": "A senha deve ter pelo menos 6 caracteres",
-    "passwordPlaceholder": "Mín 8 car. (Aa + 0-9)",
+    "passwordPlaceholder": "Mín. 6 caracteres",
     "errPasswordLowercase": "A senha deve conter pelo menos uma letra minúscula",
     "errPasswordDigit": "A senha deve conter pelo menos um dígito",
     "pwChars": "car.",

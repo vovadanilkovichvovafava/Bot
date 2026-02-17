@@ -81,7 +81,7 @@
     "connecting": "Se conectează...",
     "creatingAccount": "Se creează contul...",
     "errPasswordLength": "Parola trebuie să aibă cel puțin 6 caractere",
-    "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
+    "passwordPlaceholder": "Min 6 caractere",
     "errPasswordLowercase": "Parola trebuie să conțină cel puțin o literă mică",
     "errPasswordDigit": "Parola trebuie să conțină cel puțin o cifră",
     "pwChars": "car.",

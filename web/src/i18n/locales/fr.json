@@ -153,7 +153,7 @@
     "confirmPasswordLabel": "Confirmer le mot de passe",
     "emailPlaceholder": "exemple@email.com",
     "optionalPlaceholder": "Facultatif",
-    "passwordPlaceholder": "Min. 6 caract., 1 majuscule",
+    "passwordPlaceholder": "Min. 6 caractères",
     "repeatPasswordPlaceholder": "Répéter le mot de passe",
     "required": "*",
     "alreadyHaveAccount": "Vous avez déjà un compte ?",

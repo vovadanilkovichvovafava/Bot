@@ -81,7 +81,7 @@
     "connecting": "Bağlanıyor...",
     "creatingAccount": "Hesap oluşturuluyor...",
     "errPasswordLength": "Şifre en az 6 karakter olmalıdır",
-    "passwordPlaceholder": "Min 8 kar. (Aa + 0-9)",
+    "passwordPlaceholder": "Min 6 karakter",
     "errPasswordLowercase": "Şifre en az bir küçük harf içermelidir",
     "errPasswordDigit": "Şifre en az bir rakam içermelidir",
     "pwChars": "kar.",
