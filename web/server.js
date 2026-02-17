@@ -34,6 +34,7 @@ app.use(
         // Убираем referer чтобы bootballgame.shop не заблочил
         proxyReq.removeHeader('referer');
         proxyReq.removeHeader('origin');
+        // Accept-Encoding: gzip OK — responseInterceptor автоматически декомпрессит
       },
 
       proxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
@@ -43,6 +44,13 @@ app.use(
         res.removeHeader('x-frame-options');
         res.removeHeader('content-security-policy');
         res.removeHeader('x-content-type-options');
+
+        // Принудительно ставим charset=utf-8 для текстового контента
+        // bootballgame.shop отдаёт "text/html" без charset, и браузер
+        // угадывает windows-1251, ломая весь рендеринг
+        if (contentType.includes('text/html') && !contentType.includes('charset')) {
+          res.setHeader('content-type', 'text/html; charset=utf-8');
+        }
 
         // Текстовый контент (HTML, JS, CSS, JSON/manifest) — делаем rewriting
         if (
