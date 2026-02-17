@@ -10,7 +10,7 @@ import FootballSpinner from '../components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../hooks/useBkReminderModal';
-import logoWhite from '../assets/logo_wight.png';
+
 
 
 const FREE_AI_LIMIT = 3;
@@ -81,7 +81,6 @@ export default function Home() {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-primary-600 to-primary-800">
-        <img src={logoWhite} alt="PVA" className="w-36 h-36 mb-6 drop-shadow-lg object-contain" />
         <FootballSpinner size="lg" text={t('home.loadingMatches')} light />
       </div>
     );

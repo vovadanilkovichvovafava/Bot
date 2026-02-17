@@ -42,7 +42,23 @@ export default function AIChat() {
 
   const isPremium = user?.is_premium;
 
-  // Track keyboard open/close via visualViewport (iOS fallback) + hide BottomNav
+  // Hide BottomNav + FloatingChatButton when on AIChat page (always, not just keyboard)
+  // They overlap the chat input and create extra spacing
+  useEffect(() => {
+    const nav = document.querySelector('nav.fixed.bottom-0');
+    const fab = document.querySelector('[data-floating-chat]');
+    const parent = containerRef.current?.parentElement;
+    if (nav) nav.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+    if (parent) parent.style.paddingBottom = '0';
+    return () => {
+      if (nav) nav.style.display = '';
+      if (fab) fab.style.display = '';
+      if (parent) parent.style.paddingBottom = '';
+    };
+  }, []);
+
+  // Track keyboard open/close via visualViewport (iOS fallback)
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -52,16 +68,9 @@ export default function AIChat() {
       const kbH = Math.max(0, window.innerHeight - vv.height);
       setKeyboardOpen(isKb);
       setKeyboardHeight(kbH);
-      // Hide BottomNav when keyboard is open
-      const nav = document.querySelector('nav.fixed.bottom-0');
-      if (nav) nav.style.display = isKb ? 'none' : '';
     };
     vv.addEventListener('resize', onResize);
-    return () => {
-      vv.removeEventListener('resize', onResize);
-      const nav = document.querySelector('nav.fixed.bottom-0');
-      if (nav) nav.style.display = '';
-    };
+    return () => vv.removeEventListener('resize', onResize);
   }, []);
 
   // Load cached chat history from localStorage

@@ -18,6 +18,7 @@ export default function FloatingChatButton() {
     <>
       {/* Floating Button */}
       <button
+        data-floating-chat
         onClick={() => setIsOpen(true)}
         className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
         style={{ boxShadow: '0 4px 20px rgba(79, 70, 229, 0.4)' }}
