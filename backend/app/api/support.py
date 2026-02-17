@@ -533,7 +533,7 @@ async def support_chat(
     is_pro = False
     if user:
         is_pro = bool(user.is_premium) and (
-            user.premium_until is None or user.premium_until > datetime.now(timezone.utc)
+            user.premium_until is None or user.premium_until.replace(tzinfo=None) > datetime.utcnow()
         )
 
     # Language
