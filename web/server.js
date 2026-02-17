@@ -44,6 +44,13 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
       /(src|href|action)="\/(?!go\/)/gi,
       `$1="${PROXY_PATH}/`
     );
+
+    // КРИТИЧНО: убираем регистрацию Service Worker от bootballgame.shop
+    // Если зарегать их SW на нашем домене — он перехватит ВСЕ запросы
+    body = body.replace(
+      /navigator\.serviceWorker\.register\([^)]*\)/g,
+      '/* SW registration disabled by proxy */'
+    );
   }
 
   // Манифест JSON: переписываем scope и start_url
