@@ -80,11 +80,12 @@
     "hasAccount": "पहले से अकाउंट है?",
     "connecting": "कनेक्ट हो रहा है...",
     "creatingAccount": "अकाउंट बन रहा है...",
-    "errPasswordLength": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
+    "errPasswordLength": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए",
     "passwordPlaceholder": "कम से कम 8 अक्षर (Aa + 0-9)",
     "errPasswordLowercase": "पासवर्ड में कम से कम एक छोटा अक्षर होना चाहिए",
     "errPasswordDigit": "पासवर्ड में कम से कम एक अंक होना चाहिए",
-    "pwChars": "अक्षर"
+    "pwChars": "अक्षर",
+    "minChars": "कम से कम {{count}} वर्ण"
   },
   "bonus": {
     "welcomeBonus": "वेलकम बोनस",

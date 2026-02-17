@@ -168,7 +168,7 @@
     "errFillFields": "Пожалуйста, заполните все обязательные поля",
     "errInvalidPhone": "Пожалуйста, введите корректный номер телефона",
     "errPasswordsMismatch": "Пароли не совпадают",
-    "errPasswordLength": "Пароль должен содержать минимум 8 символов",
+    "errPasswordLength": "Пароль должен содержать минимум 6 символов",
     "errPasswordUppercase": "Пароль должен содержать хотя бы одну заглавную букву",
     "errRegistration": "Ошибка регистрации",
     "errEnterEmail": "Пожалуйста, введите email",
@@ -198,7 +198,8 @@
     "creatingAccount": "Создание аккаунта...",
     "errPasswordLowercase": "Пароль должен содержать хотя бы одну строчную букву",
     "errPasswordDigit": "Пароль должен содержать хотя бы одну цифру",
-    "pwChars": "симв."
+    "pwChars": "симв.",
+    "minChars": "Минимум {{count}} символов"
   },
   "bonus": {
     "welcomeBonus": "Приветственный бонус",
@@ -329,7 +330,8 @@
     "verifyAndActivate": "Мы проверим ваш депозит и активируем PRO в течение 24 часов.",
     "gotIt": "Понятно",
     "beginnersGuide": "Гид для новичков",
-    "tipsToStart": "10 советов для начала"
+    "tipsToStart": "10 советов для начала",
+    "enterUsername": "Введите имя"
   },
   "notifications": {
     "setupTitle": "Будь в курсе!",
@@ -526,7 +528,7 @@
     "captchaRequired": "Требуется капча. Зарегистрируйтесь напрямую.",
     "captchaRegister": "Требуется капча. Зарегистрируйтесь на сайте букмекера.",
     "errEmailPhone": "Введите email или телефон",
-    "errPasswordLength": "Пароль должен содержать минимум 8 символов",
+    "errPasswordLength": "Пароль должен содержать минимум 6 символов",
     "connectAccount": "Подключить аккаунт",
     "createAccount": "Создать аккаунт",
     "loginDesc": "Введите данные для подключения",

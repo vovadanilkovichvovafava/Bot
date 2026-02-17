@@ -189,7 +189,8 @@
     "noAccount": "Pas de compte ?",
     "hasAccount": "Déjà un compte ?",
     "connecting": "Connexion...",
-    "creatingAccount": "Création du compte..."
+    "creatingAccount": "Création du compte...",
+    "minChars": "Minimum {{count}} caractères"
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bienvenue",
@@ -320,7 +321,8 @@
     "verifyAndActivate": "Nous vérifierons votre dépôt et activerons PRO dans les 24 heures.",
     "gotIt": "Compris",
     "beginnersGuide": "Guide du Débutant",
-    "tipsToStart": "10 conseils pour bien démarrer"
+    "tipsToStart": "10 conseils pour bien démarrer",
+    "enterUsername": "Entrez le nom d'utilisateur"
   },
   "notifications": {
     "setupTitle": "Restez informé !",

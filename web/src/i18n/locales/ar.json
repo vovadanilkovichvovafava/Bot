@@ -80,11 +80,12 @@
     "hasAccount": "لديك حساب بالفعل؟",
     "connecting": "جاري الاتصال...",
     "creatingAccount": "جاري إنشاء الحساب...",
-    "errPasswordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
+    "errPasswordLength": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
     "passwordPlaceholder": "8 أحرف على الأقل (Aa + 0-9)",
     "errPasswordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
     "errPasswordDigit": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
-    "pwChars": "حرف"
+    "pwChars": "حرف",
+    "minChars": "{{count}} أحرف على الأقل"
   },
   "bonus": {
     "welcomeBonus": "مكافأة الترحيب",

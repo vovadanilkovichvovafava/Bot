@@ -168,7 +168,7 @@
     "errFillFields": "Please fill in all required fields",
     "errInvalidPhone": "Please enter a valid phone number",
     "errPasswordsMismatch": "Passwords do not match",
-    "errPasswordLength": "Password must be at least 8 characters",
+    "errPasswordLength": "Password must be at least 6 characters",
     "errPasswordUppercase": "Password must contain at least one uppercase letter",
     "errRegistration": "Registration failed",
     "errEnterEmail": "Please enter your email",
@@ -198,7 +198,8 @@
     "creatingAccount": "Creating Account...",
     "errPasswordLowercase": "Password must contain at least one lowercase letter",
     "errPasswordDigit": "Password must contain at least one digit",
-    "pwChars": "chars"
+    "pwChars": "chars",
+    "minChars": "Minimum {{count}} characters"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",
@@ -329,7 +330,8 @@
     "verifyAndActivate": "We'll verify your deposit and activate PRO within 24 hours.",
     "gotIt": "Got it",
     "beginnersGuide": "Beginner's Guide",
-    "tipsToStart": "10 tips to get started"
+    "tipsToStart": "10 tips to get started",
+    "enterUsername": "Enter username"
   },
   "notifications": {
     "setupTitle": "Stay updated!",
@@ -530,7 +532,7 @@
     "captchaRequired": "Captcha verification required. Please register directly.",
     "captchaRegister": "Captcha required. Please register at the bookmaker website.",
     "errEmailPhone": "Please enter email or phone",
-    "errPasswordLength": "Password must be at least 8 characters",
+    "errPasswordLength": "Password must be at least 6 characters",
     "connectAccount": "Connect Account",
     "createAccount": "Create Account",
     "loginDesc": "Enter your credentials to connect",

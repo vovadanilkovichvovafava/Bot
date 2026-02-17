@@ -80,11 +80,12 @@
     "hasAccount": "Já tem conta?",
     "connecting": "Conectando...",
     "creatingAccount": "Criando Conta...",
-    "errPasswordLength": "A senha deve ter pelo menos 8 caracteres",
+    "errPasswordLength": "A senha deve ter pelo menos 6 caracteres",
     "passwordPlaceholder": "Mín 8 car. (Aa + 0-9)",
     "errPasswordLowercase": "A senha deve conter pelo menos uma letra minúscula",
     "errPasswordDigit": "A senha deve conter pelo menos um dígito",
-    "pwChars": "car."
+    "pwChars": "car.",
+    "minChars": "Mínimo de {{count}} caracteres"
   },
   "bonus": {
     "welcomeBonus": "Bônus de Boas-vindas",

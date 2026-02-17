@@ -80,11 +80,12 @@
     "hasAccount": "已有账户？",
     "connecting": "连接中...",
     "creatingAccount": "创建账户中...",
-    "errPasswordLength": "密码必须至少8个字符",
+    "errPasswordLength": "密码必须至少6个字符",
     "passwordPlaceholder": "至少8个字符 (Aa + 0-9)",
     "errPasswordLowercase": "密码必须包含至少一个小写字母",
     "errPasswordDigit": "密码必须包含至少一个数字",
-    "pwChars": "字符"
+    "pwChars": "字符",
+    "minChars": "最少{{count}}个字符"
   },
   "bonus": {
     "welcomeBonus": "欢迎奖金",

@@ -168,7 +168,7 @@
     "errFillFields": "Compila tutti i campi obbligatori",
     "errInvalidPhone": "Inserisci un numero di telefono valido",
     "errPasswordsMismatch": "Le password non corrispondono",
-    "errPasswordLength": "La password deve avere almeno 8 caratteri",
+    "errPasswordLength": "La password deve avere almeno 6 caratteri",
     "errPasswordUppercase": "La password deve contenere almeno una lettera maiuscola",
     "errRegistration": "Registrazione fallita",
     "errEnterEmail": "Inserisci la tua email",
@@ -198,7 +198,8 @@
     "creatingAccount": "Creazione account...",
     "errPasswordLowercase": "La password deve contenere almeno una lettera minuscola",
     "errPasswordDigit": "La password deve contenere almeno un numero",
-    "pwChars": "car."
+    "pwChars": "car.",
+    "minChars": "Minimo {{count}} caratteri"
   },
   "bonus": {
     "welcomeBonus": "Bonus di Benvenuto",
@@ -329,7 +330,8 @@
     "verifyAndActivate": "Verificheremo il tuo deposito e attiveremo PRO entro 24 ore.",
     "gotIt": "Capito",
     "beginnersGuide": "Guida per principianti",
-    "tipsToStart": "10 consigli per iniziare"
+    "tipsToStart": "10 consigli per iniziare",
+    "enterUsername": "Inserisci nome utente"
   },
   "notifications": {
     "setupTitle": "Rimani aggiornato!",
@@ -534,7 +536,7 @@
     "captchaRequired": "Verifica captcha richiesta. Registrati direttamente.",
     "captchaRegister": "Captcha richiesto. Registrati sul sito del bookmaker.",
     "errEmailPhone": "Inserisci email o telefono",
-    "errPasswordLength": "La password deve avere almeno 8 caratteri",
+    "errPasswordLength": "La password deve avere almeno 6 caratteri",
     "connectAccount": "Collega Conto",
     "createAccount": "Crea Conto",
     "loginDesc": "Inserisci le credenziali per collegarti",

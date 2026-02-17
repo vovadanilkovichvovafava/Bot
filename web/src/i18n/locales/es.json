@@ -189,7 +189,8 @@
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
     "connecting": "Conectando...",
-    "creatingAccount": "Creando Cuenta..."
+    "creatingAccount": "Creando Cuenta...",
+    "minChars": "Mínimo {{count}} caracteres"
   },
   "bonus": {
     "welcomeBonus": "Bono de Bienvenida",
@@ -320,7 +321,8 @@
     "verifyAndActivate": "Verificaremos tu depósito y activaremos PRO en 24 horas.",
     "gotIt": "Entendido",
     "beginnersGuide": "Guía para Principiantes",
-    "tipsToStart": "10 consejos para empezar"
+    "tipsToStart": "10 consejos para empezar",
+    "enterUsername": "Ingresa nombre de usuario"
   },
   "notifications": {
     "setupTitle": "¡Mantente al día!",

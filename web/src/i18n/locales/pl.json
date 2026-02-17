@@ -168,7 +168,7 @@
     "errFillFields": "Wypełnij wszystkie wymagane pola",
     "errInvalidPhone": "Podaj prawidłowy numer telefonu",
     "errPasswordsMismatch": "Hasła nie pasują do siebie",
-    "errPasswordLength": "Hasło musi mieć co najmniej 8 znaków",
+    "errPasswordLength": "Hasło musi mieć co najmniej 6 znaków",
     "errPasswordUppercase": "Hasło musi zawierać co najmniej jedną wielką literę",
     "errRegistration": "Rejestracja nie powiodła się",
     "errEnterEmail": "Podaj swój adres email",
@@ -198,7 +198,8 @@
     "creatingAccount": "Tworzenie konta...",
     "errPasswordLowercase": "Hasło musi zawierać co najmniej jedną małą literę",
     "errPasswordDigit": "Hasło musi zawierać co najmniej jedną cyfrę",
-    "pwChars": "zn."
+    "pwChars": "zn.",
+    "minChars": "Minimum {{count}} znaków"
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",
@@ -329,7 +330,8 @@
     "verifyAndActivate": "Zweryfikujemy Twój depozyt i aktywujemy PRO w ciągu 24 godzin.",
     "gotIt": "Rozumiem",
     "beginnersGuide": "Poradnik dla początkujących",
-    "tipsToStart": "10 wskazówek na start"
+    "tipsToStart": "10 wskazówek na start",
+    "enterUsername": "Wprowadź nazwę użytkownika"
   },
   "notifications": {
     "setupTitle": "Bądź na bieżąco!",
@@ -521,7 +523,7 @@
     "captchaRequired": "Wymagana weryfikacja captcha. Zarejestruj się bezpośrednio.",
     "captchaRegister": "Wymagana captcha. Zarejestruj się na stronie bukmachera.",
     "errEmailPhone": "Wprowadź email lub telefon",
-    "errPasswordLength": "Hasło musi mieć co najmniej 8 znaków",
+    "errPasswordLength": "Hasło musi mieć co najmniej 6 znaków",
     "connectAccount": "Podłącz Konto",
     "createAccount": "Utwórz Konto",
     "loginDesc": "Wprowadź dane logowania",

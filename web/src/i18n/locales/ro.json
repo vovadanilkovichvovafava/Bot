@@ -80,11 +80,12 @@
     "hasAccount": "Ai deja cont?",
     "connecting": "Se conectează...",
     "creatingAccount": "Se creează contul...",
-    "errPasswordLength": "Parola trebuie să aibă cel puțin 8 caractere",
+    "errPasswordLength": "Parola trebuie să aibă cel puțin 6 caractere",
     "passwordPlaceholder": "Min 8 car. (Aa + 0-9)",
     "errPasswordLowercase": "Parola trebuie să conțină cel puțin o literă mică",
     "errPasswordDigit": "Parola trebuie să conțină cel puțin o cifră",
-    "pwChars": "car."
+    "pwChars": "car.",
+    "minChars": "Minimum {{count}} caractere"
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bun Venit",
