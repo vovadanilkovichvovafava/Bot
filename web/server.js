@@ -1,5 +1,6 @@
 import express from 'express';
-import { createProxyMiddleware, responseInterceptor } from 'http-proxy-middleware';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import zlib from 'zlib';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,125 +8,162 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const PROXY_TARGET = 'https://bootballgame.shop';
 const PROXY_PATH = '/go';
+const TARGET_HOST = 'bootballgame.shop';
 
 const app = express();
 
+// ─── Helper: определяет нужен ли URL rewriting для этого content-type ────
+function isRewritable(contentType) {
+  return (
+    contentType.includes('text/html') ||
+    contentType.includes('application/javascript') ||
+    contentType.includes('text/javascript') ||
+    contentType.includes('text/css') ||
+    contentType.includes('application/json') ||
+    contentType.includes('application/manifest')
+  );
+}
+
+// ─── Helper: URL rewriting в тексте ──────────────────────────────────────
+function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
+  // Заменяем все ссылки на bootballgame.shop → наш домен/go
+  body = body.replace(
+    /https?:\/\/bootballgame\.shop/gi,
+    `${proxyOrigin}${PROXY_PATH}`
+  );
+
+  // //bootballgame.shop → //sportscoreai.com/go
+  body = body.replace(
+    /\/\/bootballgame\.shop/gi,
+    `//${proxyHost}${PROXY_PATH}`
+  );
+
+  // Относительные пути в HTML: "/assets/..." → "/go/assets/..."
+  if (contentType.includes('text/html')) {
+    body = body.replace(
+      /(src|href|action)="\/(?!go\/)/gi,
+      `$1="${PROXY_PATH}/`
+    );
+  }
+
+  // Манифест JSON: переписываем scope и start_url
+  if (contentType.includes('application/json') || contentType.includes('application/manifest')) {
+    body = body.replace(/"scope"\s*:\s*"\/"/g, `"scope":"${PROXY_PATH}/"`);
+    body = body.replace(/"start_url"\s*:\s*"\/(?!go\/)/g, `"start_url":"${PROXY_PATH}/`);
+  }
+
+  return body;
+}
+
 // ─── Reverse Proxy: /go/* → bootballgame.shop ───────────────────────────
-// Проксирует контент bootballgame.shop через наш домен,
-// чтобы из standalone PWA beforeinstallprompt мог сработать.
+// Паттерн из старого BetPWA proxy.js:
+// - selfHandleResponse + ручной сбор chunks
+// - zlib decompression для text контента
+// - pipe для бинарного контента
 
 app.use(
   PROXY_PATH,
   createProxyMiddleware({
     target: PROXY_TARGET,
     changeOrigin: true,
-    selfHandleResponse: true, // нужно для responseInterceptor
-
-    pathRewrite: (reqPath) => {
-      // /go/assets/index.js → /assets/index.js
-      // /go/?sub_id_10=xxx → /?sub_id_10=xxx
-      return reqPath; // http-proxy-middleware уже стрипает prefix при pathRewrite
-    },
+    selfHandleResponse: true,
 
     on: {
       proxyReq: (proxyReq, req) => {
-        // Подменяем Host на целевой домен
-        proxyReq.setHeader('Host', 'bootballgame.shop');
-        // Убираем referer чтобы bootballgame.shop не заблочил
+        proxyReq.setHeader('Host', TARGET_HOST);
         proxyReq.removeHeader('referer');
         proxyReq.removeHeader('origin');
-        // Accept-Encoding: gzip OK — responseInterceptor автоматически декомпрессит
       },
 
-      proxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
+      proxyRes: (proxyRes, req, res) => {
         const contentType = proxyRes.headers['content-type'] || '';
+        const contentEncoding = proxyRes.headers['content-encoding'] || '';
 
-        // Убираем security headers которые мешают
-        res.removeHeader('x-frame-options');
-        res.removeHeader('content-security-policy');
-        res.removeHeader('x-content-type-options');
+        // ─── Security headers removal ───
+        const headersToRemove = [
+          'x-frame-options',
+          'content-security-policy',
+          'content-security-policy-report-only',
+          'x-content-type-options',
+          'x-xss-protection',
+          'strict-transport-security',
+          'cross-origin-opener-policy',
+          'cross-origin-embedder-policy',
+          'cross-origin-resource-policy',
+          'permissions-policy',
+        ];
 
-        // Принудительно ставим charset=utf-8 для текстового контента
-        // bootballgame.shop отдаёт "text/html" без charset, и браузер
-        // угадывает windows-1251, ломая весь рендеринг
-        if (contentType.includes('text/html') && !contentType.includes('charset')) {
-          res.setHeader('content-type', 'text/html; charset=utf-8');
-        }
+        // ─── Копируем headers от upstream ───
+        for (const [key, value] of Object.entries(proxyRes.headers)) {
+          if (headersToRemove.includes(key.toLowerCase())) continue;
+          if (key.toLowerCase() === 'content-encoding') continue; // Убираем — мы декомпрессим сами
+          if (key.toLowerCase() === 'content-length') continue;   // Убираем — после rewrite длина другая
+          if (key.toLowerCase() === 'transfer-encoding') continue;
 
-        // Текстовый контент (HTML, JS, CSS, JSON/manifest) — делаем rewriting
-        if (
-          contentType.includes('text/html') ||
-          contentType.includes('application/javascript') ||
-          contentType.includes('text/javascript') ||
-          contentType.includes('text/css') ||
-          contentType.includes('application/json') ||
-          contentType.includes('application/manifest')
-        ) {
-          let body = responseBuffer.toString('utf8');
-
-          // Определяем наш хост (sportscoreai.com или localhost:3000)
-          const proxyHost = req.headers.host || 'localhost';
-          const proxyScheme = req.secure || req.headers['x-forwarded-proto'] === 'https'
-            ? 'https' : 'http';
-          const proxyOrigin = `${proxyScheme}://${proxyHost}`;
-
-          // Заменяем все ссылки на bootballgame.shop → наш домен/go
-          // https://bootballgame.shop → https://sportscoreai.com/go
-          body = body.replace(
-            /https?:\/\/bootballgame\.shop/gi,
-            `${proxyOrigin}${PROXY_PATH}`
-          );
-
-          // //bootballgame.shop → //sportscoreai.com/go
-          body = body.replace(
-            /\/\/bootballgame\.shop/gi,
-            `//${proxyHost}${PROXY_PATH}`
-          );
-
-          // Относительные пути: "/assets/..." → "/go/assets/..."
-          // Но только в HTML (не в JS где пути могут быть другими)
-          if (contentType.includes('text/html')) {
-            // src="/assets/..." → src="/go/assets/..."
-            body = body.replace(
-              /(src|href|action)="\/(?!go\/)/gi,
-              `$1="${PROXY_PATH}/`
+          // Cookie domain rewriting
+          if (key.toLowerCase() === 'set-cookie') {
+            const cookies = Array.isArray(value) ? value : [value];
+            const rewritten = cookies.map(c =>
+              c.replace(/domain=[^;]+/gi, `domain=${req.headers.host?.split(':')[0] || 'localhost'}`)
+               .replace(/secure;?\s*/gi, '')
+               .replace(/samesite=\w+/gi, 'SameSite=Lax')
             );
+            res.setHeader('set-cookie', rewritten);
+            continue;
           }
 
-          // Манифест JSON: переписываем scope и start_url
-          if (contentType.includes('application/json') || contentType.includes('application/manifest')) {
-            // "scope":"/" → "scope":"/go/"
-            body = body.replace(
-              /"scope"\s*:\s*"\/"/g,
-              `"scope":"${PROXY_PATH}/"`
-            );
-            // "start_url":"/pwa_xxx" → "start_url":"/go/pwa_xxx"
-            body = body.replace(
-              /"start_url"\s*:\s*"\/(?!go\/)/g,
-              `"start_url":"${PROXY_PATH}/`
-            );
-          }
-
-          return body;
+          try { res.setHeader(key, value); } catch {}
         }
 
-        // Бинарный контент (картинки, шрифты) — без изменений
-        return responseBuffer;
-      }),
+        // ─── Текстовый контент: собираем chunks, декомпрессим, rewrite ───
+        if (isRewritable(contentType)) {
+          // Charset fix: bootballgame.shop не отдаёт charset
+          if (contentType.includes('text/html') && !contentType.includes('charset')) {
+            res.setHeader('content-type', 'text/html; charset=utf-8');
+          }
+
+          const chunks = [];
+          let stream = proxyRes;
+
+          // Декомпрессия по типу encoding
+          if (contentEncoding === 'gzip' || contentEncoding === 'x-gzip') {
+            stream = proxyRes.pipe(zlib.createGunzip());
+          } else if (contentEncoding === 'deflate') {
+            stream = proxyRes.pipe(zlib.createInflate());
+          } else if (contentEncoding === 'br') {
+            stream = proxyRes.pipe(zlib.createBrotliDecompress());
+          }
+
+          stream.on('data', (chunk) => chunks.push(chunk));
+          stream.on('end', () => {
+            let body = Buffer.concat(chunks).toString('utf-8');
+
+            // Определяем наш хост
+            const proxyHost = req.headers.host || 'localhost';
+            const proxyScheme = req.secure || req.headers['x-forwarded-proto'] === 'https'
+              ? 'https' : 'http';
+            const proxyOrigin = `${proxyScheme}://${proxyHost}`;
+
+            body = rewriteBody(body, contentType, proxyHost, proxyOrigin);
+
+            res.writeHead(proxyRes.statusCode);
+            res.end(body);
+          });
+
+          stream.on('error', (err) => {
+            console.error('[Proxy] Decompression error:', err.message);
+            res.writeHead(502);
+            res.end('Proxy decompression error');
+          });
+
+        } else {
+          // ─── Бинарный контент: pipe напрямую без изменений ───
+          res.writeHead(proxyRes.statusCode);
+          proxyRes.pipe(res);
+        }
+      },
     },
 
-    // Cookie rewriting
-    cookieDomainRewrite: {
-      'bootballgame.shop': '',  // пустая строка = текущий домен
-      '*': '',
-    },
-
-    // Убираем secure flag с кук (для localhost тестирования)
-    cookiePathRewrite: {
-      '*': '/',
-    },
-
-    // Логирование ошибок
     logger: console,
   })
 );
@@ -143,7 +181,6 @@ app.use('/assets', express.static(path.join(distPath, 'assets'), {
 // Остальная статика (manifest.json, sw.js, иконки)
 app.use(express.static(distPath, {
   maxAge: '1h',
-  // НЕ отдаём index.html через static — только через fallback ниже
   index: false,
 }));
 
