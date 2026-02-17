@@ -1,6 +1,7 @@
-"""Predictions endpoints - real AI analysis via Claude"""
+"""Predictions endpoints - real AI analysis via Claude + degressive limits"""
 import json
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
 from typing import List, Optional
@@ -10,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.prediction import Prediction
+from app.models.user import User
 from app.services.match_analyzer import MatchAnalyzer
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 BET_NAMES = {
@@ -20,6 +23,112 @@ BET_NAMES = {
     "1X": "Home or Draw", "X2": "Away or Draw",
 }
 
+# Degressive limits: day_number -> max_requests
+DEGRESSIVE_LIMITS = {
+    1: 3,  # First day of usage: 3 free requests
+    2: 2,  # Second day: 2 free requests
+    3: 1,  # Third day+: 1 free request per day
+}
+
+
+def get_daily_limit(day_number: int) -> int:
+    """Get the daily limit based on which day of usage this is."""
+    if day_number <= 0:
+        day_number = 1
+    if day_number in DEGRESSIVE_LIMITS:
+        return DEGRESSIVE_LIMITS[day_number]
+    return DEGRESSIVE_LIMITS[3]  # Day 3+ = 1 request/day
+
+
+async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
+    """
+    Check user's AI chat limits and update day tracking.
+    Returns: {remaining, limit, day_number, resets_at, is_premium}
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Premium users have unlimited access
+    if user.is_premium:
+        return {
+            "remaining": 999,
+            "limit": 999,
+            "day_number": 0,
+            "resets_at": None,
+            "is_premium": True,
+        }
+
+    now = datetime.utcnow()
+    today = now.date()
+
+    # Check if it's a new day since last request
+    if user.last_chat_request_date is None:
+        # First ever request — day 1
+        user.account_day_number = 1
+        user.daily_chat_requests = 0
+        user.last_chat_request_date = now
+    elif user.last_chat_request_date.date() < today:
+        # New day! Advance day_number and reset counter
+        user.account_day_number = (user.account_day_number or 1) + 1
+        user.daily_chat_requests = 0
+        user.last_chat_request_date = now
+
+    day_number = user.account_day_number or 1
+    limit = get_daily_limit(day_number)
+    used = user.daily_chat_requests or 0
+
+    # Add bonus from referrals
+    bonus = user.referral_bonus_requests or 0
+    total_limit = limit + bonus
+
+    remaining = max(0, total_limit - used)
+
+    # Calculate when the limit resets (next midnight UTC)
+    tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
+
+    await db.commit()
+
+    return {
+        "remaining": remaining,
+        "limit": total_limit,
+        "base_limit": limit,
+        "bonus": bonus,
+        "day_number": day_number,
+        "used": used,
+        "resets_at": tomorrow.isoformat() + "Z",
+        "is_premium": False,
+    }
+
+
+async def increment_chat_usage(user_id: int, db: AsyncSession):
+    """Increment the user's daily chat request counter after successful response."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return
+
+    now = datetime.utcnow()
+    today = now.date()
+
+    # Safety: if somehow date changed between check and increment
+    if user.last_chat_request_date and user.last_chat_request_date.date() < today:
+        user.account_day_number = (user.account_day_number or 1) + 1
+        user.daily_chat_requests = 1
+    else:
+        user.daily_chat_requests = (user.daily_chat_requests or 0) + 1
+
+    user.last_chat_request_date = now
+    await db.commit()
+
+    logger.info(
+        f"User {user_id} chat usage: {user.daily_chat_requests} requests, "
+        f"day {user.account_day_number}"
+    )
+
+
+# === Response models ===
 
 class PredictionResponse(BaseModel):
     id: int
@@ -51,15 +160,77 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    remaining: Optional[int] = None
+    limit: Optional[int] = None
+    day_number: Optional[int] = None
+    resets_at: Optional[str] = None
+
+
+class ChatLimitResponse(BaseModel):
+    remaining: int
+    limit: int
+    base_limit: int
+    bonus: int
+    day_number: int
+    used: int
+    resets_at: Optional[str] = None
+    is_premium: bool
+
+
+# === Endpoints ===
+
+@router.get("/chat/limit", response_model=ChatLimitResponse)
+async def get_chat_limit(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current user's AI chat limit info (degressive system)."""
+    limits = await check_and_update_limits(current_user["user_id"], db)
+    return ChatLimitResponse(**limits)
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def ai_chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
-    """AI chat for football questions and analysis"""
+async def ai_chat(
+    req: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """AI chat for football questions and analysis — with degressive limits."""
+    user_id = current_user["user_id"]
+
+    # Check limits BEFORE calling Claude (saves API costs)
+    limits = await check_and_update_limits(user_id, db)
+    if not limits["is_premium"] and limits["remaining"] <= 0:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "daily_limit_reached",
+                "message": "You've used all your free AI requests for today",
+                "remaining": 0,
+                "limit": limits["limit"],
+                "day_number": limits["day_number"],
+                "resets_at": limits["resets_at"],
+            }
+        )
+
+    # Call Claude AI
     analyzer = MatchAnalyzer()
     history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
     response = await analyzer.ai_chat(req.message, req.match_context or "", history)
-    return ChatResponse(response=response)
+
+    # Increment counter AFTER successful response
+    await increment_chat_usage(user_id, db)
+
+    # Get updated limits to return to frontend
+    updated_limits = await check_and_update_limits(user_id, db)
+
+    return ChatResponse(
+        response=response,
+        remaining=updated_limits["remaining"],
+        limit=updated_limits["limit"],
+        day_number=updated_limits["day_number"],
+        resets_at=updated_limits.get("resets_at"),
+    )
 
 
 class SavePredictionRequest(BaseModel):

@@ -35,6 +35,11 @@ class User(Base):
     daily_limit = Column(Integer, default=10)
     bonus_predictions = Column(Integer, default=3)
 
+    # Degressive AI chat limits (Day1=3, Day2=2, Day3+=1)
+    daily_chat_requests = Column(Integer, default=0)
+    last_chat_request_date = Column(DateTime, nullable=True)
+    account_day_number = Column(Integer, default=1)  # Tracks which "day" of usage
+
     min_odds = Column(Float, default=1.5)
     max_odds = Column(Float, default=3.0)
     risk_level = Column(String, default="medium")

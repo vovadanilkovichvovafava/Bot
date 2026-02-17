@@ -470,12 +470,16 @@
     "showLess": "Mostra meno",
     "moreQuestions": "Altre domande",
     "inputPlaceholder": "Chiedi di qualsiasi partita, campionato o squadra...",
-    "freeLimitReached": "Limite gratuito raggiunto",
-    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite",
+    "freeLimitReached": "Limite giornaliero raggiunto",
+    "usedAllRequests": "Hai utilizzato tutte le {{count}} richieste AI gratuite di oggi",
     "unlockUnlimitedAI": "Sblocca AI illimitato",
     "depositForUnlimited": "Deposita su {{name}} → Richieste AI illimitate",
     "depositAndUnlock": "Deposita e sblocca",
-    "maybeLater": "Più tardi"
+    "maybeLater": "Più tardi",
+    "newRequestsIn": "Nuove richieste disponibili tra {{time}}",
+    "tomorrowYouGet": "Domani avrai {{count}} richieste gratuite",
+    "dailyFreeRequest": "1 richiesta gratuita ogni giorno",
+    "resetsNow": "In aggiornamento"
   },
   "proTools": {
     "getPro": "Ottieni PRO",

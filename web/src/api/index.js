@@ -191,6 +191,11 @@ class ApiService {
       body: JSON.stringify(body),
     });
   }
+
+  // AI Chat limit (degressive system: Day1=3, Day2=2, Day3+=1/day)
+  async getChatLimit() {
+    return this.request('/predictions/chat/limit');
+  }
 }
 
 export const api = new ApiService();

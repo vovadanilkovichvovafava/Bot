@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -7,8 +7,6 @@ import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
 import FootballSpinner from '../components/FootballSpinner';
 
-const FREE_AI_LIMIT = 3;
-const AI_REQUESTS_KEY = 'ai_requests_count';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
@@ -41,7 +39,34 @@ export default function AIChat() {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  const isPremium = user?.is_premium;
+  // Server-side limit state (degressive: Day1=3, Day2=2, Day3+=1)
+  const [limitInfo, setLimitInfo] = useState({
+    remaining: 3,
+    limit: 3,
+    day_number: 1,
+    resets_at: null,
+    is_premium: false,
+  });
+  const [limitLoading, setLimitLoading] = useState(true);
+
+  const isPremium = user?.is_premium || limitInfo.is_premium;
+
+  // Fetch chat limits from server on mount
+  const fetchLimits = useCallback(async () => {
+    try {
+      const data = await api.getChatLimit();
+      setLimitInfo(data);
+    } catch (e) {
+      console.error('Failed to fetch chat limits:', e);
+      // Fallback: show 0 remaining so user isn't stuck
+    } finally {
+      setLimitLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLimits();
+  }, [fetchLimits]);
 
   // Track visual viewport height for mobile keyboard support
   useEffect(() => {
@@ -101,20 +126,20 @@ export default function AIChat() {
     }
   };
 
-  // Get AI request count from localStorage (for free users)
-  const getAIRequestCount = () => {
-    const count = localStorage.getItem(AI_REQUESTS_KEY);
-    return count ? parseInt(count, 10) : 0;
+  // Format time until reset (e.g. "5h 23m")
+  const getResetTimeString = () => {
+    if (!limitInfo.resets_at) return '';
+    const resetDate = new Date(limitInfo.resets_at);
+    const now = new Date();
+    const diffMs = resetDate - now;
+    if (diffMs <= 0) return t('aiChat.resetsNow', 'Soon');
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
   };
 
-  const incrementAIRequestCount = () => {
-    const newCount = getAIRequestCount() + 1;
-    localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
-    return newCount;
-  };
-
-  const aiRequestCount = getAIRequestCount();
-  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
+  const remaining = isPremium ? 999 : limitInfo.remaining;
 
   useEffect(() => {
     // Try to load cached chat history first
@@ -171,8 +196,8 @@ export default function AIChat() {
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return;
 
-    // Check free limit for non-premium users
-    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
+    // Check server-side limit for non-premium users
+    if (!isPremium && limitInfo.remaining <= 0) {
       setShowLimitModal(true);
       return;
     }
@@ -185,7 +210,6 @@ export default function AIChat() {
 
     try {
       // Build conversation history (exclude welcome message)
-      // Filter out any invalid messages to prevent 422 validation errors
       const history = messages
         .filter(m => m.id !== 'welcome' && m.role && m.content)
         .map(m => ({ role: String(m.role), content: String(m.content) }));
@@ -199,7 +223,6 @@ export default function AIChat() {
       let matchContext = null;
       try {
         const enriched = await enrichMessage(text);
-        // Ensure match_context is always a string or null (prevent 422 validation errors)
         matchContext = enriched ? String(enriched) : null;
       } catch (e) {
         console.error('Enrichment failed:', e);
@@ -208,9 +231,15 @@ export default function AIChat() {
 
       const data = await api.aiChat(textWithPrefs, history, matchContext);
 
-      // Increment counter for free users only AFTER successful response
-      if (!isPremium) {
-        incrementAIRequestCount();
+      // Update limits from server response (backend returns remaining/limit/etc)
+      if (data.remaining !== undefined) {
+        setLimitInfo(prev => ({
+          ...prev,
+          remaining: data.remaining,
+          limit: data.limit || prev.limit,
+          day_number: data.day_number || prev.day_number,
+          resets_at: data.resets_at || prev.resets_at,
+        }));
       }
 
       const newCount = responseCount + 1;
@@ -231,10 +260,13 @@ export default function AIChat() {
       saveChatHistory(newMessages);
     } catch (e) {
       console.error('AI Chat error:', e);
-      // Safely extract error message
       const errStr = typeof e === 'string' ? e : (e?.message || String(e));
       let errorMsg;
-      if (errStr.includes('402') || errStr.includes('limit')) {
+
+      if (errStr.includes('402') || errStr.includes('daily_limit_reached')) {
+        // Server returned limit reached — show modal and refresh limits
+        setShowLimitModal(true);
+        fetchLimits();
         errorMsg = t('aiChat.errLimit');
       } else if (errStr.includes('401') || errStr.includes('Unauthorized')) {
         errorMsg = t('aiChat.errAuth');
@@ -284,12 +316,41 @@ export default function AIChat() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 bg-primary-50 text-primary-600 text-sm font-medium px-2.5 py-1 rounded-lg">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            </svg>
-            {remaining}
-          </span>
+          {/* Remaining requests badge with reset timer */}
+          {limitLoading ? (
+            <span className="flex items-center gap-1 bg-gray-50 text-gray-400 text-sm font-medium px-2.5 py-1 rounded-lg">
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            </span>
+          ) : isPremium ? (
+            <span className="flex items-center gap-1 bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1 rounded-lg">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm4.707 3.707a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 10H13a1 1 0 100-2H8.414l1.293-1.293z" clipRule="evenodd"/>
+              </svg>
+              PRO
+            </span>
+          ) : (
+            <button
+              onClick={() => remaining <= 0 && setShowLimitModal(true)}
+              className={`flex items-center gap-1 text-sm font-medium px-2.5 py-1 rounded-lg ${
+                remaining > 0
+                  ? 'bg-primary-50 text-primary-600'
+                  : 'bg-red-50 text-red-500'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+              </svg>
+              {remaining}
+              {remaining <= 0 && limitInfo.resets_at && (
+                <span className="text-[10px] text-red-400 ml-0.5">
+                  ({getResetTimeString()})
+                </span>
+              )}
+            </button>
+          )}
           <button onClick={clearChat} className="w-8 h-8 flex items-center justify-center text-gray-400">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
@@ -548,7 +609,7 @@ export default function AIChat() {
         </div>
       </div>
 
-      {/* Limit Reached Modal */}
+      {/* Limit Reached Modal — with degressive info and reset timer */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" onClick={() => setShowLimitModal(false)}>
           <div className="absolute inset-0 bg-black/40"/>
@@ -570,9 +631,24 @@ export default function AIChat() {
               </div>
               <h3 className="text-lg font-bold text-gray-900">{t('aiChat.freeLimitReached')}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                {t('aiChat.usedAllRequests', { count: FREE_AI_LIMIT })}
+                {t('aiChat.usedAllRequests', { count: limitInfo.limit || 3 })}
               </p>
             </div>
+
+            {/* Reset timer — KEY new UX element */}
+            {limitInfo.resets_at && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 text-center">
+                <p className="text-sm font-medium text-blue-800">
+                  {t('aiChat.newRequestsIn', { time: getResetTimeString() })}
+                </p>
+                <p className="text-xs text-blue-600 mt-0.5">
+                  {limitInfo.day_number <= 2
+                    ? t('aiChat.tomorrowYouGet', { count: limitInfo.day_number === 1 ? 2 : 1 })
+                    : t('aiChat.dailyFreeRequest', '1 free request every day')
+                  }
+                </p>
+              </div>
+            )}
 
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
               <p className="text-sm font-medium text-green-800 mb-1">{t('aiChat.unlockUnlimitedAI')}</p>

@@ -457,12 +457,16 @@
     "showLess": "Pokaż mniej",
     "moreQuestions": "Więcej pytań",
     "inputPlaceholder": "Zapytaj o dowolny mecz, ligę lub drużynę...",
-    "freeLimitReached": "Darmowy limit wyczerpany",
-    "usedAllRequests": "Wykorzystałeś wszystkie {{count}} darmowe zapytania AI",
+    "freeLimitReached": "Dzienny limit wyczerpany",
+    "usedAllRequests": "Wykorzystałeś wszystkie {{count}} darmowe zapytania AI na dziś",
     "unlockUnlimitedAI": "Odblokuj nielimitowane AI",
     "depositForUnlimited": "Wpłać depozyt w {{name}} → Nielimitowane zapytania AI",
     "depositAndUnlock": "Wpłać i odblokuj",
-    "maybeLater": "Może później"
+    "maybeLater": "Może później",
+    "newRequestsIn": "Nowe zapytania dostępne za {{time}}",
+    "tomorrowYouGet": "Jutro otrzymasz {{count}} darmowych zapytań",
+    "dailyFreeRequest": "1 darmowe zapytanie każdego dnia",
+    "resetsNow": "Wkrótce"
   },
   "proTools": {
     "getPro": "Zdobądź PRO",

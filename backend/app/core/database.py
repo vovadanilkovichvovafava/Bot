@@ -46,6 +46,10 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR UNIQUE",
             # Predictions sync (JSON array stored as text)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS predictions_data TEXT",
+            # Degressive AI chat limits
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_chat_requests INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_chat_request_date TIMESTAMP",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_day_number INTEGER DEFAULT 1",
         ]
 
         for migration in migrations:

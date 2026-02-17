@@ -467,11 +467,15 @@
     "moreQuestions": "More questions",
     "inputPlaceholder": "Ask about any match, league, or team...",
     "freeLimitReached": "Free Limit Reached",
-    "usedAllRequests": "You've used all {{count}} free AI requests",
+    "usedAllRequests": "You've used all {{count}} free AI requests for today",
     "unlockUnlimitedAI": "Unlock Unlimited AI",
     "depositForUnlimited": "Make a deposit at {{name}} → Unlimited AI requests",
     "depositAndUnlock": "Deposit & Unlock",
-    "maybeLater": "Maybe Later"
+    "maybeLater": "Maybe Later",
+    "newRequestsIn": "New requests available in {{time}}",
+    "tomorrowYouGet": "Tomorrow you'll get {{count}} free requests",
+    "dailyFreeRequest": "1 free request every day",
+    "resetsNow": "Refreshing soon"
   },
   "proTools": {
     "getPro": "Get PRO",

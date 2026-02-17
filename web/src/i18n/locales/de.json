@@ -457,12 +457,16 @@
     "showLess": "Weniger anzeigen",
     "moreQuestions": "Mehr Fragen",
     "inputPlaceholder": "Frage zu jedem Spiel, Liga oder Team...",
-    "freeLimitReached": "Kostenloses Limit erreicht",
-    "usedAllRequests": "Du hast alle {{count}} kostenlosen AI-Anfragen verwendet",
+    "freeLimitReached": "Tageslimit erreicht",
+    "usedAllRequests": "Du hast alle {{count}} kostenlosen AI-Anfragen für heute verwendet",
     "unlockUnlimitedAI": "Unbegrenztes AI freischalten",
     "depositForUnlimited": "Einzahlung bei {{name}} → Unbegrenzte AI-Anfragen",
     "depositAndUnlock": "Einzahlen & Freischalten",
-    "maybeLater": "Vielleicht später"
+    "maybeLater": "Vielleicht später",
+    "newRequestsIn": "Neue Anfragen verfügbar in {{time}}",
+    "tomorrowYouGet": "Morgen erhältst du {{count}} kostenlose Anfragen",
+    "dailyFreeRequest": "1 kostenlose Anfrage jeden Tag",
+    "resetsNow": "Bald"
   },
   "proTools": {
     "getPro": "PRO holen",
