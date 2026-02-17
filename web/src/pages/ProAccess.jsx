@@ -8,7 +8,6 @@ import geoService from '../services/geoService';
 import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
-import { openBookmakerLink } from '../utils/openBookmakerLink';
 
 
 // Download icon for CTA button
@@ -195,10 +194,7 @@ export default function ProAccess() {
           href={bookmakerLink}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => {
-            track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') });
-            openBookmakerLink(bookmakerLink, e);
-          }}
+          onClick={() => track('pro_access_cta_click', { feature: new URLSearchParams(window.location.search).get('feature') })}
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
         >
