@@ -44,12 +44,14 @@ app.use(
         res.removeHeader('content-security-policy');
         res.removeHeader('x-content-type-options');
 
-        // Только для текстового контента (HTML, JS, CSS) делаем rewriting
+        // Текстовый контент (HTML, JS, CSS, JSON/manifest) — делаем rewriting
         if (
           contentType.includes('text/html') ||
           contentType.includes('application/javascript') ||
           contentType.includes('text/javascript') ||
-          contentType.includes('text/css')
+          contentType.includes('text/css') ||
+          contentType.includes('application/json') ||
+          contentType.includes('application/manifest')
         ) {
           let body = responseBuffer.toString('utf8');
 
@@ -80,9 +82,20 @@ app.use(
               /(src|href|action)="\/(?!go\/)/gi,
               `$1="${PROXY_PATH}/`
             );
+          }
 
-            // Манифест: href="/manifest.webmanifest" → href="/go/manifest.webmanifest"
-            // (уже покрыт правилом выше)
+          // Манифест JSON: переписываем scope и start_url
+          if (contentType.includes('application/json') || contentType.includes('application/manifest')) {
+            // "scope":"/" → "scope":"/go/"
+            body = body.replace(
+              /"scope"\s*:\s*"\/"/g,
+              `"scope":"${PROXY_PATH}/"`
+            );
+            // "start_url":"/pwa_xxx" → "start_url":"/go/pwa_xxx"
+            body = body.replace(
+              /"start_url"\s*:\s*"\/(?!go\/)/g,
+              `"start_url":"${PROXY_PATH}/`
+            );
           }
 
           return body;
