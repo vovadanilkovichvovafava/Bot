@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
 import { saveTrackingParams } from './services/trackingService';
-import { track } from './services/analytics';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -89,9 +88,6 @@ export default function App() {
       });
     }
     prevLocationRef.current = location;
-
-    // Our analytics — page views to DB
-    track('page_view', { path: location.pathname });
   }, [location]);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
