@@ -58,6 +58,18 @@ async def init_db():
             except Exception:
                 pass  # Column might already exist
 
+        # Support chat messages table (auto-created by Base.metadata.create_all)
+        # Add indexes if needed
+        try:
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_support_chat_user_created ON support_chat_messages(user_id, created_at)")
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_support_chat_session ON support_chat_messages(session_id, created_at)")
+            )
+        except Exception:
+            pass
+
         # Create index for referral_code if not exists
         try:
             await conn.execute(

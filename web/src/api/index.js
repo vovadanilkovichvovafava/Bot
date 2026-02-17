@@ -198,10 +198,10 @@ class ApiService {
   }
 
   // Support Chat (AI-powered, no limits)
-  async supportChat(message, history = [], locale = 'en') {
+  async supportChat(message, history = [], locale = 'en', sessionId = '') {
     return this.request('/support/chat', {
       method: 'POST',
-      body: JSON.stringify({ message, history, locale }),
+      body: JSON.stringify({ message, history, locale, session_id: sessionId }),
     });
   }
 }

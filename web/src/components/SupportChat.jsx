@@ -20,6 +20,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] = useState([]); // For API context
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID?.() || Date.now().toString());
+  const [isPro, setIsPro] = useState(false);
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
@@ -140,10 +142,12 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     const updatedHistory = [...chatHistory, { role: 'user', content: userText }];
 
     try {
-      const response = await api.supportChat(userText, updatedHistory, locale);
+      const response = await api.supportChat(userText, updatedHistory, locale, sessionId);
+      if (response.session_id) setSessionId(response.session_id);
+      if (response.is_pro !== undefined) setIsPro(response.is_pro);
 
-      // Random delay 1.5-4s to feel human, not instant bot
-      const humanDelay = 1500 + Math.random() * 2500;
+      // Random delay 4-6s to feel human, not instant bot
+      const humanDelay = 4000 + Math.random() * 2000;
       await new Promise(resolve => setTimeout(resolve, humanDelay));
 
       const newCount = managerMsgCount + 1;
@@ -154,7 +158,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         from: 'manager',
         text: response.response,
         time: new Date(),
-        showAd: newCount % 2 === 0, // Show PRO banner every 2nd response
+        showAd: !isPro && newCount % 2 === 0, // Show PRO banner every 2nd response (not for PRO users)
       };
 
       setMessages(prev => [...prev, managerMessage]);
@@ -266,8 +270,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                 </div>
               </div>
 
-              {/* Simple promo link under each manager response */}
-              {msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
+              {/* Simple promo link under each manager response (not for PRO) */}
+              {!isPro && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
                 <div className="flex justify-start mt-1">
                   <button
                     onClick={() => navigate('/promo?banner=support_promo_link')}
