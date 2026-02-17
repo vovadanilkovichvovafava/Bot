@@ -237,7 +237,10 @@
     "replyBookmaker": "Polecamy {{name}} — naszego oficjalnego partnera.\n\n✅ Licencjonowany bukmacher\n✅ Szybkie wypłaty (do 24 godzin)\n✅ Szeroka oferta i wysokie kursy\n✅ Bonus {{bonus}} dla nowych użytkowników\n\nDodatkowo — rejestrując się przez nas, dostajesz dostęp PRO do narzędzi za darmo! 🎉",
     "replyWithdraw": "W {{name}} wypłaty trwają zazwyczaj do 24 godzin.\n\nDostępne metody:\n• Karty bankowe\n• Portfele elektroniczne\n• Kryptowaluty\n\nPrzy pierwszej wypłacie może być wymagana weryfikacja (przesłanie dokumentów). To standardowa procedura bezpieczeństwa.\n\nJeśli masz pytania — napisz, chętnie pomogę! 🤝",
     "replyThanks": "Zawsze chętnie pomogę! 😊\n\nJeśli masz więcej pytań — pisz w dowolnym momencie.\n\nPowodzenia z zakładami! 🍀⚽",
-    "replyDefault": "Rozumiem! 👍\n\nJeśli interesuje Cię dostęp PRO lub rejestracja u bukmachera — mogę w tym pomóc.\n\nPo prostu napisz:\n• \"Chcę PRO\" — wyjaśnię, jak go dostać za darmo\n• \"Jak się zarejestrować\" — poprowadzę Cię krok po kroku\n• \"Opowiedz o bonusie\" — pokażę aktualne oferty\n\nAlbo zadaj dowolne pytanie! 💬"
+    "replyDefault": "Rozumiem! 👍\n\nJeśli interesuje Cię dostęp PRO lub rejestracja u bukmachera — mogę w tym pomóc.\n\nPo prostu napisz:\n• \"Chcę PRO\" — wyjaśnię, jak go dostać za darmo\n• \"Jak się zarejestrować\" — poprowadzę Cię krok po kroku\n• \"Opowiedz o bonusie\" — pokażę aktualne oferty\n\nAlbo zadaj dowolne pytanie! 💬",
+    "guestWelcome": "Cześć! Jestem {{name}}, manager wsparcia. Potrzebujesz pomocy z hasłem lub kontem?",
+    "forgotMyPassword": "Zapomniałem hasła",
+    "cantLogin": "Nie mogę się zalogować"
   },
   "errors": {
     "somethingWrong": "Coś poszło nie tak",

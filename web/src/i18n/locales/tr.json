@@ -110,7 +110,10 @@
     "helpCenter": "Yardım Merkezi",
     "chatWithUs": "Bizimle sohbet edin",
     "sendMessage": "Mesaj gönder",
-    "typeMessage": "Mesajınızı yazın..."
+    "typeMessage": "Mesajınızı yazın...",
+    "guestWelcome": "Merhaba! Ben {{name}}, destek yöneticisi. Şifre veya hesap konusunda yardım mı gerekiyor?",
+    "forgotMyPassword": "Şifremi unuttum",
+    "cantLogin": "Giriş yapamıyorum"
   },
   "errors": {
     "somethingWrong": "Bir şeyler yanlış gitti",

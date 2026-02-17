@@ -110,7 +110,10 @@
     "helpCenter": "हेल्प सेंटर",
     "chatWithUs": "हमसे चैट करें",
     "sendMessage": "मैसेज भेजें",
-    "typeMessage": "अपना मैसेज लिखें..."
+    "typeMessage": "अपना मैसेज लिखें...",
+    "guestWelcome": "नमस्ते! मैं {{name}} हूं, सपोर्ट मैनेजर। पासवर्ड या अकाउंट में मदद चाहिए?",
+    "forgotMyPassword": "मैं अपना पासवर्ड भूल गया",
+    "cantLogin": "मैं लॉगिन नहीं कर पा रहा"
   },
   "errors": {
     "somethingWrong": "कुछ गलत हो गया",

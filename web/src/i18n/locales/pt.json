@@ -110,7 +110,10 @@
     "helpCenter": "Central de Ajuda",
     "chatWithUs": "Fale conosco",
     "sendMessage": "Enviar mensagem",
-    "typeMessage": "Digite sua mensagem..."
+    "typeMessage": "Digite sua mensagem...",
+    "guestWelcome": "Oi! Sou {{name}}, gerente de suporte. Precisa de ajuda com senha ou conta?",
+    "forgotMyPassword": "Esqueci minha senha",
+    "cantLogin": "Não consigo entrar"
   },
   "errors": {
     "somethingWrong": "Algo deu errado",

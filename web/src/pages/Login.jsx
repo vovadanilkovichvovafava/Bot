@@ -24,6 +24,14 @@ export default function Login() {
   const navigate = useNavigate();
   const formRef = useKeyboardScroll();
 
+  // Prefill phone from localStorage (saved during previous login/register)
+  useEffect(() => {
+    try {
+      const lastPhone = localStorage.getItem('last_phone');
+      if (lastPhone) setPhone(lastPhone);
+    } catch {}
+  }, []);
+
   // Detect keyboard open/close to collapse hero section
   useEffect(() => {
     if (!window.visualViewport) return;

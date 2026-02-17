@@ -110,7 +110,10 @@
     "helpCenter": "مركز المساعدة",
     "chatWithUs": "تحدث معنا",
     "sendMessage": "إرسال رسالة",
-    "typeMessage": "اكتب رسالتك..."
+    "typeMessage": "اكتب رسالتك...",
+    "guestWelcome": "مرحبًا! أنا {{name}}، مدير الدعم. هل تحتاج مساعدة بكلمة المرور أو حسابك؟",
+    "forgotMyPassword": "نسيت كلمة المرور",
+    "cantLogin": "لا أستطيع تسجيل الدخول"
   },
   "errors": {
     "somethingWrong": "حدث خطأ ما",

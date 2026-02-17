@@ -237,7 +237,10 @@
     "replyBookmaker": "Consigliamo {{name}} — il nostro partner ufficiale.\n\n✅ Bookmaker con licenza\n✅ Pagamenti rapidi (entro 24 ore)\n✅ Ampia scelta e quote alte\n✅ Bonus {{bonus}} per i nuovi utenti\n\nIn più — registrandoti tramite noi ottieni l'accesso PRO agli strumenti gratis! 🎉",
     "replyWithdraw": "Su {{name}} i prelievi richiedono generalmente fino a 24 ore.\n\nMetodi disponibili:\n• Carte bancarie\n• Portafogli elettronici\n• Criptovalute\n\nIl primo prelievo potrebbe richiedere la verifica (caricamento documenti). È una procedura di sicurezza standard.\n\nSe hai domande — scrivimi, ti aiuto! 🤝",
     "replyThanks": "Sempre felice di aiutare! 😊\n\nSe hai altre domande — scrivimi in qualsiasi momento.\n\nBuona fortuna con le scommesse! 🍀⚽",
-    "replyDefault": "Capito! 👍\n\nSe ti interessa l'accesso PRO o la registrazione al bookmaker — posso aiutarti.\n\nScrivi semplicemente:\n• \"Voglio PRO\" — ti spiego come ottenerlo gratis\n• \"Come mi registro\" — ti guido passo per passo\n• \"Parlami del bonus\" — ti mostro le offerte attuali\n\nO fai qualsiasi domanda! 💬"
+    "replyDefault": "Capito! 👍\n\nSe ti interessa l'accesso PRO o la registrazione al bookmaker — posso aiutarti.\n\nScrivi semplicemente:\n• \"Voglio PRO\" — ti spiego come ottenerlo gratis\n• \"Come mi registro\" — ti guido passo per passo\n• \"Parlami del bonus\" — ti mostro le offerte attuali\n\nO fai qualsiasi domanda! 💬",
+    "guestWelcome": "Ciao! Sono {{name}}, manager del supporto. Hai bisogno di aiuto con la password o l'account?",
+    "forgotMyPassword": "Ho dimenticato la password",
+    "cantLogin": "Non riesco ad accedere"
   },
   "errors": {
     "somethingWrong": "Qualcosa è andato storto",

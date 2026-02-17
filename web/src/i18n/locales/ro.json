@@ -110,7 +110,10 @@
     "helpCenter": "Centru de Ajutor",
     "chatWithUs": "Discută cu noi",
     "sendMessage": "Trimite mesaj",
-    "typeMessage": "Scrie mesajul..."
+    "typeMessage": "Scrie mesajul...",
+    "guestWelcome": "Salut! Sunt {{name}}, manager suport. Ai nevoie de ajutor cu parola sau contul?",
+    "forgotMyPassword": "Am uitat parola",
+    "cantLogin": "Nu mă pot conecta"
   },
   "errors": {
     "somethingWrong": "Ceva nu a mers bine",

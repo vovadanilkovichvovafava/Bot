@@ -110,7 +110,10 @@
     "helpCenter": "帮助中心",
     "chatWithUs": "联系我们",
     "sendMessage": "发送消息",
-    "typeMessage": "输入消息..."
+    "typeMessage": "输入消息...",
+    "guestWelcome": "你好！我是{{name}}，客服经理。需要密码或账户方面的帮助吗？",
+    "forgotMyPassword": "我忘记密码了",
+    "cantLogin": "我无法登录"
   },
   "errors": {
     "somethingWrong": "出了点问题",

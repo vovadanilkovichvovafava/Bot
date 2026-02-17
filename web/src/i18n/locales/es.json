@@ -228,7 +228,10 @@
     "replyBookmaker": "Recomendamos {{name}} — nuestro socio oficial.\n\n✅ Casa de apuestas licenciada\n✅ Pagos rápidos (hasta 24 horas)\n✅ Amplia variedad de mercados y cuotas altas\n✅ Bono {{bonus}} para nuevos usuarios\n\n¡Además — al registrarte a través de nosotros, obtienes acceso PRO a nuestras herramientas gratis! 🎉",
     "replyWithdraw": "En {{name}}, los pagos suelen tardar hasta 24 horas.\n\nMétodos disponibles:\n• Tarjetas bancarias\n• Monederos electrónicos\n• Criptomonedas\n\nEl primer retiro puede requerir verificación (subir documentos). Es un procedimiento de seguridad estándar.\n\nSi tienes preguntas — escríbeme, ¡con gusto te ayudo! 🤝",
     "replyThanks": "¡Siempre encantado de ayudar! 😊\n\nSi tienes más preguntas — escríbeme cuando quieras.\n\n¡Buena suerte con tus apuestas! 🍀⚽",
-    "replyDefault": "¡Entendido! 👍\n\nSi te interesa el acceso PRO o el registro en la casa de apuestas — puedo ayudarte con eso.\n\nSolo escribe:\n• \"Quiero PRO\" — te explico cómo obtenerlo gratis\n• \"Cómo registrarme\" — te guío paso a paso\n• \"Cuéntame del bono\" — te comparto las ofertas actuales\n\n¡O haz cualquier pregunta! 💬"
+    "replyDefault": "¡Entendido! 👍\n\nSi te interesa el acceso PRO o el registro en la casa de apuestas — puedo ayudarte con eso.\n\nSolo escribe:\n• \"Quiero PRO\" — te explico cómo obtenerlo gratis\n• \"Cómo registrarme\" — te guío paso a paso\n• \"Cuéntame del bono\" — te comparto las ofertas actuales\n\n¡O haz cualquier pregunta! 💬",
+    "guestWelcome": "Hola! Soy {{name}}, gerente de soporte. Necesitas ayuda con tu contraseña o cuenta?",
+    "forgotMyPassword": "Olvidé mi contraseña",
+    "cantLogin": "No puedo iniciar sesión"
   },
   "errors": {
     "somethingWrong": "Algo salió mal",

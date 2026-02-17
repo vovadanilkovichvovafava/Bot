@@ -228,7 +228,10 @@
     "replyBookmaker": "Nous recommandons {{name}} — notre partenaire officiel.\n\n✅ Bookmaker licencié\n✅ Paiements rapides (jusqu'à 24 heures)\n✅ Large choix de marchés et cotes élevées\n✅ Bonus {{bonus}} pour les nouveaux utilisateurs\n\nEn plus — en vous inscrivant via nous, vous obtenez l'accès PRO à nos outils gratuitement ! 🎉",
     "replyWithdraw": "Chez {{name}}, les retraits prennent généralement jusqu'à 24 heures.\n\nMéthodes disponibles :\n• Cartes bancaires\n• Portefeuilles électroniques\n• Cryptomonnaie\n\nLe premier retrait peut nécessiter une vérification (téléchargement de documents). C'est une procédure de sécurité standard.\n\nSi vous avez des questions — écrivez-moi, je serai ravi de vous aider ! 🤝",
     "replyThanks": "Toujours ravi de vous aider ! 😊\n\nSi vous avez d'autres questions — écrivez-moi à tout moment.\n\nBonne chance pour vos paris ! 🍀⚽",
-    "replyDefault": "Bien reçu ! 👍\n\nSi vous êtes intéressé par l'accès PRO ou l'inscription chez un bookmaker — je peux vous aider.\n\nÉcrivez simplement :\n• \"Je veux PRO\" — je vous expliquerai comment l'obtenir gratuitement\n• \"Comment s'inscrire\" — je vous guiderai étape par étape\n• \"Parlez-moi du bonus\" — je partagerai les offres en cours\n\nOu posez n'importe quelle question ! 💬"
+    "replyDefault": "Bien reçu ! 👍\n\nSi vous êtes intéressé par l'accès PRO ou l'inscription chez un bookmaker — je peux vous aider.\n\nÉcrivez simplement :\n• \"Je veux PRO\" — je vous expliquerai comment l'obtenir gratuitement\n• \"Comment s'inscrire\" — je vous guiderai étape par étape\n• \"Parlez-moi du bonus\" — je partagerai les offres en cours\n\nOu posez n'importe quelle question ! 💬",
+    "guestWelcome": "Salut! Je suis {{name}}, responsable du support. Besoin d'aide avec votre mot de passe?",
+    "forgotMyPassword": "J'ai oublié mon mot de passe",
+    "cantLogin": "Je ne peux pas me connecter"
   },
   "errors": {
     "somethingWrong": "Une erreur s'est produite",

@@ -237,7 +237,10 @@
     "replyBookmaker": "We recommend {{name}} — our official partner.\n\n✅ Licensed bookmaker\n✅ Fast payouts (up to 24 hours)\n✅ Wide markets and high odds\n✅ Bonus {{bonus}} for new users\n\nPlus — when you register through us, you get PRO access to our tools for free! 🎉",
     "replyWithdraw": "At {{name}}, payouts usually take up to 24 hours.\n\nAvailable methods:\n• Bank cards\n• E-wallets\n• Cryptocurrency\n\nFirst withdrawal may require verification (upload documents). This is a standard security procedure.\n\nIf you have questions — message me, happy to help! 🤝",
     "replyThanks": "Always happy to help! 😊\n\nIf you have more questions — message me anytime.\n\nGood luck with your bets! 🍀⚽",
-    "replyDefault": "Got it! 👍\n\nIf you're interested in PRO access or bookmaker registration — I can help with that.\n\nJust write:\n• \"I want PRO\" — I'll explain how to get it free\n• \"How to register\" — I'll guide you step by step\n• \"Tell me about the bonus\" — I'll share current offers\n\nOr ask any question! 💬"
+    "replyDefault": "Got it! 👍\n\nIf you're interested in PRO access or bookmaker registration — I can help with that.\n\nJust write:\n• \"I want PRO\" — I'll explain how to get it free\n• \"How to register\" — I'll guide you step by step\n• \"Tell me about the bonus\" — I'll share current offers\n\nOr ask any question! 💬",
+    "guestWelcome": "Hi! I'm {{name}}, support manager. Need help with your password or account? I'm here to help!",
+    "forgotMyPassword": "I forgot my password",
+    "cantLogin": "I can't log in"
   },
   "errors": {
     "somethingWrong": "Something went wrong",
