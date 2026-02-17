@@ -3,25 +3,35 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../api';
 
-// Manager info (configurable)
-const MANAGER = {
-  name: 'Alex',
-  avatar: null, // Can add URL
+// Agent names per locale (matches backend PERSONA_NAMES)
+const AGENT_NAMES = {
+  en: 'Alex',
+  it: 'Marco',
+  de: 'Max',
+  pl: 'Kuba',
 };
 
 export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { advertiser, trackClick, countryCode } = useAdvertiser();
+  const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
+  const [chatHistory, setChatHistory] = useState([]); // For API context
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState(null);
+  const [managerMsgCount, setManagerMsgCount] = useState(0); // For PRO banner
   const [viewportHeight, setViewportHeight] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
+
+  // Get current locale and agent name
+  const locale = i18n.language?.slice(0, 2) || 'en';
+  const agentName = AGENT_NAMES[locale] || 'Alex';
 
   // Welcome message on first open
   useEffect(() => {
@@ -29,7 +39,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
       setMessages([{
         id: 1,
         from: 'manager',
-        text: t('support.welcomeMessage', { name: MANAGER.name }),
+        text: t('support.welcomeMessage', { name: agentName }),
         time: new Date(),
       }]);
     }
@@ -38,7 +48,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   // Focus input when opened
   useEffect(() => {
@@ -53,7 +63,6 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     const vv = window.visualViewport;
     const onResize = () => {
       setViewportHeight(vv.height);
-      // Keep input visible when keyboard opens
       if (document.activeElement === inputRef.current) {
         setTimeout(() => {
           inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -64,70 +73,64 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     return () => vv.removeEventListener('resize', onResize);
   }, [isOpen]);
 
-  // Simulate manager response (localized)
-  const getManagerResponse = (userMessage) => {
-    const lower = userMessage.toLowerCase();
-    const vars = { name: advertiser.name, bonus: advertiser.bonusAmount, minDeposit: advertiser.minDeposit };
-
-    // PRO access questions
-    if (lower.includes('pro') || lower.includes('access') || lower.includes('unlock') || lower.includes('premium')) {
-      return t('support.replyPro', vars);
-    }
-
-    // Registration questions
-    if (lower.includes('register') || lower.includes('sign up') || lower.includes('start') || lower.includes('beginner') || lower.includes('new')) {
-      return t('support.replyRegister', vars);
-    }
-
-    // Bonus questions
-    if (lower.includes('bonus') || lower.includes('free bet') || lower.includes('promo') || lower.includes('offer')) {
-      return t('support.replyBonus', vars);
-    }
-
-    // Bookmaker questions
-    if (lower.includes('bookmaker') || lower.includes('where to bet') || lower.includes('which bk') || lower.includes('1xbet') || lower.includes('betting site')) {
-      return t('support.replyBookmaker', vars);
-    }
-
-    // Withdrawal/payout questions
-    if (lower.includes('withdraw') || lower.includes('payout') || lower.includes('cash out') || lower.includes('money')) {
-      return t('support.replyWithdraw', vars);
-    }
-
-    // Gratitude
-    if (lower.includes('thank') || lower.includes('appreciate') || lower.includes('helpful')) {
-      return t('support.replyThanks');
-    }
-
-    // Default response
-    return t('support.replyDefault');
-  };
-
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
+    const userText = input.trim();
     const userMessage = {
       id: Date.now(),
       from: 'user',
-      text: input.trim(),
+      text: userText,
       time: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate typing delay
-    setTimeout(() => {
-      const response = getManagerResponse(userMessage.text);
-      setMessages(prev => [...prev, {
-        id: Date.now(),
+    // Update chat history for API context
+    const updatedHistory = [...chatHistory, { role: 'user', content: userText }];
+
+    try {
+      const response = await api.supportChat(userText, updatedHistory, locale);
+
+      const newCount = managerMsgCount + 1;
+      setManagerMsgCount(newCount);
+
+      const managerMessage = {
+        id: Date.now() + 1,
         from: 'manager',
-        text: response,
+        text: response.response,
         time: new Date(),
-      }]);
+        showAd: newCount % 2 === 0, // Show PRO banner every 2nd response
+      };
+
+      setMessages(prev => [...prev, managerMessage]);
+
+      // Update history with assistant response
+      setChatHistory([
+        ...updatedHistory,
+        { role: 'assistant', content: response.response }
+      ]);
+
+    } catch (err) {
+      console.error('Support chat error:', err);
+
+      // Fallback message on error
+      const fallbackMessage = {
+        id: Date.now() + 1,
+        from: 'manager',
+        text: t('support.errorFallback', {
+          defaultValue: "Sorry, I'm having a connection issue. Please try again in a moment!"
+        }),
+        time: new Date(),
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
+      setError(err.message);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -135,6 +138,15 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleQuickAction = (text) => {
+    setInput(text);
+    // Auto-send after a tiny delay for UX
+    setTimeout(() => {
+      const fakeEvent = { target: { value: text } };
+      setInput(text);
+    }, 50);
   };
 
   const openBookmakerLink = () => {
@@ -149,7 +161,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
 
-      {/* Chat Panel — uses visualViewport height when keyboard is open */}
+      {/* Chat Panel */}
       <div
         ref={panelRef}
         className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl flex flex-col animate-slide-up"
@@ -159,16 +171,12 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="relative">
             <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
-              {MANAGER.avatar ? (
-                <img src={MANAGER.avatar} alt="" className="w-full h-full rounded-full object-cover"/>
-              ) : (
-                MANAGER.name[0]
-              )}
+              {agentName[0]}
             </div>
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"/>
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-gray-900">{MANAGER.name}</h3>
+            <h3 className="font-bold text-gray-900">{agentName}</h3>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full"/>
               {t('support.online')}
@@ -184,19 +192,63 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                msg.from === 'user'
-                  ? 'bg-primary-600 text-white rounded-br-md'
-                  : 'bg-gray-100 text-gray-900 rounded-bl-md'
-              }`}>
-                <p className="text-sm whitespace-pre-wrap">{msg.text.split('**').map((part, i) =>
-                  i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-                )}</p>
-                <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
-                  {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+            <div key={msg.id}>
+              <div className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  msg.from === 'user'
+                    ? 'bg-primary-600 text-white rounded-br-md'
+                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                  <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
+                    {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
+
+              {/* Simple promo link under each manager response */}
+              {msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
+                <div className="flex justify-start mt-1">
+                  <button
+                    onClick={() => navigate('/promo?banner=support_promo_link')}
+                    className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700 ml-1"
+                  >
+                    {t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {/* PRO banner after every 2nd manager response */}
+              {msg.showAd && (
+                <div className="mt-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                      <span className="text-white font-bold text-xs">{advertiser.currency}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonusAmount, name: advertiser.name })}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => navigate('/promo?banner=support_ad_get_bonus')}
+                      className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
+                    >
+                      {t('aiChat.getBonus2')}
+                    </button>
+                    <button
+                      onClick={() => navigate('/promo?banner=support_ad_learn_more')}
+                      className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
+                    >
+                      {t('aiChat.learnMore')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
@@ -252,10 +304,11 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
               onKeyPress={handleKeyPress}
               placeholder={t('support.placeholder')}
               className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              disabled={isTyping}
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim()}
+              disabled={!input.trim() || isTyping}
               className="w-12 h-12 bg-primary-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -279,5 +332,5 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   );
 }
 
-// Export manager config for use in other components
-export { MANAGER };
+// Export agent names for use in other components
+export { AGENT_NAMES };

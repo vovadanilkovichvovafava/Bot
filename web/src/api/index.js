@@ -196,6 +196,14 @@ class ApiService {
   async getChatLimit() {
     return this.request('/predictions/chat/limit');
   }
+
+  // Support Chat (AI-powered, no limits)
+  async supportChat(message, history = [], locale = 'en') {
+    return this.request('/support/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history, locale }),
+    });
+  }
 }
 
 export const api = new ApiService();
