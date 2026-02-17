@@ -278,20 +278,7 @@ export default function BookmakerPromo() {
           href={bookmakerLink}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => {
-            e.preventDefault();
-            track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') });
-            if (bookmakerLink) {
-              // Пытаемся открыть через системный intent (без package) → дефолтный браузер
-              try {
-                const url = new URL(bookmakerLink);
-                const intentUrl = `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
-                window.location.href = intentUrl;
-              } catch {
-                window.open(bookmakerLink, '_blank');
-              }
-            }
-          }}
+          onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
           {loadingLink ? (
