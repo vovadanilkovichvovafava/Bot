@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
+import { isValidPhone, fullPhoneNumber, parsePhoneNumber, getCountryByCode } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import SupportChat from '../components/SupportChat';
@@ -28,7 +28,13 @@ export default function Login() {
   useEffect(() => {
     try {
       const lastPhone = localStorage.getItem('last_phone');
-      if (lastPhone) setPhone(lastPhone);
+      if (lastPhone) {
+        const { countryCode, localDigits } = parsePhoneNumber(lastPhone);
+        if (countryCode) {
+          setPhoneCountry(getCountryByCode(countryCode));
+        }
+        setPhone(localDigits);
+      }
     } catch {}
   }, []);
 

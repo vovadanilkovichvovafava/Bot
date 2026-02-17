@@ -92,12 +92,9 @@ export default function Home() {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <img src={logoWhite} alt="PVA" className="w-14 h-14 drop-shadow object-contain" />
-            <div>
-              <p className="text-primary-100 text-sm">{getGreeting()}</p>
-              <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
-            </div>
+          <div>
+            <p className="text-primary-100 text-sm">{getGreeting()}</p>
+            <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
           </div>
           <button onClick={() => navigate('/settings')} className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">

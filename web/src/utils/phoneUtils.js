@@ -43,6 +43,26 @@ export function fullPhoneNumber(digits, country) {
   return country.dial + digits;
 }
 
+// Parse full phone number (e.g. "+11234567890") into { countryCode, localDigits }
+// Matches longest dial code first (e.g. +972 before +9)
+export function parsePhoneNumber(fullPhone) {
+  if (!fullPhone) return { countryCode: null, localDigits: '' };
+  const digits = fullPhone.replace(/\D/g, '');
+  const withPlus = fullPhone.startsWith('+') ? fullPhone : '+' + fullPhone;
+
+  // Sort countries by dial code length descending to match longest first
+  const sorted = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  for (const country of sorted) {
+    if (withPlus.startsWith(country.dial)) {
+      const local = withPlus.slice(country.dial.length).replace(/\D/g, '');
+      return { countryCode: country.code, localDigits: local };
+    }
+  }
+
+  // No match — return all digits as local
+  return { countryCode: null, localDigits: digits };
+}
+
 // Try to detect country from timezone/locale
 export function detectCountry() {
   try {

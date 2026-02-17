@@ -35,37 +35,32 @@ export default function AIChat() {
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(window.visualViewport?.height || window.innerHeight);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
   const isPremium = user?.is_premium;
 
-  // Track visual viewport height (keyboard open/close)
+  // Track keyboard open/close via visualViewport (iOS fallback) + hide BottomNav
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const threshold = window.innerHeight * 0.75;
     const onResize = () => {
-      setViewportHeight(vv.height);
       const isKb = vv.height < threshold;
+      const kbH = Math.max(0, window.innerHeight - vv.height);
       setKeyboardOpen(isKb);
-      // Hide/show bottom nav when keyboard opens/closes
+      setKeyboardHeight(kbH);
+      // Hide BottomNav when keyboard is open
       const nav = document.querySelector('nav.fixed.bottom-0');
       if (nav) nav.style.display = isKb ? 'none' : '';
-      // Adjust parent container padding
-      const parent = containerRef.current?.parentElement;
-      if (parent) parent.style.paddingBottom = isKb ? '0' : '';
     };
     vv.addEventListener('resize', onResize);
     return () => {
       vv.removeEventListener('resize', onResize);
-      // Restore nav on unmount
       const nav = document.querySelector('nav.fixed.bottom-0');
       if (nav) nav.style.display = '';
-      const parent = containerRef.current?.parentElement;
-      if (parent) parent.style.paddingBottom = '';
     };
   }, []);
 
@@ -135,7 +130,7 @@ export default function AIChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, viewportHeight]);
+  }, [messages, keyboardHeight]);
 
   // Build user preferences string
   const getUserPreferencesPrompt = () => {
@@ -267,28 +262,32 @@ export default function AIChat() {
     <div
       ref={containerRef}
       className="flex flex-col"
-      style={{ height: keyboardOpen ? `${viewportHeight}px` : '100%' }}
+      style={{ height: '100dvh', paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined }}
     >
-      {/* Header */}
-      <div className={`bg-white px-5 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-2' : 'py-4'}`}>
+      {/* Header — compact when keyboard open */}
+      <div className={`bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-3'}`}>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            </svg>
-          </div>
+          {!keyboardOpen && (
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+              </svg>
+            </div>
+          )}
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-none">{t('aiChat.title')}</h1>
-            <p className="text-[10px] text-green-500 font-medium">{t('aiChat.realTimeData')}</p>
+            <h1 className={`font-bold text-gray-900 leading-none ${keyboardOpen ? 'text-sm' : 'text-lg'}`}>{t('aiChat.title')}</h1>
+            {!keyboardOpen && <p className="text-[10px] text-green-500 font-medium">{t('aiChat.realTimeData')}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 bg-primary-50 text-primary-600 text-sm font-medium px-2.5 py-1 rounded-lg">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            </svg>
-            {remaining}
-          </span>
+        <div className="flex items-center gap-2">
+          {!keyboardOpen && (
+            <span className="flex items-center gap-1 bg-primary-50 text-primary-600 text-sm font-medium px-2.5 py-1 rounded-lg">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+              </svg>
+              {remaining}
+            </span>
+          )}
           <button onClick={clearChat} className="w-8 h-8 flex items-center justify-center text-gray-400">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
@@ -298,7 +297,7 @@ export default function AIChat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
         {messages.map(msg => (
           <div key={msg.id}>
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -518,8 +517,8 @@ export default function AIChat() {
         </div>
       )}
 
-      {/* Input */}
-      <div className={`px-5 bg-white border-t border-gray-100 shrink-0 ${keyboardOpen ? 'py-2' : 'py-3'}`}>
+      {/* Input — compact like Telegram */}
+      <div className={`px-4 bg-white border-t border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-2.5'}`}>
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -528,7 +527,7 @@ export default function AIChat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !loading && sendMessage(input)}
             placeholder={t('aiChat.inputPlaceholder')}
-            className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
+            className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-primary-200"
             disabled={loading}
           />
           <button

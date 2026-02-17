@@ -35,6 +35,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const [error, setError] = useState(null);
   const [managerMsgCount, setManagerMsgCount] = useState(0); // For PRO banner
   const [viewportHeight, setViewportHeight] = useState(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
@@ -75,8 +76,10 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   useEffect(() => {
     if (!isOpen || !window.visualViewport) return;
     const vv = window.visualViewport;
+    const threshold = window.innerHeight * 0.75;
     const onResize = () => {
       setViewportHeight(vv.height);
+      setKeyboardOpen(vv.height < threshold);
       if (document.activeElement === inputRef.current) {
         setTimeout(() => {
           inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -244,40 +247,42 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl flex flex-col animate-slide-up"
         style={{ maxHeight: viewportHeight ? `${viewportHeight * 0.92}px` : '90vh' }}
       >
-        {/* Header */}
-        <div className={`flex items-center gap-3 px-5 py-4 border-b border-gray-100 ${guest ? 'bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-3xl' : ''}`}>
+        {/* Header — compact when keyboard open */}
+        <div className={`flex items-center gap-3 px-4 shrink-0 border-b border-gray-100 ${keyboardOpen ? 'py-2' : 'py-3'} ${guest ? 'bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-3xl' : ''}`}>
           <div className="relative">
             {guest ? (
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <div className={`${keyboardOpen ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white transition-all`}>
+                <svg className={`${keyboardOpen ? 'w-4 h-4' : 'w-5 h-5'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
                 </svg>
               </div>
             ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white font-bold text-lg">
+              <div className={`${keyboardOpen ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-lg'} bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center text-white font-bold transition-all`}>
                 {agentName[0]}
               </div>
             )}
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"/>
+            {!keyboardOpen && <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"/>}
           </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <h3 className={`font-bold text-gray-900 ${keyboardOpen ? 'text-sm' : ''}`}>
               {guest ? t('support.guestTitle', { defaultValue: 'Account Recovery' }) : agentName}
             </h3>
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"/>
-              {t('support.online')}
-            </p>
+            {!keyboardOpen && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"/>
+                {t('support.online')}
+              </p>
+            )}
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {messages.map(msg => (
             <div key={msg.id}>
               <div className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -355,8 +360,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
           <div ref={messagesEndRef}/>
         </div>
 
-        {/* Quick Actions — different for guest vs authenticated */}
-        {!guest && (
+        {/* Quick Actions — hidden when keyboard is open for clean Telegram-like UX */}
+        {!keyboardOpen && !guest && (
           <div className="px-5 py-2 border-t border-gray-100">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               <button
@@ -381,7 +386,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
             </div>
           </div>
         )}
-        {guest && (
+        {!keyboardOpen && guest && (
           <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
             <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
               <button
@@ -412,9 +417,9 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
           </div>
         )}
 
-        {/* Input */}
-        <div className="px-5 pt-3 pb-3 border-t border-gray-100 bg-white">
-          <div className="flex items-center gap-3">
+        {/* Input — compact like Telegram */}
+        <div className={`px-4 border-t border-gray-100 bg-white shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-2.5'}`}>
+          <div className="flex items-center gap-2">
             <input
               ref={inputRef}
               type="text"
@@ -422,16 +427,16 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t('support.placeholder')}
-              className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-primary-500"
               disabled={isTyping}
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || isTyping}
-              className="w-12 h-12 bg-primary-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center disabled:opacity-50 shrink-0"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
               </svg>
             </button>
           </div>
