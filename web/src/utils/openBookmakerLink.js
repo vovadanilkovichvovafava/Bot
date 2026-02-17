@@ -6,14 +6,12 @@
  * so bootballgame.shop can't install the bookmaker PWA and just redirects
  * to the offer URL.
  *
- * Solution: Route the link through our backend on a DIFFERENT domain
- * (appbot-production-152e.up.railway.app). Since that domain is outside
- * our PWA's scope (sportscoreai.com), Chrome opens it in a real browser
- * tab, not CCT. The backend does a 302 redirect to bootballgame.shop,
- * which then loads in full Chrome where beforeinstallprompt works.
+ * Solution: Reverse proxy on our server serves bootballgame.shop content
+ * at /go/ path. Since /go/ is on the SAME domain (sportscoreai.com),
+ * it loads INSIDE the PWA (not CCT), and beforeinstallprompt can fire.
  */
 
-const BACKEND_URL = 'https://appbot-production-152e.up.railway.app/api/v1';
+const PROXY_PATH = '/go';
 
 /**
  * Detect if we're running as an installed PWA (standalone mode)
@@ -26,23 +24,30 @@ function isStandalone() {
 }
 
 /**
- * Build redirect URL through our backend.
- * Backend does 302 redirect → opens in full Chrome since different domain.
+ * Convert bootballgame.shop URL to our proxy path.
+ * https://bootballgame.shop/?sub_id_10=xxx → /go/?sub_id_10=xxx
  */
-function buildRedirectUrl(targetUrl) {
-  return `${BACKEND_URL}/go?url=${encodeURIComponent(targetUrl)}`;
+function toProxyUrl(bookmakerUrl) {
+  try {
+    const parsed = new URL(bookmakerUrl);
+    // Keep path + query string, prepend our proxy path
+    return `${PROXY_PATH}${parsed.pathname}${parsed.search}`;
+  } catch {
+    // Fallback: just use proxy path with raw query
+    return `${PROXY_PATH}/${bookmakerUrl.split('?').slice(1).join('?') ? '?' + bookmakerUrl.split('?').slice(1).join('?') : ''}`;
+  }
 }
 
 /**
  * Main function: open bookmaker link
- * - If in standalone PWA → route through backend (different domain = full Chrome)
+ * - If in standalone PWA → navigate to /go/ (same domain, reverse proxy)
  * - Otherwise → regular target="_blank" behavior (default <a> click)
  */
 export function openBookmakerLink(url, event) {
   if (!url) return;
 
   const standalone = isStandalone();
-  console.log('[BookmakerLink] standalone=' + standalone);
+  console.log('[BookmakerLink] standalone=' + standalone + ', url=' + url);
 
   // Only intercept when running as standalone PWA
   if (!standalone) {
@@ -50,16 +55,15 @@ export function openBookmakerLink(url, event) {
     return;
   }
 
-  // We're in standalone PWA — route through backend to escape PWA scope
+  // We're in standalone PWA — navigate to proxy path (same domain!)
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const redirectUrl = buildRedirectUrl(url);
-  console.log('[BookmakerLink] Redirecting via backend:', redirectUrl);
+  const proxyUrl = toProxyUrl(url);
+  console.log('[BookmakerLink] Navigating to proxy:', proxyUrl);
 
-  // Open the backend URL — since it's a different domain (outside PWA scope),
-  // Chrome will open it in a real browser tab, not Chrome Custom Tab
-  window.location.href = redirectUrl;
+  // Navigate to /go/?sub_id_10=xxx — same domain, loads inside PWA
+  window.location.href = proxyUrl;
 }
