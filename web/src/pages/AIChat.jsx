@@ -35,28 +35,11 @@ export default function AIChat() {
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
   const isPremium = user?.is_premium;
-
-  // Hide BottomNav + FloatingChatButton when on AIChat page (always, not just keyboard)
-  // They overlap the chat input and create extra spacing
-  useEffect(() => {
-    const nav = document.querySelector('nav.fixed.bottom-0');
-    const fab = document.querySelector('[data-floating-chat]');
-    const parent = containerRef.current?.parentElement;
-    if (nav) nav.style.display = 'none';
-    if (fab) fab.style.display = 'none';
-    if (parent) parent.style.paddingBottom = '0';
-    return () => {
-      if (nav) nav.style.display = '';
-      if (fab) fab.style.display = '';
-      if (parent) parent.style.paddingBottom = '';
-    };
-  }, []);
 
   // Track keyboard open/close via visualViewport (iOS fallback)
   useEffect(() => {
@@ -65,9 +48,7 @@ export default function AIChat() {
     const threshold = window.innerHeight * 0.75;
     const onResize = () => {
       const isKb = vv.height < threshold;
-      const kbH = Math.max(0, window.innerHeight - vv.height);
       setKeyboardOpen(isKb);
-      setKeyboardHeight(kbH);
     };
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
@@ -139,7 +120,7 @@ export default function AIChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, keyboardHeight]);
+  }, [messages, keyboardOpen]);
 
   // Build user preferences string
   const getUserPreferencesPrompt = () => {
@@ -270,8 +251,7 @@ export default function AIChat() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col"
-      style={{ height: '100dvh', paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined }}
+      className="flex flex-col h-full"
     >
       {/* Header — compact when keyboard open */}
       <div className={`bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-3'}`}>
