@@ -74,10 +74,11 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
       `fetch("${PROXY_PATH}/`
     );
 
-    // SW register → noop
+    // SW register: rewrite path /PwaWorker.js → /go/PwaWorker.js
+    // НЕ блокируем SW — он нужен для beforeinstallprompt!
     body = body.replace(
-      /navigator\.serviceWorker\.register\([^)]*\)/g,
-      'Promise.resolve()'
+      /navigator\.serviceWorker\.register\('\/(?!go\/)/g,
+      `navigator.serviceWorker.register('${PROXY_PATH}/`
     );
   }
 
@@ -258,6 +259,30 @@ app.use(
     logger: console,
   })
 );
+
+// ─── Passthrough Proxy: API endpoints bootballgame.shop ──────────────────
+// bootballgame.shop JS использует window.location.hostname для API-вызовов.
+// Когда страница загружена через /go/, JS шлёт запросы на sportscoreai.com/analytics и т.д.
+// Используем app.use() БЕЗ path чтобы сохранить оригинальный URL (app.use('/push') стрипает /push)
+const BBG_API_PATHS = ['/analytics', '/pwa_info', '/event', '/subscribe', '/push/', '/cdn-cgi/', '/PwaWorker.js', '/images/'];
+
+const bbgApiProxy = createProxyMiddleware({
+  target: PROXY_TARGET,
+  changeOrigin: true,
+  on: {
+    proxyReq: (proxyReq) => {
+      proxyReq.setHeader('Host', TARGET_HOST);
+      proxyReq.removeHeader('referer');
+      proxyReq.removeHeader('origin');
+    },
+  },
+});
+
+app.use((req, res, next) => {
+  const isApiPath = BBG_API_PATHS.some(p => req.url === p || req.url.startsWith(p));
+  if (!isApiPath) return next();
+  bbgApiProxy(req, res, next);
+});
 
 // ─── Compression для SPA (ПОСЛЕ proxy, не трогает /go/*) ────────────────
 app.use(compression());
