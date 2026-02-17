@@ -191,5 +191,16 @@
     "ctaButton": "Bahis şirketi uygulamasını yükle",
     "ctaSubtext": "Ücretsiz • PRO otomatik olarak etkinleşir",
     "threeSteps": "3 adım"
+  },
+  "welcome": {
+    "step1Title": "Kayıt tamamlandı!",
+    "step1Desc": "Artık ücretsiz AI tahminlerine erişiminiz var.",
+    "step2Title": "Sınırsız erişim?",
+    "step2Desc": "Linke tıklayıp bahis şirketine kaydolun ve PRO açmak için yatırım yapın.",
+    "step3Title": "PRO nasıl alınır",
+    "step3Desc": "1. Linke dokunun\n2. Kaydolun\n3. Herhangi bir yatırım yapın\n4. PRO otomatik aktif!",
+    "goToPromo": "PRO al",
+    "later": "Belki sonra",
+    "next": "İleri"
   }
 }

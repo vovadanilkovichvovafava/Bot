@@ -1165,5 +1165,16 @@
     "viewPredictionHistoryDesc": "Vedi tutti i tuoi pronostici passati e i loro risultati",
     "win": "Vinto",
     "wrong": "Errato"
+  },
+  "welcome": {
+    "step1Title": "Registrazione completata!",
+    "step1Desc": "Ora hai accesso alle previsioni AI gratuite. Prova!",
+    "step2Title": "Vuoi accesso illimitato?",
+    "step2Desc": "Registrati dal bookmaker partner tramite il link e fai un deposito per sbloccare PRO.",
+    "step3Title": "Come ottenere PRO",
+    "step3Desc": "1. Tocca il link\n2. Registrati dal bookmaker\n3. Fai un deposito\n4. PRO si attiva automaticamente!",
+    "goToPromo": "Ottieni PRO ora",
+    "later": "Forse dopo",
+    "next": "Avanti"
   }
 }

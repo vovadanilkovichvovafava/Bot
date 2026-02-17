@@ -1152,5 +1152,16 @@
     "viewPredictionHistoryDesc": "Alle vergangenen Vorhersagen und Ergebnisse ansehen",
     "win": "Gewinn",
     "wrong": "Falsch"
+  },
+  "welcome": {
+    "step1Title": "Registrierung abgeschlossen!",
+    "step1Desc": "Du hast jetzt Zugang zu kostenlosen KI-Vorhersagen.",
+    "step2Title": "Unbegrenzten Zugang?",
+    "step2Desc": "Registriere dich beim Buchmacher über den Link und zahle ein, um PRO freizuschalten.",
+    "step3Title": "So bekommst du PRO",
+    "step3Desc": "1. Link in der App antippen\n2. Beim Buchmacher registrieren\n3. Einzahlung tätigen\n4. PRO wird automatisch aktiviert!",
+    "goToPromo": "PRO jetzt holen",
+    "later": "Vielleicht später",
+    "next": "Weiter"
   }
 }

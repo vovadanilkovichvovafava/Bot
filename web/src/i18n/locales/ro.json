@@ -191,5 +191,16 @@
     "ctaButton": "Instalează aplicația casei de pariuri",
     "ctaSubtext": "Gratuit • PRO se activează automat",
     "threeSteps": "3 pași"
+  },
+  "welcome": {
+    "step1Title": "Înregistrare finalizată!",
+    "step1Desc": "Acum ai acces la predicții AI gratuite.",
+    "step2Title": "Vrei acces nelimitat?",
+    "step2Desc": "Înregistrează-te la casa de pariuri prin link și depune pentru PRO.",
+    "step3Title": "Cum obții PRO",
+    "step3Desc": "1. Apasă pe link\n2. Înregistrează-te\n3. Fă orice depunere\n4. PRO se activează automat!",
+    "goToPromo": "Obține PRO",
+    "later": "Poate mai târziu",
+    "next": "Următorul"
   }
 }

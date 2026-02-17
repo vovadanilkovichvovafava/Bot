@@ -7,6 +7,7 @@ import footballApi from '../api/footballApi';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
+import WelcomeModal from '../components/WelcomeModal';
 
 
 const FREE_AI_LIMIT = 3;
@@ -26,12 +27,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showAiNudge, setShowAiNudge] = useState(false);
   const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     loadMatches();
     setLocalStats(getStats());
+    // Show welcome modal for new registrations
+    try {
+      if (localStorage.getItem('show_welcome') === 'true') {
+        localStorage.removeItem('show_welcome');
+        setShowWelcome(true);
+      }
+    } catch {}
     // Show AI nudge after registration
-    if (location.state?.justRegistered) {
+    if (location.state?.justRegistered && !showWelcome) {
       setTimeout(() => setShowAiNudge(true), 1500);
       window.history.replaceState({}, '');
     }
@@ -341,6 +350,17 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Welcome modal for new registrations */}
+      {showWelcome && (
+        <WelcomeModal
+          onClose={() => setShowWelcome(false)}
+          onGoToPromo={() => {
+            setShowWelcome(false);
+            navigate('/promo');
+          }}
+        />
       )}
     </div>
   );

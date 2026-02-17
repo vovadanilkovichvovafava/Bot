@@ -77,6 +77,7 @@ export default function Register() {
       await register(fullPhone, password, referralCode);
       track('register_success');
       clearReferralCode();
+      try { localStorage.setItem('show_welcome', 'true'); } catch {}
       navigate('/', { replace: true, state: { justRegistered: true } });
     } catch (err) {
       track('register_error', { error: err.message });

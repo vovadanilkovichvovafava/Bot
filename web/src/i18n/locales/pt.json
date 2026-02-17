@@ -191,5 +191,16 @@
     "ctaButton": "Instalar app da casa de apostas",
     "ctaSubtext": "Grátis • PRO ativa automaticamente",
     "threeSteps": "3 passos"
+  },
+  "welcome": {
+    "step1Title": "Registro concluído!",
+    "step1Desc": "Agora você tem acesso a previsões AI gratuitas.",
+    "step2Title": "Quer acesso ilimitado?",
+    "step2Desc": "Registre-se na casa de apostas pelo link e faça um depósito para desbloquear PRO.",
+    "step3Title": "Como obter PRO",
+    "step3Desc": "1. Toque no link\n2. Registre-se\n3. Faça qualquer depósito\n4. PRO ativa automaticamente!",
+    "goToPromo": "Obter PRO agora",
+    "later": "Talvez depois",
+    "next": "Próximo"
   }
 }

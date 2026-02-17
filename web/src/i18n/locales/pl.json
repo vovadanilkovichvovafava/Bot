@@ -1152,5 +1152,16 @@
     "viewPredictionHistoryDesc": "Zobacz wszystkie swoje wcześniejsze prognozy i ich wyniki",
     "win": "Wygrana",
     "wrong": "Nietrafiony"
+  },
+  "welcome": {
+    "step1Title": "Rejestracja zakończona!",
+    "step1Desc": "Masz teraz dostęp do darmowych prognoz AI.",
+    "step2Title": "Chcesz nielimitowany dostęp?",
+    "step2Desc": "Zarejestruj się u bukmachera przez link i wpłać depozyt, aby odblokować PRO.",
+    "step3Title": "Jak zdobyć PRO",
+    "step3Desc": "1. Kliknij link w aplikacji\n2. Zarejestruj się u bukmachera\n3. Wpłać dowolny depozyt\n4. PRO aktywuje się automatycznie!",
+    "goToPromo": "Zdobądź PRO",
+    "later": "Może później",
+    "next": "Dalej"
   }
 }

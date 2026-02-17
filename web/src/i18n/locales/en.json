@@ -1161,5 +1161,16 @@
     "viewPredictionHistoryDesc": "See all your past predictions and results",
     "win": "Win",
     "wrong": "Wrong"
+  },
+  "welcome": {
+    "step1Title": "Registration complete!",
+    "step1Desc": "You now have access to free AI predictions. Try them out!",
+    "step2Title": "Want unlimited access?",
+    "step2Desc": "Register with our partner bookmaker through the link in the app and make a deposit to unlock PRO features.",
+    "step3Title": "How to get PRO",
+    "step3Desc": "1. Tap the link in the app\n2. Register at the bookmaker\n3. Make any deposit\n4. PRO activates automatically!",
+    "goToPromo": "Get PRO now",
+    "later": "Maybe later",
+    "next": "Next"
   }
 }

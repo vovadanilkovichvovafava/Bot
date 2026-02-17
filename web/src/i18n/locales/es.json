@@ -1144,5 +1144,16 @@
     "viewPredictionHistoryDesc": "Consulta todas tus predicciones pasadas y resultados",
     "win": "Victoria",
     "wrong": "Incorrecta"
+  },
+  "welcome": {
+    "step1Title": "Registro completado!",
+    "step1Desc": "Ahora tienes acceso a predicciones AI gratis.",
+    "step2Title": "Quieres acceso ilimitado?",
+    "step2Desc": "Regístrate en la casa de apuestas a través del enlace y haz un depósito para desbloquear PRO.",
+    "step3Title": "Cómo obtener PRO",
+    "step3Desc": "1. Toca el enlace\n2. Regístrate\n3. Haz cualquier depósito\n4. PRO se activa automáticamente!",
+    "goToPromo": "Obtener PRO ahora",
+    "later": "Quizás después",
+    "next": "Siguiente"
   }
 }
