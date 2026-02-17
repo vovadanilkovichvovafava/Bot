@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useBookmaker } from '../context/BookmakerContext';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
 import FootballSpinner from './FootballSpinner';
+import { openBookmakerLink } from '../utils/openBookmakerLink';
 
 export default function BetModal({ isOpen, onClose, bet }) {
   const { t } = useTranslation();
@@ -102,6 +103,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 href={BOOKMAKER.link}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => openBookmakerLink(BOOKMAKER.link, e)}
                 className="block text-sm text-gray-500 hover:text-gray-700"
               >
                 {t('betModal.noAccount', { bonus: BOOKMAKER.bonus })} →
