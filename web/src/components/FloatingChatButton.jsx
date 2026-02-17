@@ -47,7 +47,11 @@ export default function FloatingChatButton() {
       </button>
 
       {/* Chat Modal */}
-      <SupportChat isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <SupportChat
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onUnread={(val) => { setHasUnread(val); if (val) setShowPulse(true); }}
+      />
     </>
   );
 }

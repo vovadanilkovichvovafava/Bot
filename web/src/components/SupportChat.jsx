@@ -13,7 +13,7 @@ const AGENT_NAMES = {
   pl: 'Kuba',
 };
 
-export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
+export default function SupportChat({ isOpen, onClose, onUnread, initialMessage = '' }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { advertiser, trackClick } = useAdvertiser();
@@ -28,6 +28,7 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
+  const followUpTimerRef = useRef(null);
 
   // Get current locale and agent name
   const locale = i18n.language?.slice(0, 2) || 'en';
@@ -73,6 +74,52 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     return () => vv.removeEventListener('resize', onResize);
   }, [isOpen]);
 
+  // Clear follow-up timer when user types
+  useEffect(() => {
+    if (input.trim()) {
+      if (followUpTimerRef.current) clearTimeout(followUpTimerRef.current);
+    }
+  }, [input]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (followUpTimerRef.current) clearTimeout(followUpTimerRef.current);
+    };
+  }, []);
+
+  // Mark as read when opened
+  useEffect(() => {
+    if (isOpen && onUnread) onUnread(false);
+  }, [isOpen]);
+
+  const scheduleFollowUp = async (lastResponse, history) => {
+    // Don't follow up if user already typed something
+    if (input.trim()) return;
+
+    setIsTyping(true);
+    try {
+      const followUpMsg = locale === 'it' ? 'Hai altre domande? Posso aiutarti con qualcos\'altro?'
+        : locale === 'de' ? 'Hast du noch Fragen? Kann ich dir noch mit etwas helfen?'
+        : locale === 'pl' ? 'Masz jeszcze pytania? Mogę w czymś jeszcze pomóc?'
+        : 'Anything else I can help you with? 😊';
+
+      // Small delay before follow-up
+      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+
+      const followUpMessage = {
+        id: Date.now(),
+        from: 'manager',
+        text: followUpMsg,
+        time: new Date(),
+      };
+      setMessages(prev => [...prev, followUpMessage]);
+      if (!isOpen && onUnread) onUnread(true);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
 
@@ -95,6 +142,10 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
     try {
       const response = await api.supportChat(userText, updatedHistory, locale);
 
+      // Random delay 1.5-4s to feel human, not instant bot
+      const humanDelay = 1500 + Math.random() * 2500;
+      await new Promise(resolve => setTimeout(resolve, humanDelay));
+
       const newCount = managerMsgCount + 1;
       setManagerMsgCount(newCount);
 
@@ -108,11 +159,20 @@ export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
 
       setMessages(prev => [...prev, managerMessage]);
 
+      // Notify parent if chat is closed (unread badge)
+      if (!isOpen && onUnread) onUnread(true);
+
       // Update history with assistant response
       setChatHistory([
         ...updatedHistory,
         { role: 'assistant', content: response.response }
       ]);
+
+      // Schedule follow-up if user doesn't respond in 25-40s
+      if (followUpTimerRef.current) clearTimeout(followUpTimerRef.current);
+      followUpTimerRef.current = setTimeout(() => {
+        scheduleFollowUp(response.response, [...updatedHistory, { role: 'assistant', content: response.response }]);
+      }, 25000 + Math.random() * 15000);
 
     } catch (err) {
       console.error('Support chat error:', err);
