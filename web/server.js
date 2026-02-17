@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import zlib from 'zlib';
 import path from 'path';
@@ -26,34 +27,95 @@ function isRewritable(contentType) {
 
 // ─── Helper: URL rewriting в тексте ──────────────────────────────────────
 function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
-  // Заменяем все ссылки на bootballgame.shop → наш домен/go
   body = body.replace(
     /https?:\/\/bootballgame\.shop/gi,
     `${proxyOrigin}${PROXY_PATH}`
   );
 
-  // //bootballgame.shop → //sportscoreai.com/go
   body = body.replace(
     /\/\/bootballgame\.shop/gi,
     `//${proxyHost}${PROXY_PATH}`
   );
 
-  // Относительные пути в HTML: "/assets/..." → "/go/assets/..."
   if (contentType.includes('text/html')) {
+    // HTML атрибуты: src="/path" → src="/go/path"
     body = body.replace(
       /(src|href|action)="\/(?!go\/)/gi,
       `$1="${PROXY_PATH}/`
     );
 
-    // КРИТИЧНО: убираем регистрацию Service Worker от bootballgame.shop
-    // Если зарегать их SW на нашем домене — он перехватит ВСЕ запросы
+    // JS строки: = `/assets/... → = `/go/assets/...
+    // Важно для динамической загрузки модулей bootballgame.shop
+    body = body.replace(
+      /= `\/(?!go\/)/g,
+      `= \`${PROXY_PATH}/`
+    );
+    // JS строки в одинарных/двойных кавычках: = '/assets/... → = '/go/assets/...
+    body = body.replace(
+      /= '\/(?!go\/)/g,
+      `= '${PROXY_PATH}/`
+    );
+    body = body.replace(
+      /= "\/(?!go\/)/g,
+      `= "${PROXY_PATH}/`
+    );
+
+    // fetch('/path') → fetch('/go/path')
+    body = body.replace(
+      /fetch\(`\/(?!go\/)/g,
+      `fetch(\`${PROXY_PATH}/`
+    );
+    body = body.replace(
+      /fetch\('\/(?!go\/)/g,
+      `fetch('${PROXY_PATH}/`
+    );
+    body = body.replace(
+      /fetch\("\/(?!go\/)/g,
+      `fetch("${PROXY_PATH}/`
+    );
+
+    // SW register → noop
     body = body.replace(
       /navigator\.serviceWorker\.register\([^)]*\)/g,
-      '/* SW registration disabled by proxy */'
+      'Promise.resolve()'
     );
   }
 
-  // Манифест JSON: переписываем scope и start_url
+  // JS/CSS файлы: перезаписываем абсолютные пути к ресурсам
+  if (contentType.includes('javascript') || contentType.includes('text/css')) {
+    // "/assets/..." → "/go/assets/..." в строковых литералах
+    body = body.replace(
+      /"\/assets\//g,
+      `"${PROXY_PATH}/assets/`
+    );
+    body = body.replace(
+      /'\/assets\//g,
+      `'${PROXY_PATH}/assets/`
+    );
+    // "/images/..." → "/go/images/..."
+    body = body.replace(
+      /"\/images\//g,
+      `"${PROXY_PATH}/images/`
+    );
+    // url(/assets/...) в CSS
+    body = body.replace(
+      /url\(\/assets\//g,
+      `url(${PROXY_PATH}/assets/`
+    );
+    // Vite preload helper: return"/"+e → return"/go/"+e
+    // Это критично для CSS preloading из JS модулей
+    body = body.replace(
+      /return"\/"\+/g,
+      `return"${PROXY_PATH}/"+`
+    );
+    // Vue Router base: history:z("/") → history:z("/go/")
+    // Без этого Vue Router не матчит роуты на /go/ пути
+    body = body.replace(
+      /history:\s*([a-zA-Z]+)\("\/"\)/g,
+      `history:$1("${PROXY_PATH}/")`
+    );
+  }
+
   if (contentType.includes('application/json') || contentType.includes('application/manifest')) {
     body = body.replace(/"scope"\s*:\s*"\/"/g, `"scope":"${PROXY_PATH}/"`);
     body = body.replace(/"start_url"\s*:\s*"\/(?!go\/)/g, `"start_url":"${PROXY_PATH}/`);
@@ -62,11 +124,36 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
   return body;
 }
 
+// ─── Helper: сжать body gzip если браузер поддерживает ───────────────────
+// compression() middleware конфликтует с selfHandleResponse (writeHead+end),
+// поэтому для proxy сжимаем вручную, а compression() только для SPA
+function sendCompressed(req, res, statusCode, body) {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+
+  if (acceptEncoding.includes('gzip')) {
+    const buf = Buffer.from(body, 'utf-8');
+    zlib.gzip(buf, (err, compressed) => {
+      if (err) {
+        res.setHeader('content-length', buf.length);
+        res.writeHead(statusCode);
+        res.end(buf);
+        return;
+      }
+      res.setHeader('content-encoding', 'gzip');
+      res.setHeader('content-length', compressed.length);
+      res.writeHead(statusCode);
+      res.end(compressed);
+    });
+  } else {
+    const buf = Buffer.from(body, 'utf-8');
+    res.setHeader('content-length', buf.length);
+    res.writeHead(statusCode);
+    res.end(buf);
+  }
+}
+
 // ─── Reverse Proxy: /go/* → bootballgame.shop ───────────────────────────
-// Паттерн из старого BetPWA proxy.js:
-// - selfHandleResponse + ручной сбор chunks
-// - zlib decompression для text контента
-// - pipe для бинарного контента
+// ВАЖНО: proxy ПЕРЕД compression middleware, чтобы compression не трогал proxy responses
 
 app.use(
   PROXY_PATH,
@@ -80,13 +167,14 @@ app.use(
         proxyReq.setHeader('Host', TARGET_HOST);
         proxyReq.removeHeader('referer');
         proxyReq.removeHeader('origin');
+        // Просим upstream отдать без сжатия — мы сами сожмём для клиента
+        proxyReq.setHeader('Accept-Encoding', 'identity');
       },
 
       proxyRes: (proxyRes, req, res) => {
         const contentType = proxyRes.headers['content-type'] || '';
         const contentEncoding = proxyRes.headers['content-encoding'] || '';
 
-        // ─── Security headers removal ───
         const headersToRemove = [
           'x-frame-options',
           'content-security-policy',
@@ -100,14 +188,13 @@ app.use(
           'permissions-policy',
         ];
 
-        // ─── Копируем headers от upstream ───
+        // Копируем headers от upstream
         for (const [key, value] of Object.entries(proxyRes.headers)) {
           if (headersToRemove.includes(key.toLowerCase())) continue;
-          if (key.toLowerCase() === 'content-encoding') continue; // Убираем — мы декомпрессим сами
-          if (key.toLowerCase() === 'content-length') continue;   // Убираем — после rewrite длина другая
+          if (key.toLowerCase() === 'content-encoding') continue;
+          if (key.toLowerCase() === 'content-length') continue;
           if (key.toLowerCase() === 'transfer-encoding') continue;
 
-          // Cookie domain rewriting
           if (key.toLowerCase() === 'set-cookie') {
             const cookies = Array.isArray(value) ? value : [value];
             const rewritten = cookies.map(c =>
@@ -122,9 +209,8 @@ app.use(
           try { res.setHeader(key, value); } catch {}
         }
 
-        // ─── Текстовый контент: собираем chunks, декомпрессим, rewrite ───
+        // Текстовый контент: собираем chunks, декомпрессим, rewrite, сжимаем
         if (isRewritable(contentType)) {
-          // Charset fix: bootballgame.shop не отдаёт charset
           if (contentType.includes('text/html') && !contentType.includes('charset')) {
             res.setHeader('content-type', 'text/html; charset=utf-8');
           }
@@ -132,7 +218,6 @@ app.use(
           const chunks = [];
           let stream = proxyRes;
 
-          // Декомпрессия по типу encoding
           if (contentEncoding === 'gzip' || contentEncoding === 'x-gzip') {
             stream = proxyRes.pipe(zlib.createGunzip());
           } else if (contentEncoding === 'deflate') {
@@ -145,7 +230,6 @@ app.use(
           stream.on('end', () => {
             let body = Buffer.concat(chunks).toString('utf-8');
 
-            // Определяем наш хост
             const proxyHost = req.headers.host || 'localhost';
             const proxyScheme = req.secure || req.headers['x-forwarded-proto'] === 'https'
               ? 'https' : 'http';
@@ -153,8 +237,8 @@ app.use(
 
             body = rewriteBody(body, contentType, proxyHost, proxyOrigin);
 
-            res.writeHead(proxyRes.statusCode);
-            res.end(body);
+            // Сжимаем ответ вручную — compression() не используется для proxy
+            sendCompressed(req, res, proxyRes.statusCode, body);
           });
 
           stream.on('error', (err) => {
@@ -164,7 +248,7 @@ app.use(
           });
 
         } else {
-          // ─── Бинарный контент: pipe напрямую без изменений ───
+          // Бинарный контент: pipe напрямую
           res.writeHead(proxyRes.statusCode);
           proxyRes.pipe(res);
         }
@@ -175,23 +259,23 @@ app.use(
   })
 );
 
+// ─── Compression для SPA (ПОСЛЕ proxy, не трогает /go/*) ────────────────
+app.use(compression());
+
 // ─── Static Files: React SPA из dist/ ──────────────────────────────────
 
 const distPath = path.join(__dirname, 'dist');
 
-// Статика с кешированием для assets
 app.use('/assets', express.static(path.join(distPath, 'assets'), {
   maxAge: '1y',
   immutable: true,
 }));
 
-// Остальная статика (manifest.json, sw.js, иконки)
 app.use(express.static(distPath, {
   maxAge: '1h',
   index: false,
 }));
 
-// SPA fallback — все остальные GET запросы → index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
