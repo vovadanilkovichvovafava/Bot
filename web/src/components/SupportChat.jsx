@@ -109,6 +109,15 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     if (isOpen && onUnread) onUnread(false);
   }, [isOpen]);
 
+  // Hide BottomNav when SupportChat is open (same approach as AIChat)
+  useEffect(() => {
+    const nav = document.querySelector('nav.fixed.bottom-0');
+    if (nav) nav.style.display = isOpen ? 'none' : '';
+    return () => {
+      if (nav) nav.style.display = '';
+    };
+  }, [isOpen]);
+
   const scheduleFollowUp = async (lastResponse, history) => {
     // Don't follow up if user already typed something
     if (input.trim()) return;

@@ -41,7 +41,7 @@ export default function AIChat() {
 
   const isPremium = user?.is_premium;
 
-  // Track keyboard open/close via visualViewport (iOS fallback)
+  // Track keyboard open/close — hide BottomNav when keyboard is up
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -49,9 +49,16 @@ export default function AIChat() {
     const onResize = () => {
       const isKb = vv.height < threshold;
       setKeyboardOpen(isKb);
+      // Hide BottomNav when keyboard is open so it doesn't sit above keyboard
+      const nav = document.querySelector('nav.fixed.bottom-0');
+      if (nav) nav.style.display = isKb ? 'none' : '';
     };
     vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      const nav = document.querySelector('nav.fixed.bottom-0');
+      if (nav) nav.style.display = '';
+    };
   }, []);
 
   // Load cached chat history from localStorage
