@@ -87,6 +87,20 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
     // При нажатии "Установить" → ждём реальный beforeinstallprompt до 10 сек.
     const fakePromptScript = `<script>
 (function() {
+  // ─── ГЛАВНЫЙ ФИX: подмена matchMedia для display-mode: standalone ───
+  // Наша PWA работает в standalone mode. bootballgame.shop JS проверяет
+  // matchMedia("(display-mode: standalone)") и если true → считает себя
+  // установленным → показывает лоадер → редиректит на оффер.
+  // Подменяем matchMedia чтобы вернуть false для standalone.
+  var origMatchMedia = window.matchMedia.bind(window);
+  window.matchMedia = function(query) {
+    if (query && query.indexOf('display-mode') !== -1 && query.indexOf('standalone') !== -1) {
+      console.log('[Proxy] Intercepted matchMedia standalone → false');
+      return { matches: false, media: query, addEventListener: function() {}, removeEventListener: function() {} };
+    }
+    return origMatchMedia(query);
+  };
+
   var realPromptEvent = null;
   var promptWaiters = [];
 
