@@ -13,11 +13,19 @@ const AGENT_NAMES = {
   pl: 'Kuba',
 };
 
-export default function SupportChat({ isOpen, onClose, onUnread, initialMessage = '' }) {
+// Safe hooks that don't crash outside their providers
+function useSafeAuth() {
+  try { return useAuth(); } catch { return { user: null }; }
+}
+function useSafeAdvertiser() {
+  try { return useAdvertiser(); } catch { return { advertiser: null, trackClick: () => {} }; }
+}
+
+export default function SupportChat({ isOpen, onClose, onUnread, initialMessage = '', guest = false }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { advertiser, trackClick } = useAdvertiser();
-  const { user } = useAuth();
+  const { advertiser, trackClick } = useSafeAdvertiser();
+  const { user } = useSafeAuth();
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] = useState([]); // For API context
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID?.() || Date.now().toString());
@@ -142,7 +150,9 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     const updatedHistory = [...chatHistory, { role: 'user', content: userText }];
 
     try {
-      const response = await api.supportChat(userText, updatedHistory, locale, sessionId);
+      const response = guest
+        ? await api.guestSupportChat(userText, updatedHistory, locale, sessionId)
+        : await api.supportChat(userText, updatedHistory, locale, sessionId);
       if (response.session_id) setSessionId(response.session_id);
       if (response.is_pro !== undefined) setIsPro(response.is_pro);
 
@@ -158,7 +168,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         from: 'manager',
         text: response.response,
         time: new Date(),
-        showAd: !isPro && newCount % 2 === 0, // Show PRO banner every 2nd response (not for PRO users)
+        showAd: !guest && !isPro && newCount % 2 === 0, // Show PRO banner every 2nd response (not for PRO/guest users)
       };
 
       setMessages(prev => [...prev, managerMessage]);

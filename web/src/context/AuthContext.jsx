@@ -80,6 +80,7 @@ export function AuthProvider({ children }) {
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    safeSetItem('last_phone', phone);
     loadFromBackend().catch(() => {});
     return userData;
   };
@@ -89,6 +90,7 @@ export function AuthProvider({ children }) {
     const userData = await api.getMe();
     setUser(userData);
     safeSetItem('hasAccount', 'true');
+    safeSetItem('last_phone', phone);
     loadFromBackend().catch(() => {});
     return userData;
   };

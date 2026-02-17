@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { isValidPhone, fullPhoneNumber } from '../utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
+import SupportChat from '../components/SupportChat';
 import { track } from '../services/analytics';
 import useKeyboardScroll from '../hooks/useKeyboardScroll';
 
@@ -18,6 +19,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const formRef = useKeyboardScroll();
@@ -152,11 +154,15 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Forgot password — opens support chat */}
+            {/* Forgot password — opens guest support chat */}
             <div className="text-right -mt-1">
-              <Link to="/?openSupport=forgot_password" className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors">
+              <button
+                type="button"
+                onClick={() => setShowSupport(true)}
+                className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors"
+              >
                 {t('auth.forgotPassword')}
-              </Link>
+              </button>
             </div>
 
             <button
@@ -209,6 +215,13 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      {/* Guest Support Chat (no auth required) */}
+      <SupportChat
+        isOpen={showSupport}
+        onClose={() => setShowSupport(false)}
+        guest={true}
+      />
     </div>
   );
 }

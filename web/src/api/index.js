@@ -2,6 +2,7 @@ const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1';
 
 class ApiService {
   constructor() {
+    this._refreshing = null; // prevent parallel refresh calls
     try {
       this.token = localStorage.getItem('access_token');
     } catch {
@@ -30,7 +31,39 @@ class ApiService {
     }
   }
 
-  async request(endpoint, options = {}) {
+  async _tryRefresh() {
+    // Deduplicate: if already refreshing, wait for that result
+    if (this._refreshing) return this._refreshing;
+
+    this._refreshing = (async () => {
+      try {
+        let refreshToken = null;
+        try { refreshToken = localStorage.getItem('refresh_token'); } catch {}
+        if (!refreshToken) return false;
+
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+
+        if (!res.ok) return false;
+
+        const data = await res.json();
+        this.setToken(data.access_token);
+        try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
+        return true;
+      } catch {
+        return false;
+      } finally {
+        this._refreshing = null;
+      }
+    })();
+
+    return this._refreshing;
+  }
+
+  async request(endpoint, options = {}, _isRetry = false) {
     const url = `${API_BASE}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -48,6 +81,16 @@ class ApiService {
     });
 
     if (response.status === 401) {
+      // Don't try to refresh on auth endpoints or if already retrying
+      if (!_isRetry && !endpoint.startsWith('/auth/')) {
+        const refreshed = await this._tryRefresh();
+        if (refreshed) {
+          // Retry original request with new token
+          return this.request(endpoint, options, true);
+        }
+      }
+
+      // Refresh failed — logout
       this.setToken(null);
       try { localStorage.removeItem('refresh_token'); } catch {}
       try {
@@ -195,6 +238,21 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ message, history, locale, session_id: sessionId }),
     });
+  }
+
+  // Guest Support Chat (no auth required — for login page password reset)
+  async guestSupportChat(message, history = [], locale = 'en', sessionId = '') {
+    const url = `${API_BASE}/support/guest-chat`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history, locale, session_id: sessionId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
   }
 }
 

@@ -1,11 +1,13 @@
 import re
+from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, verify_token
+from app.config import settings
 from app.core.database import get_db
 from app.models.user import User
 
@@ -203,7 +205,10 @@ async def register(
 
     # Use phone as JWT subject identifier
     access_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id})
-    refresh_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id, "refresh": True})
+    refresh_token = create_access_token(
+        {"sub": new_user.phone, "user_id": new_user.id, "refresh": True},
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
 
     # Set httpOnly cookies
     set_auth_cookies(response, access_token, refresh_token)
@@ -239,7 +244,10 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
 
     identifier = db_user.phone or db_user.email
     access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
-    refresh_token = create_access_token({"sub": identifier, "user_id": db_user.id, "refresh": True})
+    refresh_token = create_access_token(
+        {"sub": identifier, "user_id": db_user.id, "refresh": True},
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
 
     # Set httpOnly cookies
     set_auth_cookies(response, access_token, refresh_token)
@@ -249,6 +257,147 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
         access_token=access_token,
         refresh_token=refresh_token
     )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token_endpoint(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    """Refresh access token using refresh token"""
+    # Get refresh token from body, localStorage header, or cookie
+    token = None
+
+    # Try Authorization header first (Bearer <refresh_token>)
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+
+    # Try cookie
+    if not token:
+        token = request.cookies.get("refresh_token")
+
+    # Try request body
+    if not token:
+        try:
+            body = await request.json()
+            token = body.get("refresh_token")
+        except Exception:
+            pass
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token required"
+        )
+
+    # Verify the refresh token
+    try:
+        payload = verify_token(token)
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Must be a refresh token (has "refresh": True)
+    if not payload.get("refresh"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not a refresh token"
+        )
+
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    # Verify user still exists
+    result = await db.execute(select(User).where(User.id == user_id))
+    db_user = result.scalar_one_or_none()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+
+    # Issue new tokens
+    identifier = db_user.phone or db_user.email
+    new_access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
+    new_refresh_token = create_access_token(
+        {"sub": identifier, "user_id": db_user.id, "refresh": True},
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+
+    set_auth_cookies(response, new_access_token, new_refresh_token)
+
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token
+    )
+
+
+class ResetPasswordRequest(BaseModel):
+    phone: str
+    new_password: str
+
+    @field_validator("phone")
+    @classmethod
+    def clean_phone(cls, v):
+        cleaned = v.strip()
+        if cleaned.startswith("+"):
+            cleaned = "+" + re.sub(r"[^\d]", "", cleaned[1:])
+        else:
+            cleaned = re.sub(r"[^\d]", "", cleaned)
+        if not cleaned or len(cleaned) < 7:
+            raise ValueError("Phone number too short")
+        return cleaned
+
+
+@router.post("/reset-password")
+async def reset_password(
+    req: ResetPasswordRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Reset user password — called by support bot only.
+    Protected by internal secret header to prevent abuse.
+    """
+    # Verify internal secret (support bot must send this header)
+    import os
+    internal_secret = os.getenv("INTERNAL_API_SECRET", "")
+    request_secret = request.headers.get("X-Internal-Secret", "")
+    if not internal_secret or request_secret != internal_secret:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden"
+        )
+
+    # Validate new password
+    is_valid, message = validate_password_strength(req.new_password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message
+        )
+
+    # Find user by phone
+    result = await db.execute(select(User).where(User.phone == req.phone))
+    db_user = result.scalar_one_or_none()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Update password
+    db_user.password_hash = get_password_hash(req.new_password)
+    await db.commit()
+
+    return {"message": "Password reset successfully", "username": db_user.username}
 
 
 @router.post("/logout")

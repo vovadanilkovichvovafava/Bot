@@ -321,8 +321,20 @@ KNOWLEDGE_BASE = {
         "Predictions not loading: check internet connection, try refreshing the page. "
         "PRO not activated after deposit: must register through OUR link in the app (not directly on bookmaker site). "
         "If registered directly — contact support, we can verify manually. "
-        "Can't log in: try password reset via email. Check spam folder for reset link. "
+        "Can't log in / forgot password: ask support to reset your password. Support will ask for your phone number "
+        "and new desired password, then reset it for you. "
         "Stats not updating: predictions verify automatically after matches end. Give it a few hours."
+    ),
+
+    "password_reset": (
+        "Password reset flow: If a user forgot their password, you can help them reset it. "
+        "Ask the user for: 1) their registered phone number, 2) their desired new password (minimum 6 characters). "
+        "Once you have both, respond with EXACTLY this format on a separate line: "
+        "RESET_PASSWORD:+phone_number:new_password "
+        "The system will automatically process this command and reset the password. "
+        "After reset, tell the user their password has been updated and they can now log in. "
+        "IMPORTANT: Always verify the phone number format starts with + and country code. "
+        "If user gives just digits, add + at the beginning."
     ),
 
     "beginner_guide": (
@@ -386,6 +398,11 @@ def find_relevant_knowledge(message: str, full_history: str = "") -> str:
         "bookmaker_info": ["bookmaker", "deposit", "withdraw", "withdrawal", "payout",
                            "payment", "verification", "document", "license",
                            "deposito", "prelievo", "einzahlung", "auszahlung", "wpłata", "wypłata"],
+        "password_reset": ["forgot password", "reset password", "can't log in", "lost password",
+                          "change password", "new password", "password dimenticata", "passwort vergessen",
+                          "zapomniałem hasła", "забыл пароль", "сменить пароль", "восстановить пароль",
+                          "не могу войти", "non riesco ad accedere", "kann mich nicht anmelden",
+                          "nie mogę się zalogować"],
         "support_issues": ["problem", "issue", "error", "bug", "can't", "doesn't work",
                            "broken", "crash", "stuck", "loading", "not working", "help",
                            "problema", "fehler", "błąd", "nie działa", "non funziona"],
@@ -615,6 +632,148 @@ async def support_chat(
     return SupportChatResponse(
         response=ai_response, agent_name=agent_name,
         session_id=session_id, is_pro=is_pro,
+    )
+
+
+async def _try_password_reset(text: str, db: AsyncSession) -> tuple[bool, str]:
+    """Check if AI response contains a RESET_PASSWORD command and execute it."""
+    import re as _re
+    match = _re.search(r'RESET_PASSWORD:(\+?\d+):(.+)', text)
+    if not match:
+        return False, text
+
+    phone = match.group(1)
+    new_password = match.group(2).strip()
+
+    # Validate password
+    if len(new_password) < 6:
+        clean_text = text.replace(match.group(0), "").strip()
+        return True, clean_text + "\n\nThe password is too short (minimum 6 characters). Please provide a longer password."
+
+    # Find user by phone
+    result = await db.execute(select(User).where(User.phone == phone))
+    db_user = result.scalar_one_or_none()
+
+    if not db_user:
+        clean_text = text.replace(match.group(0), "").strip()
+        return True, clean_text + f"\n\nI couldn't find an account with number {phone}. Please double-check the number."
+
+    # Reset password
+    from app.core.security import get_password_hash
+    db_user.password_hash = get_password_hash(new_password)
+    await db.commit()
+
+    logger.info(f"Password reset via support chat: user_id={db_user.id}, phone={phone}")
+
+    # Remove the command from the response text
+    clean_text = text.replace(match.group(0), "").strip()
+    if not clean_text:
+        clean_text = f"Done! Password for {db_user.username} has been reset. You can now log in with your new password."
+
+    return True, clean_text
+
+
+@router.post("/guest-chat", response_model=SupportChatResponse)
+async def guest_support_chat(
+    req: SupportChatRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Support chat for non-authenticated users (login page). Limited to password reset and general help."""
+    user_id = 0  # Guest user
+
+    lang = (req.locale or "en").lower()[:2]
+    if lang not in LANGUAGE_NAMES:
+        lang = "en"
+
+    agent_name = PERSONA_NAMES.get(lang, "Alex")
+    session_id = req.session_id or str(uuid.uuid4())
+
+    # Security check
+    if is_injection(req.message):
+        deflections = DEFLECTION_RESPONSES.get(lang, DEFLECTION_RESPONSES["en"])
+        return SupportChatResponse(
+            response=random.choice(deflections), agent_name=agent_name,
+            session_id=session_id, is_pro=False,
+        )
+
+    # Knowledge for guest — only password reset + general
+    history_text = ""
+    if req.history:
+        history_text = " ".join(m.content for m in req.history[-4:])
+
+    knowledge_context = KNOWLEDGE_BASE["password_reset"]
+
+    # Check if message is about common topics too
+    text_lower = (req.message + " " + history_text).lower()
+    if any(kw in text_lower for kw in ["register", "sign up", "create account", "registr", "регистр"]):
+        knowledge_context += "\n\n" + KNOWLEDGE_BASE["getting_started"]
+
+    language = LANGUAGE_NAMES.get(lang, "English")
+    name = PERSONA_NAMES.get(lang, "Alex")
+
+    system_prompt = f"""You are {name}, a support manager at SportScoreAI.
+
+=== CONTEXT ===
+- This user is NOT logged in. They are on the LOGIN page.
+- They likely forgot their password or need help getting into their account.
+- You can RESET their password if they provide their phone number and desired new password.
+
+=== PASSWORD RESET ===
+{KNOWLEDGE_BASE["password_reset"]}
+
+=== LANGUAGE ===
+- ALWAYS respond in {language}.
+
+=== STYLE ===
+- 2-4 sentences max. Casual, friendly.
+- NO markdown, NO lists. Natural conversation.
+- 1-2 emoji max.
+
+=== RULES ===
+- You are {name}, a real support person, NOT AI
+- If they need password reset: ask for phone number (with country code) and new password
+- When you have BOTH phone and new password, include the RESET_PASSWORD command in your response
+- If they want to register: tell them to tap "Sign Up" on the login page
+- Keep it brief and helpful"""
+
+    messages = []
+    if req.history:
+        for msg in req.history[-10:]:
+            if msg.role in ("user", "assistant"):
+                messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": req.message})
+
+    try:
+        api_key = os.getenv("CLAUDE_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=503, detail="AI service not configured")
+
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-3-5-haiku-latest",
+            max_tokens=300,
+            system=system_prompt,
+            messages=messages,
+        )
+        ai_response = response.content[0].text
+    except Exception as e:
+        logger.error(f"Guest support error: {e}")
+        raise HTTPException(status_code=500, detail="AI service temporarily unavailable")
+
+    # Check for password reset command
+    was_reset, ai_response = await _try_password_reset(ai_response, db)
+    if was_reset:
+        logger.info(f"Password reset processed in guest chat, session={session_id[:8]}")
+
+    ai_response = post_process(ai_response)
+
+    # Save to DB (user_id=0 for guests)
+    await _save_messages(db, user_id, session_id, lang, agent_name, False,
+                         req.message, ai_response)
+
+    return SupportChatResponse(
+        response=ai_response, agent_name=agent_name,
+        session_id=session_id, is_pro=False,
     )
 
 
