@@ -32,11 +32,9 @@ export function formatPhone(digits, mask) {
   return result;
 }
 
-// Validate phone number length (use minDigits for flexible validation)
+// Validate phone number — accept anything 6+ digits (don't block real users)
 export function isValidPhone(digits, country) {
-  if (!country) return digits.length >= 7;
-  const min = country.minDigits || country.digits;
-  return digits.length >= min && digits.length <= country.digits;
+  return digits.length >= 6;
 }
 
 // Build full phone number with dial code
