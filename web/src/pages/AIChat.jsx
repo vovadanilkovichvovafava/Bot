@@ -525,6 +525,11 @@ export default function AIChat() {
             placeholder={t('aiChat.inputPlaceholder')}
             className="flex-1 bg-gray-50 rounded-full px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-primary-200"
             disabled={loading}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            data-form-type="other"
           />
           <button
             onClick={() => sendMessage(input)}

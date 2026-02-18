@@ -438,6 +438,11 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
               placeholder={t('support.placeholder')}
               className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-primary-500"
               disabled={isTyping}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              data-form-type="other"
             />
             <button
               onClick={sendMessage}
