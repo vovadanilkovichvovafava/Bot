@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import BottomNav from './BottomNav';
+import FloatingChatButton from './FloatingChatButton';
 
 export default function Layout() {
   const location = useLocation();
@@ -11,6 +12,8 @@ export default function Layout() {
         <Outlet />
       </div>
       <BottomNav />
+      {/* Hide on AI Chat page to avoid overlapping send button */}
+      {!isChat && <FloatingChatButton />}
     </div>
   );
 }
