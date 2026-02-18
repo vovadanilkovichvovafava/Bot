@@ -188,13 +188,13 @@ export default function Settings() {
                       setEditingUsername(false);
                     }}
                     disabled={savingUsername || !newUsername.trim()}
-                    className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                    className="shrink-0 px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg disabled:opacity-50"
                   >
                     {savingUsername ? '...' : 'OK'}
                   </button>
                   <button
                     onClick={() => setEditingUsername(false)}
-                    className="px-2 py-1.5 text-gray-400 text-xs"
+                    className="shrink-0 px-2 py-1.5 text-gray-400 text-xs"
                   >
                     ✕
                   </button>
