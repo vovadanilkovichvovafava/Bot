@@ -39,16 +39,11 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
   const isLast = step === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl w-full shadow-2xl animate-slideUp flex flex-col" style={{ maxHeight: '80dvh' }}>
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-gray-300 rounded-full" />
-        </div>
-
+      <div className="relative bg-white rounded-3xl w-full max-w-sm max-h-[80dvh] overflow-y-auto shadow-2xl">
         {/* Progress dots */}
-        <div className="flex justify-center gap-2 pt-3 pb-2 shrink-0">
+        <div className="flex justify-center gap-2 pt-6">
           {steps.map((_, i) => (
             <div
               key={i}
@@ -59,9 +54,8 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
           ))}
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-6 pt-4 pb-2 text-center">
-          {/* Step number badge */}
+        {/* Content */}
+        <div className="px-6 pt-6 pb-4 text-center">
           <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${currentStep.color} flex items-center justify-center shadow-lg`}>
             <span className="text-white text-2xl font-bold">{currentStep.icon}</span>
           </div>
@@ -70,8 +64,8 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
           <p className="text-gray-500 text-sm whitespace-pre-line leading-relaxed">{currentStep.description}</p>
         </div>
 
-        {/* Fixed actions at bottom */}
-        <div className="px-6 pt-3 pb-6 space-y-3 shrink-0" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+        {/* Actions */}
+        <div className="px-6 pb-6 space-y-3">
           {isLast ? (
             <>
               <button
