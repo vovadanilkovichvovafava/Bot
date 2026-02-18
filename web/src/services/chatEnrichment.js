@@ -134,7 +134,8 @@ const TOMORROW_KEYWORDS = [
 const BEST_BET_KEYWORDS = [
   'best bet', 'top pick', 'value bet', 'sure bet', 'recommended bet', 'best prediction', // EN
   'лучшая ставка', 'лучший прогноз', 'рекомендация', 'топ ставка',   // RU
-  'migliori scommesse', 'miglior scommessa', 'scommessa consigliata', 'pronostico', // IT
+  'migliori scommesse', 'miglior scommessa', 'scommesse consigliate', 'scommessa consigliata', // IT
+  'pronostico', 'pronostici', 'previsione', 'previsioni', 'consigli scommesse',              // IT
   'mejor apuesta', 'mejores apuestas', 'apuesta recomendada', 'pronóstico', // ES
   'meilleur pari', 'meilleurs paris', 'pari recommandé', 'pronostic', // FR
   'beste wette', 'besten wetten', 'empfohlene wette', 'tipp',        // DE
