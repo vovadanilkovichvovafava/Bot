@@ -72,22 +72,42 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     }
   }, [isOpen]);
 
-  // Track visual viewport for mobile keyboard
+  // Track visual viewport for mobile keyboard — adapt chat panel height + position
   useEffect(() => {
-    if (!isOpen || !window.visualViewport) return;
+    if (!isOpen) return;
     const vv = window.visualViewport;
+    if (!vv) return;
+
     const threshold = window.innerHeight * 0.75;
-    const onResize = () => {
+    const update = () => {
+      const isKb = vv.height < threshold;
       setViewportHeight(vv.height);
-      setKeyboardOpen(vv.height < threshold);
-      if (document.activeElement === inputRef.current) {
+      setKeyboardOpen(isKb);
+
+      // Position the panel wrapper to match visual viewport (handles Android keyboard push)
+      if (panelRef.current && panelRef.current.parentElement) {
+        const wrapper = panelRef.current.parentElement;
+        wrapper.style.height = `${vv.height}px`;
+        wrapper.style.top = `${vv.offsetTop}px`;
+      }
+
+      // Scroll input into view when keyboard opens
+      if (isKb && document.activeElement === inputRef.current) {
         setTimeout(() => {
-          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50);
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
       }
     };
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+
+    // Initial sync
+    update();
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
   }, [isOpen]);
 
   // Clear follow-up timer when user types
@@ -246,15 +266,15 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col">
+    <div className="fixed inset-x-0 top-0 z-[60] flex flex-col" style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
 
-      {/* Chat Panel */}
+      {/* Chat Panel — fills bottom, shrinks with keyboard */}
       <div
         ref={panelRef}
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl flex flex-col animate-slide-up"
-        style={{ maxHeight: viewportHeight ? `${viewportHeight * 0.92}px` : '90vh' }}
+        className="mt-auto bg-white rounded-t-3xl flex flex-col animate-slide-up relative"
+        style={{ maxHeight: '92%' }}
       >
         {/* Header — compact when keyboard open */}
         <div className={`flex items-center gap-3 px-4 shrink-0 border-b border-gray-100 ${keyboardOpen ? 'py-2' : 'py-3'} ${guest ? 'bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-3xl' : ''}`}>

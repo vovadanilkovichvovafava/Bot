@@ -41,23 +41,34 @@ export default function AIChat() {
 
   const isPremium = user?.is_premium;
 
-  // Track keyboard open/close — hide BottomNav when keyboard is up
+  // Track keyboard open/close — adapt height to visual viewport, hide BottomNav
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const threshold = window.innerHeight * 0.75;
-    const onResize = () => {
+    const update = () => {
       const isKb = vv.height < threshold;
       setKeyboardOpen(isKb);
-      // Hide BottomNav when keyboard is open so it doesn't sit above keyboard
+      // Hide BottomNav when keyboard is open
       const nav = document.getElementById('bottom-nav');
       if (nav) nav.style.display = isKb ? 'none' : '';
+      // Resize container to match visual viewport (prevents keyboard overlap)
+      if (containerRef.current) {
+        containerRef.current.style.height = isKb ? `${vv.height}px` : '';
+      }
+      // Keep input visible
+      if (isKb) {
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+      }
     };
-    vv.addEventListener('resize', onResize);
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
     return () => {
-      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
       const nav = document.getElementById('bottom-nav');
       if (nav) nav.style.display = '';
+      if (containerRef.current) containerRef.current.style.height = '';
     };
   }, []);
 
