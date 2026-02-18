@@ -101,8 +101,9 @@ function ProtectedRoute({ children }) {
   const loc = useLocation();
   if (loading) return <SplashScreen />;
   if (!isAuthenticated) {
-    // Прокидываем UTM/query string при редиректе на регу/логин
-    const target = hasAccountFlag() ? "/login" : "/register";
+    // Returning users → /login, новые с рекламы приходят на /register напрямую
+    // Дефолт /login чтобы returning users с потерянным hasAccount не попадали на /register
+    const target = "/login";
     const search = loc.search || '';
     return <Navigate to={`${target}${search}`} replace />;
   }
