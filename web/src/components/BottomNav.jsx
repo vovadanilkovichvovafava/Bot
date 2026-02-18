@@ -61,7 +61,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav id="bottom-nav" className="bg-white border-t border-gray-100 z-50 safe-bottom shrink-0">
+    <nav className="bg-white border-t border-gray-100 z-50 safe-bottom shrink-0">
       <div className="max-w-lg mx-auto flex items-center justify-around py-2 px-1">
         {navItems.map((item) => {
           const isActive = item.path === '/'

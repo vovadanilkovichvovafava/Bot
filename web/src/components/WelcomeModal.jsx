@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useBottomNav } from '../context/BottomNavContext';
 
 export default function WelcomeModal({ onClose, onGoToPromo }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
+  const { hideBottomNav, showBottomNav } = useBottomNav();
 
   // Hide BottomNav while modal is open
   useEffect(() => {
-    const nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = 'none';
-    return () => {
-      if (nav) nav.style.display = '';
-    };
-  }, []);
+    hideBottomNav();
+    return () => showBottomNav();
+  }, [hideBottomNav, showBottomNav]);
 
   const steps = [
     {

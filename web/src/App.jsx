@@ -1,4 +1,4 @@
-import { useEffect, useRef, Component } from 'react';
+import { useEffect, useRef, Component, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
@@ -40,29 +40,32 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
+// Critical path — loaded eagerly
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
-import Matches from './pages/Matches';
-import MatchDetail from './pages/MatchDetail';
-import AIChat from './pages/AIChat';
-import ProTools from './pages/ProTools';
-import Settings from './pages/Settings';
-import Statistics from './pages/Statistics';
-import Favourites from './pages/Favourites';
-import LeagueMatches from './pages/LeagueMatches';
-import ValueFinder from './pages/ValueFinder';
-import PredictionHistory from './pages/PredictionHistory';
-import OddsConverter from './pages/OddsConverter';
-import YourStats from './pages/YourStats';
-import LiveMatchDetail from './pages/LiveMatchDetail';
-import BookmakerPromo from './pages/BookmakerPromo';
-import ProAccess from './pages/ProAccess';
-import BeginnerGuide from './pages/BeginnerGuide';
-import BankrollTracker from './pages/BankrollTracker';
-import BetSlipBuilder from './pages/BetSlipBuilder';
-import KellyCalculator from './pages/KellyCalculator';
-import NotFound from './pages/NotFound';
+
+// Lazy-loaded pages — split into separate chunks
+const Matches = lazy(() => import('./pages/Matches'));
+const MatchDetail = lazy(() => import('./pages/MatchDetail'));
+const AIChat = lazy(() => import('./pages/AIChat'));
+const ProTools = lazy(() => import('./pages/ProTools'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const Favourites = lazy(() => import('./pages/Favourites'));
+const LeagueMatches = lazy(() => import('./pages/LeagueMatches'));
+const ValueFinder = lazy(() => import('./pages/ValueFinder'));
+const PredictionHistory = lazy(() => import('./pages/PredictionHistory'));
+const OddsConverter = lazy(() => import('./pages/OddsConverter'));
+const YourStats = lazy(() => import('./pages/YourStats'));
+const LiveMatchDetail = lazy(() => import('./pages/LiveMatchDetail'));
+const BookmakerPromo = lazy(() => import('./pages/BookmakerPromo'));
+const ProAccess = lazy(() => import('./pages/ProAccess'));
+const BeginnerGuide = lazy(() => import('./pages/BeginnerGuide'));
+const BankrollTracker = lazy(() => import('./pages/BankrollTracker'));
+const BetSlipBuilder = lazy(() => import('./pages/BetSlipBuilder'));
+const KellyCalculator = lazy(() => import('./pages/KellyCalculator'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function hasAccountFlag() {
   try { return localStorage.getItem('hasAccount') === 'true'; } catch { return false; }
@@ -148,6 +151,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <Suspense fallback={<SplashScreen />}>
       <Routes>
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
@@ -208,6 +212,7 @@ export default function App() {
         } />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

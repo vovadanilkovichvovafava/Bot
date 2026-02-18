@@ -7,9 +7,8 @@ import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
 import FootballSpinner from '../components/FootballSpinner';
 import useKeyboardHeight from '../hooks/useKeyboardHeight';
+import { useBottomNav } from '../context/BottomNavContext';
 
-const FREE_AI_LIMIT = 3;
-const AI_REQUESTS_KEY = 'ai_requests_count';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
@@ -36,6 +35,8 @@ export default function AIChat() {
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const { keyboardOpen, viewportHeight } = useKeyboardHeight();
+  const { hideBottomNav, showBottomNav } = useBottomNav();
+  const [remaining, setRemaining] = useState(null); // null = loading, number = from server
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -43,13 +44,22 @@ export default function AIChat() {
 
   // Hide BottomNav when keyboard is open
   useEffect(() => {
-    const nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = keyboardOpen ? 'none' : '';
-    return () => {
-      const nav = document.getElementById('bottom-nav');
-      if (nav) nav.style.display = '';
-    };
-  }, [keyboardOpen]);
+    if (keyboardOpen) {
+      hideBottomNav();
+      return () => showBottomNav();
+    }
+  }, [keyboardOpen, hideBottomNav, showBottomNav]);
+
+  // Fetch AI chat limit from server
+  useEffect(() => {
+    if (isPremium) {
+      setRemaining(999);
+      return;
+    }
+    api.getChatLimit()
+      .then(data => setRemaining(data.remaining ?? data.limit ?? 3))
+      .catch(() => setRemaining(3)); // Fallback to 3 on error
+  }, [isPremium]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -81,21 +91,6 @@ export default function AIChat() {
       console.error('Failed to save chat history:', e);
     }
   };
-
-  // Get AI request count from localStorage (for free users)
-  const getAIRequestCount = () => {
-    const count = localStorage.getItem(AI_REQUESTS_KEY);
-    return count ? parseInt(count, 10) : 0;
-  };
-
-  const incrementAIRequestCount = () => {
-    const newCount = getAIRequestCount() + 1;
-    localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
-    return newCount;
-  };
-
-  const aiRequestCount = getAIRequestCount();
-  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
 
   useEffect(() => {
     // Try to load cached chat history first
@@ -152,8 +147,8 @@ export default function AIChat() {
   const sendMessage = async (text) => {
     if (!text.trim() || loading) return;
 
-    // Check free limit for non-premium users
-    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
+    // Check free limit from server
+    if (!isPremium && remaining !== null && remaining <= 0) {
       setShowLimitModal(true);
       return;
     }
@@ -189,9 +184,11 @@ export default function AIChat() {
 
       const data = await api.aiChat(textWithPrefs, history, matchContext);
 
-      // Increment counter for free users only AFTER successful response
+      // Refresh remaining count from server after each request
       if (!isPremium) {
-        incrementAIRequestCount();
+        api.getChatLimit()
+          .then(d => setRemaining(d.remaining ?? d.limit ?? 0))
+          .catch(() => {});
       }
 
       const newCount = responseCount + 1;
@@ -559,7 +556,7 @@ export default function AIChat() {
               </div>
               <h3 className="text-lg font-bold text-gray-900">{t('aiChat.freeLimitReached')}</h3>
               <p className="text-sm text-gray-500 mt-1">
-                {t('aiChat.usedAllRequests', { count: FREE_AI_LIMIT })}
+                {t('aiChat.usedAllRequests', { count: 0 })}
               </p>
             </div>
 

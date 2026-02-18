@@ -5,6 +5,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import useKeyboardHeight from '../hooks/useKeyboardHeight';
+import { useBottomNav } from '../context/BottomNavContext';
 
 // Agent names per locale (matches backend PERSONA_NAMES)
 const AGENT_NAMES = {
@@ -36,6 +37,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const [error, setError] = useState(null);
   const [managerMsgCount, setManagerMsgCount] = useState(0); // For PRO banner
   const { keyboardOpen, viewportHeight } = useKeyboardHeight();
+  const { hideBottomNav, showBottomNav } = useBottomNav();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const followUpTimerRef = useRef(null);
@@ -99,14 +101,13 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     if (isOpen && onUnread) onUnread(false);
   }, [isOpen]);
 
-  // Hide BottomNav when SupportChat is open (same approach as AIChat)
+  // Hide BottomNav when SupportChat is open
   useEffect(() => {
-    const nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = isOpen ? 'none' : '';
-    return () => {
-      if (nav) nav.style.display = '';
-    };
-  }, [isOpen]);
+    if (isOpen) {
+      hideBottomNav();
+      return () => showBottomNav();
+    }
+  }, [isOpen, hideBottomNav, showBottomNav]);
 
   const scheduleFollowUp = async (lastResponse, history) => {
     // Don't follow up if user already typed something
