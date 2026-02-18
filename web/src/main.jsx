@@ -11,6 +11,29 @@ import './index.css';
 // Initialize i18n (auto-detects phone/browser language)
 import './i18n';
 
+// Fix: Chrome/Safari auto-translate modifies DOM (wraps text in <font> tags).
+// When React tries to update/remove those nodes during re-render, it crashes with
+// "Failed to execute 'removeChild'/'insertBefore' on 'Node'".
+// This patch silently handles the mismatch instead of crashing the whole app.
+if (typeof Node !== 'undefined') {
+  const _removeChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function (child) {
+    if (child.parentNode !== this) {
+      console.warn('[translate-fix] removeChild: node is not a child, skipping');
+      return child;
+    }
+    return _removeChild.call(this, child);
+  };
+  const _insertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function (newNode, refNode) {
+    if (refNode && refNode.parentNode !== this) {
+      console.warn('[translate-fix] insertBefore: ref node is not a child, skipping');
+      return newNode;
+    }
+    return _insertBefore.call(this, newNode, refNode);
+  };
+}
+
 // Handle chunk load failures after deploy — auto-reload to get new assets
 // This prevents blank screens that Yandex Metrica Webvisor would record as broken
 window.addEventListener('vite:preloadError', (event) => {

@@ -153,7 +153,17 @@ const LESSONS = (t, advertiser) => [
       {
         heading: t('guide.l6s2h', { defaultValue: 'La nostra raccomandazione' }),
         highlight: true,
-        text: t('guide.l6s2', { defaultValue: `Il nostro partner offre:\n✅ Licenza internazionale ufficiale\n✅ Pagamenti in 15 minuti\n✅ Bonus fino a ${advertiser?.bonusAmount || '1.500€'}\n✅ 900+ campionati di calcio\n✅ Supporto 24/7` }),
+        text: t('guide.l6s2', { bonus: advertiser?.bonusAmount || '1.500€', defaultValue: `Perché raccomandiamo il nostro partner:\n✅ Licenza internazionale ufficiale\n✅ Pagamenti in 15 minuti — anche importi elevati\n✅ Bonus fino a {{bonus}} sul primo deposito\n✅ App mobile comoda\n✅ 900+ campionati di calcio disponibili\n✅ Quote tra le più alte del mercato\n✅ Supporto 24/7 in italiano/tedesco/polacco\n\nEcco perché AI Betting Bot è integrato con questo bookmaker.\nQuando l'AI dà un pronostico — puoi scommettere subito.` }),
+      },
+      {
+        heading: t('guide.l6s3h', { defaultValue: 'Come iniziare' }),
+        steps: [
+          t('guide.l6st1', { defaultValue: "Tocca il pulsante nell'app" }),
+          t('guide.l6st2', { defaultValue: "Scarica l'app del bookmaker" }),
+          t('guide.l6st3', { defaultValue: 'Registrati (1 minuto)' }),
+          t('guide.l6st4', { defaultValue: 'Effettua un deposito di qualsiasi importo' }),
+          t('guide.l6st5', { bonus: advertiser?.bonusAmount || '1.500€', defaultValue: 'Ottieni un bonus fino a {{bonus}} + accesso PRO nella nostra app!' }),
+        ],
       },
     ],
   },
