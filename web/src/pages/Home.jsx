@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import footballApi from '../api/footballApi';
+import api from '../api';
 import { getStats } from '../services/predictionStore';
 import { getMatchColors } from '../utils/teamColors';
 import FootballSpinner from '../components/FootballSpinner';
@@ -14,7 +15,6 @@ import useBkReminderModal from '../hooks/useBkReminderModal';
 
 
 const FREE_AI_LIMIT = 3;
-const AI_REQUESTS_KEY = 'ai_requests_count';
 const VALUE_BET_USED_KEY = 'value_bet_used';
 
 // Top leagues to show on home
@@ -28,12 +28,23 @@ export default function Home() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
+  const [aiRemaining, setAiRemaining] = useState(null);
+  const [aiLimit, setAiLimit] = useState(FREE_AI_LIMIT);
   const [showWelcome, setShowWelcome] = useState(false);
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
   useEffect(() => {
     loadMatches();
     setLocalStats(getStats());
+    // Fetch AI chat remaining from server
+    if (!user?.is_premium) {
+      api.getChatLimit()
+        .then(data => {
+          setAiRemaining(data.remaining ?? FREE_AI_LIMIT);
+          setAiLimit(data.limit ?? FREE_AI_LIMIT);
+        })
+        .catch(() => setAiRemaining(FREE_AI_LIMIT));
+    }
     // Show welcome modal for new registrations
     try {
       if (localStorage.getItem('show_welcome') === 'true') {
@@ -73,8 +84,7 @@ export default function Home() {
   };
 
   const isPremium = user?.is_premium;
-  const aiRequestCount = parseInt(localStorage.getItem(AI_REQUESTS_KEY) || '0', 10);
-  const remaining = isPremium ? 999 : Math.max(0, FREE_AI_LIMIT - aiRequestCount);
+  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
   // Show full-screen splash while loading matches
@@ -113,7 +123,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-primary-100 text-xs">{t('home.aiPredictionsLeft')}</p>
-              <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${FREE_AI_LIMIT}`}</span></p>
+              <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${aiLimit}`}</span></p>
             </div>
           </div>
           {!user?.is_premium && (
