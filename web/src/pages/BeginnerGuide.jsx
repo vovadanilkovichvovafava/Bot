@@ -205,24 +205,24 @@ export default function BeginnerGuide() {
   return (
     <div className="min-h-screen bg-[#F0F2F5]">
       {/* Header */}
-      <div className="bg-white px-5 pt-4 pb-3 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <div className="bg-white px-4 pt-3 pb-2 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center -ml-1">
+            <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-900">
+          <h1 className="text-base font-bold text-gray-900">
             {t('guide.title', { defaultValue: 'Scuola di Scommesse' })}
           </h1>
-          <span className="text-xs text-gray-400 font-medium">{currentLesson + 1}/{lessons.length}</span>
+          <span className="text-[10px] text-gray-400 font-medium">{currentLesson + 1}/{lessons.length}</span>
         </div>
         {/* Progress bar */}
-        <div className="flex gap-1">
+        <div className="flex gap-0.5">
           {lessons.map((_, i) => (
             <div
               key={i}
-              className={`h-1 flex-1 rounded-full transition-all ${i <= currentLesson ? 'bg-primary-500' : 'bg-gray-200'}`}
+              className={`h-0.5 flex-1 rounded-full transition-all ${i <= currentLesson ? 'bg-primary-500' : 'bg-gray-200'}`}
             />
           ))}
         </div>
@@ -230,23 +230,23 @@ export default function BeginnerGuide() {
 
       {/* Lesson Content */}
       <div
-        className="px-4 py-4 space-y-4 pb-28"
+        className="px-3 py-2 space-y-2 pb-20"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         {/* Lesson header card */}
-        <div className={`bg-gradient-to-br ${lesson.color} rounded-2xl p-5 text-white relative overflow-hidden`}>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-              <span className="text-3xl">{lesson.icon}</span>
+        <div className={`bg-gradient-to-br ${lesson.color} rounded-xl p-3 text-white relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+              <span className="text-xl">{lesson.icon}</span>
             </div>
             <div>
-              <p className="text-white/70 text-xs font-medium">
+              <p className="text-white/70 text-[10px] font-medium">
                 {t('guide.lesson', { defaultValue: 'Lezione' })} {lesson.id}
               </p>
-              <h2 className="text-xl font-bold">{lesson.title}</h2>
-              <p className="text-white/70 text-xs mt-0.5">{lesson.time}</p>
+              <h2 className="text-sm font-bold leading-tight">{lesson.title}</h2>
+              <p className="text-white/60 text-[10px]">{lesson.time}</p>
             </div>
           </div>
         </div>
@@ -255,35 +255,35 @@ export default function BeginnerGuide() {
         {lesson.sections.map((sec, i) => (
           <div
             key={i}
-            className={`rounded-2xl p-5 ${sec.highlight ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-gray-100'}`}
+            className={`rounded-xl px-3 py-2.5 ${sec.highlight ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-gray-100'}`}
           >
-            <h3 className={`font-bold text-base mb-3 ${sec.highlight ? 'text-primary-700' : 'text-gray-900'}`}>
+            <h3 className={`font-bold text-xs mb-1.5 ${sec.highlight ? 'text-primary-700' : 'text-gray-900'}`}>
               {sec.heading}
             </h3>
 
             {/* Text content */}
             {sec.text && (
-              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{sec.text}</p>
+              <p className="text-[11px] text-gray-600 leading-relaxed whitespace-pre-line">{sec.text}</p>
             )}
 
             {/* Match card preview */}
             {sec.card && (
-              <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
+              <div className="bg-gray-50 rounded-lg p-2 mb-2 border border-gray-200">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-gray-900 text-sm">{sec.home} vs {sec.away}</span>
-                  <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{sec.odds}</span>
+                  <span className="font-bold text-gray-900 text-xs">{sec.home} vs {sec.away}</span>
+                  <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full">{sec.odds}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{t('guide.stakeLabel', { defaultValue: 'Puntata' })}: {sec.stake}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{t('guide.stakeLabel', { defaultValue: 'Puntata' })}: {sec.stake}</p>
               </div>
             )}
 
-            {/* Chips */}
+            {/* Chips — compact inline */}
             {sec.chips && (
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-1.5">
                 {sec.chips.map((chip, j) => (
-                  <div key={j} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-                    <span className="text-lg shrink-0">{chip.label}</span>
-                    <span className="text-sm text-gray-700">{chip.desc}</span>
+                  <div key={j} className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
+                    <span className="text-xs shrink-0">{chip.label}</span>
+                    <span className="text-[10px] text-gray-700 leading-tight">{chip.desc}</span>
                   </div>
                 ))}
               </div>
@@ -292,20 +292,20 @@ export default function BeginnerGuide() {
             {/* Table */}
             {sec.table && (
               <div className="overflow-x-auto -mx-1">
-                <table className="w-full text-sm">
+                <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.format', { defaultValue: 'Formato' })}</th>
-                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.example', { defaultValue: 'Esempio' })}</th>
-                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.calc', { defaultValue: 'Calcolo (10€)' })}</th>
-                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.where', { defaultValue: 'Dove' })}</th>
+                      <th className="text-left py-1 px-1 text-gray-500 font-medium text-[10px]">{t('guide.format', { defaultValue: 'Formato' })}</th>
+                      <th className="text-left py-1 px-1 text-gray-500 font-medium text-[10px]">{t('guide.example', { defaultValue: 'Esempio' })}</th>
+                      <th className="text-left py-1 px-1 text-gray-500 font-medium text-[10px]">{t('guide.calc', { defaultValue: 'Calcolo (10€)' })}</th>
+                      <th className="text-left py-1 px-1 text-gray-500 font-medium text-[10px]">{t('guide.where', { defaultValue: 'Dove' })}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sec.table.map((row, j) => (
                       <tr key={j} className="border-b border-gray-100 last:border-0">
                         {row.map((cell, k) => (
-                          <td key={k} className="py-2 px-2 text-gray-700 text-xs">{cell}</td>
+                          <td key={k} className="py-1 px-1 text-gray-700 text-[10px]">{cell}</td>
                         ))}
                       </tr>
                     ))}
@@ -316,13 +316,13 @@ export default function BeginnerGuide() {
 
             {/* Step-by-step */}
             {sec.steps && (
-              <div className="space-y-3">
+              <div className="space-y-1.5">
                 {sec.steps.map((stepText, j) => (
-                  <div key={j} className="flex items-start gap-3">
-                    <div className="w-7 h-7 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                  <div key={j} className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                       {j + 1}
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{stepText}</p>
+                    <p className="text-[11px] text-gray-700 leading-snug">{stepText}</p>
                   </div>
                 ))}
               </div>
@@ -332,12 +332,12 @@ export default function BeginnerGuide() {
 
         {/* Last lesson CTA */}
         {lesson.isLast && (
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-5 text-center text-white">
-            <p className="text-lg font-bold mb-2">{t('guide.congrats', { defaultValue: 'Complimenti! Sei pronto!' })}</p>
-            <p className="text-white/80 text-sm mb-4">{t('guide.congratsDesc', { defaultValue: 'Hai completato la scuola di scommesse. Ora prova il tuo primo pronostico AI!' })}</p>
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-3 text-center text-white">
+            <p className="text-sm font-bold mb-1">{t('guide.congrats', { defaultValue: 'Complimenti! Sei pronto!' })}</p>
+            <p className="text-white/80 text-[11px] mb-2">{t('guide.congratsDesc', { defaultValue: 'Hai completato la scuola di scommesse. Ora prova il tuo primo pronostico AI!' })}</p>
             <button
               onClick={() => navigate('/matches')}
-              className="w-full bg-white text-green-700 font-bold py-3.5 rounded-xl text-base"
+              className="w-full bg-white text-green-700 font-bold py-2.5 rounded-lg text-sm"
             >
               {t('guide.goPredict', { defaultValue: 'Vai ai pronostici' })}
             </button>
@@ -346,26 +346,26 @@ export default function BeginnerGuide() {
       </div>
 
       {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-3 flex gap-3 z-30">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 flex gap-2 z-30">
         <button
           onClick={prev}
           disabled={currentLesson === 0}
-          className={`w-14 h-12 rounded-xl flex items-center justify-center ${
+          className={`w-12 h-10 rounded-lg flex items-center justify-center ${
             currentLesson === 0 ? 'bg-gray-100 text-gray-300' : 'bg-gray-100 text-gray-700'
           }`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
           </svg>
         </button>
         <button
           onClick={currentLesson === lessons.length - 1 ? () => navigate('/') : next}
-          className="flex-1 bg-primary-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2"
+          className="flex-1 bg-primary-500 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5 text-sm"
         >
           {currentLesson === lessons.length - 1
             ? t('guide.done', { defaultValue: 'Fine' })
             : t('guide.nextLesson', { defaultValue: 'Lezione successiva' })}
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
           </svg>
         </button>
