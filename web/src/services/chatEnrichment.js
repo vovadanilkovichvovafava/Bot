@@ -7,26 +7,97 @@ import footballApi from '../api/footballApi';
 
 // Common team name patterns (partial matches)
 const LEAGUE_KEYWORDS = {
-  // Premier League
-  'premier league': 39, 'epl': 39, 'премьер-лига': 39, 'премьер лига': 39,
-  'プレミアリーグ': 39, '英超': 39,
-  // La Liga
-  'la liga': 140, 'ла лига': 140, 'liga española': 140, 'liga espanhola': 140,
-  // Bundesliga
-  'bundesliga': 78, 'бундеслига': 78,
-  // Serie A
-  'serie a': 135, 'серия а': 135,
-  // Ligue 1
-  'ligue 1': 61, 'лига 1': 61,
-  // Champions League
-  'champions league': 2, 'ucl': 2, 'лига чемпионов': 2,
+  // Premier League (ID: 39)
+  'premier league': 39, 'epl': 39, 'prem': 39, 'english premier league': 39,
+  'barclays premier league': 39, 'the prem': 39, 'pl': 39,
+  'премьер-лига': 39, 'премьер лига': 39, 'апл': 39, 'английская премьер-лига': 39,
+  'プレミアリーグ': 39, '英超': 39, '英超联赛': 39,
+  'プレミア': 39, '프리미어리그': 39,
+  'прем\'єр-ліга': 39,  // UK
+
+  // La Liga (ID: 140)
+  'la liga': 140, 'laliga': 140, 'ла лига': 140, 'liga española': 140,
+  'liga espanhola': 140, 'ла-лига': 140, 'испанская лига': 140,
+  'liga española de fútbol': 140, 'primera división': 140,
+  'リーガ': 140, '西甲': 140, '西甲联赛': 140, 'ラ・リーガ': 140,
+  '라리가': 140, 'ліга іспанії': 140,
+
+  // Bundesliga (ID: 78)
+  'bundesliga': 78, 'бундеслига': 78, 'german bundesliga': 78,
+  'немецкая бундеслига': 78, 'немецкая лига': 78,
+  'ブンデスリーガ': 78, '德甲': 78, '德甲联赛': 78,
+  '분데스리가': 78, 'бундесліга': 78,
+
+  // Serie A (ID: 135)
+  'serie a': 135, 'серия а': 135, 'серія а': 135,
+  'italian serie a': 135, 'итальянская серия а': 135, 'итальянская лига': 135,
+  'campionato italiano': 135, 'calcio italiano': 135,
+  'セリエa': 135, '意甲': 135, '意甲联赛': 135,
+  '세리에a': 135,
+
+  // Ligue 1 (ID: 61)
+  'ligue 1': 61, 'лига 1': 61, 'french ligue 1': 61,
+  'французская лига': 61, 'чемпионат франции': 61,
+  'championnat de france': 61, 'ligue 1 uber eats': 61,
+  'リーグ・アン': 61, '法甲': 61, '法甲联赛': 61,
+  '리그1': 61, 'ліга 1': 61,
+
+  // Champions League (ID: 2)
+  'champions league': 2, 'ucl': 2, 'лига чемпионов': 2, 'лч': 2,
   'ligue des champions': 2, 'liga de campeones': 2, 'şampiyonlar ligi': 2,
-  'liga mistrzów': 2, 'liga dos campeões': 2, 'دوري الأبطال': 2, '欧冠': 2,
-  // Europa League
-  'europa league': 3, 'лига европы': 3, 'лига європи': 3,
-  // Other leagues
-  'eredivisie': 88, 'primeira liga': 94, 'championship': 40,
-  'süper lig': 52, 'суперлига': 52, 'liga 1': 283,
+  'liga mistrzów': 2, 'liga dos campeões': 2, 'liga campionilor': 2,
+  'دوري الأبطال': 2, 'دوري ابطال اوروبا': 2, '欧冠': 2, '欧冠联赛': 2,
+  'チャンピオンズリーグ': 2, '챔피언스리그': 2,
+  'ліга чемпіонів': 2, 'champions': 2,
+
+  // Europa League (ID: 3)
+  'europa league': 3, 'лига европы': 3, 'лига європи': 3, 'uel': 3,
+  'лигу европы': 3, 'avrupa ligi': 3, 'liga europy': 3,
+  'liga europa': 3, 'الدوري الأوروبي': 3, '欧联': 3, '欧联杯': 3,
+  'ヨーロッパリーグ': 3, '유로파리그': 3,
+
+  // Conference League (ID: 848)
+  'conference league': 848, 'лига конференций': 848, 'uecl': 848,
+  'konferans ligi': 848, 'liga konferencji': 848,
+
+  // Eredivisie (ID: 88)
+  'eredivisie': 88, 'эредивизи': 88, 'голландская лига': 88,
+  'dutch league': 88, 'netherlands league': 88, '荷甲': 88,
+
+  // Primeira Liga / Liga Portugal (ID: 94)
+  'primeira liga': 94, 'liga portugal': 94, 'примейра лига': 94,
+  'португальская лига': 94, 'portuguese league': 94, '葡超': 94,
+
+  // Championship (ID: 40)
+  'championship': 40, 'efl championship': 40, 'чемпионшип': 40,
+  'english championship': 40,
+
+  // Süper Lig (ID: 52)
+  'süper lig': 52, 'super lig': 52, 'суперлига': 52, 'турецкая лига': 52,
+  'turkish league': 52, 'türk ligi': 52,
+
+  // Liga 1 Romania (ID: 283)
+  'liga 1 romania': 283, 'лига 1 румыния': 283, 'romanian league': 283,
+
+  // Saudi Pro League (ID: 307)
+  'saudi league': 307, 'saudi pro league': 307, 'саудовская лига': 307,
+  'roshn saudi league': 307, 'الدوري السعودي': 307,
+
+  // MLS (ID: 253)
+  'mls': 253, 'major league soccer': 253, 'млс': 253,
+
+  // Copa Libertadores (ID: 13)
+  'libertadores': 13, 'copa libertadores': 13, 'либертадорес': 13,
+
+  // World Cup (ID: 1)
+  'world cup': 1, 'чемпионат мира': 1, 'мундиаль': 1, 'copa del mundo': 1,
+  'coupe du monde': 1, 'weltmeisterschaft': 1, 'dünya kupası': 1,
+  'كأس العالم': 1, '世界杯': 1, 'ワールドカップ': 1, '월드컵': 1,
+
+  // Euro (ID: 4)
+  'euro': 4, 'european championship': 4, 'чемпионат европы': 4, 'евро': 4,
+  'eurocopa': 4, 'europameisterschaft': 4, 'avrupa şampiyonası': 4,
+  'كأس أوروبا': 4, '欧洲杯': 4, 'ユーロ': 4,
 };
 
 // Match query patterns — with "vs" separator (multilingual)
@@ -102,50 +173,234 @@ const KNOWN_TEAMS = [
 ];
 
 const TODAY_KEYWORDS = [
-  'today', 'tonight', 'now',           // EN
-  'сегодня', 'вечером', 'сейчас',      // RU
-  'oggi', 'stasera', 'adesso',         // IT
-  'hoy', 'esta noche', 'ahora',        // ES
-  "aujourd'hui", 'ce soir', 'maintenant', // FR
-  'heute', 'heute abend', 'jetzt',     // DE
-  'dzisiaj', 'dziś', 'teraz',          // PL
-  'hoje', 'esta noite', 'agora',       // PT
-  'bugün', 'bu gece', 'şimdi',         // TR
-  'azi', 'astăzi', 'acum',             // RO
-  'اليوم', 'الليلة', 'الآن',            // AR
-  'आज', 'आज रात', 'अभी',              // HI
-  '今天', '今晚', '现在',                // ZH
+  // EN
+  'today', 'tonight', 'now', 'this evening', 'todays matches', "today's matches",
+  "today's games", 'todays games', 'current matches', 'playing today', 'matches today',
+  // RU
+  'сегодня', 'вечером', 'сейчас', 'на сегодня', 'сегодняшние', 'на вечер',
+  'матчи сегодня', 'игры сегодня', 'сегодняшние матчи',
+  // IT
+  'oggi', 'stasera', 'adesso', 'ora', 'questa sera', 'partite di oggi',
+  'partite oggi', 'match di oggi',
+  // ES
+  'hoy', 'esta noche', 'ahora', 'esta tarde', 'partidos de hoy',
+  'partidos hoy', 'juegos de hoy',
+  // FR
+  "aujourd'hui", 'ce soir', 'maintenant', 'cette nuit', 'matchs du jour',
+  "matchs d'aujourd'hui", 'les matchs ce soir',
+  // DE
+  'heute', 'heute abend', 'jetzt', 'heute nacht', 'heutige spiele',
+  'spiele heute', 'heutige matches',
+  // PL
+  'dzisiaj', 'dziś', 'teraz', 'wieczorem', 'dzisiejsze mecze',
+  'mecze dzisiaj', 'mecze dziś',
+  // PT
+  'hoje', 'esta noite', 'agora', 'hoje à noite', 'jogos de hoje',
+  'jogos hoje', 'partidas de hoje',
+  // TR
+  'bugün', 'bu gece', 'şimdi', 'bu akşam', 'bugünkü maçlar',
+  'bugünün maçları',
+  // RO
+  'azi', 'astăzi', 'acum', 'diseară', 'în seara asta', 'meciuri azi',
+  'meciurile de azi',
+  // AR
+  'اليوم', 'الليلة', 'الآن', 'مساء اليوم', 'هذا المساء', 'مباريات اليوم',
+  // HI
+  'आज', 'आज रात', 'अभी', 'आज शाम', 'आज के मैच',
+  // ZH
+  '今天', '今晚', '现在', '今日', '今天的比赛', '今日比赛',
+  // JA
+  '今日', '今夜', '今日の試合',
+  // KO
+  '오늘', '오늘 밤', '오늘 경기',
+  // UK
+  'сьогодні', 'зараз', 'сьогоднішні матчі', 'увечері',
 ];
 const TOMORROW_KEYWORDS = [
-  'tomorrow',                           // EN
-  'завтра',                             // RU
-  'domani',                             // IT
-  'mañana',                             // ES
-  'demain',                             // FR
-  'morgen',                             // DE
-  'jutro',                              // PL
-  'amanhã',                             // PT
-  'yarın',                              // TR
-  'mâine',                              // RO
-  'غداً', 'غدا',                         // AR
-  'कल',                                 // HI
-  '明天',                                // ZH
+  // EN
+  'tomorrow', 'tomorrow night', "tomorrow's matches", 'tomorrows matches',
+  "tomorrow's games", 'tomorrows games', 'matches tomorrow',
+  // RU
+  'завтра', 'на завтра', 'завтрашние', 'завтрашние матчи', 'матчи завтра',
+  'игры завтра',
+  // IT
+  'domani', 'domani sera', 'partite di domani', 'partite domani',
+  // ES
+  'mañana', 'mañana por la noche', 'partidos de mañana', 'partidos mañana',
+  // FR
+  'demain', 'demain soir', 'matchs de demain', 'les matchs demain',
+  // DE
+  'morgen', 'morgen abend', 'spiele morgen', 'morgige spiele',
+  // PL
+  'jutro', 'jutro wieczorem', 'mecze jutro', 'jutrzejsze mecze',
+  // PT
+  'amanhã', 'amanhã à noite', 'jogos de amanhã', 'jogos amanhã',
+  // TR
+  'yarın', 'yarın akşam', 'yarınki maçlar', 'yarının maçları',
+  // RO
+  'mâine', 'mâine seară', 'meciuri mâine', 'meciurile de mâine',
+  // AR
+  'غداً', 'غدا', 'غدًا', 'مباريات الغد',
+  // HI
+  'कल', 'कल के मैच', 'कल रात',
+  // ZH
+  '明天', '明日', '明天的比赛', '明日比赛',
+  // JA
+  '明日', '明日の試合',
+  // KO
+  '내일', '내일 경기',
+  // UK
+  'завтра', 'завтрашні матчі', 'матчі завтра',
 ];
 const BEST_BET_KEYWORDS = [
-  'best bet', 'top pick', 'value bet', 'sure bet', 'recommended bet', 'best prediction', // EN
-  'лучшая ставка', 'лучший прогноз', 'рекомендация', 'топ ставка',   // RU
-  'migliori scommesse', 'miglior scommessa', 'scommesse consigliate', 'scommessa consigliata', // IT
-  'pronostico', 'pronostici', 'previsione', 'previsioni', 'consigli scommesse',              // IT
-  'mejor apuesta', 'mejores apuestas', 'apuesta recomendada', 'pronóstico', // ES
-  'meilleur pari', 'meilleurs paris', 'pari recommandé', 'pronostic', // FR
-  'beste wette', 'besten wetten', 'empfohlene wette', 'tipp',        // DE
-  'najlepszy zakład', 'najlepsze zakłady', 'rekomendowany zakład', 'typowanie', // PL
-  'melhor aposta', 'melhores apostas', 'aposta recomendada', 'prognóstico', // PT
-  'en iyi bahis', 'önerilen bahis', 'tahmin',                        // TR
-  'cel mai bun pariu', 'cele mai bune pariuri', 'pariu recomandat', 'pronostic', // RO
-  'أفضل رهان', 'أفضل توقع', 'رهان موصى',                             // AR
-  'सबसे अच्छी शर्त', 'सर्वश्रेष्ठ भविष्यवाणी',                       // HI
-  '最佳投注', '最佳预测', '推荐投注',                                     // ZH
+  // EN — betting terms, slang, colloquial
+  'best bet', 'top pick', 'value bet', 'sure bet', 'recommended bet', 'best prediction',
+  'prediction', 'predictions', 'tips', 'betting tips', 'football tips', 'soccer tips',
+  'top tips', 'betting advice', 'who will win', 'who wins', 'winner prediction',
+  'match prediction', 'match predictions', 'safe bet', 'good bet', 'accumulator',
+  'acca', 'parlay', 'pick of the day', 'tip of the day', 'what to bet',
+  'what should i bet', 'both teams to score', 'btts', 'over under',
+  'handicap tip', 'correct score', 'score prediction', 'daily tips',
+  'free tips', 'free predictions', 'weekend tips', 'sure win', 'banker bet',
+  'nap of the day', 'best odds', 'betting picks', 'expert tips',
+  'football predictions', 'soccer predictions', 'combo bet', 'multi bet',
+  'suggest a bet', 'recommend a bet', 'give me a tip',
+
+  // RU — ставки, прогнозы, сленг
+  'лучшая ставка', 'лучший прогноз', 'рекомендация', 'топ ставка',
+  'прогноз', 'прогнозы', 'ставки', 'советы', 'совет', 'на что ставить',
+  'кто выиграет', 'кто победит', 'прогноз на матч', 'прогнозы на матчи',
+  'бесплатные прогнозы', 'точный прогноз', 'верная ставка', 'надёжная ставка',
+  'надежная ставка', 'ставка дня', 'экспресс', 'тотал', 'фора',
+  'обе забьют', 'победитель', 'исход', 'точный счёт', 'точный счет',
+  'что посоветуешь', 'что ставить', 'подскажи ставку', 'посоветуй ставку',
+  'беспроигрышная ставка', 'железная ставка', 'топ прогноз', 'лучшие ставки',
+  'лучшие прогнозы', 'проход', 'проходная ставка', 'кеф', 'коэффициент',
+  'ставки на спорт', 'футбольные прогнозы', 'на кого ставить',
+
+  // IT — scommesse, pronostici, gergo
+  'migliori scommesse', 'miglior scommessa', 'scommesse consigliate', 'scommessa consigliata',
+  'pronostico', 'pronostici', 'previsione', 'previsioni', 'consigli scommesse',
+  'consiglio scommessa', 'schedina', 'schedine', 'schedina del giorno',
+  'quota', 'quote', 'chi vincerà', 'chi vince', 'vincitore',
+  'esito', 'risultato esatto', 'over under', 'gol', 'multigol',
+  'combo', 'sistema', 'antepost', 'scommessa sicura', 'scommessa del giorno',
+  'dritte scommesse', 'suggerimento', 'suggerimenti', 'consiglio',
+  'cosa scommettere', 'su cosa scommettere', 'entrambe segnano',
+  'puntata', 'puntate', 'bolletta', 'colpo sicuro', 'pronostico del giorno',
+  'pronostici di oggi', 'pronostici calcio', 'previsioni calcio',
+  'scommesse calcio', 'tips calcio',
+
+  // ES — apuestas, pronósticos, jerga
+  'mejor apuesta', 'mejores apuestas', 'apuesta recomendada', 'pronóstico',
+  'pronósticos', 'predicción', 'predicciones', 'consejos', 'consejo de apuestas',
+  'quién ganará', 'quién gana', 'ganador', 'cuota', 'cuotas',
+  'apuesta segura', 'apuesta del día', 'combinada', 'parlay', 'handicap',
+  'goles', 'resultado exacto', 'ambos marcan', 'tips', 'tipster',
+  'apuesta gratis', 'apuestas gratis', 'qué apostar', 'a quién apostar',
+  'recomendación', 'sugerencia', 'sistema', 'apuestas fútbol',
+  'predicciones fútbol', 'pronósticos de fútbol', 'pronósticos hoy',
+  'apuestas de hoy', 'pick del día', 'selección',
+
+  // FR — paris, pronostics, argot
+  'meilleur pari', 'meilleurs paris', 'pari recommandé', 'pronostic',
+  'pronostics', 'prédiction', 'prédictions', 'conseils paris', 'conseil',
+  'astuce', 'qui va gagner', 'qui gagne', 'gagnant', 'cote', 'cotes',
+  'pari sûr', 'combiné', 'combi', 'pari du jour', 'tips',
+  'pari gratuit', 'paris gratuits', 'sur quoi parier', 'quoi parier',
+  'recommandation', 'suggestion', 'score exact', 'les deux marquent',
+  'handicap', 'buts', 'pronostic du jour', 'pronostics foot',
+  'prédictions foot', 'paris sportifs', 'pronos', 'prono',
+  'analyse', 'analyses', 'paris football',
+
+  // DE — Wetten, Tipps, Umgangssprache
+  'beste wette', 'besten wetten', 'empfohlene wette', 'tipp', 'tipps',
+  'vorhersage', 'vorhersagen', 'prognose', 'prognosen', 'wett-tipps',
+  'wetttipps', 'wer gewinnt', 'gewinner', 'quote', 'quoten',
+  'sichere wette', 'tageswette', 'kombiwette', 'systemwette', 'system',
+  'tipp des tages', 'gratis tipps', 'kostenlose tipps', 'was wetten',
+  'worauf wetten', 'beide treffen', 'handicap', 'über unter',
+  'genaues ergebnis', 'fussball tipps', 'fußball tipps',
+  'fussball vorhersagen', 'fußball vorhersagen', 'sportwetten tipps',
+  'empfehlung', 'wett empfehlung',
+
+  // PL — zakłady, typy, slang
+  'najlepszy zakład', 'najlepsze zakłady', 'rekomendowany zakład', 'typowanie',
+  'typy', 'typy bukmacherskie', 'prognoza', 'prognozy', 'porady',
+  'kto wygra', 'kto zwycięży', 'zwycięzca', 'kurs', 'kursy',
+  'pewny zakład', 'pewniaki', 'pewniak', 'zakład dnia', 'akumulator', 'AKO',
+  'co obstawiać', 'na co postawić', 'co typować', 'oba strzelą',
+  'handicap', 'dokładny wynik', 'wynik meczu', 'darmowe typy',
+  'typy na dziś', 'typy bukmacherów', 'typy piłkarskie',
+  'zakłady piłkarskie', 'kupon', 'kupon dnia',
+
+  // PT — apostas, prognósticos, gíria
+  'melhor aposta', 'melhores apostas', 'aposta recomendada', 'prognóstico',
+  'prognósticos', 'previsão', 'previsões', 'dicas', 'dica de aposta',
+  'quem vai ganhar', 'quem ganha', 'vencedor', 'odd', 'odds',
+  'aposta segura', 'aposta do dia', 'múltipla', 'acumulador', 'tips',
+  'palpite', 'palpites', 'palpite do dia', 'apostas grátis',
+  'no que apostar', 'o que apostar', 'ambas marcam',
+  'handicap', 'placar exato', 'resultado exato', 'dicas de apostas',
+  'prognósticos futebol', 'previsões futebol', 'apostas futebol',
+  'bilhete do dia',
+
+  // TR — bahis, tahminler, argo
+  'en iyi bahis', 'önerilen bahis', 'tahmin', 'tahminler',
+  'maç tahmini', 'maç tahminleri', 'iddaa', 'iddaa tahminleri',
+  'kupon', 'kupon önerisi', 'kim kazanır', 'kim kazanacak', 'kazanan',
+  'oran', 'oranlar', 'günün bahisi', 'banko', 'banko maç', 'sistem',
+  'ne bahis yapmalı', 'neye bahis', 'iki takım da gol atar',
+  'handikap', 'doğru skor', 'maç skoru', 'bedava tahmin',
+  'ücretsiz tahmin', 'günün kuponu', 'bahis önerisi', 'bahis tavsiyesi',
+  'futbol tahminleri', 'spor bahisleri',
+
+  // RO — pariuri, pronosticuri, argou
+  'cel mai bun pariu', 'cele mai bune pariuri', 'pariu recomandat', 'pronostic',
+  'pronosticuri', 'predicție', 'predicții', 'sfaturi', 'sfat',
+  'cine câștigă', 'cine va câștiga', 'câștigător', 'cotă', 'cote',
+  'pariu sigur', 'pariul zilei', 'bilet', 'bilet al zilei', 'biletul zilei',
+  'ce să pariez', 'pe ce să pariez', 'ambele marchează',
+  'scor exact', 'handicap', 'pont', 'ponturi', 'ponturi pariuri',
+  'pronosticuri fotbal', 'predicții fotbal', 'pariuri fotbal',
+  'pont sigur', 'ponturi zilei',
+
+  // AR — مراهنات، توقعات
+  'أفضل رهان', 'أفضل توقع', 'رهان موصى', 'توقعات', 'توقع',
+  'نصائح', 'نصيحة', 'من سيفوز', 'من يفوز', 'الفائز',
+  'رهان آمن', 'رهان اليوم', 'احتمالات', 'نتيجة دقيقة',
+  'كلا الفريقين يسجل', 'هانديكاب', 'نصائح مراهنات',
+  'توقعات كرة القدم', 'مراهنات كرة القدم', 'نصائح مجانية',
+  'توقعات مجانية', 'أفضل نصيحة', 'رهان مضمون',
+
+  // HI — सट्टेबाजी, भविष्यवाणी
+  'सबसे अच्छी शर्त', 'सर्वश्रेष्ठ भविष्यवाणी', 'भविष्यवाणी',
+  'टिप्स', 'सुझाव', 'कौन जीतेगा', 'कौन जीतता है', 'विजेता',
+  'आज की शर्त', 'सटीक भविष्यवाणी', 'सही स्कोर',
+  'फुटबॉल भविष्यवाणी', 'मैच भविष्यवाणी', 'फ्री टिप्स',
+  'बेटिंग टिप्स', 'बेस्ट बेट', 'शर्त सुझाव',
+
+  // ZH — 投注、预测
+  '最佳投注', '最佳预测', '推荐投注', '预测', '足球预测',
+  '投注建议', '谁会赢', '赢家', '赔率', '今日推荐',
+  '稳赢', '串关', '比分预测', '正确比分', '两队都进球',
+  '让球', '大小球', '免费预测', '免费贴士', '足球贴士',
+  '投注技巧', '每日推荐', '必赢', '精选推荐',
+
+  // JA — ベッティング、予想
+  '予想', 'サッカー予想', '試合予想', 'おすすめベット', 'ベッティング',
+  '勝者予想', 'スコア予想', '的中', 'ヒント', '賭け',
+
+  // KO — 배팅, 예측
+  '예측', '축구 예측', '경기 예측', '베팅 팁', '추천 베팅',
+  '누가 이길까', '승자', '배당', '적중', '승부예측',
+
+  // UK — ставки, прогнози
+  'найкраща ставка', 'найкращий прогноз', 'прогноз', 'прогнози',
+  'ставки', 'поради', 'хто виграє', 'хто переможе', 'переможець',
+  'ставка дня', 'точний прогноз', 'на що ставити', 'порада',
+  'безпрограшна ставка', 'експрес', 'тотал', 'фора',
+  'обидві заб\'ють', 'прогнози на футбол', 'футбольні прогнози',
 ];
 
 /**
@@ -195,19 +450,53 @@ export async function enrichMessage(message) {
 
   // 6. Detect live match queries (all supported languages)
   const LIVE_KEYWORDS = [
-    'live', 'in play',                    // EN
-    'лайв', 'сейчас играют', 'в прямом эфире', // RU
-    'in diretta', 'dal vivo', 'partite live', // IT
-    'en vivo', 'en directo',              // ES
-    'en direct',                          // FR
-    'im spiel', 'laufende spiele',        // DE
-    'na żywo',                            // PL
-    'ao vivo',                            // PT
-    'canlı',                              // TR
-    'în direct',                          // RO
-    'مباشر', 'بث مباشر',                   // AR
-    'लाइव',                               // HI
-    '直播', '正在进行',                      // ZH
+    // EN
+    'live', 'in play', 'in-play', 'live score', 'live scores', 'live match',
+    'live matches', 'live now', 'playing now', 'live games', 'live results',
+    'currently playing', 'ongoing matches', 'real time',
+    // RU
+    'лайв', 'сейчас играют', 'в прямом эфире', 'в игре', 'идёт матч',
+    'идет матч', 'текущие матчи', 'онлайн', 'прямая трансляция',
+    'сейчас идут', 'лайв матчи', 'лайв счёт', 'лайв счет',
+    // IT
+    'in diretta', 'dal vivo', 'partite live', 'partita in corso',
+    'risultati live', 'risultati in diretta', 'live score', 'in tempo reale',
+    'partite in corso',
+    // ES
+    'en vivo', 'en directo', 'resultado en vivo', 'partido en vivo',
+    'marcador en vivo', 'partidos en vivo', 'partidos en directo',
+    'resultados en vivo', 'tiempo real',
+    // FR
+    'en direct', 'match en direct', 'score en direct', 'en cours',
+    'matchs en direct', 'résultats en direct', 'en temps réel',
+    // DE
+    'im spiel', 'laufende spiele', 'live spiel', 'live ergebnis',
+    'live spiele', 'live ergebnisse', 'gerade laufend', 'echtzeit',
+    // PL
+    'na żywo', 'mecze na żywo', 'wyniki na żywo', 'aktualnie grane',
+    'mecze w toku', 'wyniki live', 'trwające mecze',
+    // PT
+    'ao vivo', 'jogo ao vivo', 'resultado ao vivo', 'em andamento',
+    'jogos ao vivo', 'resultados ao vivo', 'placar ao vivo', 'tempo real',
+    // TR
+    'canlı', 'canlı maç', 'canlı skor', 'şu an oynanan',
+    'canlı maçlar', 'canlı sonuçlar', 'anlık',
+    // RO
+    'în direct', 'meci live', 'scor live', 'în desfășurare',
+    'meciuri live', 'rezultate live', 'meciuri în direct',
+    // AR
+    'مباشر', 'بث مباشر', 'نتائج مباشرة', 'مباراة حية',
+    'مباريات مباشرة', 'نتيجة مباشرة',
+    // HI
+    'लाइव', 'लाइव मैच', 'लाइव स्कोर', 'अभी खेल रहे',
+    // ZH
+    '直播', '正在进行', '实时比分', '即时比分', '实时', '比赛直播',
+    // JA
+    'ライブ', 'リアルタイム', '試合中',
+    // KO
+    '라이브', '실시간', '진행중', '실시간 스코어',
+    // UK
+    'наживо', 'у прямому ефірі', 'зараз грають', 'лайв матчі',
   ];
   if (LIVE_KEYWORDS.some(k => lower.includes(k))) {
     return await enrichLiveMatches();
