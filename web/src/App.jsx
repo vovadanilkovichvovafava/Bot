@@ -34,9 +34,13 @@ function hasAccountFlag() {
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
+  const loc = useLocation();
   if (loading) return <SplashScreen />;
   if (!isAuthenticated) {
-    return <Navigate to={hasAccountFlag() ? "/login" : "/register"} replace />;
+    // Прокидываем UTM/query string при редиректе на регу/логин
+    const target = hasAccountFlag() ? "/login" : "/register";
+    const search = loc.search || '';
+    return <Navigate to={`${target}${search}`} replace />;
   }
   return children;
 }
