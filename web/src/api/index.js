@@ -63,7 +63,7 @@ class ApiService {
     return this._refreshing;
   }
 
-  async request(endpoint, options = {}, _isRetry = false) {
+  async request(endpoint, options = {}, _isRetry = false, _attempt = 0) {
     const url = `${API_BASE}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -75,10 +75,20 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+      });
+    } catch (networkError) {
+      // Network error (offline, DNS fail, Railway restart) — retry up to 2 times
+      if (_attempt < 2) {
+        await new Promise(r => setTimeout(r, 1000 * (_attempt + 1))); // 1s, 2s
+        return this.request(endpoint, options, _isRetry, _attempt + 1);
+      }
+      throw new Error('Network error. Please check your connection.');
+    }
 
     if (response.status === 401) {
       // Don't try to refresh on auth endpoints or if already retrying
@@ -100,6 +110,12 @@ class ApiService {
         window.location.href = '/login';
       }
       throw new Error('Unauthorized');
+    }
+
+    // Retry on 500/502/503/504 (server errors, Railway restart)
+    if (response.status >= 500 && _attempt < 2) {
+      await new Promise(r => setTimeout(r, 1000 * (_attempt + 1)));
+      return this.request(endpoint, options, _isRetry, _attempt + 1);
     }
 
     if (!response.ok) {

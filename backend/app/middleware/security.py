@@ -74,6 +74,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     AUTH_LIMIT = 20
     WINDOW_SECONDS = 60
 
+    # Allowed CORS origins — must match main.py CORS config
+    CORS_ORIGINS = {
+        "https://sportscoreai.com",
+        "https://www.sportscoreai.com",
+        "https://pwa-production-20b5.up.railway.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    }
+
+    def _cors_headers(self, request: Request) -> dict:
+        """Add CORS headers so browser doesn't mask 429 as CORS error"""
+        origin = request.headers.get("origin", "")
+        if origin in self.CORS_ORIGINS:
+            return {
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Credentials": "true",
+            }
+        return {}
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
@@ -109,6 +128,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "Retry-After": str(self.WINDOW_SECONDS),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
+                    **self._cors_headers(request),
                 }
             )
 

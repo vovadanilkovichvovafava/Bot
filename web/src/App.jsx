@@ -1,9 +1,45 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, Component } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
 import { saveTrackingParams } from './services/trackingService';
 import Layout from './components/Layout';
+
+// ErrorBoundary — catches React render crashes, shows fallback instead of white screen
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log to console for debugging
+    console.error('[ErrorBoundary]', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-6 text-center">
+          <div className="text-4xl mb-4">&#9888;&#65039;</div>
+          <h1 className="text-white text-xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-gray-400 text-sm mb-6">The app encountered an error. Please reload the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-primary-500 text-white px-6 py-3 rounded-xl font-semibold"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -105,65 +141,67 @@ export default function App() {
   if (loading) return <SplashScreen />;
 
   return (
-    <Routes>
-      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-      <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-      <Route path="/" element={
-        <ProtectedRoute><Layout /></ProtectedRoute>
-      }>
-        <Route index element={<Home />} />
-        <Route path="matches" element={<Matches />} />
-        <Route path="ai-chat" element={<AIChat />} />
-        <Route path="pro-tools" element={<ProTools />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      <Route path="/match/:id" element={
-        <ProtectedRoute><MatchDetail /></ProtectedRoute>
-      } />
-      <Route path="/live/:id" element={
-        <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
-      } />
-      <Route path="/premium" element={<Navigate to="/pro-access" replace />} />
-      <Route path="/value-finder" element={
-        <ProtectedRoute><ValueFinder /></ProtectedRoute>
-      } />
-      <Route path="/prediction-history" element={
-        <ProtectedRoute><PredictionHistory /></ProtectedRoute>
-      } />
-      <Route path="/odds-converter" element={
-        <ProtectedRoute><OddsConverter /></ProtectedRoute>
-      } />
-      <Route path="/your-stats" element={
-        <ProtectedRoute><YourStats /></ProtectedRoute>
-      } />
-      <Route path="/league/:code" element={
-        <ProtectedRoute><LeagueMatches /></ProtectedRoute>
-      } />
-      <Route path="/statistics" element={
-        <ProtectedRoute><Statistics /></ProtectedRoute>
-      } />
-      <Route path="/favourites" element={
-        <ProtectedRoute><Favourites /></ProtectedRoute>
-      } />
-      <Route path="/promo" element={
-        <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
-      } />
-      <Route path="/pro-access" element={
-        <ProtectedRoute><ProAccess /></ProtectedRoute>
-      } />
-      <Route path="/guide" element={
-        <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
-      } />
-      <Route path="/bankroll-tracker" element={
-        <ProtectedRoute><BankrollTracker /></ProtectedRoute>
-      } />
-      <Route path="/bet-slip-builder" element={
-        <ProtectedRoute><BetSlipBuilder /></ProtectedRoute>
-      } />
-      <Route path="/kelly-calculator" element={
-        <ProtectedRoute><KellyCalculator /></ProtectedRoute>
-      } />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+        <Route path="/" element={
+          <ProtectedRoute><Layout /></ProtectedRoute>
+        }>
+          <Route index element={<Home />} />
+          <Route path="matches" element={<Matches />} />
+          <Route path="ai-chat" element={<AIChat />} />
+          <Route path="pro-tools" element={<ProTools />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+        <Route path="/match/:id" element={
+          <ProtectedRoute><MatchDetail /></ProtectedRoute>
+        } />
+        <Route path="/live/:id" element={
+          <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
+        } />
+        <Route path="/premium" element={<Navigate to="/pro-access" replace />} />
+        <Route path="/value-finder" element={
+          <ProtectedRoute><ValueFinder /></ProtectedRoute>
+        } />
+        <Route path="/prediction-history" element={
+          <ProtectedRoute><PredictionHistory /></ProtectedRoute>
+        } />
+        <Route path="/odds-converter" element={
+          <ProtectedRoute><OddsConverter /></ProtectedRoute>
+        } />
+        <Route path="/your-stats" element={
+          <ProtectedRoute><YourStats /></ProtectedRoute>
+        } />
+        <Route path="/league/:code" element={
+          <ProtectedRoute><LeagueMatches /></ProtectedRoute>
+        } />
+        <Route path="/statistics" element={
+          <ProtectedRoute><Statistics /></ProtectedRoute>
+        } />
+        <Route path="/favourites" element={
+          <ProtectedRoute><Favourites /></ProtectedRoute>
+        } />
+        <Route path="/promo" element={
+          <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
+        } />
+        <Route path="/pro-access" element={
+          <ProtectedRoute><ProAccess /></ProtectedRoute>
+        } />
+        <Route path="/guide" element={
+          <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
+        } />
+        <Route path="/bankroll-tracker" element={
+          <ProtectedRoute><BankrollTracker /></ProtectedRoute>
+        } />
+        <Route path="/bet-slip-builder" element={
+          <ProtectedRoute><BetSlipBuilder /></ProtectedRoute>
+        } />
+        <Route path="/kelly-calculator" element={
+          <ProtectedRoute><KellyCalculator /></ProtectedRoute>
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

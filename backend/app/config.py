@@ -19,8 +19,8 @@ class Settings(BaseSettings):
         return key
 
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 28  # 28 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 365  # 1 year
 
     # External APIs - read at access time for Railway compatibility
     FOOTBALL_API_URL: str = "https://api.football-data.org/v4"

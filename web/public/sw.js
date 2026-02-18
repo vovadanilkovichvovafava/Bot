@@ -1,40 +1,84 @@
-const CACHE_NAME = 'ai-betting-bot-v2';
-const urlsToCache = [
+// Build version — changes on every deploy to trigger SW update
+// IMPORTANT: Update this on each deployment or use build tool to inject
+const SW_VERSION = '__SW_VERSION__';
+const CACHE_NAME = 'ai-betting-bot-' + SW_VERSION;
+
+const STATIC_ASSETS = [
   '/',
   '/index.html',
 ];
 
-// Install event - cache static assets
+// Install event — cache static assets, activate immediately
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
+  // Don't wait for clients to close — activate immediately
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
+// Activate event — clean ALL old caches, claim clients
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
-    )
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      )
+    ).then(() => {
+      // Notify all clients that a new version is available
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_UPDATED', version: SW_VERSION });
+        });
+      });
+    })
   );
+  // Take control of all pages immediately
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event — network-first for navigation & API, cache-first for static assets
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // NEVER cache API calls
+  if (url.pathname.startsWith('/api/') || url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Navigation requests (HTML pages) — always network-first
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Cache the latest version
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images) — network-first with cache fallback
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
-        if (response.ok && event.request.url.startsWith(self.location.origin)) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(request))
   );
 });
 
@@ -44,8 +88,6 @@ self.addEventListener('fetch', event => {
 
 // Receive push notification
 self.addEventListener('push', event => {
-  console.log('[SW] Push received:', event);
-
   let data = {
     title: 'PVA Betting',
     body: 'You have a new notification',
@@ -55,13 +97,11 @@ self.addEventListener('push', event => {
     data: { url: '/' },
   };
 
-  // Parse push data if available
   if (event.data) {
     try {
       const payload = event.data.json();
       data = { ...data, ...payload };
     } catch (e) {
-      // If not JSON, use text as body
       data.body = event.data.text();
     }
   }
@@ -77,7 +117,6 @@ self.addEventListener('push', event => {
     actions: data.actions || [],
   };
 
-  // Add image if provided (for rich notifications)
   if (data.image) {
     options.image = data.image;
   }
@@ -89,22 +128,17 @@ self.addEventListener('push', event => {
 
 // Handle notification click
 self.addEventListener('notificationclick', event => {
-  console.log('[SW] Notification click:', event.action, event.notification.data);
-
   event.notification.close();
 
   const notificationData = event.notification.data || {};
   let targetUrl = notificationData.url || '/';
 
-  // Handle different actions
   if (event.action === 'view' || event.action === 'claim') {
     targetUrl = notificationData.url || '/';
   } else if (event.action === 'dismiss' || event.action === 'later') {
-    // Just close the notification
     return;
   }
 
-  // Handle specific notification types
   if (notificationData.type === 'match_reminder' && notificationData.matchId) {
     targetUrl = `/match/${notificationData.matchId}`;
   } else if (notificationData.type === 'value_bet' && notificationData.matchId) {
@@ -113,13 +147,10 @@ self.addEventListener('notificationclick', event => {
     targetUrl = notificationData.teamId ? `/matches?team=${notificationData.teamId}` : '/';
   }
 
-  // Open the app or focus existing window
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      // Check if there's already a window open
       for (const client of windowClients) {
         if (client.url.includes(self.registration.scope) && 'focus' in client) {
-          // Navigate existing window
           client.postMessage({
             type: 'NOTIFICATION_CLICK',
             url: targetUrl,
@@ -128,7 +159,6 @@ self.addEventListener('notificationclick', event => {
           return client.focus();
         }
       }
-      // No window open - open new one
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
@@ -136,16 +166,13 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Handle notification close (for analytics)
+// Handle notification close
 self.addEventListener('notificationclose', event => {
-  console.log('[SW] Notification closed:', event.notification.tag);
-  // Could track this for analytics
+  // Analytics tracking placeholder
 });
 
 // Listen for messages from main app
 self.addEventListener('message', event => {
-  console.log('[SW] Message received:', event.data);
-
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
