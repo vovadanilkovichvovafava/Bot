@@ -110,23 +110,39 @@ export async function enrichMessage(message) {
     return await enrichMatchQuery(matchQuery.home, matchQuery.away);
   }
 
-  // 2. Detect "today's matches" / "best bets today" queries
+  // 2. Detect day keywords and league keywords
   const isToday = TODAY_KEYWORDS.some(k => lower.includes(k));
   const isTomorrow = TOMORROW_KEYWORDS.some(k => lower.includes(k));
   const isBestBet = BEST_BET_KEYWORDS.some(k => lower.includes(k));
+  const dayTarget = isTomorrow ? 'tomorrow' : (isToday || isBestBet) ? 'today' : null;
 
-  if (isToday || isTomorrow || isBestBet) {
-    return await enrichDayOverview(isTomorrow ? 'tomorrow' : 'today');
-  }
-
-  // 3. Detect league-specific queries
+  // Check for league keyword in the same message
+  let detectedLeagueId = null;
+  let detectedLeagueKeyword = null;
   for (const [keyword, leagueId] of Object.entries(LEAGUE_KEYWORDS)) {
     if (lower.includes(keyword)) {
-      return await enrichLeagueQuery(leagueId, keyword);
+      detectedLeagueId = leagueId;
+      detectedLeagueKeyword = keyword;
+      break;
     }
   }
 
-  // 4. Detect live match queries
+  // 3. If both day and league detected → league-specific day query (most specific)
+  if (dayTarget && detectedLeagueId) {
+    return await enrichLeagueDayQuery(detectedLeagueId, detectedLeagueKeyword, dayTarget);
+  }
+
+  // 4. Day-only query (no specific league)
+  if (dayTarget) {
+    return await enrichDayOverview(dayTarget === 'tomorrow' ? 'tomorrow' : 'today');
+  }
+
+  // 5. League-only query (no specific day)
+  if (detectedLeagueId) {
+    return await enrichLeagueQuery(detectedLeagueId, detectedLeagueKeyword);
+  }
+
+  // 6. Detect live match queries
   if (lower.includes('live') || lower.includes('лайв') || lower.includes('сейчас играют')) {
     return await enrichLiveMatches();
   }
@@ -475,6 +491,56 @@ function buildUpcomingContext(teamName, fixtures) {
   }
 
   return parts.join('\n');
+}
+
+/**
+ * Fetch fixtures for a specific league on a specific day (today/tomorrow).
+ * Returns clear message if no matches found — preventing AI hallucination.
+ */
+async function enrichLeagueDayQuery(leagueId, keyword, day) {
+  const date = day === 'tomorrow'
+    ? new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
+
+  try {
+    const fixtures = await footballApi.getFixturesByDate(date);
+    const leagueFixtures = fixtures.filter(f => f.league.id === leagueId);
+
+    if (leagueFixtures.length === 0) {
+      // Explicit "no matches" message so the AI doesn't hallucinate
+      return `IMPORTANT: There are NO ${keyword} matches scheduled for ${day} (${date}). Do NOT invent matches. Tell the user there are no ${keyword} matches ${day} and suggest checking the next matchday.`;
+    }
+
+    const context = buildLeagueContext(leagueFixtures, `${keyword} fixtures for ${day} (${date})`);
+
+    // Fetch predictions for upcoming matches
+    const upcoming = leagueFixtures.filter(f => f.fixture.status.short === 'NS').slice(0, 5);
+    if (upcoming.length > 0) {
+      const predResults = await Promise.allSettled(
+        upcoming.map(f => footballApi.getPrediction(f.fixture.id))
+      );
+      const predsWithData = predResults
+        .map((r, i) => ({ fixture: upcoming[i], pred: r.status === 'fulfilled' ? r.value : null }))
+        .filter(p => p.pred?.predictions?.winner);
+
+      if (predsWithData.length > 0) {
+        const predParts = ['\n--- API Predictions ---'];
+        for (const { fixture: f, pred } of predsWithData) {
+          const p = pred.predictions;
+          predParts.push(`${f.teams.home.name} vs ${f.teams.away.name}: ${p.winner.name} (${p.advice || ''})`);
+          if (p.percent) {
+            predParts.push(`  Probability: H ${p.percent.home} D ${p.percent.draw} A ${p.percent.away}`);
+          }
+        }
+        return context + '\n' + predParts.join('\n');
+      }
+    }
+
+    return context;
+  } catch (e) {
+    console.error('League day enrichment failed:', e);
+    return null;
+  }
 }
 
 /**
