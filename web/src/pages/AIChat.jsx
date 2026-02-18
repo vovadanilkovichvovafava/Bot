@@ -258,7 +258,7 @@ export default function AIChat() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full"
+      className={`flex flex-col h-full ${keyboardOpen ? '' : 'pb-14'}`}
     >
       {/* Header — compact when keyboard open */}
       <div className={`bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-3'}`}>
