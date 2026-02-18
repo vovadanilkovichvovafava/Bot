@@ -9,31 +9,55 @@ import Layout from './components/Layout';
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log to console for debugging
     console.error('[ErrorBoundary]', error, errorInfo);
+    // Try to send error to analytics
+    try {
+      if (typeof window.ym === 'function') {
+        window.ym(106847617, 'reachGoal', 'app_crash', {
+          error: String(error),
+          stack: errorInfo?.componentStack?.slice(0, 500),
+        });
+      }
+    } catch {}
   }
 
   render() {
     if (this.state.hasError) {
+      const errorMsg = this.state.error?.message || 'Unknown error';
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-6 text-center">
-          <div className="text-4xl mb-4">&#9888;&#65039;</div>
-          <h1 className="text-white text-xl font-bold mb-2">Something went wrong</h1>
-          <p className="text-gray-400 text-sm mb-6">The app encountered an error. Please reload the page.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-primary-500 text-white px-6 py-3 rounded-xl font-semibold"
-          >
-            Reload
-          </button>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#F0F2F5] p-6 text-center">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-sm">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+              </svg>
+            </div>
+            <h1 className="text-lg font-bold text-gray-900 mb-1">Something went wrong</h1>
+            <p className="text-sm text-gray-500 mb-4">The app encountered an error.</p>
+            <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg p-2 mb-4 break-all font-mono">{errorMsg}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = '/'; }}
+                className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl text-sm"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 bg-primary-500 text-white font-semibold py-2.5 rounded-xl text-sm"
+              >
+                Reload
+              </button>
+            </div>
+          </div>
         </div>
       );
     }

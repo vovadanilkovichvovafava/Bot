@@ -58,15 +58,16 @@ export default function Home() {
     try {
       const fixtures = await footballApi.getTodayFixtures();
       // Prioritize top leagues and upcoming matches
-      const upcoming = fixtures
-        .filter(f => ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
+      const upcoming = (fixtures || [])
+        .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
+        .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
         .sort((a, b) => {
           // Top leagues first
-          const aTop = TOP_LEAGUE_IDS.includes(a.league.id) ? 0 : 1;
-          const bTop = TOP_LEAGUE_IDS.includes(b.league.id) ? 0 : 1;
+          const aTop = TOP_LEAGUE_IDS.includes(a.league?.id) ? 0 : 1;
+          const bTop = TOP_LEAGUE_IDS.includes(b.league?.id) ? 0 : 1;
           if (aTop !== bTop) return aTop - bTop;
           // Then by time
-          return new Date(a.fixture.date) - new Date(b.fixture.date);
+          return new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0);
         });
       setMatches(upcoming.slice(0, 5));
     } catch (e) {
@@ -376,8 +377,10 @@ export default function Home() {
 
 function HomeMatchCard({ fixture, navigate }) {
   const f = fixture;
-  const time = new Date(f.fixture.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  const isLive = ['1H', '2H', 'HT'].includes(f.fixture.status.short);
+  if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
+  let time = '';
+  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
+  const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
 
   return (
     <div
@@ -390,22 +393,22 @@ function HomeMatchCard({ fixture, navigate }) {
           {/* Home team */}
           <div className="flex items-center gap-2.5 mb-1.5">
             <img
-              src={f.teams.home.logo}
+              src={f.teams.home.logo || ''}
               alt=""
               className="w-5 h-5 object-contain flex-shrink-0"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name || '?'}</span>
           </div>
           {/* Away team */}
           <div className="flex items-center gap-2.5">
             <img
-              src={f.teams.away.logo}
+              src={f.teams.away.logo || ''}
               alt=""
               className="w-5 h-5 object-contain flex-shrink-0"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name || '?'}</span>
           </div>
         </div>
 
@@ -438,7 +441,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   const featuredMatch = matches?.[0];
 
   // Use i18n for all advertiser texts (bonus amount comes from advertiser config)
-  const bonus = advertiser.bonusAmount || '';
+  const bonus = advertiser?.bonusAmount || '';
   const texts = {
     freeBet: t('advertiser.freeBet', { bonus }),
     betOnMatch: t('advertiser.betOnMatch'),
@@ -450,6 +453,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // If we have a featured match, show it with team colors diagonal split
   if (featuredMatch) {
     const f = featuredMatch;
+    if (!f?.teams?.home || !f?.teams?.away) return null;
     const { homeColor, awayColor } = getMatchColors(f.teams.home.id, f.teams.away.id);
 
     return (
