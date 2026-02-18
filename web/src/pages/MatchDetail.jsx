@@ -552,8 +552,6 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
     promoTitle: t('advertiser.promoTitle', { bonus: advertiser?.bonusAmount || '' }),
     promoCtaFree: t('advertiser.promoCtaFree'),
   };
-  const affiliateLink = 'https://pwa-production-20b5.up.railway.app/promo';
-
   // Parse AI recommended bet from analysis
   const parseRecommendedBet = () => {
     if (!prediction?.claudeAnalysis) return null;
@@ -665,7 +663,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             match={match}
             enriched={enriched}
             advertiser={advertiser}
-            affiliateLink={affiliateLink}
+
             adTexts={adTexts}
           />
         </div>
@@ -720,7 +718,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             match={match}
             enriched={enriched}
             advertiser={advertiser}
-            affiliateLink={affiliateLink}
+
             adTexts={adTexts}
           />
         </div>
@@ -1006,7 +1004,7 @@ function InfoRow({ icon, label, value }) {
 }
 
 // Match Bonus Card with team colors diagonal split
-function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts }) {
+function MatchBonusCard({ match, enriched, advertiser, adTexts }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   // Get team IDs from enriched data or match data
@@ -1103,7 +1101,7 @@ function MatchBonusCard({ match, enriched, advertiser, affiliateLink, adTexts })
 }
 
 // Native Ad Block with rotating ad texts
-function NativeAdBlock({ advertiser, affiliateLink, matchId }) {
+function NativeAdBlock({ advertiser, matchId }) {
   const { t } = useTranslation();
   const bonus = advertiser?.bonusAmount || '';
   // 6 ad text variants for rotation (based on match ID for consistency)

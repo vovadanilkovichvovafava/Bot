@@ -447,8 +447,6 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
     promoCta: t('advertiser.promoCta'),
   };
 
-  const link = 'https://pwa-production-20b5.up.railway.app/promo';
-
   // If we have a featured match, show it with team colors diagonal split
   if (featuredMatch) {
     const f = featuredMatch;
