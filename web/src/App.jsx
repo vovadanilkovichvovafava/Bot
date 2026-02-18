@@ -99,16 +99,14 @@ function SplashScreen() {
   );
 }
 
-// Сохранить fbclid/utm из URL в sessionStorage ДО любых редиректов
-// (при редиректе на /register или /login query string теряется)
+// Сохранить ВСЕ query params из URL в sessionStorage ДО любых редиректов
+// (external_id, sub_id_1..15, fbclid, utm_* — всё что пришло из клоачной ссылки)
 (function persistTrackingParams() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const keys = ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
-    keys.forEach(key => {
-      const val = params.get(key);
+    for (const [key, val] of params.entries()) {
       if (val) sessionStorage.setItem(`tracking_${key}`, val);
-    });
+    }
   } catch {}
 })();
 
@@ -128,13 +126,14 @@ export default function App() {
     const referer = prevLocationRef.current
       ? prevLocationRef.current.pathname + prevLocationRef.current.search
       : document.referrer;
-    // Delay to let React render the new page DOM before Metrika scans it
+    // Delay to let React fully render the page DOM before Metrika snapshots it for webvisor
+    // defer:true in init prevents auto-hit, so we must manually call hit on every route change
     const timer = setTimeout(() => {
       window.ym(106847617, 'hit', url, {
         title: document.title,
         referer,
       });
-    }, 150);
+    }, 500);
     prevLocationRef.current = location;
     return () => clearTimeout(timer);
   }, [location]);

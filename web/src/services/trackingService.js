@@ -1,55 +1,107 @@
 /**
  * Tracking Service — взаимодействие с PostbackAPI для сохранения tracking параметров
  * и получения ссылок на букмекера со всеми sub_id.
+ *
+ * Поддерживаемые параметры из клоачной ссылки:
+ * - external_id — внешний ID юзера из трекера
+ * - sub_id_1..sub_id_15 — произвольные метки из трекера
+ * - fbclid — Facebook Click ID
+ * - utm_source, utm_medium, utm_campaign, utm_content, utm_term — UTM метки
  */
 
 const TRACKING_API = 'https://postbackapi-production.up.railway.app';
 
 /**
- * Сохранить fbclid и utm параметры из URL при первом заходе юзера.
- * Вызывается один раз при загрузке PWA.
+ * Собрать ВСЕ tracking параметры из URL + sessionStorage.
+ * App.jsx persistTrackingParams() сохраняет params в sessionStorage ДО редиректа,
+ * поэтому к моменту вызова после регистрации они точно есть в sessionStorage.
+ */
+function collectAllTrackingParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Приоритет: URL > sessionStorage (URL свежее)
+  const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || null;
+
+  const result = {};
+
+  // 1. external_id
+  const externalId = getParam('external_id');
+  if (externalId) result.external_id = externalId;
+
+  // 2. fbclid
+  const fbclid = getParam('fbclid');
+  if (fbclid) result.fbclid = fbclid;
+
+  // 3. UTM параметры
+  const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  for (const key of utmKeys) {
+    const val = getParam(key);
+    if (val) result[key] = val;
+  }
+
+  // 4. sub_id_1..sub_id_15 — из клоачной ссылки
+  const subIds = {};
+  for (let i = 1; i <= 15; i++) {
+    const val = getParam(`sub_id_${i}`);
+    if (val) subIds[`sub_id_${i}`] = val;
+  }
+  if (Object.keys(subIds).length > 0) {
+    result.sub_ids = subIds;
+  }
+
+  return result;
+}
+
+/**
+ * Очистить все tracking_ ключи из sessionStorage после использования.
+ */
+function clearTrackingSession() {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('tracking_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+  } catch {}
+}
+
+/**
+ * Сохранить ВСЕ tracking параметры из URL/sessionStorage на PostbackAPI.
+ * Вызывается один раз после регистрации/логина в App.jsx.
  */
 export async function saveTrackingParams(userId) {
   if (!userId) return;
 
-  const urlParams = new URLSearchParams(window.location.search);
-
-  // Берём из URL, а если нет — из sessionStorage (сохранены до редиректа)
-  const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || null;
-
-  const fbclid = getParam('fbclid');
-  const utm_source = getParam('utm_source');
-  const utm_medium = getParam('utm_medium');
-  const utm_campaign = getParam('utm_campaign');
-  const utm_content = getParam('utm_content');
-  const utm_term = getParam('utm_term');
+  const params = collectAllTrackingParams();
 
   // Если нет ни одного параметра — не отправляем
-  if (!fbclid && !utm_source && !utm_medium && !utm_campaign && !utm_content && !utm_term) {
+  if (Object.keys(params).length === 0) {
     return;
   }
 
-  // Очищаем sessionStorage после использования
-  try {
-    ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
-      .forEach(key => sessionStorage.removeItem(`tracking_${key}`));
-  } catch {}
+  // Очищаем sessionStorage после сбора
+  clearTrackingSession();
 
   try {
-    const body = { user_id: userId };
-    if (fbclid) body.fbclid = fbclid;
-    if (utm_source) body.utm_source = utm_source;
-    if (utm_medium) body.utm_medium = utm_medium;
-    if (utm_campaign) body.utm_campaign = utm_campaign;
-    if (utm_content) body.utm_content = utm_content;
-    if (utm_term) body.utm_term = utm_term;
+    const body = {
+      user_id: userId,
+      ...params,
+    };
 
-    await fetch(`${TRACKING_API}/api/tracking/save`, {
+    const res = await fetch(`${TRACKING_API}/api/tracking/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    console.log('[Tracking] Params saved for', userId);
+
+    if (res.ok) {
+      console.log('[Tracking] Params saved for', userId, params);
+    } else {
+      console.warn('[Tracking] Save failed:', res.status);
+    }
   } catch (err) {
     console.warn('[Tracking] Failed to save params:', err.message);
   }

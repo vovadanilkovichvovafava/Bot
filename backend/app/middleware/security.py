@@ -41,19 +41,20 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Content Security Policy
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mc.yandex.ru; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self' data:; "
-            "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org; "
-            "frame-ancestors 'none'; "
+            "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org https://mc.yandex.ru; "
+            "frame-ancestors https://webvisor.com https://*.webvisor.com https://metrika.yandex.ru https://*.metrika.yandex.ru; "
             "base-uri 'self'; "
             "form-action 'self';"
         )
 
         # Other security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        # Allow Yandex Metrika webvisor to embed pages in iframe
+        response.headers["X-Frame-Options"] = "ALLOW-FROM https://webvisor.com"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
