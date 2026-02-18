@@ -14,8 +14,9 @@ function LayoutInner() {
         <Outlet />
       </div>
       {visible && <BottomNav />}
-      {/* Hide on AI Chat page to avoid overlapping send button */}
-      {!isChat && visible && <FloatingChatButton />}
+      {/* FloatingChatButton always rendered — it uses fixed positioning and manages its own visibility.
+          Must NOT depend on `visible` because SupportChat calls hideBottomNav() which would unmount it. */}
+      {!isChat && <FloatingChatButton />}
     </div>
   );
 }

@@ -16,8 +16,8 @@ export default function FloatingChatButton() {
 
   return (
     <>
-      {/* Floating Button */}
-      <button
+      {/* Floating Button — hidden when chat is open */}
+      {!isOpen && <button
         data-floating-chat
         onClick={() => setIsOpen(true)}
         className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
@@ -45,7 +45,7 @@ export default function FloatingChatButton() {
             1
           </span>
         )}
-      </button>
+      </button>}
 
       {/* Chat Modal */}
       <SupportChat
