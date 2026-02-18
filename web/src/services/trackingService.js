@@ -56,26 +56,42 @@ export async function saveTrackingParams(userId) {
 }
 
 /**
- * Получить ссылку на букмекера со всеми tracking параметрами (sub_id_10-16, pixel).
- * Вызывается при клике на баннер/CTA.
+ * Построить прямую ссылку на оффер со всеми tracking параметрами.
+ * external_id = userId для отслеживания конверсий.
  */
-export async function getTrackingLink(userId, banner = '') {
+const OFFER_BASE_URL = 'https://siteofficialred.com/KnSQ1M';
+
+export function getTrackingLink(userId, banner = '') {
   if (!userId) return null;
 
   try {
-    const params = new URLSearchParams({ user_id: userId });
-    if (banner) params.append('banner', banner);
+    const params = new URLSearchParams();
+    params.set('external_id', String(userId));
+    if (banner) params.set('sub_id_1', banner);
 
-    const res = await fetch(`${TRACKING_API}/api/tracking/link?${params}`);
-    const data = await res.json();
+    // Подтягиваем сохранённые tracking параметры из sessionStorage/URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';
 
-    if (data.status === 'ok') {
-      console.log('[Tracking] Link generated:', data.link);
-      return data.link;
-    }
-    return null;
+    const fbclid = getParam('fbclid');
+    const utm_source = getParam('utm_source');
+    const utm_medium = getParam('utm_medium');
+    const utm_campaign = getParam('utm_campaign');
+    const utm_content = getParam('utm_content');
+    const utm_term = getParam('utm_term');
+
+    if (fbclid) params.set('sub_id_2', fbclid);
+    if (utm_source) params.set('sub_id_3', utm_source);
+    if (utm_medium) params.set('sub_id_4', utm_medium);
+    if (utm_campaign) params.set('sub_id_5', utm_campaign);
+    if (utm_content) params.set('sub_id_6', utm_content);
+    if (utm_term) params.set('sub_id_7', utm_term);
+
+    const link = `${OFFER_BASE_URL}?${params.toString()}`;
+    console.log('[Tracking] Link built:', link);
+    return link;
   } catch (err) {
-    console.warn('[Tracking] Failed to get link:', err.message);
-    return null;
+    console.warn('[Tracking] Failed to build link:', err.message);
+    return `${OFFER_BASE_URL}?external_id=${userId}`;
   }
 }

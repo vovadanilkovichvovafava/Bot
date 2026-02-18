@@ -386,8 +386,8 @@
     "step2Desc": "Fill in details in a minute, make a deposit and get up to 1500€ bonus",
     "step3Title": "Place bets with predictions",
     "step3Desc": "Return to AI Betting Bot, read predictions and bet according to recommendations",
-    "ctaButton": "Install bookmaker app",
-    "ctaSubtext": "Free • Bonus up to 1500€ on registration",
+    "ctaButton": "Register and get €1500 bonus",
+    "ctaSubtext": "Free registration • Bonus on first deposit",
     "helpTitle": "Need help with registration?",
     "helpDesc": "Our manager will help you through all steps!",
     "helpButton": "Contact support"
@@ -434,8 +434,8 @@
     "helpDesc": "Our manager will help you through all steps",
     "contactSupport": "Contact support",
     "helpLink": "Need help? Contact support",
-    "ctaButton": "Install bookmaker app",
-    "ctaSubtext": "Free • PRO activates automatically",
+    "ctaButton": "Register and get PRO plan",
+    "ctaSubtext": "Free registration • PRO activates automatically",
     "threeSteps": "3 steps"
   },
   "aiChat": {

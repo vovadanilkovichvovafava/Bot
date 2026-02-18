@@ -4,20 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
-import geoService from '../services/geoService';
-import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 
 
-// Download icon for CTA button
-const DownloadIcon = () => (
-  <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/>
-    <line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>
-);
 
 export default function ProAccess() {
   const navigate = useNavigate();
@@ -27,36 +17,15 @@ export default function ProAccess() {
   const { advertiser } = useAdvertiser();
   const [showChat, setShowChat] = useState(false);
   const [bookmakerLink, setBookmakerLink] = useState(null);
-  const [loadingLink, setLoadingLink] = useState(false);
 
   const feature = searchParams.get('feature');
 
-  // Fetch geo info and build tracking link on mount
+  // Build tracking link on mount
   useEffect(() => {
-    async function fetchGeoAndLink() {
-      setLoadingLink(true);
-      try {
-        const geo = await geoService.getGeoInfo();
-
-        const userId = user?.id || `anon_${Date.now()}`;
-        const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
-        const link = await getTrackingLink(userId, banner);
-        if (link) {
-          setBookmakerLink(link);
-        } else {
-          setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
-        }
-      } catch (error) {
-        console.error('Failed to fetch geo/link:', error);
-        const userId = user?.id || `anon_${Date.now()}`;
-        const banner = feature ? `pro_access_${feature}` : 'pro_access_page';
-        setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
-      } finally {
-        setLoadingLink(false);
-      }
-    }
-
-    fetchGeoAndLink();
+    const userId = user?.id || `anon_${Date.now()}`;
+    const bannerName = feature ? `pro_access_${feature}` : 'pro_access_page';
+    const link = getTrackingLink(userId, bannerName);
+    setBookmakerLink(link);
   }, [user?.id]);
 
   const benefits = [
@@ -198,14 +167,7 @@ export default function ProAccess() {
           className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-[14px] text-base font-extrabold text-[#1B3A5C] no-underline tracking-[0.2px] active:scale-[0.97] transition-transform duration-150"
           style={{ background: 'linear-gradient(135deg, #F7C948 0%, #E8A317 50%, #D4940F 100%)', boxShadow: '0 4px 16px rgba(232,163,23,0.35)' }}
         >
-          {loadingLink ? (
-            <FootballSpinner size="xs" />
-          ) : (
-            <>
-              <DownloadIcon />
-              {t('proAccess.ctaButton')}
-            </>
-          )}
+          {t('proAccess.ctaButton')}
         </a>
         <p className="text-center text-[11px] text-[#5A6B80] mt-1.5">{t('proAccess.ctaSubtext')}</p>
       </div>

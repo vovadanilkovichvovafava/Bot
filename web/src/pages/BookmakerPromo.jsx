@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import SupportChat from '../components/SupportChat';
 import geoService from '../services/geoService';
-import FootballSpinner from '../components/FootballSpinner';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 
@@ -55,38 +54,21 @@ export default function BookmakerPromo() {
   const [showChat, setShowChat] = useState(false);
   const [geoInfo, setGeoInfo] = useState(null);
   const [bookmakerLink, setBookmakerLink] = useState(null);
-  const [loadingLink, setLoadingLink] = useState(false);
 
   const [searchParams] = useSearchParams();
   const banner = searchParams.get('banner') || '';
 
-  // Fetch geo info and build tracking link on mount
+  // Build tracking link and fetch geo info on mount
   useEffect(() => {
-    async function fetchGeoAndLink() {
-      setLoadingLink(true);
-      try {
-        const geo = await geoService.getGeoInfo();
-        setGeoInfo(geo);
+    // Build direct offer link (synchronous now)
+    const userId = user?.id || `anon_${Date.now()}`;
+    const link = getTrackingLink(userId, banner || 'promo_page');
+    setBookmakerLink(link);
 
-        // Get tracking link from PostbackAPI (with all sub_ids)
-        const userId = user?.id || `anon_${Date.now()}`;
-        const link = await getTrackingLink(userId, banner);
-        if (link) {
-          setBookmakerLink(link);
-        } else {
-          // Fallback если API недоступен
-          setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
-        }
-      } catch (error) {
-        console.error('Failed to fetch geo/link:', error);
-        const userId = user?.id || `anon_${Date.now()}`;
-        setBookmakerLink(`https://bootballgame.shop/?sub_id_10=${userId}&sub_id_11=${banner}`);
-      } finally {
-        setLoadingLink(false);
-      }
-    }
-
-    fetchGeoAndLink();
+    // Fetch geo info
+    geoService.getGeoInfo()
+      .then(geo => setGeoInfo(geo))
+      .catch(() => {});
   }, [user?.id, banner]);
 
   const benefits = [
@@ -281,19 +263,9 @@ export default function BookmakerPromo() {
           onClick={() => track('promo_cta_click', { banner: new URLSearchParams(window.location.search).get('banner') })}
           className="block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center font-bold py-4 rounded-2xl shadow-lg"
         >
-          {loadingLink ? (
-            <span className="flex items-center justify-center gap-2">
-              <FootballSpinner size="xs" light />
-              {t('common.loading')}
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-              </svg>
-              {t('promo.ctaButton')}
-            </span>
-          )}
+          <span className="flex items-center justify-center gap-2">
+            {t('promo.ctaButton')}
+          </span>
         </a>
         <p className="text-center text-xs text-gray-400 mt-1">
           {t('promo.ctaSubtext')}
