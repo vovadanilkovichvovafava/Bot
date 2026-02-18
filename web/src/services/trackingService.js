@@ -148,9 +148,12 @@ export function getTrackingLink(userId, banner = '') {
     const cloakerExternalId = getParam('external_id');
     if (cloakerExternalId) params.set('sub_id_8', cloakerExternalId);
 
-    // fbclid + UTM как отдельные параметры (не sub_id)
+    // fbclid → sub_id_16 (Keitaro маппит fbclid на sub_id_16) + отдельный param
     const fbclid = getParam('fbclid');
-    if (fbclid) params.set('fbclid', fbclid);
+    if (fbclid) {
+      params.set('sub_id_16', fbclid);
+      params.set('fbclid', fbclid);
+    }
 
     const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
     for (const key of utmKeys) {
