@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import FootballSpinner from './components/FootballSpinner';
 import { saveTrackingParams } from './services/trackingService';
+import { track } from './services/analytics';
 import Layout from './components/Layout';
 
 // ErrorBoundary — catches React render crashes, shows fallback instead of white screen
@@ -140,26 +141,25 @@ export default function App() {
   const location = useLocation();
   const prevLocationRef = useRef(null);
 
-  // Яндекс Метрика — SPA pageview tracking
+  // SPA pageview tracking — наша аналитика + Яндекс Метрика
   useEffect(() => {
-    if (typeof window.ym !== 'function') {
-      prevLocationRef.current = location;
-      return;
-    }
+    // 1. Наша аналитика — ВСЕГДА отправляем page_view
+    track('page_view');
+
+    // 2. Яндекс Метрика — если подключена
     const url = location.pathname + location.search;
     const referer = prevLocationRef.current
       ? prevLocationRef.current.pathname + prevLocationRef.current.search
       : document.referrer;
-    // Delay to let React fully render the page DOM before Metrika snapshots it for webvisor
-    // defer:true in init prevents auto-hit, so we must manually call hit on every route change
-    const timer = setTimeout(() => {
-      window.ym(106847617, 'hit', url, {
-        title: document.title,
-        referer,
-      });
-    }, 500);
     prevLocationRef.current = location;
-    return () => clearTimeout(timer);
+
+    if (typeof window.ym === 'function') {
+      // Delay to let React fully render the page DOM before Metrika snapshots it for webvisor
+      const timer = setTimeout(() => {
+        window.ym(106847617, 'hit', url, { title: document.title, referer });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
   }, [location]);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
