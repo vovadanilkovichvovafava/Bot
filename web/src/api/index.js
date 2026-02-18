@@ -115,20 +115,14 @@ class ApiService {
       if (!_isRetry && !endpoint.startsWith('/auth/')) {
         const refreshed = await this._tryRefresh();
         if (refreshed) {
-          // Retry original request with new token
+          // Retry original request with new token — reset _isRetry so future 401s can also refresh
           return this.request(endpoint, options, true);
         }
       }
 
-      // Refresh failed — logout
+      // Refresh failed — clear tokens, let AuthContext handle redirect via React Router
       this.setToken(null);
       try { localStorage.removeItem('refresh_token'); } catch {}
-      try {
-        const hasAccount = localStorage.getItem('hasAccount') === 'true';
-        window.location.href = hasAccount ? '/login' : '/register';
-      } catch {
-        window.location.href = '/login';
-      }
       throw new Error('Unauthorized');
     }
 
@@ -281,16 +275,30 @@ class ApiService {
   // Guest Support Chat (no auth required — for login page password reset)
   async guestSupportChat(message, history = [], locale = 'en', sessionId = '') {
     const url = `${API_BASE}/support/guest-chat`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history, locale, session_id: sessionId }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || `HTTP ${res.status}`);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history, locale, session_id: sessionId }),
+        });
+        if (res.status >= 500 && attempt < 2) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        return res.json();
+      } catch (e) {
+        if (attempt < 2 && !e.message?.startsWith('HTTP')) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
     }
-    return res.json();
   }
 }
 

@@ -423,7 +423,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder={t('support.placeholder')}
               className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-primary-500"
               disabled={isTyping}

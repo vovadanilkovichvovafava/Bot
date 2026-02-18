@@ -592,6 +592,13 @@ export default function AIChat() {
 }
 
 /**
+ * Escape HTML entities to prevent XSS via dangerouslySetInnerHTML.
+ */
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
  * Renders message content with markdown-like formatting.
  * Supports: **bold**, bullet points, --- separators
  */
@@ -624,7 +631,7 @@ function MessageContent({ content, isUser }) {
         // Bullet points
         if (line.startsWith('\u2022 ') || line.startsWith('- ') || line.startsWith('* ')) {
           const text = line.replace(/^[\u2022\-*]\s+/, '');
-          const bold = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          const bold = escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           return (
             <div key={i} className="flex gap-2 pl-1">
               <span className={isUser ? 'text-white/50' : 'text-gray-300'}>{'\u2022'}</span>
@@ -633,8 +640,8 @@ function MessageContent({ content, isUser }) {
           );
         }
 
-        // Regular text with bold support
-        const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Regular text with bold support (escape HTML first, then apply bold)
+        const bold = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         return <p key={i} dangerouslySetInnerHTML={{ __html: bold }}/>;
       })}
     </div>

@@ -74,9 +74,11 @@ export function AuthProvider({ children }) {
           loadFromBackend().catch(() => {});
         } catch {
           api.logout();
+          setUser(null);
         }
       } else {
         api.logout();
+        setUser(null);
       }
     } finally {
       setLoading(false);
