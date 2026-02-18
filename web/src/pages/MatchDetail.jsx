@@ -571,6 +571,16 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
 
   const recommendedBet = parseRecommendedBet();
 
+  // Calculate potential win for free bet card
+  const bonusNumeric = parseInt((advertiser?.bonusAmount || '').replace(/[^\d]/g, ''), 10) || 0;
+  const potentialWin = recommendedBet ? Math.round(bonusNumeric * recommendedBet.odds) : 0;
+  const formatWinAmount = (val) => {
+    const currency = advertiser?.currency || '€';
+    const original = advertiser?.bonusAmount || '';
+    if (original.indexOf(currency) === 0) return `${currency}${val.toLocaleString('en-US')}`;
+    return `${val.toLocaleString('de-DE')} ${currency}`;
+  };
+
   return (
     <>
       {/* Combined AI Analysis - shown only after button click */}
@@ -638,23 +648,52 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             })}
           </div>
 
-          {/* AI Recommended Bet - Display only */}
+          {/* AI Recommended Bet - Two-level card with free bet CTA */}
           {recommendedBet && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                  </svg>
-                  <p className="text-xs text-green-700 font-semibold uppercase">{t('matchDetail.aiRecommendedBet')}</p>
+              {/* Top: Recommendation */}
+              <div className={`bg-gradient-to-r from-green-500 to-emerald-500 p-4 ${bonusNumeric > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-white/80 font-semibold uppercase tracking-wide">{t('matchDetail.aiRecommendedBet')}</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-gray-900">{recommendedBet.type}</p>
-                  <div className="bg-green-600 text-white font-bold text-lg px-3 py-1 rounded-lg">
+                  <p className="font-bold text-white text-lg">{recommendedBet.type}</p>
+                  <div className="bg-white text-green-700 font-bold text-lg px-4 py-1.5 rounded-xl shadow-sm">
                     {recommendedBet.odds.toFixed(2)}
                   </div>
                 </div>
               </div>
+              {/* Bottom: Free Bet CTA */}
+              {bonusNumeric > 0 && (
+                <div
+                  onClick={() => navigate('/promo?banner=match_ai_bet')}
+                  className="bg-gradient-to-r from-green-700 to-emerald-700 rounded-b-2xl p-4 cursor-pointer hover:from-green-800 hover:to-emerald-800 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-amber-300 font-bold text-xs uppercase tracking-wider mb-1">
+                        {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
+                      </p>
+                      <p className="text-white font-bold text-sm">
+                        {advertiser?.bonusAmount} &times; {recommendedBet.odds.toFixed(2)} = {formatWinAmount(potentialWin)} {advertiser?.texts?.potentialWin || 'Win'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-white/90 shrink-0 ml-3">
+                      <span className="text-xs font-medium max-w-[80px] text-right leading-tight">
+                        {advertiser?.texts?.betAndTakeIt || 'Use it now!'}
+                      </span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
