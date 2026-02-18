@@ -1,5 +1,5 @@
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
@@ -196,7 +196,6 @@ async def register(
 
         # Give PRO for 3 days when reaching 3 referrals
         if total_referrals >= 3 and not referrer.is_premium:
-            from datetime import datetime, timedelta
             referrer.is_premium = True
             referrer.premium_until = datetime.utcnow() + timedelta(days=3)
 
