@@ -111,7 +111,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
 
   // Hide BottomNav when SupportChat is open (same approach as AIChat)
   useEffect(() => {
-    const nav = document.querySelector('nav.fixed.bottom-0');
+    const nav = document.getElementById('bottom-nav');
     if (nav) nav.style.display = isOpen ? 'none' : '';
     return () => {
       if (nav) nav.style.display = '';

@@ -7,8 +7,8 @@ export default function Layout() {
   const isChat = location.pathname === '/ai-chat';
 
   return (
-    <div className="h-screen flex flex-col bg-[#F0F2F5]">
-      <div className={`flex-1 min-h-0 ${isChat ? 'overflow-hidden' : 'overflow-y-auto pb-20'}`}>
+    <div className="h-dvh flex flex-col bg-[#F0F2F5]">
+      <div className={`flex-1 min-h-0 ${isChat ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         <Outlet />
       </div>
       <BottomNav />

@@ -50,13 +50,13 @@ export default function AIChat() {
       const isKb = vv.height < threshold;
       setKeyboardOpen(isKb);
       // Hide BottomNav when keyboard is open so it doesn't sit above keyboard
-      const nav = document.querySelector('nav.fixed.bottom-0');
+      const nav = document.getElementById('bottom-nav');
       if (nav) nav.style.display = isKb ? 'none' : '';
     };
     vv.addEventListener('resize', onResize);
     return () => {
       vv.removeEventListener('resize', onResize);
-      const nav = document.querySelector('nav.fixed.bottom-0');
+      const nav = document.getElementById('bottom-nav');
       if (nav) nav.style.display = '';
     };
   }, []);
@@ -258,8 +258,7 @@ export default function AIChat() {
   return (
     <div
       ref={containerRef}
-      className="flex flex-col"
-      style={{ height: keyboardOpen ? '100dvh' : 'calc(100dvh - 56px)' }}
+      className="flex flex-col h-full"
     >
       {/* Header — compact when keyboard open */}
       <div className={`bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-3'}`}>
