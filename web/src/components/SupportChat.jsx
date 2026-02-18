@@ -10,18 +10,41 @@ const MANAGER = {
   avatar: null, // Can add URL
 };
 
+const STORAGE_KEY = 'support_chat_history';
+
 export default function SupportChat({ isOpen, onClose, initialMessage = '' }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   const { user } = useAuth();
-  const [messages, setMessages] = useState([]);
+
+  // Load messages from localStorage on mount
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Restore Date objects from ISO strings
+        return parsed.map(msg => ({ ...msg, time: new Date(msg.time) }));
+      }
+    } catch (e) { /* ignore */ }
+    return [];
+  });
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      } catch (e) { /* ignore quota errors */ }
+    }
+  }, [messages]);
 
   // Welcome message on first open
   useEffect(() => {
