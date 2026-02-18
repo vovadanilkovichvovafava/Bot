@@ -15,20 +15,7 @@ const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
-// AI request tracking (same as AIChat.jsx)
 const FREE_AI_LIMIT = 3;
-const AI_REQUESTS_KEY = 'ai_requests_count';
-
-const getAIRequestCount = () => {
-  const count = localStorage.getItem(AI_REQUESTS_KEY);
-  return count ? parseInt(count, 10) : 0;
-};
-
-const incrementAIRequestCount = () => {
-  const newCount = getAIRequestCount() + 1;
-  localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
-  return newCount;
-};
 
 // Helper functions for prediction caching
 const getCachedPrediction = (matchId) => {
@@ -77,9 +64,16 @@ export default function MatchDetail() {
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [aiRemaining, setAiRemaining] = useState(null);
 
   useEffect(() => {
     loadMatch();
+    // Fetch AI remaining from server
+    if (!user?.is_premium) {
+      api.getChatLimit()
+        .then(data => setAiRemaining(data.remaining ?? FREE_AI_LIMIT))
+        .catch(() => setAiRemaining(FREE_AI_LIMIT));
+    }
   }, [id]);
 
   const loadMatch = async () => {
@@ -283,7 +277,7 @@ export default function MatchDetail() {
   const getAnalysis = async () => {
     // Check free limit for non-premium users BEFORE making request
     const isPremium = user?.is_premium;
-    if (!isPremium && getAIRequestCount() >= FREE_AI_LIMIT) {
+    if (!isPremium && aiRemaining !== null && aiRemaining <= 0) {
       navigate('/pro-access?reason=limit&feature=match-analysis');
       return;
     }
@@ -309,10 +303,11 @@ export default function MatchDetail() {
       const prompt = buildAIPrompt();
       const data = await api.aiChat(prompt);
 
-      // Increment AI request counter for non-premium users (AFTER successful response)
-      const isPremium = user?.is_premium;
-      if (!isPremium) {
-        incrementAIRequestCount();
+      // Refresh AI remaining counter from server (AFTER successful response)
+      if (!user?.is_premium) {
+        api.getChatLimit()
+          .then(data => setAiRemaining(data.remaining ?? 0))
+          .catch(() => {});
       }
 
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
@@ -516,6 +511,7 @@ export default function MatchDetail() {
             predicting={predicting}
             getAnalysis={getAnalysis}
             user={user}
+            aiRemaining={aiRemaining}
             formatDate={formatDate}
             formatTime={formatTime}
             statusLabel={statusLabel}
@@ -541,15 +537,15 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
-  // Check AI limit status
+  // Check AI limit status (server-based)
   const isPremium = user?.is_premium;
-  const aiRequestCount = getAIRequestCount();
-  const limitReached = !isPremium && aiRequestCount >= FREE_AI_LIMIT;
-  const remainingRequests = Math.max(0, FREE_AI_LIMIT - aiRequestCount);
+  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const limitReached = !isPremium && aiRemaining !== null && aiRemaining <= 0;
+  const remainingRequests = Math.max(0, remaining);
 
   // Use i18n for all promo texts (never use advertiser.texts directly)
   const adTexts = {
