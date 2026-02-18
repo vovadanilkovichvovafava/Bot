@@ -6,6 +6,7 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import { enrichMessage } from '../services/chatEnrichment';
 import FootballSpinner from '../components/FootballSpinner';
+import useKeyboardHeight from '../hooks/useKeyboardHeight';
 
 const FREE_AI_LIMIT = 3;
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -34,43 +35,21 @@ export default function AIChat() {
   const [questionsExpanded, setQuestionsExpanded] = useState(false);
   const [responseCount, setResponseCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const { keyboardOpen, viewportHeight } = useKeyboardHeight();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const containerRef = useRef(null);
 
   const isPremium = user?.is_premium;
 
-  // Track keyboard open/close — adapt height to visual viewport, hide BottomNav
+  // Hide BottomNav when keyboard is open
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const threshold = window.innerHeight * 0.75;
-    const update = () => {
-      const isKb = vv.height < threshold;
-      setKeyboardOpen(isKb);
-      // Hide BottomNav when keyboard is open
-      const nav = document.getElementById('bottom-nav');
-      if (nav) nav.style.display = isKb ? 'none' : '';
-      // Resize container to match visual viewport (prevents keyboard overlap)
-      if (containerRef.current) {
-        containerRef.current.style.height = isKb ? `${vv.height}px` : '';
-      }
-      // Keep input visible
-      if (isKb) {
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
-      }
-    };
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    const nav = document.getElementById('bottom-nav');
+    if (nav) nav.style.display = keyboardOpen ? 'none' : '';
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
       const nav = document.getElementById('bottom-nav');
       if (nav) nav.style.display = '';
-      if (containerRef.current) containerRef.current.style.height = '';
     };
-  }, []);
+  }, [keyboardOpen]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -268,8 +247,8 @@ export default function AIChat() {
 
   return (
     <div
-      ref={containerRef}
-      className="flex flex-col h-full"
+      className="flex flex-col"
+      style={{ height: keyboardOpen ? `${viewportHeight}px` : '100%' }}
     >
       {/* Header — compact when keyboard open */}
       <div className={`bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0 ${keyboardOpen ? 'py-1.5' : 'py-3'}`}>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
+import useKeyboardHeight from '../hooks/useKeyboardHeight';
 
 // Agent names per locale (matches backend PERSONA_NAMES)
 const AGENT_NAMES = {
@@ -34,11 +35,9 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [managerMsgCount, setManagerMsgCount] = useState(0); // For PRO banner
-  const [viewportHeight, setViewportHeight] = useState(null);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const { keyboardOpen, viewportHeight } = useKeyboardHeight();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const panelRef = useRef(null);
   const followUpTimerRef = useRef(null);
 
   // Get current locale and agent name
@@ -72,43 +71,14 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     }
   }, [isOpen]);
 
-  // Track visual viewport for mobile keyboard — adapt chat panel height + position
+  // Scroll to bottom when keyboard opens
   useEffect(() => {
-    if (!isOpen) return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const threshold = window.innerHeight * 0.75;
-    const update = () => {
-      const isKb = vv.height < threshold;
-      setViewportHeight(vv.height);
-      setKeyboardOpen(isKb);
-
-      // Position the panel wrapper to match visual viewport (handles Android keyboard push)
-      if (panelRef.current && panelRef.current.parentElement) {
-        const wrapper = panelRef.current.parentElement;
-        wrapper.style.height = `${vv.height}px`;
-        wrapper.style.top = `${vv.offsetTop}px`;
-      }
-
-      // Scroll input into view when keyboard opens
-      if (isKb && document.activeElement === inputRef.current) {
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 100);
-      }
-    };
-
-    // Initial sync
-    update();
-
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, [isOpen]);
+    if (keyboardOpen && document.activeElement === inputRef.current) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 150);
+    }
+  }, [keyboardOpen]);
 
   // Clear follow-up timer when user types
   useEffect(() => {
@@ -266,13 +236,12 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] flex flex-col" style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}>
+    <div className="fixed inset-x-0 top-0 z-[60] flex flex-col" style={{ height: `${viewportHeight}px` }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}/>
 
       {/* Chat Panel — fills bottom, shrinks with keyboard */}
       <div
-        ref={panelRef}
         className="mt-auto bg-white rounded-t-3xl flex flex-col animate-slide-up relative"
         style={{ maxHeight: '92%' }}
       >
