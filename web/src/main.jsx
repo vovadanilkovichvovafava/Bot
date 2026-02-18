@@ -11,6 +11,18 @@ import './index.css';
 // Initialize i18n (auto-detects phone/browser language)
 import './i18n';
 
+// Handle chunk load failures after deploy — auto-reload to get new assets
+// This prevents blank screens that Yandex Metrica Webvisor would record as broken
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  const lastReload = sessionStorage.getItem('chunk-reload');
+  const now = Date.now();
+  if (!lastReload || now - parseInt(lastReload) > 10000) {
+    sessionStorage.setItem('chunk-reload', now.toString());
+    window.location.reload();
+  }
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
