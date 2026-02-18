@@ -158,7 +158,24 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Featured Match Promo Banner - Moved higher for visibility */}
+        {/* Beginner Guide - Between AI card and promo */}
+        <div
+          onClick={() => navigate('/guide')}
+          className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
+        >
+          <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
+            <span className="text-xl">📚</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
+            <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
+          </div>
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+
+        {/* Featured Match Promo Banner */}
         <FeaturedMatchBanner
           matches={matches}
           advertiser={advertiser}
@@ -268,23 +285,6 @@ export default function Home() {
           {localStats.pending > 0 && (
             <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
           )}
-        </div>
-
-        {/* Beginner Guide */}
-        <div
-          onClick={() => navigate('/guide')}
-          className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
-        >
-          <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-xl">📚</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
-            <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-          </svg>
         </div>
 
         {/* Pro Tools */}

@@ -2,225 +2,374 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdvertiser } from '../context/AdvertiserContext';
-import { useAuth } from '../context/AuthContext';
 
-const getGuideCards = (advertiser, t) => [
+const LESSONS = (t, advertiser) => [
   {
-    icon: '👋',
-    title: t('guide.card1Title'),
-    subtitle: t('guide.card1Subtitle'),
-    content: t('guide.card1Content'),
+    id: 1,
+    icon: '📖',
     color: 'from-primary-500 to-indigo-600',
+    title: t('guide.l1Title', { defaultValue: 'Le basi delle scommesse' }),
+    time: '2 min',
+    sections: [
+      {
+        heading: t('guide.l1s1h', { defaultValue: "Cos'è una scommessa?" }),
+        text: t('guide.l1s1', { defaultValue: "Una scommessa è un pronostico su un evento sportivo. Scegli un risultato, il bookmaker offre una quota. Se il tuo pronostico è corretto, vinci!" }),
+      },
+      {
+        heading: t('guide.l1s2h', { defaultValue: 'Esempio pratico' }),
+        card: true,
+        home: 'Liverpool', away: 'Man City', odds: '2.10', stake: '10€',
+        text: t('guide.l1s2', { defaultValue: "Scommetti 10€ sulla vittoria del Liverpool a quota 2.10\nSe vince: 10 × 2.10 = 21€ (profitto 11€)\nSe non vince: perdi 10€" }),
+      },
+      {
+        heading: t('guide.l1s3h', { defaultValue: 'Esiti principali (1X2)' }),
+        chips: [
+          { label: '1', desc: t('guide.l1c1', { defaultValue: 'Vittoria prima squadra' }) },
+          { label: 'X', desc: t('guide.l1c2', { defaultValue: 'Pareggio' }) },
+          { label: '2', desc: t('guide.l1c3', { defaultValue: 'Vittoria seconda squadra' }) },
+        ],
+      },
+      {
+        heading: t('guide.l1s4h', { defaultValue: "Cos'è la quota?" }),
+        text: t('guide.l1s4', { defaultValue: "La quota indica quanto puoi vincere e la probabilità dell'esito:\n\n1.30 = molto probabile (~77%)\n2.00 = 50/50\n5.00 = poco probabile (~20%)" }),
+      },
+    ],
   },
   {
-    icon: '🤖',
-    title: t('guide.card2Title'),
-    subtitle: t('guide.card2Subtitle'),
-    content: t('guide.card2Content'),
+    id: 2,
+    icon: '🎲',
     color: 'from-purple-500 to-pink-500',
+    title: t('guide.l2Title', { defaultValue: 'Tipi di scommesse' }),
+    time: '2 min',
+    sections: [
+      {
+        heading: t('guide.l2s1h', { defaultValue: 'Totale (Over/Under)' }),
+        text: t('guide.l2s1', { defaultValue: "Over 2.5 = 3 o più gol nel match\nUnder 2.5 = 2 o meno gol\n\nUno dei tipi più popolari. L'AI spesso raccomanda i totali perché più prevedibili con le statistiche." }),
+      },
+      {
+        heading: t('guide.l2s2h', { defaultValue: 'Handicap (Fora)' }),
+        text: t('guide.l2s2', { defaultValue: "Handicap (-1) Liverpool:\nDeve vincere con 2+ gol di scarto\n2:0 → vinta | 1:0 → persa\n\nHandicap (+1.5) Man City:\nPuò perdere anche di 1 gol\n0:1 → vinta" }),
+      },
+      {
+        heading: t('guide.l2s3h', { defaultValue: 'Entrambe segnano (BTTS)' }),
+        text: t('guide.l2s3', { defaultValue: "Sì = entrambe le squadre segnano almeno 1 gol\nNo = almeno una squadra non segna\n\n2:1 → Sì vince\n2:0 → No vince" }),
+      },
+      {
+        heading: t('guide.l2s4h', { defaultValue: 'Doppia chance' }),
+        text: t('guide.l2s4', { defaultValue: "Copre 2 esiti su 3:\n1X = vittoria casa O pareggio\nX2 = pareggio O vittoria ospiti\n12 = vittoria casa O ospiti\n\nQuote più basse, ma più sicure. Ottimo per principianti!" }),
+      },
+      {
+        heading: t('guide.l2s5h', { defaultValue: 'Accumulator (Multipla)' }),
+        text: t('guide.l2s5', { defaultValue: "Più scommesse in una. Le quote si moltiplicano:\n1.80 × 1.85 = 3.33\n\nTutti i pronostici devono essere corretti! Se anche uno sbaglia, perdi tutto. Alto rischio, alta ricompensa." }),
+      },
+    ],
   },
   {
-    icon: '📊',
-    title: t('guide.card3Title'),
-    subtitle: t('guide.card3Subtitle'),
-    content: t('guide.card3Content'),
+    id: 3,
+    icon: '📐',
     color: 'from-green-500 to-emerald-600',
+    title: t('guide.l3Title', { defaultValue: 'Come leggere le quote' }),
+    time: '1 min',
+    sections: [
+      {
+        heading: t('guide.l3s1h', { defaultValue: 'Formati delle quote' }),
+        table: [
+          [t('guide.l3f1', { defaultValue: 'Decimale' }), '2.50', '10 × 2.50 = 25€', t('guide.l3r1', { defaultValue: 'Europa' })],
+          [t('guide.l3f2', { defaultValue: 'Frazionario' }), '3/2', '10 × (3/2) + 10 = 25€', t('guide.l3r2', { defaultValue: 'UK' })],
+          [t('guide.l3f3', { defaultValue: 'Americano' }), '+150', '10 × (150/100) + 10 = 25€', t('guide.l3r3', { defaultValue: 'USA' })],
+        ],
+      },
+    ],
   },
   {
-    icon: '🎯',
-    title: t('guide.card4Title'),
-    subtitle: t('guide.card4Subtitle'),
-    content: t('guide.card4Content'),
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    icon: '💬',
-    title: t('guide.card5Title'),
-    subtitle: t('guide.card5Subtitle'),
-    content: t('guide.card5Content'),
-    color: 'from-violet-500 to-purple-600',
-  },
-  {
-    icon: '⚡',
-    title: t('guide.card6Title'),
-    subtitle: t('guide.card6Subtitle'),
-    content: t('guide.card6Content'),
-    color: 'from-amber-500 to-orange-500',
-  },
-  {
-    icon: '💎',
-    title: t('guide.card7Title'),
-    subtitle: t('guide.card7Subtitle'),
-    content: t('guide.card7Content'),
-    color: 'from-teal-500 to-green-500',
-  },
-  {
+    id: 4,
     icon: '💰',
-    title: t('guide.card8Title'),
-    subtitle: t('guide.card8Subtitle'),
-    content: t('guide.card8Content'),
-    color: 'from-rose-500 to-red-500',
+    color: 'from-blue-500 to-cyan-500',
+    title: t('guide.l4Title', { defaultValue: 'Bankroll management' }),
+    time: '2 min',
+    sections: [
+      {
+        heading: t('guide.l4s1h', { defaultValue: "Cos'è il bankroll?" }),
+        text: t('guide.l4s1', { defaultValue: "Il bankroll è la somma che dedichi alle scommesse. NON sono i soldi per le spese quotidiane.\n\nRegola d'oro: scommetti solo quello che puoi permetterti di perdere." }),
+      },
+      {
+        heading: t('guide.l4s2h', { defaultValue: 'La regola dell\'1-3%' }),
+        text: t('guide.l4s2', { defaultValue: "Non scommettere mai più dell'1-3% del bankroll su una singola scommessa.\n\nBankroll: 100€\nSingola scommessa: 1-3€\n\nQuesto ti protegge anche con una serie di sconfitte." }),
+      },
+      {
+        heading: t('guide.l4s3h', { defaultValue: 'Flat betting' }),
+        text: t('guide.l4s3', { defaultValue: "Per i principianti: scommetti sempre la stessa somma.\n\nNon aumentare dopo una perdita!\nNon cercare di recuperare — è l'errore più comune." }),
+      },
+    ],
   },
   {
-    icon: '🔴',
-    title: t('guide.card9Title'),
-    subtitle: t('guide.card9Subtitle'),
-    content: t('guide.card9Content'),
-    color: 'from-red-500 to-pink-600',
+    id: 5,
+    icon: '🔍',
+    color: 'from-violet-500 to-purple-600',
+    title: t('guide.l5Title', { defaultValue: 'Come analizzare un match' }),
+    time: '2 min',
+    sections: [
+      {
+        heading: t('guide.l5s1h', { defaultValue: 'Forma attuale' }),
+        text: t('guide.l5s1', { defaultValue: "Guarda gli ultimi 5 risultati di ogni squadra.\nSerie di vittorie = buona forma\nSerie di sconfitte = cattiva forma" }),
+      },
+      {
+        heading: t('guide.l5s2h', { defaultValue: 'Scontri diretti (H2H)' }),
+        text: t('guide.l5s2', { defaultValue: "La storia dei match tra le due squadre.\nAlcune squadre sono storicamente scomode per altre.\nEs: 7 su 10 Liverpool vs City → Over 2.5" }),
+      },
+      {
+        heading: t('guide.l5s3h', { defaultValue: 'Casa / Trasferta' }),
+        text: t('guide.l5s3', { defaultValue: "Molte squadre sono più forti in casa.\nControlla le statistiche gol casa e trasferta." }),
+      },
+      {
+        heading: t('guide.l5s4h', { defaultValue: 'Infortuni e formazioni' }),
+        text: t('guide.l5s4', { defaultValue: "L'assenza di un giocatore chiave può cambiare tutto.\nSe manca l'attaccante principale → Under può essere una buona scelta." }),
+      },
+      {
+        heading: t('guide.l5s5h', { defaultValue: "Come l'AI ti aiuta" }),
+        highlight: true,
+        text: t('guide.l5s5', { defaultValue: "L'AI analizza TUTTO questo automaticamente:\n• Forma delle ultime 10 partite\n• Statistiche H2H degli ultimi 5 anni\n• Gol medi, corner, cartellini\n• E ti dà un pronostico con livello di fiducia\n\nNon serve ore di analisi — l'AI lo fa in secondi." }),
+      },
+    ],
   },
   {
-    icon: '🎁',
-    title: t('guide.card10Title'),
-    subtitle: t('guide.card10Subtitle', { bonus: advertiser.bonusAmount }),
-    content: t('guide.card10Content', { name: advertiser.name, bonus: advertiser.bonusAmount }),
-    color: 'from-amber-400 to-orange-500',
-    cta: true,
+    id: 6,
+    icon: '🏢',
+    color: 'from-amber-500 to-orange-500',
+    title: t('guide.l6Title', { defaultValue: 'Come scegliere un bookmaker' }),
+    time: '1 min',
+    sections: [
+      {
+        heading: t('guide.l6s1h', { defaultValue: 'Criteri importanti' }),
+        chips: [
+          { label: '🛡️', desc: t('guide.l6c1', { defaultValue: 'Licenza — protezione dei tuoi soldi' }) },
+          { label: '⚡', desc: t('guide.l6c2', { defaultValue: 'Pagamenti veloci — minuti, non giorni' }) },
+          { label: '🎁', desc: t('guide.l6c3', { defaultValue: 'Bonus di benvenuto' }) },
+          { label: '📱', desc: t('guide.l6c4', { defaultValue: 'App mobile comoda' }) },
+          { label: '🎯', desc: t('guide.l6c5', { defaultValue: 'Ampia linea di scommesse' }) },
+          { label: '📊', desc: t('guide.l6c6', { defaultValue: 'Quote competitive' }) },
+        ],
+      },
+      {
+        heading: t('guide.l6s2h', { defaultValue: 'La nostra raccomandazione' }),
+        highlight: true,
+        text: t('guide.l6s2', { defaultValue: `Il nostro partner offre:\n✅ Licenza internazionale ufficiale\n✅ Pagamenti in 15 minuti\n✅ Bonus fino a ${advertiser?.bonusAmount || '1.500€'}\n✅ 900+ campionati di calcio\n✅ Supporto 24/7` }),
+      },
+    ],
+  },
+  {
+    id: 7,
+    icon: '🚀',
+    color: 'from-teal-500 to-green-500',
+    title: t('guide.l7Title', { defaultValue: 'La tua prima scommessa' }),
+    time: '1 min',
+    sections: [
+      {
+        heading: t('guide.l7s1h', { defaultValue: 'Passo dopo passo' }),
+        steps: [
+          t('guide.l7st1', { defaultValue: "Apri l'app e guarda le partite di oggi" }),
+          t('guide.l7st2', { defaultValue: "Scegli un match che ti interessa" }),
+          t('guide.l7st3', { defaultValue: "Guarda il pronostico AI con il livello di fiducia" }),
+          t('guide.l7st4', { defaultValue: 'Chiedi all\'AI se hai domande: "Perché Over 2.5?"' }),
+          t('guide.l7st5', { defaultValue: "Apri il bookmaker e cerca lo stesso match" }),
+          t('guide.l7st6', { defaultValue: "Scegli l'esito consigliato dall'AI. Importo: 1-3% del bankroll!" }),
+          t('guide.l7st7', { defaultValue: "Conferma la scommessa. Segui il risultato nell'app!" }),
+        ],
+      },
+    ],
+    isLast: true,
   },
 ];
 
 export default function BeginnerGuide() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { advertiser, trackClick } = useAdvertiser();
-  const { user } = useAuth();
-  const [currentCard, setCurrentCard] = useState(0);
+  const { advertiser } = useAdvertiser();
+  const [currentLesson, setCurrentLesson] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
 
-  const GUIDE_CARDS = useMemo(() => getGuideCards(advertiser, t), [advertiser, t]);
+  const lessons = useMemo(() => LESSONS(t, advertiser), [t, advertiser]);
+  const lesson = lessons[currentLesson];
 
-  const nextCard = () => {
-    if (currentCard < GUIDE_CARDS.length - 1) {
-      setCurrentCard(currentCard + 1);
-    }
-  };
+  const next = () => { if (currentLesson < lessons.length - 1) setCurrentLesson(currentLesson + 1); };
+  const prev = () => { if (currentLesson > 0) setCurrentLesson(currentLesson - 1); };
 
-  const prevCard = () => {
-    if (currentCard > 0) {
-      setCurrentCard(currentCard - 1);
-    }
-  };
-
-  const handleTouchStart = (e) => {
-    setTouchStart(e.touches[0].clientX);
-  };
-
+  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientX);
   const handleTouchEnd = (e) => {
     if (!touchStart) return;
     const diff = touchStart - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) nextCard();
-      else prevCard();
-    }
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
     setTouchStart(null);
   };
 
-  const card = GUIDE_CARDS[currentCard];
-  const isLast = currentCard === GUIDE_CARDS.length - 1;
-
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-[#F0F2F5]">
       {/* Header */}
-      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full"
-        >
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-          </svg>
-        </button>
-        <span className="text-white/60 text-sm">{currentCard + 1} / {GUIDE_CARDS.length}</span>
-        <button
-          onClick={() => navigate('/')}
-          className="text-white/60 text-sm"
-        >
-          {t('guide.skip')}
-        </button>
-      </div>
-
-      {/* Progress bar */}
-      <div className="px-5 py-2">
+      <div className="bg-white px-5 pt-4 pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+          </button>
+          <h1 className="text-lg font-bold text-gray-900">
+            {t('guide.title', { defaultValue: 'Scuola di Scommesse' })}
+          </h1>
+          <span className="text-xs text-gray-400 font-medium">{currentLesson + 1}/{lessons.length}</span>
+        </div>
+        {/* Progress bar */}
         <div className="flex gap-1">
-          {GUIDE_CARDS.map((_, i) => (
+          {lessons.map((_, i) => (
             <div
               key={i}
-              className={`h-1 flex-1 rounded-full transition-all ${
-                i <= currentCard ? 'bg-white' : 'bg-white/20'
-              }`}
+              className={`h-1 flex-1 rounded-full transition-all ${i <= currentLesson ? 'bg-primary-500' : 'bg-gray-200'}`}
             />
           ))}
         </div>
       </div>
 
-      {/* Card */}
+      {/* Lesson Content */}
       <div
-        className="flex-1 px-5 py-6"
+        className="px-4 py-4 space-y-4 pb-28"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className={`h-full bg-gradient-to-br ${card.color} rounded-3xl p-6 flex flex-col relative overflow-hidden`}>
-          {/* Background decorations */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"/>
-
-          <div className="relative flex-1 flex flex-col">
-            {/* Icon */}
-            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-              <span className="text-5xl">{card.icon}</span>
+        {/* Lesson header card */}
+        <div className={`bg-gradient-to-br ${lesson.color} rounded-2xl p-5 text-white relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <span className="text-3xl">{lesson.icon}</span>
             </div>
+            <div>
+              <p className="text-white/70 text-xs font-medium">
+                {t('guide.lesson', { defaultValue: 'Lezione' })} {lesson.id}
+              </p>
+              <h2 className="text-xl font-bold">{lesson.title}</h2>
+              <p className="text-white/70 text-xs mt-0.5">{lesson.time}</p>
+            </div>
+          </div>
+        </div>
 
-            {/* Title */}
-            <h1 className="text-3xl font-black text-white mb-2">{card.title}</h1>
-            <p className="text-white/80 text-lg font-medium mb-6">{card.subtitle}</p>
+        {/* Sections */}
+        {lesson.sections.map((sec, i) => (
+          <div
+            key={i}
+            className={`rounded-2xl p-5 ${sec.highlight ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-gray-100'}`}
+          >
+            <h3 className={`font-bold text-base mb-3 ${sec.highlight ? 'text-primary-700' : 'text-gray-900'}`}>
+              {sec.heading}
+            </h3>
 
-            {/* Content */}
-            <p className="text-white/90 text-base leading-relaxed whitespace-pre-line flex-1">
-              {card.content}
-            </p>
+            {/* Text content */}
+            {sec.text && (
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{sec.text}</p>
+            )}
 
-            {/* CTA for last card */}
-            {card.cta && (
-              <div className="mt-6 space-y-3">
-                <button
-                  onClick={() => navigate('/promo?banner=guide_register_cta')}
-                  className="w-full flex items-center justify-center gap-2 bg-white text-amber-600 font-bold py-4 rounded-2xl text-lg"
-                >
-                  {t('guide.registerNow')}
-                </button>
-                <button
-                  onClick={() => navigate('/')}
-                  className="w-full text-white/80 font-medium py-3"
-                >
-                  {t('guide.startBot')}
-                </button>
+            {/* Match card preview */}
+            {sec.card && (
+              <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 text-sm">{sec.home} vs {sec.away}</span>
+                  <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{sec.odds}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{t('guide.stakeLabel', { defaultValue: 'Puntata' })}: {sec.stake}</p>
+              </div>
+            )}
+
+            {/* Chips */}
+            {sec.chips && (
+              <div className="space-y-2">
+                {sec.chips.map((chip, j) => (
+                  <div key={j} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                    <span className="text-lg shrink-0">{chip.label}</span>
+                    <span className="text-sm text-gray-700">{chip.desc}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Table */}
+            {sec.table && (
+              <div className="overflow-x-auto -mx-1">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.format', { defaultValue: 'Formato' })}</th>
+                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.example', { defaultValue: 'Esempio' })}</th>
+                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.calc', { defaultValue: 'Calcolo (10€)' })}</th>
+                      <th className="text-left py-2 px-2 text-gray-500 font-medium text-xs">{t('guide.where', { defaultValue: 'Dove' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sec.table.map((row, j) => (
+                      <tr key={j} className="border-b border-gray-100 last:border-0">
+                        {row.map((cell, k) => (
+                          <td key={k} className="py-2 px-2 text-gray-700 text-xs">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Step-by-step */}
+            {sec.steps && (
+              <div className="space-y-3">
+                {sec.steps.map((stepText, j) => (
+                  <div key={j} className="flex items-start gap-3">
+                    <div className="w-7 h-7 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                      {j + 1}
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{stepText}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
+        ))}
+
+        {/* Last lesson CTA */}
+        {lesson.isLast && (
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-5 text-center text-white">
+            <p className="text-lg font-bold mb-2">{t('guide.congrats', { defaultValue: 'Complimenti! Sei pronto!' })}</p>
+            <p className="text-white/80 text-sm mb-4">{t('guide.congratsDesc', { defaultValue: 'Hai completato la scuola di scommesse. Ora prova il tuo primo pronostico AI!' })}</p>
+            <button
+              onClick={() => navigate('/matches')}
+              className="w-full bg-white text-green-700 font-bold py-3.5 rounded-xl text-base"
+            >
+              {t('guide.goPredict', { defaultValue: 'Vai ai pronostici' })}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Navigation */}
-      {!card.cta && (
-        <div className="px-5 pb-8 flex gap-3">
-          <button
-            onClick={prevCard}
-            disabled={currentCard === 0}
-            className={`w-14 h-14 rounded-full flex items-center justify-center ${
-              currentCard === 0 ? 'bg-white/10 text-white/30' : 'bg-white/20 text-white'
-            }`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-            </svg>
-          </button>
-          <button
-            onClick={nextCard}
-            className="flex-1 bg-white text-gray-900 font-bold py-4 rounded-2xl text-lg"
-          >
-            {isLast ? t('guide.done') : t('guide.next')}
-          </button>
-        </div>
-      )}
+      {/* Bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-3 flex gap-3 z-30">
+        <button
+          onClick={prev}
+          disabled={currentLesson === 0}
+          className={`w-14 h-12 rounded-xl flex items-center justify-center ${
+            currentLesson === 0 ? 'bg-gray-100 text-gray-300' : 'bg-gray-100 text-gray-700'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+        <button
+          onClick={currentLesson === lessons.length - 1 ? () => navigate('/') : next}
+          className="flex-1 bg-primary-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2"
+        >
+          {currentLesson === lessons.length - 1
+            ? t('guide.done', { defaultValue: 'Fine' })
+            : t('guide.nextLesson', { defaultValue: 'Lezione successiva' })}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
