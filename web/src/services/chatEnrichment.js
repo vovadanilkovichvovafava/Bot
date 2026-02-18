@@ -7,24 +7,32 @@ import footballApi from '../api/footballApi';
 
 // Common team name patterns (partial matches)
 const LEAGUE_KEYWORDS = {
-  'premier league': 39,
-  'epl': 39,
-  'la liga': 140,
-  'bundesliga': 78,
-  'serie a': 135,
-  'ligue 1': 61,
-  'champions league': 2,
-  'ucl': 2,
-  'europa league': 3,
-  'eredivisie': 88,
-  'primeira liga': 94,
-  'championship': 40,
+  // Premier League
+  'premier league': 39, 'epl': 39, 'премьер-лига': 39, 'премьер лига': 39,
+  'プレミアリーグ': 39, '英超': 39,
+  // La Liga
+  'la liga': 140, 'ла лига': 140, 'liga española': 140, 'liga espanhola': 140,
+  // Bundesliga
+  'bundesliga': 78, 'бундеслига': 78,
+  // Serie A
+  'serie a': 135, 'серия а': 135,
+  // Ligue 1
+  'ligue 1': 61, 'лига 1': 61,
+  // Champions League
+  'champions league': 2, 'ucl': 2, 'лига чемпионов': 2,
+  'ligue des champions': 2, 'liga de campeones': 2, 'şampiyonlar ligi': 2,
+  'liga mistrzów': 2, 'liga dos campeões': 2, 'دوري الأبطال': 2, '欧冠': 2,
+  // Europa League
+  'europa league': 3, 'лига европы': 3, 'лига європи': 3,
+  // Other leagues
+  'eredivisie': 88, 'primeira liga': 94, 'championship': 40,
+  'süper lig': 52, 'суперлига': 52, 'liga 1': 283,
 };
 
-// Match query patterns — with "vs" separator
+// Match query patterns — with "vs" separator (multilingual)
 const MATCH_PATTERNS_VS = [
-  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—)\s+(.+)/i,
-  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ)\s+(.+?)\s+(?:vs\.?|v\.?|—)\s+(.+)/i,
+  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—|contra|contre|gegen|tegen|karşı)\s+(.+)/i,
+  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ|partita|partido|pronostic|pronostico|maç|mecz|jogo|مباراة|मैच|比赛)\s+(.+?)\s+(?:vs\.?|v\.?|—|contra|contre|gegen|karşı)\s+(.+)/i,
 ];
 
 // Well-known team names for detection without "vs" separator
@@ -93,9 +101,51 @@ const KNOWN_TEAMS = [
   'shakhtar', 'шахтёр', 'шахтер',
 ];
 
-const TODAY_KEYWORDS = ['today', 'сегодня', 'tonight', 'вечером', 'сейчас', 'now'];
-const TOMORROW_KEYWORDS = ['tomorrow', 'завтра'];
-const BEST_BET_KEYWORDS = ['best bet', 'лучшая ставка', 'лучший прогноз', 'top pick', 'value bet', 'рекомендация'];
+const TODAY_KEYWORDS = [
+  'today', 'tonight', 'now',           // EN
+  'сегодня', 'вечером', 'сейчас',      // RU
+  'oggi', 'stasera', 'adesso',         // IT
+  'hoy', 'esta noche', 'ahora',        // ES
+  "aujourd'hui", 'ce soir', 'maintenant', // FR
+  'heute', 'heute abend', 'jetzt',     // DE
+  'dzisiaj', 'dziś', 'teraz',          // PL
+  'hoje', 'esta noite', 'agora',       // PT
+  'bugün', 'bu gece', 'şimdi',         // TR
+  'azi', 'astăzi', 'acum',             // RO
+  'اليوم', 'الليلة', 'الآن',            // AR
+  'आज', 'आज रात', 'अभी',              // HI
+  '今天', '今晚', '现在',                // ZH
+];
+const TOMORROW_KEYWORDS = [
+  'tomorrow',                           // EN
+  'завтра',                             // RU
+  'domani',                             // IT
+  'mañana',                             // ES
+  'demain',                             // FR
+  'morgen',                             // DE
+  'jutro',                              // PL
+  'amanhã',                             // PT
+  'yarın',                              // TR
+  'mâine',                              // RO
+  'غداً', 'غدا',                         // AR
+  'कल',                                 // HI
+  '明天',                                // ZH
+];
+const BEST_BET_KEYWORDS = [
+  'best bet', 'top pick', 'value bet', 'sure bet', 'recommended bet', 'best prediction', // EN
+  'лучшая ставка', 'лучший прогноз', 'рекомендация', 'топ ставка',   // RU
+  'migliori scommesse', 'miglior scommessa', 'scommessa consigliata', 'pronostico', // IT
+  'mejor apuesta', 'mejores apuestas', 'apuesta recomendada', 'pronóstico', // ES
+  'meilleur pari', 'meilleurs paris', 'pari recommandé', 'pronostic', // FR
+  'beste wette', 'besten wetten', 'empfohlene wette', 'tipp',        // DE
+  'najlepszy zakład', 'najlepsze zakłady', 'rekomendowany zakład', 'typowanie', // PL
+  'melhor aposta', 'melhores apostas', 'aposta recomendada', 'prognóstico', // PT
+  'en iyi bahis', 'önerilen bahis', 'tahmin',                        // TR
+  'cel mai bun pariu', 'cele mai bune pariuri', 'pariu recomandat', 'pronostic', // RO
+  'أفضل رهان', 'أفضل توقع', 'رهان موصى',                             // AR
+  'सबसे अच्छी शर्त', 'सर्वश्रेष्ठ भविष्यवाणी',                       // HI
+  '最佳投注', '最佳预测', '推荐投注',                                     // ZH
+];
 
 /**
  * Analyze user message and determine what football data to fetch.
@@ -142,8 +192,23 @@ export async function enrichMessage(message) {
     return await enrichLeagueQuery(detectedLeagueId, detectedLeagueKeyword);
   }
 
-  // 6. Detect live match queries
-  if (lower.includes('live') || lower.includes('лайв') || lower.includes('сейчас играют')) {
+  // 6. Detect live match queries (all supported languages)
+  const LIVE_KEYWORDS = [
+    'live', 'in play',                    // EN
+    'лайв', 'сейчас играют', 'в прямом эфире', // RU
+    'in diretta', 'dal vivo', 'partite live', // IT
+    'en vivo', 'en directo',              // ES
+    'en direct',                          // FR
+    'im spiel', 'laufende spiele',        // DE
+    'na żywo',                            // PL
+    'ao vivo',                            // PT
+    'canlı',                              // TR
+    'în direct',                          // RO
+    'مباشر', 'بث مباشر',                   // AR
+    'लाइव',                               // HI
+    '直播', '正在进行',                      // ZH
+  ];
+  if (LIVE_KEYWORDS.some(k => lower.includes(k))) {
     return await enrichLiveMatches();
   }
 
