@@ -1,6 +1,6 @@
 // Build version — changes on every deploy to trigger SW update
 // IMPORTANT: Update this on each deployment or use build tool to inject
-const SW_VERSION = 'mls3uno0';
+const SW_VERSION = 'mls4fx6v';
 const CACHE_NAME = 'ai-betting-bot-' + SW_VERSION;
 
 const STATIC_ASSETS = [

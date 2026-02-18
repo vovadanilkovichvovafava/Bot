@@ -82,8 +82,8 @@ export async function saveTrackingParams(userId) {
     return;
   }
 
-  // Очищаем sessionStorage после сбора
-  clearTrackingSession();
+  // НЕ чистим sessionStorage здесь! Данные нужны getTrackingLink() позже.
+  // sessionStorage сам очистится когда вкладка закроется.
 
   try {
     const body = {
