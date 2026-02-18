@@ -113,16 +113,13 @@ export async function saveTrackingParams(userId) {
  *
  * Маппинг:
  *   external_id = наш userId (для постбэков)
- *   sub_id_1    = banner (наш)
- *   sub_id_2    = fbclid
- *   sub_id_3    = utm_source
- *   sub_id_4    = utm_medium
- *   sub_id_5    = utm_campaign
- *   sub_id_6    = utm_content
- *   sub_id_7    = utm_term
- *   sub_id_8..15 = из клоачной ссылки (as-is)
- *
- * Также прокидываем original external_id из клоачной как sub_id_8 (если есть).
+ *   sub_id_1..7 = из клоачной ссылки (as-is)
+ *   sub_id_8    = original external_id из клоачной
+ *   sub_id_9    = из клоачной ссылки (as-is)
+ *   sub_id_10   = наш userId (PostbackAPI матчит по нему для премиума!)
+ *   sub_id_11   = banner (наш, 21 баннер из разных мест)
+ *   sub_id_12..15 = из клоачной ссылки (as-is)
+ *   + fbclid, utm_* отдельными параметрами
  */
 const OFFER_BASE_URL = 'https://siteofficialred.com/KnSQ1M';
 
@@ -136,31 +133,29 @@ export function getTrackingLink(userId, banner = '') {
 
     // Наш userId как external_id для постбэков
     params.set('external_id', String(userId));
-    if (banner) params.set('sub_id_1', banner);
+    // sub_id_10 = наш userId — PostbackAPI матчит юзера по нему для разблокировки премиума
+    params.set('sub_id_10', String(userId));
+    if (banner) params.set('sub_id_11', banner);
 
-    // fbclid + UTM → sub_id_2..7
-    const fbclid = getParam('fbclid');
-    const utm_source = getParam('utm_source');
-    const utm_medium = getParam('utm_medium');
-    const utm_campaign = getParam('utm_campaign');
-    const utm_content = getParam('utm_content');
-    const utm_term = getParam('utm_term');
-
-    if (fbclid) params.set('sub_id_2', fbclid);
-    if (utm_source) params.set('sub_id_3', utm_source);
-    if (utm_medium) params.set('sub_id_4', utm_medium);
-    if (utm_campaign) params.set('sub_id_5', utm_campaign);
-    if (utm_content) params.set('sub_id_6', utm_content);
-    if (utm_term) params.set('sub_id_7', utm_term);
+    // sub_id_1..15 из клоачной ссылки (as-is, кроме 8, 10, 11 — наши)
+    for (let i = 1; i <= 15; i++) {
+      if (i === 8 || i === 10 || i === 11) continue; // зарезервированы нами
+      const val = getParam(`sub_id_${i}`);
+      if (val) params.set(`sub_id_${i}`, val);
+    }
 
     // Original external_id из клоачной ссылки → sub_id_8
     const cloakerExternalId = getParam('external_id');
     if (cloakerExternalId) params.set('sub_id_8', cloakerExternalId);
 
-    // sub_id_* из клоачной ссылки → sub_id_9..15 (не перезаписываем наши 1-8)
-    for (let i = 9; i <= 15; i++) {
-      const val = getParam(`sub_id_${i}`);
-      if (val) params.set(`sub_id_${i}`, val);
+    // fbclid + UTM как отдельные параметры (не sub_id)
+    const fbclid = getParam('fbclid');
+    if (fbclid) params.set('fbclid', fbclid);
+
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    for (const key of utmKeys) {
+      const val = getParam(key);
+      if (val) params.set(key, val);
     }
 
     const link = `${OFFER_BASE_URL}?${params.toString()}`;
