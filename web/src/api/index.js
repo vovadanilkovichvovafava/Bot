@@ -250,8 +250,8 @@ class ApiService {
   }
 
   // AI Chat (uses Claude AI via predictions/chat endpoint)
-  async aiChat(message, history = [], matchContext = null) {
-    const body = { message, history };
+  async aiChat(message, history = [], matchContext = null, locale = 'en') {
+    const body = { message, history, locale };
     if (matchContext) body.match_context = matchContext;
     return this.request('/predictions/chat', {
       method: 'POST',

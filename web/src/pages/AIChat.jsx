@@ -23,7 +23,7 @@ const SECONDARY_QUESTIONS = [
 
 export default function AIChat() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const [messages, setMessages] = useState([]);
@@ -182,7 +182,8 @@ export default function AIChat() {
       }
       setEnriching(false);
 
-      const data = await api.aiChat(textWithPrefs, history, matchContext);
+      const locale = i18n.language?.slice(0, 2) || 'en';
+      const data = await api.aiChat(textWithPrefs, history, matchContext, locale);
 
       // Refresh remaining count from server after each request
       if (!isPremium) {

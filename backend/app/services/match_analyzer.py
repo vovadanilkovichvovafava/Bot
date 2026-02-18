@@ -115,10 +115,19 @@ class MatchAnalyzer:
 
         return result
 
-    async def ai_chat(self, message: str, match_context: str = "", history: list = None) -> str:
+    LANGUAGE_NAMES = {
+        "en": "English", "es": "Spanish", "fr": "French",
+        "it": "Italian", "pl": "Polish", "de": "German",
+        "ru": "Russian", "pt": "Portuguese",
+    }
+
+    async def ai_chat(self, message: str, match_context: str = "", history: list = None, locale: str = "en") -> str:
         """AI chat for general football questions"""
         if not self.claude_client:
             return "AI assistant is not available. Please set CLAUDE_API_KEY."
+
+        lang = locale.lower()[:2] if locale else "en"
+        language = self.LANGUAGE_NAMES.get(lang, "English")
 
         system = (
             "You are an expert football/soccer analyst and betting advisor for the AI Betting Bot app. "
@@ -131,7 +140,7 @@ class MatchAnalyzer:
             "- Use **bold** for key points and team names.\n"
             "- Be honest about uncertainty. If you lack data, say so rather than fabricate.\n"
             "- Keep responses focused and well-structured. Use bullet points for clarity.\n"
-            "- Respond in the same language the user writes in.\n"
+            f"- ALWAYS respond in {language}, regardless of the language the user writes in.\n"
             "- NEVER add disclaimers, warnings, or reminders about responsible gambling. The app already handles this separately."
         )
 

@@ -156,6 +156,7 @@ class ChatRequest(BaseModel):
     message: str
     match_context: Optional[str] = None
     history: Optional[List[ChatMessage]] = None
+    locale: Optional[str] = "en"
 
 
 class ChatResponse(BaseModel):
@@ -216,7 +217,8 @@ async def ai_chat(
     # Call Claude AI
     analyzer = MatchAnalyzer()
     history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
-    response = await analyzer.ai_chat(req.message, req.match_context or "", history)
+    locale = (req.locale or "en").lower()[:2]
+    response = await analyzer.ai_chat(req.message, req.match_context or "", history, locale)
 
     # Increment counter AFTER successful response
     await increment_chat_usage(user_id, db)
