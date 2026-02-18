@@ -115,19 +115,25 @@ export default function App() {
   const location = useLocation();
   const prevLocationRef = useRef(null);
 
-  // Яндекс Метрика — SPA pageview tracking (defer:true в init, hit вручную)
+  // Яндекс Метрика — SPA pageview tracking
   useEffect(() => {
-    if (typeof window.ym === 'function') {
-      const url = location.pathname + location.search;
-      const referer = prevLocationRef.current
-        ? prevLocationRef.current.pathname + prevLocationRef.current.search
-        : document.referrer;
+    if (typeof window.ym !== 'function') {
+      prevLocationRef.current = location;
+      return;
+    }
+    const url = location.pathname + location.search;
+    const referer = prevLocationRef.current
+      ? prevLocationRef.current.pathname + prevLocationRef.current.search
+      : document.referrer;
+    // Delay to let React render the new page DOM before Metrika scans it
+    const timer = setTimeout(() => {
       window.ym(106847617, 'hit', url, {
         title: document.title,
         referer,
       });
-    }
+    }, 150);
     prevLocationRef.current = location;
+    return () => clearTimeout(timer);
   }, [location]);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе

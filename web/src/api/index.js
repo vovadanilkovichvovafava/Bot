@@ -41,19 +41,39 @@ class ApiService {
         try { refreshToken = localStorage.getItem('refresh_token'); } catch {}
         if (!refreshToken) return false;
 
-        const res = await fetch(`${API_BASE}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
+        // Retry up to 2 times on network errors (Railway restart, etc.)
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const res = await fetch(`${API_BASE}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: refreshToken }),
+            });
 
-        if (!res.ok) return false;
+            if (res.status === 401 || res.status === 403) return false; // Token truly invalid
+            if (!res.ok) {
+              // Server error — retry
+              if (attempt < 2) {
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                continue;
+              }
+              return false;
+            }
 
-        const data = await res.json();
-        this.setToken(data.access_token);
-        try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
-        return true;
-      } catch {
+            const data = await res.json();
+            this.setToken(data.access_token);
+            try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
+            try { localStorage.setItem('hasAccount', 'true'); } catch {}
+            return true;
+          } catch {
+            // Network error — retry
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+              continue;
+            }
+            return false;
+          }
+        }
         return false;
       } finally {
         this._refreshing = null;
@@ -145,6 +165,7 @@ class ApiService {
     });
     this.setToken(data.access_token);
     try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
+    try { localStorage.setItem('hasAccount', 'true'); } catch {}
     return data;
   }
 
@@ -157,6 +178,7 @@ class ApiService {
     });
     this.setToken(data.access_token);
     try { localStorage.setItem('refresh_token', data.refresh_token); } catch {}
+    try { localStorage.setItem('hasAccount', 'true'); } catch {}
     return data;
   }
 

@@ -65,7 +65,19 @@ export function AuthProvider({ children }) {
       // Sync predictions from backend to localStorage
       loadFromBackend().catch(() => {});
     } catch (e) {
-      api.logout();
+      // Token expired — try refresh before giving up
+      const refreshed = await api._tryRefresh();
+      if (refreshed) {
+        try {
+          const userData = await api.getMe();
+          setUser(userData);
+          loadFromBackend().catch(() => {});
+        } catch {
+          api.logout();
+        }
+      } else {
+        api.logout();
+      }
     } finally {
       setLoading(false);
     }
