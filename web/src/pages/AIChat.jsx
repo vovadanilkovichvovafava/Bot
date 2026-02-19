@@ -77,17 +77,11 @@ export default function AIChat() {
     }
   };
 
-  // Save chat history to localStorage (skip if last AI response was generic)
+  // Save chat history to localStorage
   const saveChatHistory = (msgs) => {
     try {
       const toSave = msgs.filter(m => m.id !== 'welcome');
       if (toSave.length > 0) {
-        const lastAi = [...toSave].reverse().find(m => m.role === 'assistant');
-        const isGeneric = lastAi?.content &&
-          (lastAi.content.includes("I don't have real-time") ||
-           lastAi.content.includes("cannot provide") ||
-           (lastAi.content.includes("I need") && lastAi.content.includes("Confirmation")));
-        if (isGeneric) return; // Don't cache generic fallback responses
         localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify({
           messages: toSave,
           timestamp: Date.now()
