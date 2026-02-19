@@ -125,6 +125,19 @@ function SplashScreen() {
   );
 }
 
+// Cache-bust: clear stale AI caches on new deploy
+// Increment CACHE_VERSION on every deploy that changes AI behavior
+(function cacheBust() {
+  const CACHE_VERSION = '2';
+  try {
+    if (localStorage.getItem('cache_version') !== CACHE_VERSION) {
+      localStorage.removeItem('ai_chat_history');
+      localStorage.removeItem('match_predictions_cache');
+      localStorage.setItem('cache_version', CACHE_VERSION);
+    }
+  } catch {}
+})();
+
 // Сохранить ВСЕ query params из URL в sessionStorage ДО любых редиректов
 // (external_id, sub_id_1..15, fbclid, utm_* — всё что пришло из клоачной ссылки)
 (function persistTrackingParams() {

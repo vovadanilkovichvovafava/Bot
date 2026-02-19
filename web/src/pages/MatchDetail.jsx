@@ -13,7 +13,7 @@ import FootballSpinner from '../components/FootballSpinner';
 
 const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
-const PREDICTION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
 const FREE_AI_LIMIT = 3;
 
@@ -313,8 +313,14 @@ export default function MatchDetail() {
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
       setPrediction(result);
 
-      // Cache the prediction for 24 hours
-      saveCachedPrediction(id, result);
+      // Cache only if AI returned a real analysis (not generic fallback)
+      const isGeneric = !data.response ||
+        data.response.includes("I don't have real-time") ||
+        data.response.includes("cannot provide") ||
+        data.response.includes("I need") && data.response.includes("Confirmation");
+      if (!isGeneric) {
+        saveCachedPrediction(id, result);
+      }
 
       // Auto-save prediction for history tracking
       try {

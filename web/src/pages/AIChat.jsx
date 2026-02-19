@@ -10,7 +10,7 @@ import useKeyboardHeight from '../hooks/useKeyboardHeight';
 import { useBottomNav } from '../context/BottomNavContext';
 
 const CHAT_HISTORY_KEY = 'ai_chat_history';
-const CHAT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+const CHAT_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
 // Secondary questions - shown on expand (keys for i18n)
 const SECONDARY_QUESTIONS = [
@@ -77,11 +77,17 @@ export default function AIChat() {
     }
   };
 
-  // Save chat history to localStorage
+  // Save chat history to localStorage (skip if last AI response was generic)
   const saveChatHistory = (msgs) => {
     try {
       const toSave = msgs.filter(m => m.id !== 'welcome');
       if (toSave.length > 0) {
+        const lastAi = [...toSave].reverse().find(m => m.role === 'assistant');
+        const isGeneric = lastAi?.content &&
+          (lastAi.content.includes("I don't have real-time") ||
+           lastAi.content.includes("cannot provide") ||
+           (lastAi.content.includes("I need") && lastAi.content.includes("Confirmation")));
+        if (isGeneric) return; // Don't cache generic fallback responses
         localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify({
           messages: toSave,
           timestamp: Date.now()
