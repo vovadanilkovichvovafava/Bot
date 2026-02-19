@@ -11,6 +11,36 @@ import './index.css';
 // Initialize i18n (auto-detects phone/browser language)
 import './i18n';
 
+// ONE-TIME forced cache clear after haiku model migration
+// Runs once per device, clears stale AI caches + forces SW update, then never again
+(function forceCacheClear() {
+  const FLAG = 'force_cache_clear_v1';
+  try {
+    if (localStorage.getItem(FLAG)) return; // Already done
+    // Clear stale AI response caches
+    localStorage.removeItem('ai_chat_history');
+    localStorage.removeItem('match_predictions_cache');
+    // Set flag so this never runs again
+    localStorage.setItem(FLAG, Date.now().toString());
+    // Unregister SW so fresh version loads
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+      }).then(() => {
+        // Delete all SW caches
+        if ('caches' in window) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+      }).finally(() => {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+    return; // Stop execution — page will reload
+  } catch {}
+})();
+
 // Fix: Chrome/Safari auto-translate modifies DOM (wraps text in <font> tags).
 // When React tries to update/remove those nodes during re-render, it crashes with
 // "Failed to execute 'removeChild'/'insertBefore' on 'Node'".
