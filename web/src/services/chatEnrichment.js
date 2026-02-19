@@ -579,10 +579,10 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
     return await enrichSingleTeam(homeTeam);
   }
 
-  // Strategy 1: Search fixtures day-by-day for the next 7 days
+  // Strategy 1: Search fixtures day-by-day (yesterday + today + 6 days ahead)
   let enriched = null;
   try {
-    for (let i = 0; i < 7; i++) {
+    for (let i = -1; i < 7; i++) {
       const date = new Date(Date.now() + i * 86400000).toISOString().split('T')[0];
       enriched = await footballApi.getMatchEnrichedData(homeTeam, awayTeam, date);
       if (enriched) break;
