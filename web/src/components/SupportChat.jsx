@@ -28,10 +28,50 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const navigate = useNavigate();
   const { advertiser, trackClick } = useSafeAdvertiser();
   const { user } = useSafeAuth();
-  const [messages, setMessages] = useState([]);
-  const [chatHistory, setChatHistory] = useState([]); // For API context
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID?.() || Date.now().toString());
+  // Persist chat in localStorage so history survives close/reopen
+  const storageKey = guest ? 'support_chat_guest' : 'support_chat_user';
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Restore Date objects from strings
+        return parsed.messages.map(m => ({ ...m, time: new Date(m.time) }));
+      }
+    } catch {}
+    return [];
+  });
+  const [chatHistory, setChatHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return JSON.parse(saved).chatHistory || [];
+    } catch {}
+    return [];
+  });
+  const [sessionId, setSessionId] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const id = JSON.parse(saved).sessionId;
+        if (id) return id;
+      }
+    } catch {}
+    return crypto.randomUUID?.() || Date.now().toString();
+  });
   const [isPro, setIsPro] = useState(false);
+
+  // Save chat state to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          messages,
+          chatHistory,
+          sessionId,
+        }));
+      } catch {}
+    }
+  }, [messages, chatHistory, sessionId, storageKey]);
   const [input, setInput] = useState(initialMessage);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
@@ -46,7 +86,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const locale = i18n.language?.slice(0, 2) || 'en';
   const agentName = AGENT_NAMES[locale] || 'Alex';
 
-  // Welcome message on first open
+  // Welcome message on first open (only if no saved history)
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeText = guest
@@ -59,7 +99,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         time: new Date(),
       }]);
     }
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom
   useEffect(() => {
