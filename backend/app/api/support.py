@@ -605,7 +605,7 @@ async def support_chat(
 
         logger.info(f"Support chat: user={user_id}, lang={lang}, pro={is_pro}, msgs={len(messages)}")
         response = client.messages.create(
-            model="claude-3-5-haiku-latest",
+            model="claude-haiku-4-5-20251001",
             max_tokens=350,
             system=system_prompt,
             messages=messages,
@@ -750,7 +750,7 @@ async def guest_support_chat(
 
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-3-5-haiku-latest",
+            model="claude-haiku-4-5-20251001",
             max_tokens=300,
             system=system_prompt,
             messages=messages,
