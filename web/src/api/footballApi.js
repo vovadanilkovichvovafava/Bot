@@ -140,6 +140,16 @@ class FootballApiService {
     return this.directRequest('/fixtures', { league: leagueId, next: nextCount });
   }
 
+  async getFixturesByTeam(teamId, season, nextCount = 10) {
+    // Get upcoming/recent fixtures for a specific team
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/fixtures/team/${teamId}?season=${season}&next=${nextCount}`);
+      }
+    } catch {}
+    return this.directRequest('/fixtures', { team: teamId, season, next: nextCount });
+  }
+
   async getFixture(fixtureId) {
     try {
       if (this.useBackend) {
