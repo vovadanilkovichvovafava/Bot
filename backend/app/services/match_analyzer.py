@@ -169,7 +169,7 @@ class MatchAnalyzer:
         try:
             logger.info(f"Calling Claude API with {len(messages)} messages")
             response = self.claude_client.messages.create(
-                model="claude-3-5-haiku-latest",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=1500,
                 system=system,
                 messages=messages,
@@ -261,7 +261,7 @@ Be realistic with confidence - rarely above 80%. Only respond with JSON."""
 
         try:
             response = self.claude_client.messages.create(
-                model="claude-3-5-haiku-latest",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=500,
                 messages=[{"role": "user", "content": prompt}],
             )
