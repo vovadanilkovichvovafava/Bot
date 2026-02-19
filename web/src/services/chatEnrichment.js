@@ -5,10 +5,13 @@
  */
 import footballApi from '../api/footballApi';
 
-// Football seasons start in August — before August, current season = lastYear
-function getCurrentSeason() {
-  const now = new Date();
-  return now.getMonth() < 7 ? now.getFullYear() - 1 : now.getFullYear();
+// Get possible seasons — different leagues start at different times
+// European leagues: Aug-May (2025/2026 season = 2025)
+// Argentine/South American leagues: Jan-Dec (2026 season = 2026)
+// Returns [currentYear, currentYear-1] to try both
+function getPossibleSeasons() {
+  const year = new Date().getFullYear();
+  return [year, year - 1];
 }
 
 // Common team name patterns (partial matches)
@@ -508,6 +511,11 @@ export async function enrichMessage(message) {
     return await enrichLiveMatches();
   }
 
+  // 7. Last resort: try to find team names in the message via API search
+  // This catches queries like "Defensa Y Justicia Belgrano" without "vs"
+  const fallback = await fallbackTeamSearch(message);
+  if (fallback) return fallback;
+
   return null;
 }
 
@@ -569,6 +577,91 @@ function cleanTeamName(name) {
 }
 
 /**
+ * Last-resort fallback: extract potential team names from message and search API.
+ * Handles messages like "Defensa Y Justicia Belgrano Cordoba" without "vs" separator.
+ * Also handles "analyse inter milan", "what about juventus", etc.
+ */
+async function fallbackTeamSearch(message) {
+  // Strip common noise words that aren't team names
+  const noise = /\b(analyze|analyse|predict|prediction|prognoz|прогноз|анализ|ставка|bet|odds|match|матч|partita|partido|game|who|will|win|score|how|what|about|the|and|for|with|quale|quale|come|chi|vince|risultato|scommessa|проанализируй|кто|выиграет|счёт|счет)\b/gi;
+  const cleaned = message.replace(noise, ' ').replace(/\s+/g, ' ').trim();
+
+  if (cleaned.length < 3) return null;
+
+  // Split into potential "chunks" — try to find 1-2 team names
+  // Strategy: search the whole cleaned message first, then try splitting by common separators
+  const chunks = [];
+
+  // Try common separators that users might use
+  const separators = [' - ', ' – ', ' — ', ' , ', '  '];
+  let splitFound = false;
+  for (const sep of separators) {
+    if (cleaned.includes(sep)) {
+      const parts = cleaned.split(sep).map(s => s.trim()).filter(s => s.length > 2);
+      if (parts.length >= 2) {
+        chunks.push(...parts.slice(0, 2));
+        splitFound = true;
+        break;
+      }
+    }
+  }
+
+  // If no separator found, try searching the whole string
+  // The API might match "Defensa Y Justicia" from "Defensa Y Justicia Belgrano Cordoba"
+  if (!splitFound) {
+    chunks.push(cleaned);
+  }
+
+  // Search for teams via API
+  const foundTeams = [];
+  for (const chunk of chunks) {
+    try {
+      const results = await footballApi.searchTeams(chunk);
+      if (results?.length > 0) {
+        // Take the best match
+        const best = results[0];
+        // Avoid duplicates
+        if (!foundTeams.find(t => t.id === best.id)) {
+          foundTeams.push(best);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // If only one chunk (no separator), try a second search with remaining text
+  if (!splitFound && foundTeams.length === 1) {
+    const firstTeamName = foundTeams[0].name.toLowerCase();
+    // Remove the found team name from the message to find the second team
+    let remaining = cleaned.toLowerCase();
+    // Remove words that match the team name
+    const teamWords = firstTeamName.split(/\s+/);
+    for (const w of teamWords) {
+      remaining = remaining.replace(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'), '');
+    }
+    remaining = remaining.replace(/\s+/g, ' ').trim();
+
+    if (remaining.length > 2) {
+      try {
+        const results2 = await footballApi.searchTeams(remaining);
+        if (results2?.length > 0 && results2[0].id !== foundTeams[0].id) {
+          foundTeams.push(results2[0]);
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (foundTeams.length >= 2) {
+    // Found two teams — search for their match
+    return await enrichMatchQuery(foundTeams[0].name, foundTeams[1].name);
+  } else if (foundTeams.length === 1) {
+    // Found one team — show upcoming
+    return await enrichSingleTeam(foundTeams[0].name);
+  }
+
+  return null;
+}
+
+/**
  * Fetch enriched data for a specific match.
  * Searches across 7 days (today + 6 days ahead) to find the fixture.
  * Also handles single team queries (away=null).
@@ -597,8 +690,12 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
       const results = await footballApi.searchTeam(homeTeam);
       if (results?.length > 0) {
         const teamId = results[0].team.id;
-        const season = getCurrentSeason();
-        const fixtures = await footballApi.getFixturesByTeam(teamId, season, 10);
+        // Try both seasons (European vs South American leagues)
+        let fixtures = [];
+        for (const season of getPossibleSeasons()) {
+          fixtures = await footballApi.getFixturesByTeam(teamId, season, 10);
+          if (fixtures?.length > 0) break;
+        }
         if (fixtures?.length > 0) {
           // Try to find the specific opponent
           const normalize = n => (n || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
@@ -820,8 +917,12 @@ async function enrichSingleTeam(teamName) {
 
     const team = results[0].team;
     const teamId = team.id;
-    const season = getCurrentSeason();
-    const fixtures = await footballApi.getFixturesByTeam(teamId, season, 5);
+    // Try both seasons (European vs South American leagues)
+    let fixtures = [];
+    for (const season of getPossibleSeasons()) {
+      fixtures = await footballApi.getFixturesByTeam(teamId, season, 5);
+      if (fixtures?.length) break;
+    }
     if (!fixtures?.length) return `No upcoming fixtures found for ${team.name}.`;
 
     return buildUpcomingContext(team.name, fixtures);
