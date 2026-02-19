@@ -5,6 +5,12 @@
  */
 import footballApi from '../api/footballApi';
 
+// Football seasons start in August — before August, current season = lastYear
+function getCurrentSeason() {
+  const now = new Date();
+  return now.getMonth() < 7 ? now.getFullYear() - 1 : now.getFullYear();
+}
+
 // Common team name patterns (partial matches)
 const LEAGUE_KEYWORDS = {
   // Premier League (ID: 39)
@@ -591,7 +597,7 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
       const results = await footballApi.searchTeam(homeTeam);
       if (results?.length > 0) {
         const teamId = results[0].team.id;
-        const season = new Date().getFullYear();
+        const season = getCurrentSeason();
         const fixtures = await footballApi.getFixturesByTeam(teamId, season, 10);
         if (fixtures?.length > 0) {
           // Try to find the specific opponent
@@ -814,7 +820,7 @@ async function enrichSingleTeam(teamName) {
 
     const team = results[0].team;
     const teamId = team.id;
-    const season = new Date().getFullYear();
+    const season = getCurrentSeason();
     const fixtures = await footballApi.getFixturesByTeam(teamId, season, 5);
     if (!fixtures?.length) return `No upcoming fixtures found for ${team.name}.`;
 
