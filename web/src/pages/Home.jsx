@@ -582,34 +582,56 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
             {isPremium && bet ? (
               <>
                 {isLive && smartBet?.score ? (
-                  <span className="text-white font-black text-xl mb-1 drop-shadow-lg">{smartBet.score.replace('-', ' : ')}</span>
+                  <span className="text-white font-black text-2xl mb-1.5 drop-shadow-lg tracking-wider">{smartBet.score.replace('-', ' : ')}</span>
                 ) : (
                   <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
                 )}
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 mb-2 border border-white/30">
-                  <p className="font-black text-sm leading-tight text-center drop-shadow-lg">
-                    {bet.market}
-                  </p>
-                  <div className="flex items-center justify-center gap-2 mt-0.5">
-                    <span className="text-yellow-300 font-bold text-xs">@ {bet.odds}</span>
-                    <span className="text-white/70 text-[10px]">AI: {bet.confidence}%</span>
+                {/* Market name */}
+                <p className="font-black text-sm leading-tight text-center drop-shadow-lg mb-1.5">
+                  {bet.market}
+                </p>
+                {/* Odds badge — big and bright */}
+                <div className="bg-yellow-400 text-gray-900 font-black text-lg px-4 py-1 rounded-xl mb-1.5 shadow-lg shadow-yellow-400/40 flex items-center gap-1">
+                  <span className="text-xs font-bold opacity-70">@</span> {bet.odds}
+                </div>
+                {/* AI confidence bar */}
+                <div className="w-full max-w-[140px] mb-2">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">AI</span>
+                    <span className="text-xs font-black text-white drop-shadow">{bet.confidence}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${bet.confidence}%`,
+                        background: bet.confidence >= 70 ? 'linear-gradient(90deg, #34d399, #10b981)' : bet.confidence >= 50 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : 'linear-gradient(90deg, #f87171, #ef4444)',
+                      }}
+                    />
                   </div>
                 </div>
-                <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
-                  {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-                  </svg>
+                {/* CTA button with glow + pulse */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-400 rounded-xl blur-md opacity-60 animate-pulse"/>
+                  <div className="relative bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-xl flex items-center gap-1.5 border border-emerald-300/50">
+                    {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    </svg>
+                  </div>
                 </div>
               </>
             ) : isPremium ? (
               <>
                 <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
-                <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
-                  {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-                  </svg>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-400 rounded-xl blur-md opacity-60 animate-pulse"/>
+                  <div className="relative bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-xl flex items-center gap-1.5 border border-emerald-300/50">
+                    {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    </svg>
+                  </div>
                 </div>
               </>
             ) : (
