@@ -550,10 +550,10 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 6s infinite'}}/>
 
         {/* LIVE badge for PRO */}
-        {isPremium && isLive && smartBet?.minute && (
-          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-red-500 px-2.5 py-1 rounded-lg">
+        {isPremium && isLive && (
+          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-red-500/90 px-2.5 py-1 rounded-lg shadow-lg shadow-red-500/40">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse"/>
-            <span className="text-[11px] font-bold text-white tracking-wide">LIVE {smartBet.minute}'</span>
+            <span className="text-[11px] font-bold text-white tracking-wide">LIVE</span>
           </div>
         )}
 
@@ -586,29 +586,15 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
                 ) : (
                   <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
                 )}
-                {/* Market name */}
-                <p className="font-black text-sm leading-tight text-center drop-shadow-lg mb-1.5">
-                  {bet.market}
-                </p>
-                {/* Odds badge — big and bright */}
-                <div className="bg-yellow-400 text-gray-900 font-black text-lg px-4 py-1 rounded-xl mb-1.5 shadow-lg shadow-yellow-400/40 flex items-center gap-1">
-                  <span className="text-xs font-bold opacity-70">@</span> {bet.odds}
+                {/* Market + Odds + AI in one compact block */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-black text-sm drop-shadow-lg">{bet.market}</span>
+                  <span className="bg-yellow-400 text-gray-900 font-black text-base px-2.5 py-0.5 rounded-lg shadow-lg shadow-yellow-400/50">
+                    {bet.odds}
+                  </span>
                 </div>
-                {/* AI confidence bar */}
-                <div className="w-full max-w-[140px] mb-2">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">AI</span>
-                    <span className="text-xs font-black text-white drop-shadow">{bet.confidence}%</span>
-                  </div>
-                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${bet.confidence}%`,
-                        background: bet.confidence >= 70 ? 'linear-gradient(90deg, #34d399, #10b981)' : bet.confidence >= 50 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : 'linear-gradient(90deg, #f87171, #ef4444)',
-                      }}
-                    />
-                  </div>
+                <div className="bg-emerald-400/20 border border-emerald-300/50 rounded-lg px-3 py-1 mb-2 backdrop-blur-sm">
+                  <span className="font-black text-sm text-emerald-300 drop-shadow">🤖 AI: {bet.confidence}%</span>
                 </div>
                 {/* CTA button with glow + pulse */}
                 <div className="relative">
