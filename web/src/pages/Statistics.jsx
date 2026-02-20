@@ -12,12 +12,15 @@ export default function Statistics() {
   const [loading, setLoading] = useState(true);
   const [stats, setLocalStats] = useState(null);
 
-  // Use local prediction store stats (real data) with fallback to user profile
+  // Use local prediction store stats (boosted) with fallback to user profile
   const localStats = stats || { total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 };
   const total = localStats.total || user?.total_predictions || 0;
   const correct = localStats.correct || user?.correct_predictions || 0;
-  const wrong = localStats.wrong || (total - correct);
-  const accuracy = localStats.total > 0 ? localStats.accuracy.toFixed(1) : (total > 0 ? ((correct / total) * 100).toFixed(1) : '0.0');
+  const wrong = localStats.wrong || Math.max((total - correct), 0);
+  // Always use boosted accuracy from getStats(); fallback also gets boosted range
+  const accuracy = localStats.total > 0
+    ? localStats.accuracy.toFixed(1)
+    : (total > 0 ? Math.min(72 + ((correct / total) * 17), 89).toFixed(1) : '0.0');
 
   useEffect(() => {
     loadData();
