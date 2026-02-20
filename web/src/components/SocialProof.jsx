@@ -46,45 +46,84 @@ function getRandomPerson(locale) {
   return names[Math.floor(Math.random() * names.length)];
 }
 
-// --- Animated counter hook ---
-function useAnimatedNumber(target, duration = 1200) {
-  const [value, setValue] = useState(0);
-  const ref = useRef(null);
+// --- Smooth animated counter hook ---
+// Smoothly transitions from current displayed value to new target
+function useAnimatedNumber(target, duration = 1500) {
+  const [display, setDisplay] = useState(target);
+  const fromRef = useRef(target);
+  const rafRef = useRef(null);
 
   useEffect(() => {
-    const start = 0;
+    const from = fromRef.current;
+    if (from === target) return;
     const startTime = performance.now();
+
     const step = (now) => {
       const progress = Math.min((now - startTime) / duration, 1);
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(start + (target - start) * eased));
-      if (progress < 1) ref.current = requestAnimationFrame(step);
+      // ease-in-out sine for ultra-smooth feel
+      const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
+      const current = Math.round(from + (target - from) * eased);
+      setDisplay(current);
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        fromRef.current = target;
+      }
     };
-    ref.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(ref.current);
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [target, duration]);
 
-  return value;
+  return display;
+}
+
+// --- Smooth online counter that ticks naturally ---
+function useOnlineCount(base) {
+  const [count, setCount] = useState(base);
+  const tickRef = useRef(null);
+
+  useEffect(() => {
+    let current = base;
+    let ticksUntilDrop = 15 + Math.floor(Math.random() * 10); // ~20 ticks before a drop
+
+    const tick = () => {
+      ticksUntilDrop--;
+      if (ticksUntilDrop <= 0) {
+        // Occasional small drop (1-3)
+        current -= (1 + Math.floor(Math.random() * 3));
+        ticksUntilDrop = 12 + Math.floor(Math.random() * 15);
+      } else {
+        // Usually go up by 1, sometimes by 2
+        current += Math.random() < 0.7 ? 1 : 2;
+      }
+      // Keep in a reasonable band around base ±50
+      if (current > base + 50) current = base + 45;
+      if (current < base - 30) current = base - 20;
+      setCount(current);
+
+      // Next tick in 15-25 seconds
+      tickRef.current = setTimeout(tick, 15000 + Math.random() * 10000);
+    };
+
+    // First tick after 20 seconds
+    tickRef.current = setTimeout(tick, 20000);
+    return () => clearTimeout(tickRef.current);
+  }, [base]);
+
+  return count;
 }
 
 // --- Live Stats Bar ---
 export function LiveStatsBar() {
   const { t } = useTranslation();
-  const [online, setOnline] = useState(BASE_ONLINE);
-  const [wins] = useState(BASE_WINS);
 
-  // Fluctuate online count slightly
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setOnline(prev => prev + Math.floor(Math.random() * 11) - 5);
-    }, 4000);
-    return () => clearInterval(iv);
-  }, []);
+  // Online count: ticks every 15-25s, smoothly animated over 1.5s
+  const onlineTarget = useOnlineCount(BASE_ONLINE);
+  const animOnline = useAnimatedNumber(onlineTarget, 1500);
 
-  const animOnline = useAnimatedNumber(online);
-  const animWins = useAnimatedNumber(wins);
-  const animAccuracy = useAnimatedNumber(BASE_ACCURACY);
+  // Wins & accuracy: animate once on mount then stay static
+  const animWins = useAnimatedNumber(BASE_WINS, 2000);
+  const animAccuracy = useAnimatedNumber(BASE_ACCURACY, 2000);
 
   const formatK = (n) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n;
 
@@ -124,7 +163,7 @@ export function LiveStatsBar() {
 // --- Joined Today Badge ---
 export function JoinedTodayBadge() {
   const { t } = useTranslation();
-  const count = useAnimatedNumber(BASE_JOINED);
+  const count = useAnimatedNumber(BASE_JOINED, 2000);
 
   return (
     <div className="flex items-center justify-center gap-2 bg-green-500/15 border border-green-500/20 rounded-full px-4 py-1.5 mx-auto max-w-fit">
