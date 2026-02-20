@@ -299,13 +299,18 @@ async def save_prediction(
     db: AsyncSession = Depends(get_db),
 ):
     """Save a prediction to the database"""
+    # Strip timezone info — DB uses TIMESTAMP WITHOUT TIME ZONE
+    match_date = req.match_date
+    if match_date and match_date.tzinfo is not None:
+        match_date = match_date.replace(tzinfo=None)
+
     prediction = Prediction(
         user_id=current_user["user_id"],
         match_id=str(req.match_id),
         home_team=req.home_team,
         away_team=req.away_team,
         league=req.league,
-        match_date=req.match_date,
+        match_date=match_date,
         bet_type=req.bet_type or "",
         predicted_odds=req.predicted_odds,
         confidence=req.confidence or 0.0,
