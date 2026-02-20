@@ -101,6 +101,21 @@ async def init_db():
         except Exception:
             pass
 
+        # One-time: activate PRO for User_8787 (manual request)
+        try:
+            from datetime import datetime, timedelta
+            premium_until = datetime.utcnow() + timedelta(days=30)
+            result = await conn.execute(
+                text("UPDATE users SET is_premium = true, premium_until = :until WHERE username = 'User_8787' AND (is_premium = false OR is_premium IS NULL) RETURNING id, username")
+                , {"until": premium_until}
+            )
+            row = result.fetchone()
+            if row:
+                import logging
+                logging.getLogger(__name__).info(f"PRO activated for User_8787 (id={row[0]}) until {premium_until}")
+        except Exception:
+            pass
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting database session"""
