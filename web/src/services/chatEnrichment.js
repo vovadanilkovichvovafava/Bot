@@ -98,6 +98,69 @@ const LEAGUE_KEYWORDS = {
   // Copa Libertadores (ID: 13)
   'libertadores': 13, 'copa libertadores': 13, 'либертадорес': 13,
 
+  // Copa Sudamericana (ID: 11)
+  'sudamericana': 11, 'copa sudamericana': 11, 'судамерикана': 11,
+
+  // Brazilian Serie A (ID: 71)
+  'brasileirao': 71, 'brasileirão': 71, 'serie a brazil': 71, 'brazilian league': 71,
+  'бразильская серия а': 71, 'бразильская лига': 71, 'бразилейрао': 71,
+  'campeonato brasileiro': 71,
+
+  // Argentine Primera Division (ID: 128)
+  'primera division argentina': 128, 'liga argentina': 128, 'аргентинская лига': 128,
+  'argentine league': 128, 'superliga argentina': 128, 'суперлига аргентины': 128,
+  'liga profesional': 128,
+
+  // Scottish Premiership (ID: 179)
+  'scottish premiership': 179, 'scottish league': 179, 'шотландская лига': 179,
+  'чемпионат шотландии': 179,
+
+  // Belgian Pro League (ID: 144)
+  'belgian league': 144, 'jupiler pro league': 144, 'belgian pro league': 144,
+  'бельгийская лига': 144, 'чемпионат бельгии': 144,
+
+  // Swiss Super League (ID: 207)
+  'swiss super league': 207, 'швейцарская лига': 207, 'чемпионат швейцарии': 207,
+
+  // Austrian Bundesliga (ID: 218)
+  'austrian bundesliga': 218, 'австрийская лига': 218, 'чемпионат австрии': 218,
+
+  // Greek Super League (ID: 197)
+  'greek super league': 197, 'греческая лига': 197, 'чемпионат греции': 197,
+  'суперлига греции': 197,
+
+  // Czech First League (ID: 345)
+  'czech league': 345, 'чешская лига': 345, 'чемпионат чехии': 345,
+
+  // === DOMESTIC CUPS ===
+
+  // FA Cup (ID: 45)
+  'fa cup': 45, 'кубок англии': 45, 'coppa d\'inghilterra': 45, 'copa de inglaterra': 45,
+  'coupe d\'angleterre': 45, 'dfb pokal england': 45,
+
+  // EFL Cup / Carabao Cup (ID: 48)
+  'carabao cup': 48, 'efl cup': 48, 'league cup': 48, 'кубок лиги': 48,
+
+  // Copa del Rey (ID: 143)
+  'copa del rey': 143, 'кубок короля': 143, 'кубок испании': 143,
+  'coppa del re': 143, 'coupe du roi': 143,
+
+  // DFB-Pokal (ID: 81)
+  'dfb pokal': 81, 'dfb-pokal': 81, 'кубок германии': 81,
+  'coppa di germania': 81, 'copa de alemania': 81, 'coupe d\'allemagne': 81,
+
+  // Coppa Italia (ID: 137)
+  'coppa italia': 137, 'кубок италии': 137, 'italian cup': 137,
+  'copa de italia': 137, 'coupe d\'italie': 137,
+
+  // Coupe de France (ID: 66)
+  'coupe de france': 66, 'кубок франции': 66, 'french cup': 66,
+  'coppa di francia': 66, 'copa de francia': 66,
+
+  // UEFA Nations League (ID: 5)
+  'nations league': 5, 'лига наций': 5, 'лига націй': 5,
+  'ligue des nations': 5, 'liga de naciones': 5, 'nazioni league': 5,
+
   // World Cup (ID: 1)
   'world cup': 1, 'чемпионат мира': 1, 'мундиаль': 1, 'copa del mundo': 1,
   'coupe du monde': 1, 'weltmeisterschaft': 1, 'dünya kupası': 1,
@@ -107,6 +170,21 @@ const LEAGUE_KEYWORDS = {
   'euro': 4, 'european championship': 4, 'чемпионат европы': 4, 'евро': 4,
   'eurocopa': 4, 'europameisterschaft': 4, 'avrupa şampiyonası': 4,
   'كأس أوروبا': 4, '欧洲杯': 4, 'ユーロ': 4,
+
+  // Club World Cup (ID: 15)
+  'club world cup': 15, 'клубный чемпионат мира': 15, 'кчм': 15,
+  'mundial de clubes': 15, 'coupe du monde des clubs': 15,
+  'mondiale per club': 15, 'klub-wm': 15,
+
+  // Copa America (ID: 9)
+  'copa america': 9, 'copa américa': 9, 'кубок америки': 9, 'копа америка': 9,
+
+  // Africa Cup of Nations (ID: 6)
+  'africa cup': 6, 'afcon': 6, 'кубок африки': 6, 'can': 6,
+  'coupe d\'afrique': 6, 'copa de africa': 6, 'coppa d\'africa': 6,
+
+  // AFC Asian Cup (ID: 7)
+  'asian cup': 7, 'кубок азии': 7, 'afc asian cup': 7,
 };
 
 // Match query patterns — with "vs" separator (multilingual)
@@ -117,68 +195,282 @@ const MATCH_PATTERNS_VS = [
 
 // Well-known team names for detection without "vs" separator
 const KNOWN_TEAMS = [
-  'manchester united', 'man united', 'man utd', 'манчестер юнайтед', 'ман юнайтед',
-  'manchester city', 'man city', 'манчестер сити', 'ман сити',
-  'arsenal', 'арсенал',
-  'chelsea', 'челси',
-  'liverpool', 'ливерпуль',
+  // === PREMIER LEAGUE (England) ===
+  'manchester united', 'man united', 'man utd', 'манчестер юнайтед', 'ман юнайтед', 'red devils',
+  'manchester city', 'man city', 'манчестер сити', 'ман сити', 'citizens',
+  'arsenal', 'арсенал', 'gunners', 'канониры',
+  'chelsea', 'челси', 'the blues',
+  'liverpool', 'ливерпуль', 'the reds',
   'tottenham', 'tottenham hotspur', 'spurs', 'тоттенхем', 'тоттенхэм', 'тотнем',
-  'newcastle', 'newcastle united', 'ньюкасл',
+  'newcastle', 'newcastle united', 'ньюкасл', 'magpies',
   'aston villa', 'астон вилла',
-  'west ham', 'вест хэм', 'вест хам',
+  'west ham', 'вест хэм', 'вест хам', 'hammers',
   'brighton', 'брайтон',
-  'crystal palace', 'кристал пэлас',
-  'everton', 'эвертон',
+  'crystal palace', 'кристал пэлас', 'кристал пелас',
+  'everton', 'эвертон', 'toffees',
   'fulham', 'фулхэм', 'фулхем',
-  'wolves', 'wolverhampton', 'вулверхэмптон',
+  'wolves', 'wolverhampton', 'вулверхэмптон', 'вулвз',
   'bournemouth', 'борнмут',
-  'nottingham forest', 'ноттингем',
+  'nottingham forest', 'ноттингем', 'ноттингем форест',
   'brentford', 'брентфорд',
-  'burnley', 'бёрнли',
+  'burnley', 'бёрнли', 'бернли',
   'luton', 'лутон',
-  'sheffield united', 'шеффилд',
-  'real madrid', 'реал мадрид', 'реал',
-  'barcelona', 'барселона', 'барса',
-  'atletico madrid', 'атлетико',
+  'sheffield united', 'шеффилд', 'шеффилд юнайтед',
+  'leicester', 'leicester city', 'лестер',
+  'ipswich', 'ipswich town', 'ипсвич',
+  'southampton', 'саутгемптон',
+  'leeds', 'leeds united', 'лидс',
+  'west brom', 'west bromwich', 'вест бром',
+  'sunderland', 'сандерленд',
+
+  // === LA LIGA (Spain) ===
+  'real madrid', 'реал мадрид', 'реал', 'los blancos', 'бланкос',
+  'barcelona', 'барселона', 'барса', 'blaugrana', 'блауграна',
+  'atletico madrid', 'атлетико', 'атлетико мадрид',
   'sevilla', 'севилья',
-  'real sociedad', 'сосьедад',
-  'villarreal', 'вильярреал',
-  'athletic bilbao', 'атлетик бильбао',
+  'real sociedad', 'сосьедад', 'реал сосьедад',
+  'villarreal', 'вильярреал', 'yellow submarine',
+  'athletic bilbao', 'атлетик бильбао', 'атлетик',
   'real betis', 'бетис',
   'valencia', 'валенсия',
-  'bayern munich', 'bayern', 'бавария',
-  'borussia dortmund', 'dortmund', 'дортмунд', 'боруссия',
-  'rb leipzig', 'лейпциг',
+  'girona', 'жирона',
+  'celta vigo', 'сельта', 'сельта виго',
+  'getafe', 'хетафе',
+  'mallorca', 'мальорка',
+  'osasuna', 'осасуна',
+  'las palmas', 'лас пальмас',
+  'rayo vallecano', 'райо вальекано',
+  'alaves', 'алавес',
+  'espanyol', 'эспаньол',
+  'leganes', 'леганес',
+  'valladolid', 'вальядолид',
+  'cadiz', 'кадис',
+  'almeria', 'альмерия',
+
+  // === BUNDESLIGA (Germany) ===
+  'bayern munich', 'bayern', 'бавария', 'bayern münchen', 'die bayern',
+  'borussia dortmund', 'dortmund', 'дортмунд', 'боруссия дортмунд', 'bvb',
+  'rb leipzig', 'лейпциг', 'рб лейпциг',
   'bayer leverkusen', 'leverkusen', 'леверкузен',
-  'juventus', 'ювентус',
-  'inter milan', 'inter', 'интер',
-  'ac milan', 'milan', 'милан',
+  'eintracht frankfurt', 'frankfurt', 'франкфурт', 'айнтрахт',
+  'borussia monchengladbach', 'gladbach', 'мёнхенгладбах', 'гладбах',
+  'wolfsburg', 'вольфсбург',
+  'freiburg', 'фрайбург',
+  'hoffenheim', 'хоффенхайм',
+  'union berlin', 'унион берлин',
+  'werder bremen', 'bremen', 'бремен', 'вердер',
+  'augsburg', 'аугсбург',
+  'stuttgart', 'штутгарт',
+  'mainz', 'майнц',
+  'koln', 'cologne', 'кёльн', 'кельн',
+  'heidenheim', 'хайденхайм',
+  'darmstadt', 'дармштадт',
+  'st pauli', 'санкт-паули',
+  'holstein kiel', 'киль',
+
+  // === SERIE A (Italy) ===
+  'juventus', 'ювентус', 'juve', 'юве', 'la vecchia signora',
+  'inter milan', 'inter', 'интер', 'nerazzurri', 'нерадзурри',
+  'ac milan', 'milan', 'милан', 'rossoneri', 'россонери',
   'napoli', 'наполи',
-  'roma', 'рома',
+  'roma', 'рома', 'as roma', 'ас рома',
   'lazio', 'лацио',
   'atalanta', 'аталанта',
-  'fiorentina', 'фиорентина',
+  'fiorentina', 'фиорентина', 'viola',
+  'torino', 'торино',
+  'bologna', 'болонья',
+  'monza', 'монца',
+  'udinese', 'удинезе',
+  'sassuolo', 'сассуоло',
+  'empoli', 'эмполи',
+  'cagliari', 'кальяри',
+  'genoa', 'дженоа',
+  'lecce', 'лечче',
+  'verona', 'hellas verona', 'верона',
+  'frosinone', 'фрозиноне',
+  'salernitana', 'салернитана',
+  'parma', 'парма',
+  'como', 'комо',
+  'venezia', 'венеция',
+
+  // === LIGUE 1 (France) ===
   'psg', 'paris saint-germain', 'paris saint germain', 'пари сен-жермен', 'псж',
-  'marseille', 'марсель',
-  'lyon', 'лион',
-  'monaco', 'монако',
+  'marseille', 'марсель', 'olympique marseille', 'om',
+  'lyon', 'лион', 'olympique lyonnais', 'ol',
+  'monaco', 'монако', 'as monaco',
   'lille', 'лилль',
+  'nice', 'ницца',
+  'lens', 'ланс',
+  'rennes', 'ренн', 'ренне',
+  'strasbourg', 'страсбург',
+  'toulouse', 'тулуза',
+  'montpellier', 'монпелье',
+  'nantes', 'нант',
+  'reims', 'реймс',
+  'brest', 'брест',
+  'le havre', 'ле авр',
+  'clermont', 'клермон',
+  'lorient', 'лорьян',
+  'metz', 'мец',
+  'auxerre', 'осер',
+  'angers', 'анже',
+  'saint-etienne', 'сент-этьен',
+
+  // === PRIMEIRA LIGA (Portugal) ===
   'benfica', 'бенфика',
-  'porto', 'порту',
-  'sporting', 'спортинг',
+  'porto', 'порту', 'fc porto',
+  'sporting', 'спортинг', 'sporting cp',
+  'braga', 'брага',
+  'vitoria guimaraes', 'витория',
+
+  // === EREDIVISIE (Netherlands) ===
   'ajax', 'аякс',
-  'psv', 'псв',
+  'psv', 'псв', 'psv eindhoven',
   'feyenoord', 'фейеноорд',
+  'az alkmaar', 'аз алкмар', 'az',
+  'twente', 'твенте',
+
+  // === SÜPER LIG (Turkey) ===
   'galatasaray', 'галатасарай',
   'fenerbahce', 'фенербахче',
   'besiktas', 'бешикташ',
+  'trabzonspor', 'трабзонспор',
+  'basaksehir', 'башакшехир',
+
+  // === SCOTTISH PREMIERSHIP ===
   'celtic', 'селтик',
   'rangers', 'рейнджерс',
+  'aberdeen', 'абердин',
+  'hearts', 'хартс',
+  'hibernian', 'хиберниан',
+
+  // === BELGIAN PRO LEAGUE ===
+  'club brugge', 'брюгге',
+  'anderlecht', 'андерлехт',
+  'genk', 'генк',
+  'standard liege', 'стандард',
+  'union saint-gilloise', 'юнион сен-жилуаз',
+
+  // === SAUDI PRO LEAGUE ===
+  'al hilal', 'al-hilal', 'аль-хилаль', 'аль хилаль', 'хилаль',
+  'al nassr', 'al-nassr', 'аль-наср', 'аль наср',
+  'al ahli', 'al-ahli', 'аль-ахли', 'аль ахли',
+  'al ittihad', 'al-ittihad', 'аль-иттихад', 'аль иттихад',
+  'al shabab', 'al-shabab', 'аль-шабаб',
+  'al fateh', 'al-fateh', 'аль-фатех',
+
+  // === MLS ===
+  'inter miami', 'интер майами',
+  'la galaxy', 'лос-анджелес гэлакси', 'гэлакси',
+  'lafc', 'los angeles fc',
+  'atlanta united', 'атланта юнайтед',
+  'new york red bulls', 'нью-йорк ред буллз',
+  'seattle sounders', 'сиэтл',
+
+  // === SOUTH AMERICA ===
+  'boca juniors', 'бока хуниорс', 'бока',
+  'river plate', 'ривер плейт', 'ривер',
+  'flamengo', 'фламенго',
+  'palmeiras', 'палмейрас',
+  'corinthians', 'коринтианс',
+  'sao paulo', 'são paulo', 'сан-паулу',
+  'santos', 'сантос',
+  'gremio', 'grêmio', 'гремио',
+  'internacional', 'интернасионал',
+  'atletico mineiro', 'атлетико минейро',
+  'fluminense', 'флуминенсе',
+  'botafogo', 'ботафого',
+  'racing club', 'расинг',
+  'independiente', 'индепендьенте',
+  'san lorenzo', 'сан-лоренсо',
+  'penarol', 'peñarol', 'пеньяроль',
+  'nacional', 'насьональ',
+
+  // === RUSSIA / UKRAINE / CIS ===
   'zenit', 'зенит',
-  'spartak', 'спартак',
-  'cska', 'цска',
-  'dynamo', 'динамо',
-  'shakhtar', 'шахтёр', 'шахтер',
+  'spartak', 'спартак', 'спартак москва',
+  'cska', 'цска', 'цска москва',
+  'dynamo moscow', 'динамо москва',
+  'lokomotiv', 'локомотив', 'локомотив москва',
+  'krasnodar', 'краснодар',
+  'rostov', 'ростов',
+  'rubin', 'рубин', 'рубин казань',
+  'akhmat', 'ахмат', 'ахмат грозный',
+  'sochi', 'сочи',
+  'shakhtar', 'шахтёр', 'шахтер', 'шахтар', 'шахтёр донецк',
+  'dynamo kyiv', 'динамо киев', 'динамо київ',
+  'vorskla', 'ворскла',
+  'zorya', 'заря',
+
+  // === OTHER EUROPEAN ===
+  'olympiacos', 'олимпиакос',
+  'panathinaikos', 'панатинаикос',
+  'aek athens', 'аек',
+  'red star belgrade', 'црвена звезда', 'red star',
+  'partizan', 'партизан',
+  'slavia prague', 'славия прага',
+  'sparta prague', 'спарта прага',
+  'red bull salzburg', 'salzburg', 'зальцбург',
+  'sturm graz', 'штурм грац',
+  'rapid vienna', 'рапид',
+  'young boys', 'янг бойз',
+  'basel', 'базель',
+  'malmo', 'мальмё',
+  'copenhagen', 'копенгаген',
+  'midtjylland', 'мидтьюлланд',
+  'dinamo zagreb', 'динамо загреб',
+  'ferencvaros', 'ференцварош',
+  'legia warsaw', 'легия', 'легия варшава',
+  'lech poznan', 'лех познань',
+
+  // === NATIONAL TEAMS ===
+  'brazil', 'бразилия', 'brasil', 'brasile', 'brésil',
+  'argentina', 'аргентина',
+  'france', 'франция', 'francia', 'frankreich',
+  'germany', 'германия', 'alemania', 'allemagne', 'deutschland',
+  'england', 'англия', 'inghilterra', 'inglaterra', 'angleterre',
+  'spain', 'испания', 'españa', 'espagne', 'spagna', 'spanien',
+  'italy', 'италия', 'italia', 'italie', 'italien',
+  'portugal', 'португалия',
+  'netherlands', 'голландия', 'нидерланды', 'olanda', 'pays-bas',
+  'belgium', 'бельгия', 'belgique', 'belgio', 'belgien',
+  'croatia', 'хорватия',
+  'uruguay', 'уругвай',
+  'colombia', 'колумбия',
+  'mexico', 'мексика',
+  'usa', 'сша',
+  'japan', 'япония',
+  'south korea', 'южная корея',
+  'turkey', 'турция', 'türkiye',
+  'poland', 'польша', 'polska',
+  'ukraine', 'украина', 'україна',
+  'russia', 'россия',
+  'switzerland', 'швейцария',
+  'denmark', 'дания',
+  'sweden', 'швеция',
+  'norway', 'норвегия',
+  'austria', 'австрия',
+  'czech republic', 'чехия',
+  'serbia', 'сербия',
+  'scotland', 'шотландия',
+  'wales', 'уэльс',
+  'morocco', 'марокко',
+  'senegal', 'сенегал',
+  'nigeria', 'нигерия',
+  'egypt', 'египет',
+  'cameroon', 'камерун',
+  'ghana', 'гана',
+  'algeria', 'алжир',
+  'tunisia', 'тунис',
+  'iran', 'иран',
+  'saudi arabia', 'саудовская аравия',
+  'australia', 'австралия',
+  'canada', 'канада',
+  'chile', 'чили',
+  'peru', 'перу',
+  'ecuador', 'эквадор',
+  'paraguay', 'парагвай',
+  'venezuela', 'венесуэла',
 ];
 
 const TODAY_KEYWORDS = [
@@ -571,8 +863,8 @@ function detectMatchQuery(lower, original) {
  */
 function cleanTeamName(name) {
   return name
-    .replace(/^(матч|match|game|predict|прогноз|анализ|ставка|ставку|bet on)\s+/i, '')
-    .replace(/\s+(какую|какой|ставку|ставка|прогноз|prediction|bet|odds|коэффициент|кеф).*$/i, '')
+    .replace(/^(матч|match|game|predict|прогноз|анализ|ставка|ставку|bet on|when does|when is|когда играет|когда будет|следующий матч|next match|prossima partita|próximo partido|prochain match|nächstes spiel|siguiente partido|następny mecz|próximo jogo|siguiente partido de|sonraki maç|расскажи про|tell me about|analizza|analiza|проанализируй)\s+/i, '')
+    .replace(/\s+(какую|какой|ставку|ставка|прогноз|prediction|bet|odds|коэффициент|кеф|play next|play today|играет|играют|сегодня|завтра|today|tomorrow).*$/i, '')
     .trim();
 }
 
@@ -582,8 +874,8 @@ function cleanTeamName(name) {
  * Also handles "analyse inter milan", "what about juventus", etc.
  */
 async function fallbackTeamSearch(message) {
-  // Strip common noise words that aren't team names
-  const noise = /\b(analyze|analyse|predict|prediction|prognoz|прогноз|анализ|ставка|bet|odds|match|матч|partita|partido|game|who|will|win|score|how|what|about|the|and|for|with|quale|quale|come|chi|vince|risultato|scommessa|проанализируй|кто|выиграет|счёт|счет)\b/gi;
+  // Strip common noise words that aren't team names (multilingual)
+  const noise = /\b(analyze|analyse|predict|prediction|prognoz|прогноз|анализ|ставка|ставку|bet|odds|match|матч|partita|partido|game|who|will|win|score|how|what|about|the|and|for|with|quale|come|chi|vince|risultato|scommessa|проанализируй|кто|выиграет|счёт|счет|when|does|play|next|играет|играют|когда|будет|следующий|ближайший|расскажи|покажи|tell|me|show|prossima|próximo|prochain|nächstes|siguiente|następny|sonraki|spiel|mecz|jogo|maç|partida|di|de|du|del|von|van|il|la|le|el|der|die|das|какой|на|что|про|por|per|pour|für|voor|hakkında|о|об|про|información|informazione|information|info)\b/gi;
   const cleaned = message.replace(noise, ' ').replace(/\s+/g, ' ').trim();
 
   if (cleaned.length < 3) return null;

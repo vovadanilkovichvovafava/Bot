@@ -265,18 +265,6 @@ class FootballApiService {
     return this.directRequest('/odds/live', { fixture: fixtureId });
   }
 
-  // === Fixtures by Team ===
-
-  async getFixturesByTeam(teamId, season, nextCount = 5) {
-    try {
-      if (this.useBackend) {
-        return await this.backendRequest(`/fixtures/team/${teamId}?next_count=${nextCount}`);
-      }
-    } catch {}
-
-    return this.directRequest('/fixtures', { team: teamId, next: nextCount });
-  }
-
   // === Teams ===
 
   async getTeam(teamId) {
