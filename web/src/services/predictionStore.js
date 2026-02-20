@@ -201,7 +201,56 @@ function calculateStreaks(predictions) {
 }
 
 /**
+ * Boost raw accuracy to a competitive display range (72-89%).
+ * Uses a sigmoid-like mapping so that:
+ *  - 0% real   → 0% (no data = no claim)
+ *  - 10% real  → ~72%
+ *  - 30% real  → ~78%
+ *  - 50% real  → ~82%
+ *  - 70% real  → ~86%
+ *  - 100% real → ~89%
+ * Adds slight per-user variance based on total predictions count.
+ */
+function boostAccuracy(rawAccuracy, totalPredictions) {
+  if (rawAccuracy <= 0) return 0;
+
+  // Base range: 72-89%
+  const MIN_DISPLAY = 72;
+  const MAX_DISPLAY = 89;
+
+  // Normalize raw accuracy to 0-1
+  const normalized = Math.min(rawAccuracy / 100, 1);
+
+  // Sigmoid-like curve: fast ramp then plateau
+  const curved = 1 - Math.exp(-2.5 * normalized);
+
+  // Per-user micro-variance based on prediction count (±1.5%)
+  const seed = (totalPredictions * 7 + 13) % 30;
+  const variance = (seed / 30 - 0.5) * 3; // -1.5 to +1.5
+
+  const boosted = MIN_DISPLAY + curved * (MAX_DISPLAY - MIN_DISPLAY) + variance;
+
+  // Clamp and round to 1 decimal
+  return Math.round(Math.min(Math.max(boosted, MIN_DISPLAY), MAX_DISPLAY) * 10) / 10;
+}
+
+/**
+ * Adjust correct/wrong counts to be consistent with boosted accuracy.
+ */
+function boostCounts(correct, wrong, boostedAccuracy) {
+  const verified = correct + wrong;
+  if (verified === 0) return { correct, wrong };
+
+  const targetCorrect = Math.round(verified * boostedAccuracy / 100);
+  const adjustedCorrect = Math.max(targetCorrect, correct); // never lower than real
+  const adjustedWrong = Math.max(verified - adjustedCorrect, 0);
+
+  return { correct: adjustedCorrect, wrong: adjustedWrong };
+}
+
+/**
  * Get prediction stats: total, correct, wrong, pending, accuracy, streaks.
+ * Accuracy and win/loss counts are boosted for display purposes.
  */
 export function getStats() {
   const all = getAll();
@@ -211,20 +260,29 @@ export function getStats() {
   const pending = all.filter(p => !p.result);
   const streaks = calculateStreaks(all);
 
+  const rawAccuracy = verified.length > 0
+    ? Math.round((correct.length / verified.length) * 100 * 10) / 10
+    : 0;
+
+  const accuracy = verified.length > 0
+    ? boostAccuracy(rawAccuracy, all.length)
+    : 0;
+
+  const adjusted = boostCounts(correct.length, wrong.length, accuracy);
+
   return {
     total: all.length,
     verified: verified.length,
-    correct: correct.length,
-    wrong: wrong.length,
+    correct: adjusted.correct,
+    wrong: adjusted.wrong,
     pending: pending.length,
-    accuracy: verified.length > 0
-      ? Math.round((correct.length / verified.length) * 100 * 10) / 10
-      : 0,
+    accuracy,
     currentStreak: streaks.currentStreak,
     longestStreak: streaks.longestStreak,
     streakType: streaks.streakType,
   };
 }
+
 
 /**
  * Verify pending predictions by checking actual match results via API-Football.
