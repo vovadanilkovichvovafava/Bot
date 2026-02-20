@@ -59,15 +59,22 @@ class FootballApiService {
       });
 
       if (!response.ok) {
+        // Only disable backend for server errors (5xx), not client errors (4xx)
+        if (response.status >= 500) {
+          this.useBackend = false;
+          setTimeout(() => { this.useBackend = true; }, 30000);
+        }
         throw new Error(`Backend HTTP ${response.status}`);
       }
 
       return await response.json();
     } catch (e) {
-      console.warn(`Backend request failed: ${e.message}, falling back to direct API`);
-      this.useBackend = false;
-      // Reset backend availability after 30 seconds
-      setTimeout(() => { this.useBackend = true; }, 30000);
+      // Network errors (fetch failed entirely) — disable backend
+      if (!e.message?.startsWith('Backend HTTP')) {
+        console.warn(`Backend network error: ${e.message}, falling back to direct API`);
+        this.useBackend = false;
+        setTimeout(() => { this.useBackend = true; }, 30000);
+      }
       throw e;
     }
   }
@@ -134,7 +141,7 @@ class FootballApiService {
     // Only available via backend (AI-powered)
     try {
       if (this.useBackend) {
-        return await this.backendRequest('/football/smart-bet');
+        return await this.backendRequest('/smart-bet');
       }
     } catch {}
     return { found: false };

@@ -419,7 +419,7 @@ function HomeMatchCard({ fixture, navigate }) {
 
   return (
     <div
-      onClick={() => navigate(`/match/${f.fixture.id}`)}
+      onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
       className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
     >
       <div className="flex items-center py-3 px-4">
