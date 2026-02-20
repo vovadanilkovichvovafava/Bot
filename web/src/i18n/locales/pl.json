@@ -191,7 +191,22 @@
     "hasAccount": "Masz już konto?",
     "connecting": "Łączenie...",
     "creatingAccount": "Tworzenie konta...",
-    "minChars": "Minimum {{count}} znaków"
+    "minChars": "Minimum {{count}} znaków",
+    "statsWinsToday": "wygranych dziś",
+    "statsAccuracy": "dokładność AI",
+    "statsOnline": "online",
+    "statsJoinedToday": "{{count}} użytkowników dołączyło dziś",
+    "recentWins": "Ostatnie wygrane",
+    "registerHeadline": "Zdobądź 3 darmowe prognozy AI",
+    "registerSubheadline": "Dołącz do tysięcy wygrywających graczy",
+    "registerCta": "Zacznij wygrywać teraz",
+    "registerCtaSub": "3 darmowe prognozy AI · bez karty",
+    "benefit1": "3 darmowe typy",
+    "benefit2": "Analiza AI",
+    "benefit3": "Darmowy start",
+    "toastFrom": "z",
+    "toastAction": "zarejestrował się i otrzymał 3 darmowe prognozy",
+    "toastJustNow": "teraz"
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",

@@ -191,7 +191,22 @@
     "hasAccount": "Hai già un account?",
     "connecting": "Connessione...",
     "creatingAccount": "Creazione account...",
-    "minChars": "Minimo {{count}} caratteri"
+    "minChars": "Minimo {{count}} caratteri",
+    "statsWinsToday": "vittorie oggi",
+    "statsAccuracy": "precisione IA",
+    "statsOnline": "online",
+    "statsJoinedToday": "{{count}} utenti iscritti oggi",
+    "recentWins": "Vittorie recenti",
+    "registerHeadline": "Ottieni 3 pronostici IA gratuiti",
+    "registerSubheadline": "Unisciti a migliaia di scommettitori vincenti",
+    "registerCta": "Inizia a vincere ora",
+    "registerCtaSub": "3 pronostici IA gratis · nessuna carta",
+    "benefit1": "3 pick gratis",
+    "benefit2": "Analisi IA",
+    "benefit3": "Inizio gratis",
+    "toastFrom": "da",
+    "toastAction": "si è iscritto e ha ricevuto 3 pronostici gratis",
+    "toastJustNow": "ora"
   },
   "bonus": {
     "welcomeBonus": "Bonus di Benvenuto",

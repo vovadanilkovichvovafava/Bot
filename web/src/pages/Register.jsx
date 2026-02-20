@@ -8,6 +8,7 @@ import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import { track } from '../services/analytics';
 import useKeyboardScroll from '../hooks/useKeyboardScroll';
+import { LiveStatsBar, JoinedTodayBadge, SocialProofToast, RecentWinsTicker } from '../components/SocialProof';
 
 
 export default function Register() {
@@ -90,7 +91,7 @@ export default function Register() {
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
       {/* Hero Section — collapses when keyboard is open */}
-      <div className={`relative flex-shrink-0 px-6 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-8'}`}>
+      <div className={`relative flex-shrink-0 px-4 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-6 pb-5'}`}>
         {/* Background decorations */}
         {!keyboardOpen && (
           <>
@@ -99,29 +100,51 @@ export default function Register() {
           </>
         )}
 
-        <div className="relative text-center">
-          <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>{t('auth.createAccount')}</h1>
-          {!keyboardOpen && <p className="text-gray-400 text-sm">{t('auth.signUpSubtitle')}</p>}
+        <div className="relative">
+          {/* Title */}
+          <div className="text-center">
+            <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>
+              {t('auth.registerHeadline')}
+            </h1>
+            {!keyboardOpen && (
+              <p className="text-gray-400 text-sm mb-4">{t('auth.registerSubheadline')}</p>
+            )}
+          </div>
+
+          {/* Live Stats Bar */}
+          {!keyboardOpen && (
+            <div className="space-y-3 mt-1">
+              <LiveStatsBar />
+              <JoinedTodayBadge />
+              <RecentWinsTicker />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Form Section */}
       <div className={`flex-1 bg-white rounded-t-[32px] px-6 pb-6 transition-all duration-200 ${keyboardOpen ? 'pt-3' : 'pt-6'}`}>
         <div className="max-w-sm mx-auto">
-          {/* Benefits — hidden when keyboard is open */}
+          {/* What you get — hidden when keyboard is open */}
           {!keyboardOpen && (
-            <div className="flex justify-center gap-4 mb-5">
-              <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-green-600 font-bold text-lg">{t('auth.free')}</p>
-                <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.start')}</p>
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                </svg>
+                {t('auth.benefit1')}
               </div>
-              <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
-                <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
+              <div className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                </svg>
+                {t('auth.benefit2')}
               </div>
-              <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
-                <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
+              <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {t('auth.benefit3')}
               </div>
             </div>
           )}
@@ -181,22 +204,30 @@ export default function Register() {
               )}
             </div>
 
+            {/* CTA Button — green gradient for registration */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 text-[15px]"
             >
               {loading ? (
                 <FootballSpinner size="xs" light />
               ) : (
                 <>
-                  {t('auth.createAccount')}
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  {t('auth.registerCta')}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
                 </>
               )}
             </button>
+
+            {/* What you get on register */}
+            {!keyboardOpen && (
+              <p className="text-center text-xs text-gray-400 -mt-1">
+                {t('auth.registerCtaSub')}
+              </p>
+            )}
           </form>
 
           <p className="text-center text-gray-400 text-xs mt-3">
@@ -211,6 +242,9 @@ export default function Register() {
           </p>
         </div>
       </div>
+
+      {/* Floating social proof toast */}
+      {!keyboardOpen && <SocialProofToast />}
     </div>
   );
 }

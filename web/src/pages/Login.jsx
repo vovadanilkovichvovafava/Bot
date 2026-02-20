@@ -8,6 +8,7 @@ import FootballSpinner from '../components/FootballSpinner';
 import SupportChat from '../components/SupportChat';
 import { track } from '../services/analytics';
 import useKeyboardScroll from '../hooks/useKeyboardScroll';
+import { LiveStatsBar, SocialProofToast } from '../components/SocialProof';
 
 
 export default function Login() {
@@ -83,7 +84,7 @@ export default function Login() {
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-gray-900 via-gray-900 to-primary-900 flex flex-col overflow-y-auto">
       {/* Hero Section — collapses when keyboard is open */}
-      <div className={`relative flex-shrink-0 px-6 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-8'}`}>
+      <div className={`relative flex-shrink-0 px-4 transition-all duration-200 ${keyboardOpen ? 'pt-2 pb-2' : 'pt-8 pb-6'}`}>
         {/* Background decorations */}
         {!keyboardOpen && (
           <>
@@ -94,7 +95,12 @@ export default function Login() {
 
         <div className="relative text-center">
           <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>{t('auth.appName')}</h1>
-          {!keyboardOpen && <p className="text-gray-400 text-sm">{t('auth.signInSubtitle')}</p>}
+          {!keyboardOpen && (
+            <>
+              <p className="text-gray-400 text-sm mb-4">{t('auth.signInSubtitle')}</p>
+              <LiveStatsBar />
+            </>
+          )}
         </div>
       </div>
 
@@ -236,6 +242,9 @@ export default function Login() {
         onClose={() => setShowSupport(false)}
         guest={true}
       />
+
+      {/* Floating social proof toast */}
+      {!keyboardOpen && <SocialProofToast />}
     </div>
   );
 }

@@ -191,7 +191,22 @@
     "hasAccount": "Already have an account?",
     "connecting": "Connecting...",
     "creatingAccount": "Creating Account...",
-    "minChars": "Minimum {{count}} characters"
+    "minChars": "Minimum {{count}} characters",
+    "statsWinsToday": "wins today",
+    "statsAccuracy": "AI accuracy",
+    "statsOnline": "online",
+    "statsJoinedToday": "{{count}} users joined today",
+    "recentWins": "Recent wins",
+    "registerHeadline": "Get 3 free AI predictions",
+    "registerSubheadline": "Join thousands of winning bettors",
+    "registerCta": "Start winning now",
+    "registerCtaSub": "3 free AI predictions · no card required",
+    "benefit1": "3 Free picks",
+    "benefit2": "AI Analysis",
+    "benefit3": "Free start",
+    "toastFrom": "from",
+    "toastAction": "just registered and got 3 free predictions",
+    "toastJustNow": "now"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",
