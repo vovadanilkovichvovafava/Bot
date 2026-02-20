@@ -53,6 +53,16 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_chat_requests INTEGER DEFAULT 0",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_chat_request_date TIMESTAMP",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_day_number INTEGER DEFAULT 1",
+            # Predictions table — add columns expected by Prediction model
+            # (table may have been created by another service with different schema)
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS league VARCHAR",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS match_date TIMESTAMP",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS predicted_odds DOUBLE PRECISION",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS ai_analysis TEXT",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS api_prediction TEXT",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_home_score INTEGER",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_away_score INTEGER",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP",
         ]
 
         for migration in migrations:

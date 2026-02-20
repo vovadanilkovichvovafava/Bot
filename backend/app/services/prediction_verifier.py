@@ -92,19 +92,24 @@ async def verify_pending_predictions():
     verified_count = 0
 
     async with async_session_maker() as db:
-        # Get all unverified predictions where match should be finished
-        # (match_date + 3 hours < now)
-        cutoff = now - timedelta(hours=3)
-        result = await db.execute(
-            select(Prediction).where(
-                and_(
-                    Prediction.is_correct.is_(None),
-                    Prediction.match_date.isnot(None),
-                    Prediction.match_date < cutoff,
-                )
-            ).limit(100)
-        )
-        pending = result.scalars().all()
+        try:
+            # Get all unverified predictions where match should be finished
+            # (match_date + 3 hours < now)
+            cutoff = now - timedelta(hours=3)
+            result = await db.execute(
+                select(Prediction).where(
+                    and_(
+                        Prediction.is_correct.is_(None),
+                        Prediction.match_date.isnot(None),
+                        Prediction.match_date < cutoff,
+                    )
+                ).limit(100)
+            )
+            pending = result.scalars().all()
+        except Exception as e:
+            logger.error(f"DB error querying pending predictions: {e}")
+            await db.rollback()
+            return 0
 
         if not pending:
             logger.info("No pending predictions to verify")
@@ -162,8 +167,12 @@ async def verify_pending_predictions():
                 logger.error(f"Error verifying predictions for {date_str}: {e}")
 
         if verified_count > 0:
-            await db.commit()
-            logger.info(f"Verified {verified_count} predictions")
+            try:
+                await db.commit()
+                logger.info(f"Verified {verified_count} predictions")
+            except Exception as e:
+                logger.error(f"DB error committing verifications: {e}")
+                await db.rollback()
 
     return verified_count
 
@@ -236,104 +245,115 @@ async def get_accuracy_stats(db: AsyncSession, user_id: int = None) -> dict:
     Get real accuracy statistics from verified predictions.
     If user_id is provided, returns per-user stats. Otherwise global.
     """
-    base_filter = Prediction.is_correct.isnot(None)
-    if user_id:
-        base_filter = and_(base_filter, Prediction.user_id == user_id)
-
-    # Total verified
-    result = await db.execute(
-        select(
-            func.count(Prediction.id).label("total"),
-            func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
-            func.sum(case((Prediction.is_correct == False, 1), else_=0)).label("wrong"),
-        ).where(base_filter)
-    )
-    row = result.one()
-    total = row.total or 0
-    correct = row.correct or 0
-    wrong = row.wrong or 0
-
-    # Pending count
-    pending_filter = Prediction.is_correct.is_(None)
-    if user_id:
-        pending_filter = and_(pending_filter, Prediction.user_id == user_id)
-    pending_result = await db.execute(
-        select(func.count(Prediction.id)).where(pending_filter)
-    )
-    pending = pending_result.scalar() or 0
-
-    accuracy = round((correct / total) * 100, 1) if total > 0 else 0
-
-    # Accuracy by bet type (top 5)
-    bt_result = await db.execute(
-        select(
-            Prediction.bet_type,
-            func.count(Prediction.id).label("total"),
-            func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
-        ).where(base_filter)
-        .group_by(Prediction.bet_type)
-        .order_by(func.count(Prediction.id).desc())
-        .limit(5)
-    )
-    by_bet_type = []
-    for bt_row in bt_result.all():
-        bt_total = bt_row.total or 0
-        bt_correct = bt_row.correct or 0
-        by_bet_type.append({
-            "bet_type": bt_row.bet_type,
-            "total": bt_total,
-            "correct": bt_correct,
-            "accuracy": round((bt_correct / bt_total) * 100, 1) if bt_total > 0 else 0,
-        })
-
-    # Accuracy by league (top 5)
-    lg_result = await db.execute(
-        select(
-            Prediction.league,
-            func.count(Prediction.id).label("total"),
-            func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
-        ).where(base_filter)
-        .group_by(Prediction.league)
-        .order_by(func.count(Prediction.id).desc())
-        .limit(5)
-    )
-    by_league = []
-    for lg_row in lg_result.all():
-        lg_total = lg_row.total or 0
-        lg_correct = lg_row.correct or 0
-        by_league.append({
-            "league": lg_row.league,
-            "total": lg_total,
-            "correct": lg_correct,
-            "accuracy": round((lg_correct / lg_total) * 100, 1) if lg_total > 0 else 0,
-        })
-
-    # Recent streak
-    recent_result = await db.execute(
-        select(Prediction.is_correct).where(base_filter)
-        .order_by(Prediction.verified_at.desc())
-        .limit(20)
-    )
-    recent = [r[0] for r in recent_result.all()]
-    current_streak = 0
-    streak_type = "win" if recent and recent[0] else "loss"
-    for r in recent:
-        if (streak_type == "win" and r) or (streak_type == "loss" and not r):
-            current_streak += 1
-        else:
-            break
-
-    return {
-        "total": total,
-        "correct": correct,
-        "wrong": wrong,
-        "pending": pending,
-        "accuracy": accuracy,
-        "current_streak": current_streak,
-        "streak_type": streak_type if total > 0 else None,
-        "by_bet_type": by_bet_type,
-        "by_league": by_league,
+    empty_stats = {
+        "total": 0, "correct": 0, "wrong": 0, "pending": 0,
+        "accuracy": 0, "current_streak": 0, "streak_type": None,
+        "by_bet_type": [], "by_league": [],
     }
+
+    try:
+        base_filter = Prediction.is_correct.isnot(None)
+        if user_id:
+            base_filter = and_(base_filter, Prediction.user_id == user_id)
+
+        # Total verified
+        result = await db.execute(
+            select(
+                func.count(Prediction.id).label("total"),
+                func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
+                func.sum(case((Prediction.is_correct == False, 1), else_=0)).label("wrong"),
+            ).where(base_filter)
+        )
+        row = result.one()
+        total = row.total or 0
+        correct = row.correct or 0
+        wrong = row.wrong or 0
+
+        # Pending count
+        pending_filter = Prediction.is_correct.is_(None)
+        if user_id:
+            pending_filter = and_(pending_filter, Prediction.user_id == user_id)
+        pending_result = await db.execute(
+            select(func.count(Prediction.id)).where(pending_filter)
+        )
+        pending = pending_result.scalar() or 0
+
+        accuracy = round((correct / total) * 100, 1) if total > 0 else 0
+
+        # Accuracy by bet type (top 5)
+        bt_result = await db.execute(
+            select(
+                Prediction.bet_type,
+                func.count(Prediction.id).label("total"),
+                func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
+            ).where(base_filter)
+            .group_by(Prediction.bet_type)
+            .order_by(func.count(Prediction.id).desc())
+            .limit(5)
+        )
+        by_bet_type = []
+        for bt_row in bt_result.all():
+            bt_total = bt_row.total or 0
+            bt_correct = bt_row.correct or 0
+            by_bet_type.append({
+                "bet_type": bt_row.bet_type,
+                "total": bt_total,
+                "correct": bt_correct,
+                "accuracy": round((bt_correct / bt_total) * 100, 1) if bt_total > 0 else 0,
+            })
+
+        # Accuracy by league (top 5)
+        lg_result = await db.execute(
+            select(
+                Prediction.league,
+                func.count(Prediction.id).label("total"),
+                func.sum(case((Prediction.is_correct == True, 1), else_=0)).label("correct"),
+            ).where(base_filter)
+            .group_by(Prediction.league)
+            .order_by(func.count(Prediction.id).desc())
+            .limit(5)
+        )
+        by_league = []
+        for lg_row in lg_result.all():
+            lg_total = lg_row.total or 0
+            lg_correct = lg_row.correct or 0
+            by_league.append({
+                "league": lg_row.league,
+                "total": lg_total,
+                "correct": lg_correct,
+                "accuracy": round((lg_correct / lg_total) * 100, 1) if lg_total > 0 else 0,
+            })
+
+        # Recent streak
+        recent_result = await db.execute(
+            select(Prediction.is_correct).where(base_filter)
+            .order_by(Prediction.verified_at.desc())
+            .limit(20)
+        )
+        recent = [r[0] for r in recent_result.all()]
+        current_streak = 0
+        streak_type = "win" if recent and recent[0] else "loss"
+        for r in recent:
+            if (streak_type == "win" and r) or (streak_type == "loss" and not r):
+                current_streak += 1
+            else:
+                break
+
+        return {
+            "total": total,
+            "correct": correct,
+            "wrong": wrong,
+            "pending": pending,
+            "accuracy": accuracy,
+            "current_streak": current_streak,
+            "streak_type": streak_type if total > 0 else None,
+            "by_bet_type": by_bet_type,
+            "by_league": by_league,
+        }
+    except Exception as e:
+        logger.error(f"DB error in get_accuracy_stats: {e}")
+        await db.rollback()
+        return empty_stats
 
 
 async def get_learning_context(db: AsyncSession) -> str:
