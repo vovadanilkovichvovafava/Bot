@@ -668,7 +668,7 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
           {recommendedBet && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               {/* Top: Recommendation */}
-              <div className={`bg-gradient-to-r from-green-500 to-emerald-500 p-4 ${bonusNumeric > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
+              <div className={`bg-gradient-to-r from-green-500 to-emerald-500 p-4 ${bonusNumeric > 0 && !isPremium ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -684,8 +684,8 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
                   </div>
                 </div>
               </div>
-              {/* Bottom: Free Bet CTA */}
-              {bonusNumeric > 0 && (
+              {/* Bottom: Free Bet CTA - hidden for PRO users */}
+              {bonusNumeric > 0 && !isPremium && (
                 <div
                   onClick={() => {
                     if (isPremium && advertiser?.link) {
@@ -720,15 +720,17 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             </div>
           )}
 
-          {/* Match Bonus Card after AI Analysis */}
-          <MatchBonusCard
-            match={match}
-            enriched={enriched}
-            advertiser={advertiser}
-            user={user}
-            trackClick={trackClick}
-            adTexts={adTexts}
-          />
+          {/* Match Bonus Card after AI Analysis - hidden for PRO */}
+          {!isPremium && (
+            <MatchBonusCard
+              match={match}
+              enriched={enriched}
+              advertiser={advertiser}
+              user={user}
+              trackClick={trackClick}
+              adTexts={adTexts}
+            />
+          )}
         </div>
       ) : (
         <div className="card border border-gray-100 text-center py-6">
@@ -776,15 +778,17 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             )}
           </button>
 
-          {/* Match Bonus Card with team colors */}
-          <MatchBonusCard
-            match={match}
-            enriched={enriched}
-            advertiser={advertiser}
-            user={user}
-            trackClick={trackClick}
-            adTexts={adTexts}
-          />
+          {/* Match Bonus Card with team colors - hidden for PRO */}
+          {!isPremium && (
+            <MatchBonusCard
+              match={match}
+              enriched={enriched}
+              advertiser={advertiser}
+              user={user}
+              trackClick={trackClick}
+              adTexts={adTexts}
+            />
+          )}
         </div>
       )}
 
