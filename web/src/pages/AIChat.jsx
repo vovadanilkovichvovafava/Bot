@@ -308,7 +308,14 @@ export default function AIChat() {
                 {msg.bet && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <button
-                      onClick={() => navigate('/promo?banner=aichat_bet_card')}
+                      onClick={() => {
+                        if (isPremium && advertiser?.link) {
+                          trackClick(user?.id, 'aichat_bet_card');
+                          window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                        } else {
+                          navigate('/promo?banner=aichat_bet_card');
+                        }
+                      }}
                       className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
                       style={{ background: '#059669' }}
                     >
@@ -338,7 +345,7 @@ export default function AIChat() {
                         <p className="text-sm font-semibold text-white">{msg.bet.type}</p>
                       </div>
 
-                      {/* Bottom section - Free bet bonus calculation */}
+                      {/* Bottom section - PRO: direct bet CTA / Free: bonus calculation */}
                       <div
                         className="relative px-3 py-3"
                         style={{
@@ -347,27 +354,31 @@ export default function AIChat() {
                         }}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
-                            {/* Free bet label */}
-                            <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{t('advertiser.freeBetLabel')}</span>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
-                              <span className="text-emerald-200 text-sm">×</span>
-                              <span className="text-white font-semibold">{msg.bet.odds.toFixed(2)}</span>
+                          {isPremium ? (
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="text-white font-bold text-sm">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
+                                <p className="text-emerald-200 text-xs mt-0.5">{msg.bet.type} @ {msg.bet.odds.toFixed(2)}</p>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-200 text-xs">=</span>
-                              <span
-                                className="font-bold text-lg"
-                                style={{ color: '#fbbf24' }}
-                              >
-                                {advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}
-                              </span>
-                              <span className="text-emerald-200 text-xs ml-1">{t('advertiser.potentialWin')}</span>
+                          ) : (
+                            <div>
+                              <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{t('advertiser.freeBetLabel')}</span>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
+                                <span className="text-emerald-200 text-sm">×</span>
+                                <span className="text-white font-semibold">{msg.bet.odds.toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-emerald-200 text-xs">=</span>
+                                <span className="font-bold text-lg" style={{ color: '#fbbf24' }}>
+                                  {advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}
+                                </span>
+                                <span className="text-emerald-200 text-xs ml-1">{t('advertiser.potentialWin')}</span>
+                              </div>
+                              <p className="text-white text-xs font-medium mt-1.5 opacity-90">{t('advertiser.betAndTakeIt')}</p>
                             </div>
-                            {/* Call to action text */}
-                            <p className="text-white text-xs font-medium mt-1.5 opacity-90">{t('advertiser.betAndTakeIt')}</p>
-                          </div>
+                          )}
                           <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                           </svg>
@@ -380,10 +391,17 @@ export default function AIChat() {
                 {/* Simple promo link for messages without bet recommendation */}
                 {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
-                    onClick={() => navigate('/promo?banner=aichat_promo_link')}
+                    onClick={() => {
+                      if (isPremium && advertiser?.link) {
+                        trackClick(user?.id, 'aichat_promo_link');
+                        window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                      } else {
+                        navigate('/promo?banner=aichat_promo_link');
+                      }
+                    }}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
-                    {t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
+                    {isPremium ? t('aiChat.placeBetsNow', { defaultValue: 'Place your bets now' }) : t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -393,31 +411,53 @@ export default function AIChat() {
             </div>
             {/* Ad block after certain responses */}
             {msg.showAd && (
-              <div className="mt-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold text-xs">{advertiser.currency}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonusAmount, name: advertiser.name })}</p>
+              isPremium ? (
+                <div
+                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); if (advertiser?.link) window.open(advertiser.link, '_blank', 'noopener,noreferrer'); }}
+                  className="mt-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white">{t('aiChat.placeBetsNow', { defaultValue: 'Place your bets now' })}</p>
+                      <p className="text-xs text-emerald-100 mt-0.5">{t('aiChat.useAIPredictions', { defaultValue: 'Use AI predictions to win' })}</p>
+                    </div>
+                    <svg className="w-5 h-5 text-white/70 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                    </svg>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => navigate('/promo?banner=aichat_ad_get_bonus')}
-                    className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
-                  >
-                    {t('aiChat.getBonus2')}
-                  </button>
-                  <button
-                    onClick={() => navigate('/promo?banner=aichat_ad_learn_more')}
-                    className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
-                  >
-                    {t('aiChat.learnMore')}
-                  </button>
+              ) : (
+                <div className="mt-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                      <span className="text-white font-bold text-xs">{advertiser.currency}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser.bonusAmount, name: advertiser.name })}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => navigate('/promo?banner=aichat_ad_get_bonus')}
+                      className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
+                    >
+                      {t('aiChat.getBonus2')}
+                    </button>
+                    <button
+                      onClick={() => navigate('/promo?banner=aichat_ad_learn_more')}
+                      className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
+                    >
+                      {t('aiChat.learnMore')}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         ))}
@@ -446,18 +486,28 @@ export default function AIChat() {
         <div className="px-5 pb-2 shrink-0">
           {/* Primary Questions - Always visible */}
           <div className="flex gap-2 mb-2">
+            {isPremium ? (
+              <button
+                onClick={() => sendMessage(t('aiChat.todaysBestBets'))}
+                disabled={loading}
+                className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium disabled:opacity-50 bg-emerald-600 text-white"
+              >
+                🎯 {t('advertiser.bestBets')}
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/promo?banner=aichat_bonus_button')}
+                className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
+              >
+                {t('advertiser.bonusButton', { bonus: advertiser.bonusAmount })}
+              </button>
+            )}
             <button
-              onClick={() => navigate('/promo?banner=aichat_bonus_button')}
-              className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
-            >
-              {t('advertiser.bonusButton', { bonus: advertiser.bonusAmount })}
-            </button>
-            <button
-              onClick={() => sendMessage(t('aiChat.todaysBestBets'))}
+              onClick={() => sendMessage(isPremium ? t('aiChat.liveMatchesNow') : t('aiChat.todaysBestBets'))}
               disabled={loading}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium disabled:opacity-50 bg-primary-600 text-white"
             >
-              🎯 {t('advertiser.bestBets')}
+              {isPremium ? '🔴' : '🎯'} {isPremium ? t('aiChat.liveMatchesNow') : t('advertiser.bestBets')}
             </button>
           </div>
 
