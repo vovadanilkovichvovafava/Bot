@@ -593,9 +593,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
                     {bet.odds}
                   </span>
                 </div>
-                <div className="bg-emerald-400/20 border border-emerald-300/50 rounded-lg px-3 py-1 mb-2 backdrop-blur-sm">
-                  <span className="font-black text-sm text-emerald-300 drop-shadow">🤖 AI: {bet.confidence}%</span>
-                </div>
+                <span className="font-black text-xl text-white drop-shadow-lg mb-2">AI {bet.confidence}%</span>
                 {/* CTA button with glow + pulse */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-emerald-400 rounded-xl blur-md opacity-60 animate-pulse"/>
