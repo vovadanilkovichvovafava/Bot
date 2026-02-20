@@ -59,6 +59,11 @@ export default function PredictionHistory() {
         ? predictions.filter(p => p.result && !p.result.isCorrect)
         : predictions.filter(p => !p.result);
 
+  // Raw counts for filter tabs (must match actual filtered list lengths)
+  const rawCorrectCount = predictions.filter(p => p.result?.isCorrect).length;
+  const rawWrongCount = predictions.filter(p => p.result && !p.result.isCorrect).length;
+  const rawPendingCount = predictions.filter(p => !p.result).length;
+
   // Accuracy circle
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -129,9 +134,9 @@ export default function PredictionHistory() {
           <div className="flex gap-2">
             {[
               { key: 'all', label: t('predictionHistory.all'), count: predictions.length },
-              { key: 'correct', label: t('predictionHistory.correct'), count: stats.correct },
-              { key: 'wrong', label: t('predictionHistory.wrong'), count: stats.wrong },
-              { key: 'pending', label: t('predictionHistory.pending'), count: stats.pending },
+              { key: 'correct', label: t('predictionHistory.correct'), count: rawCorrectCount },
+              { key: 'wrong', label: t('predictionHistory.wrong'), count: rawWrongCount },
+              { key: 'pending', label: t('predictionHistory.pending'), count: rawPendingCount },
             ].map(f => (
               <button
                 key={f.key}

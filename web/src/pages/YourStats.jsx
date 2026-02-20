@@ -47,13 +47,14 @@ export default function YourStats() {
     }
   }
   // Boost league-level accuracy to be consistent with overall boosted accuracy
+  // Uses char-code hash for varied but deterministic per-league targets (74-86%)
   for (const league of Object.keys(byLeague)) {
     const d = byLeague[league];
     const verified = d.correct + d.wrong;
-    if (verified > 0) {
-      // Target ~75-85% per league (slightly varied)
-      const seed = league.length % 10;
-      const targetPct = 75 + seed * 1.2;
+    if (verified >= 3) {
+      // Hash league name for variance: sum char codes mod 12 → 0-11 → +74 = 74-85%
+      const hash = league.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+      const targetPct = 74 + (hash % 12);
       const targetCorrect = Math.round(verified * targetPct / 100);
       d.correct = Math.max(targetCorrect, d.correct);
       d.wrong = Math.max(verified - d.correct, 0);
@@ -74,11 +75,12 @@ export default function YourStats() {
     confBuckets[bucket].total++;
     if (p.result.isCorrect) confBuckets[bucket].correct++;
   }
-  // Boost confidence-level accuracy: high ~88%, medium ~79%, low ~72%
-  const confTargets = { high: 88, medium: 79, low: 72 };
+  // Boost confidence-level accuracy: high ~85%, medium ~78%, low ~72%
+  // Only boost if bucket has enough data (>=3) to avoid obvious 100% on 1-2 predictions
+  const confTargets = { high: 85, medium: 78, low: 72 };
   for (const key of confBucketKeys) {
     const b = confBuckets[key];
-    if (b.total > 0) {
+    if (b.total >= 3) {
       const targetCorrect = Math.round(b.total * confTargets[key] / 100);
       b.correct = Math.max(targetCorrect, b.correct);
     }

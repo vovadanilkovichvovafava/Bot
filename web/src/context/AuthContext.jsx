@@ -93,9 +93,11 @@ export function AuthProvider({ children }) {
   // This prevents the "session lost" problem when CTA opens external link in new tab
   useEffect(() => {
     let lastCheck = Date.now();
+    let isValidating = false;
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
+      if (isValidating) return; // Prevent overlapping API calls
 
       // Only re-check if at least 30 seconds since last check (avoid spam)
       const now = Date.now();
@@ -105,6 +107,7 @@ export function AuthProvider({ children }) {
       const token = api.getToken();
       if (!token) return; // No token — nothing to re-validate
 
+      isValidating = true;
       try {
         const userData = await api.getMe();
         setUser(userData);
@@ -121,6 +124,8 @@ export function AuthProvider({ children }) {
         }
         // If refresh failed, DON'T logout — let user continue browsing
         // ProtectedRoute will handle redirect on next navigation if needed
+      } finally {
+        isValidating = false;
       }
     };
 

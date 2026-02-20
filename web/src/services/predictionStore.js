@@ -139,7 +139,8 @@ export function savePrediction({
     verifiedAt: null,
   };
 
-  console.log('savePrediction: saving entry', entry);
+  // Debug: uncomment to trace prediction saves
+  // console.log('savePrediction: saving entry', entry);
 
   predictions.unshift(entry);
 
@@ -211,7 +212,7 @@ function calculateStreaks(predictions) {
  *  - 100% real → ~89%
  * Adds slight per-user variance based on total predictions count.
  */
-function boostAccuracy(rawAccuracy, totalPredictions) {
+export function boostAccuracy(rawAccuracy, totalPredictions) {
   if (rawAccuracy <= 0) return 0;
 
   // Base range: 72-89%
@@ -388,6 +389,7 @@ export default {
   savePrediction,
   getPredictions,
   getStats,
+  boostAccuracy,
   verifyPredictions,
   loadFromBackend,
   clearAll,

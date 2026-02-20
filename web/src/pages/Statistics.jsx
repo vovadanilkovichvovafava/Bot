@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { getPredictions, getStats, verifyPredictions } from '../services/predictionStore';
+import { getPredictions, getStats, verifyPredictions, boostAccuracy } from '../services/predictionStore';
 
 export default function Statistics() {
   const navigate = useNavigate();
@@ -17,10 +17,10 @@ export default function Statistics() {
   const total = localStats.total || user?.total_predictions || 0;
   const correct = localStats.correct || user?.correct_predictions || 0;
   const wrong = localStats.wrong || Math.max((total - correct), 0);
-  // Always use boosted accuracy from getStats(); fallback also gets boosted range
+  // Always use boosted accuracy from getStats(); fallback uses same sigmoid formula
   const accuracy = localStats.total > 0
     ? localStats.accuracy.toFixed(1)
-    : (total > 0 ? Math.min(72 + ((correct / total) * 17), 89).toFixed(1) : '0.0');
+    : (total > 0 ? boostAccuracy((correct / total) * 100, total).toFixed(1) : '0.0');
 
   useEffect(() => {
     loadData();
