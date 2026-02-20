@@ -130,6 +130,16 @@ class FootballApiService {
     return this.request('/fixtures/live', '/fixtures', { live: 'all' });
   }
 
+  async getSmartBet() {
+    // Only available via backend (AI-powered)
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest('/football/smart-bet');
+      }
+    } catch {}
+    return { found: false };
+  }
+
   async getLeagueFixtures(leagueId, nextCount = 20) {
     // Get upcoming fixtures for a specific league
     try {

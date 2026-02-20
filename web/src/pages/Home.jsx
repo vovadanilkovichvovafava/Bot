@@ -16,6 +16,8 @@ import useBkReminderModal from '../hooks/useBkReminderModal';
 
 const FREE_AI_LIMIT = 3;
 const VALUE_BET_USED_KEY = 'value_bet_used';
+const SMART_BET_CACHE_KEY = 'smart_bet_cache';
+const SMART_BET_TTL = 45 * 60 * 1000; // 45 minutes
 
 // Top leagues to show on home
 const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
@@ -30,6 +32,7 @@ export default function Home() {
   const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
   const [aiRemaining, setAiRemaining] = useState(null);
   const [aiLimit, setAiLimit] = useState(FREE_AI_LIMIT);
+  const [smartBet, setSmartBet] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
@@ -44,6 +47,22 @@ export default function Home() {
           setAiLimit(data.limit ?? FREE_AI_LIMIT);
         })
         .catch(() => setAiRemaining(FREE_AI_LIMIT));
+    }
+    // Fetch smart bet for PRO users (with localStorage cache)
+    if (user?.is_premium) {
+      try {
+        const cached = localStorage.getItem(SMART_BET_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.ts < SMART_BET_TTL) {
+            setSmartBet(parsed.data);
+          } else {
+            fetchSmartBet();
+          }
+        } else {
+          fetchSmartBet();
+        }
+      } catch { fetchSmartBet(); }
     }
     // Show welcome modal for new registrations
     try {
@@ -74,6 +93,18 @@ export default function Home() {
       console.error('Failed to load matches', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSmartBet = async () => {
+    try {
+      const data = await footballApi.getSmartBet();
+      if (data?.found) {
+        setSmartBet(data);
+        localStorage.setItem(SMART_BET_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+      }
+    } catch (e) {
+      console.error('Failed to load smart bet', e);
     }
   };
 
@@ -159,30 +190,41 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Beginner Guide - Between AI card and promo */}
-        <div
-          onClick={() => navigate('/guide')}
-          className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
-        >
-          <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-xl">📚</span>
+        {/* Beginner Guide - Hidden for PRO users */}
+        {!isPremium && (
+          <div
+            onClick={() => navigate('/guide')}
+            className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
+          >
+            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
+              <span className="text-xl">📚</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
+              <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
-            <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-          </svg>
-        </div>
+        )}
 
-        {/* Featured Match Promo Banner */}
-        <FeaturedMatchBanner
-          matches={matches}
-          advertiser={advertiser}
-          trackClick={trackClick}
-          userId={user?.id}
-        />
+        {/* PRO: Smart Bet Banner | Free: Featured Match Promo Banner */}
+        {isPremium && smartBet?.found ? (
+          <SmartBetBanner
+            data={smartBet}
+            advertiser={advertiser}
+            trackClick={trackClick}
+            userId={user?.id}
+          />
+        ) : (
+          <FeaturedMatchBanner
+            matches={matches}
+            advertiser={advertiser}
+            trackClick={trackClick}
+            userId={user?.id}
+          />
+        )}
 
         {/* Value Bet Finder - Main Hook */}
         <div
@@ -565,6 +607,97 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
         </div>
         <div className="shrink-0 bg-white text-orange-600 font-bold px-4 py-2 rounded-xl text-sm shadow-lg">
           {texts.ctaButton}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Smart Bet Banner for PRO users — AI-picked best bet, click goes to bookmaker
+function SmartBetBanner({ data, advertiser, trackClick, userId }) {
+  const { t } = useTranslation();
+
+  const openBookmaker = () => {
+    if (userId) trackClick(userId, 'smart_bet_banner');
+    if (advertiser?.link) {
+      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const { homeColor, awayColor } = getMatchColors(data.home?.id, data.away?.id);
+  const bet = data.bet || {};
+
+  return (
+    <div
+      onClick={openBookmaker}
+      className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
+      style={{ minHeight: '140px' }}
+    >
+      {/* Diagonal split background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0" style={{ backgroundColor: homeColor, clipPath: 'polygon(0 0, 65% 0, 35% 100%, 0 100%)' }}/>
+        <div className="absolute inset-0" style={{ backgroundColor: awayColor, clipPath: 'polygon(65% 0, 100% 0, 100% 100%, 35% 100%)' }}/>
+        <div className="absolute inset-0 bg-white/30" style={{ clipPath: 'polygon(63% 0, 67% 0, 37% 100%, 33% 100%)' }}/>
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/25"/>
+      </div>
+
+      {/* LIVE badge */}
+      {data.is_live && (
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-red-500 px-2.5 py-1 rounded-lg">
+          <span className="w-2 h-2 bg-white rounded-full animate-pulse"/>
+          <span className="text-[11px] font-bold text-white tracking-wide">LIVE{data.minute ? ` ${data.minute}'` : ''}</span>
+        </div>
+      )}
+
+      {/* Sparkle */}
+      <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg z-10">✨</div>
+
+      {/* Content */}
+      <div className="relative flex items-center justify-between h-full p-4" style={{ minHeight: '140px' }}>
+        {/* Home team */}
+        <div className="flex flex-col items-center gap-1 z-10 w-20">
+          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
+            <img src={data.home?.logo} alt="" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }}/>
+          </div>
+          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[76px] truncate">
+            {data.home?.name}
+          </span>
+        </div>
+
+        {/* Center — AI Bet recommendation */}
+        <div className="flex-1 flex flex-col items-center justify-center z-10 px-1">
+          {data.is_live && data.score ? (
+            <span className="text-white font-black text-xl mb-1 drop-shadow-lg">{data.score.replace('-', ' : ')}</span>
+          ) : (
+            <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+          )}
+          {/* AI Bet pill */}
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 mb-2 border border-white/30">
+            <p className="font-black text-sm leading-tight text-center drop-shadow-lg">
+              {bet.market || 'Over 2.5'}
+            </p>
+            <div className="flex items-center justify-center gap-2 mt-0.5">
+              <span className="text-yellow-300 font-bold text-xs">@ {bet.odds || '1.85'}</span>
+              <span className="text-white/70 text-[10px]">AI: {bet.confidence || 65}%</span>
+            </div>
+          </div>
+          <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
+            {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Away team */}
+        <div className="flex flex-col items-center gap-1 z-10 w-20">
+          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
+            <img src={data.away?.logo} alt="" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }}/>
+          </div>
+          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[76px] truncate">
+            {data.away?.name}
+          </span>
         </div>
       </div>
     </div>
