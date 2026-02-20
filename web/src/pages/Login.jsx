@@ -8,7 +8,7 @@ import FootballSpinner from '../components/FootballSpinner';
 import SupportChat from '../components/SupportChat';
 import { track } from '../services/analytics';
 import useKeyboardScroll from '../hooks/useKeyboardScroll';
-import { LiveStatsBar, SocialProofToast } from '../components/SocialProof';
+import { LiveStatsBar } from '../components/SocialProof';
 
 
 export default function Login() {
@@ -107,24 +107,6 @@ export default function Login() {
       {/* Form Section */}
       <div className={`flex-1 bg-white rounded-t-[32px] px-6 pb-6 transition-all duration-200 ${keyboardOpen ? 'pt-3' : 'pt-6'}`}>
         <div className="max-w-sm mx-auto">
-          {/* Stats badges — hidden when keyboard is open */}
-          {!keyboardOpen && (
-            <div className="flex justify-center gap-4 mb-5">
-              <div className="bg-green-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-green-600 font-bold text-lg">73%</p>
-                <p className="text-green-600/70 text-[10px] uppercase font-medium">{t('auth.winRate')}</p>
-              </div>
-              <div className="bg-amber-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-amber-600 font-bold text-lg">{t('auth.pro')}</p>
-                <p className="text-amber-600/70 text-[10px] uppercase font-medium">{t('auth.access')}</p>
-              </div>
-              <div className="bg-purple-50 px-4 py-2 rounded-xl text-center">
-                <p className="text-purple-600 font-bold text-lg">{t('auth.ai')}</p>
-                <p className="text-purple-600/70 text-[10px] uppercase font-medium">{t('auth.predictions')}</p>
-              </div>
-            </div>
-          )}
-
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -243,8 +225,6 @@ export default function Login() {
         guest={true}
       />
 
-      {/* Floating social proof toast */}
-      {!keyboardOpen && <SocialProofToast />}
     </div>
   );
 }
