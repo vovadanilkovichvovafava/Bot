@@ -801,3 +801,224 @@ async def _save_messages(
     except Exception as e:
         logger.error(f"Failed to save support chat: {e}")
         await db.rollback()
+
+
+# ============================================================
+# Admin: Read Support Messages (secret key auth)
+# ============================================================
+
+class SupportMessageOut(BaseModel):
+    id: int
+    user_id: int
+    session_id: str
+    role: str
+    content: str
+    locale: str
+    agent_name: Optional[str] = None
+    was_pro: bool
+    created_at: str
+
+
+class SupportSessionOut(BaseModel):
+    session_id: str
+    user_id: int
+    locale: str
+    was_pro: bool
+    message_count: int
+    first_message: str
+    last_message: str
+    preview: str  # First user message as preview
+
+
+@router.get("/messages")
+async def get_support_messages(
+    key: str,
+    user_id: Optional[int] = None,
+    session_id: Optional[str] = None,
+    role: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin endpoint to read support chat messages.
+    Auth: ?key=SECRET_KEY
+    Filters: user_id, session_id, role (user/assistant)
+    """
+    secret = os.getenv("SECRET_KEY", "")
+    if not secret or key != secret:
+        raise HTTPException(status_code=403, detail="Invalid key")
+
+    from sqlalchemy import desc
+
+    stmt = select(SupportChatMessage)
+
+    if user_id is not None:
+        stmt = stmt.where(SupportChatMessage.user_id == user_id)
+    if session_id:
+        stmt = stmt.where(SupportChatMessage.session_id == session_id)
+    if role:
+        stmt = stmt.where(SupportChatMessage.role == role)
+
+    stmt = stmt.order_by(desc(SupportChatMessage.created_at)).offset(offset).limit(limit)
+
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+
+    return {
+        "count": len(messages),
+        "messages": [
+            {
+                "id": m.id,
+                "user_id": m.user_id,
+                "session_id": m.session_id,
+                "role": m.role,
+                "content": m.content,
+                "locale": m.locale,
+                "agent_name": m.agent_name,
+                "was_pro": m.was_pro,
+                "created_at": str(m.created_at),
+            }
+            for m in messages
+        ],
+    }
+
+
+@router.get("/sessions")
+async def get_support_sessions(
+    key: str,
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin endpoint to list all support chat sessions with summary.
+    Auth: ?key=SECRET_KEY
+    """
+    secret = os.getenv("SECRET_KEY", "")
+    if not secret or key != secret:
+        raise HTTPException(status_code=403, detail="Invalid key")
+
+    from sqlalchemy import func as sa_func, desc
+
+    # Get sessions grouped
+    stmt = (
+        select(
+            SupportChatMessage.session_id,
+            SupportChatMessage.user_id,
+            SupportChatMessage.locale,
+            sa_func.bool_or(SupportChatMessage.was_pro).label("was_pro"),
+            sa_func.count().label("message_count"),
+            sa_func.min(SupportChatMessage.created_at).label("first_message"),
+            sa_func.max(SupportChatMessage.created_at).label("last_message"),
+        )
+        .group_by(
+            SupportChatMessage.session_id,
+            SupportChatMessage.user_id,
+            SupportChatMessage.locale,
+        )
+        .order_by(desc("last_message"))
+        .offset(offset)
+        .limit(limit)
+    )
+
+    result = await db.execute(stmt)
+    sessions = result.all()
+
+    # Get first user message for each session (preview)
+    session_previews = {}
+    if sessions:
+        session_ids = [s.session_id for s in sessions]
+        preview_stmt = (
+            select(SupportChatMessage.session_id, SupportChatMessage.content)
+            .where(
+                SupportChatMessage.session_id.in_(session_ids),
+                SupportChatMessage.role == "user",
+            )
+            .order_by(SupportChatMessage.created_at)
+        )
+        preview_result = await db.execute(preview_stmt)
+        for row in preview_result.all():
+            if row.session_id not in session_previews:
+                session_previews[row.session_id] = row.content[:100]
+
+    return {
+        "count": len(sessions),
+        "sessions": [
+            {
+                "session_id": s.session_id,
+                "user_id": s.user_id,
+                "locale": s.locale,
+                "was_pro": s.was_pro,
+                "message_count": s.message_count,
+                "first_message": str(s.first_message),
+                "last_message": str(s.last_message),
+                "preview": session_previews.get(s.session_id, ""),
+            }
+            for s in sessions
+        ],
+    }
+
+
+@router.get("/stats")
+async def get_support_stats(
+    key: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Admin endpoint to get support chat statistics.
+    Auth: ?key=SECRET_KEY
+    """
+    secret = os.getenv("SECRET_KEY", "")
+    if not secret or key != secret:
+        raise HTTPException(status_code=403, detail="Invalid key")
+
+    from sqlalchemy import func as sa_func, distinct, cast, Date
+
+    total = await db.execute(
+        select(sa_func.count()).select_from(SupportChatMessage)
+    )
+    user_msgs = await db.execute(
+        select(sa_func.count()).select_from(SupportChatMessage).where(
+            SupportChatMessage.role == "user"
+        )
+    )
+    unique_users = await db.execute(
+        select(sa_func.count(distinct(SupportChatMessage.user_id)))
+        .select_from(SupportChatMessage)
+    )
+    unique_sessions = await db.execute(
+        select(sa_func.count(distinct(SupportChatMessage.session_id)))
+        .select_from(SupportChatMessage)
+    )
+
+    # Messages per day
+    daily = await db.execute(
+        select(
+            cast(SupportChatMessage.created_at, Date).label("date"),
+            sa_func.count().label("count"),
+        )
+        .where(SupportChatMessage.role == "user")
+        .group_by("date")
+        .order_by("date")
+    )
+
+    # Messages per locale
+    by_locale = await db.execute(
+        select(
+            SupportChatMessage.locale,
+            sa_func.count().label("count"),
+        )
+        .where(SupportChatMessage.role == "user")
+        .group_by(SupportChatMessage.locale)
+        .order_by(sa_func.count().desc())
+    )
+
+    return {
+        "total_messages": total.scalar(),
+        "user_messages": user_msgs.scalar(),
+        "unique_users": unique_users.scalar(),
+        "unique_sessions": unique_sessions.scalar(),
+        "daily": [{"date": str(r.date), "count": r.count} for r in daily.all()],
+        "by_locale": [{"locale": r.locale, "count": r.count} for r in by_locale.all()],
+    }
