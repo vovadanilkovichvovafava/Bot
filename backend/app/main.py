@@ -59,24 +59,41 @@ async def lifespan(app: FastAPI):
     # Initialize database tables
     await init_db()
 
+    # Start background workers with error isolation
+    # Each task is wrapped so one failure doesn't kill the others
+    background_tasks = []
+
+    async def safe_task(name: str, coro):
+        """Wrapper that catches and logs exceptions from background tasks"""
+        try:
+            await coro
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error(f"Background task '{name}' crashed: {type(e).__name__}: {e}")
+
     # Start prediction verification worker (runs every 2 hours)
-    verifier_task = asyncio.create_task(verification_loop())
+    verifier_task = asyncio.create_task(safe_task("verifier", verification_loop()))
+    background_tasks.append(verifier_task)
     logger.info("Prediction verification worker scheduled")
 
     # Start ML pipeline background tasks
-    data_task = asyncio.create_task(data_collection_loop())
+    data_task = asyncio.create_task(safe_task("data_collector", data_collection_loop()))
+    background_tasks.append(data_task)
     logger.info("ML data collection worker scheduled (hourly)")
 
-    trainer_task = asyncio.create_task(training_loop())
+    trainer_task = asyncio.create_task(safe_task("trainer", training_loop()))
+    background_tasks.append(trainer_task)
     logger.info("ML training worker scheduled (daily/weekly)")
 
-    monitor_task = asyncio.create_task(monitoring_loop())
+    monitor_task = asyncio.create_task(safe_task("monitor", monitoring_loop()))
+    background_tasks.append(monitor_task)
     logger.info("ML monitoring worker scheduled (daily)")
 
     yield
 
     # Shutdown: cancel all background tasks
-    for task in [verifier_task, data_task, trainer_task, monitor_task]:
+    for task in background_tasks:
         task.cancel()
         try:
             await task

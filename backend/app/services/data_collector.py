@@ -574,10 +574,17 @@ async def data_collection_loop():
     """
     logger.info("Data collection worker started")
 
+    # Wait for DB init to complete (tables may be recreated on startup)
+    await asyncio.sleep(30)
+
     # Check if we need initial backfill
-    async with async_session_maker() as db:
-        result = await db.execute(select(func.count(MatchFeature.id)))
-        count = result.scalar() or 0
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(select(func.count(MatchFeature.id)))
+            count = result.scalar() or 0
+    except Exception as e:
+        logger.error(f"Data collection startup DB check failed: {e}")
+        count = 0
 
     if count < 100:
         logger.info("Less than 100 training samples, starting 30-day backfill")
