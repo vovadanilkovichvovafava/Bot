@@ -46,8 +46,14 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     Check user's AI chat limits and update day tracking.
     Returns: {remaining, limit, day_number, resets_at, is_premium}
     """
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"DB error in check_and_update_limits (select): {e}")
+        await db.rollback()
+        raise HTTPException(status_code=503, detail="Database temporarily unavailable")
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -89,7 +95,11 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     # Calculate when the limit resets (next midnight UTC)
     tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        logger.error(f"DB error in check_and_update_limits (commit): {e}")
+        await db.rollback()
 
     return {
         "remaining": remaining,
@@ -105,28 +115,32 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
 
 async def increment_chat_usage(user_id: int, db: AsyncSession):
     """Increment the user's daily chat request counter after successful response."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        return
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            return
 
-    now = datetime.utcnow()
-    today = now.date()
+        now = datetime.utcnow()
+        today = now.date()
 
-    # Safety: if somehow date changed between check and increment
-    if user.last_chat_request_date and user.last_chat_request_date.date() < today:
-        user.account_day_number = (user.account_day_number or 1) + 1
-        user.daily_chat_requests = 1
-    else:
-        user.daily_chat_requests = (user.daily_chat_requests or 0) + 1
+        # Safety: if somehow date changed between check and increment
+        if user.last_chat_request_date and user.last_chat_request_date.date() < today:
+            user.account_day_number = (user.account_day_number or 1) + 1
+            user.daily_chat_requests = 1
+        else:
+            user.daily_chat_requests = (user.daily_chat_requests or 0) + 1
 
-    user.last_chat_request_date = now
-    await db.commit()
+        user.last_chat_request_date = now
+        await db.commit()
 
-    logger.info(
-        f"User {user_id} chat usage: {user.daily_chat_requests} requests, "
-        f"day {user.account_day_number}"
-    )
+        logger.info(
+            f"User {user_id} chat usage: {user.daily_chat_requests} requests, "
+            f"day {user.account_day_number}"
+        )
+    except Exception as e:
+        logger.error(f"DB error in increment_chat_usage: {e}")
+        await db.rollback()
 
 
 # === Response models ===
@@ -157,7 +171,6 @@ class ChatRequest(BaseModel):
     message: str
     match_context: Optional[str] = None
     history: Optional[List[ChatMessage]] = None
-    locale: Optional[str] = "en"
 
 
 class ChatResponse(BaseModel):

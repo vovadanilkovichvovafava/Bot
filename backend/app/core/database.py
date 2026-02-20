@@ -19,7 +19,12 @@ elif DATABASE_URL.startswith("postgresql://"):
 if not DATABASE_URL:
     DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/betting_bot"
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 async_session_maker = async_sessionmaker(
     engine,
@@ -44,8 +49,6 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_requests INTEGER DEFAULT 0",
             # Public ID for tracking (secure, non-guessable)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS public_id VARCHAR UNIQUE",
-            # Predictions sync (JSON array stored as text)
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS predictions_data TEXT",
             # Degressive AI chat limits
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_chat_requests INTEGER DEFAULT 0",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_chat_request_date TIMESTAMP",
@@ -57,18 +60,6 @@ async def init_db():
                 await conn.execute(text(migration))
             except Exception:
                 pass  # Column might already exist
-
-        # Support chat messages table (auto-created by Base.metadata.create_all)
-        # Add indexes if needed
-        try:
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_support_chat_user_created ON support_chat_messages(user_id, created_at)")
-            )
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_support_chat_session ON support_chat_messages(session_id, created_at)")
-            )
-        except Exception:
-            pass
 
         # Create index for referral_code if not exists
         try:
@@ -98,21 +89,6 @@ async def init_db():
                     text("UPDATE users SET public_id = :public_id WHERE id = :id"),
                     {"public_id": public_id, "id": row[0]}
                 )
-        except Exception:
-            pass
-
-        # One-time: activate PRO for User_8787 (manual request)
-        try:
-            from datetime import datetime, timedelta
-            premium_until = datetime.utcnow() + timedelta(days=30)
-            result = await conn.execute(
-                text("UPDATE users SET is_premium = true, premium_until = :until WHERE username = 'User_8787' AND (is_premium = false OR is_premium IS NULL) RETURNING id, username")
-                , {"until": premium_until}
-            )
-            row = result.fetchone()
-            if row:
-                import logging
-                logging.getLogger(__name__).info(f"PRO activated for User_8787 (id={row[0]}) until {premium_until}")
         except Exception:
             pass
 
