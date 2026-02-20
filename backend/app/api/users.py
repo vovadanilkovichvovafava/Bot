@@ -242,6 +242,30 @@ async def activate_premium(
     }
 
 
+@router.get("/lookup/{username}")
+async def lookup_user(
+    username: str,
+    x_internal_secret: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """Lookup user by username (internal endpoint for admin)"""
+    if x_internal_secret != INTERNAL_SECRET:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal secret")
+
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return {
+        "public_id": user.public_id,
+        "username": user.username,
+        "is_premium": user.is_premium,
+        "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
 # === Referral System ===
 
 class ReferralStatsResponse(BaseModel):
