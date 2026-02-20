@@ -89,6 +89,51 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, [checkAuth]);
 
+  // Re-validate session when user returns to the tab (e.g. after visiting bookmaker)
+  // This prevents the "session lost" problem when CTA opens external link in new tab
+  useEffect(() => {
+    let lastCheck = Date.now();
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+
+      // Only re-check if at least 30 seconds since last check (avoid spam)
+      const now = Date.now();
+      if (now - lastCheck < 30000) return;
+      lastCheck = now;
+
+      const token = api.getToken();
+      if (!token) return; // No token — nothing to re-validate
+
+      try {
+        const userData = await api.getMe();
+        setUser(userData);
+      } catch {
+        // Token expired — try refresh silently
+        const refreshed = await api._tryRefresh();
+        if (refreshed) {
+          try {
+            const userData = await api.getMe();
+            setUser(userData);
+          } catch {
+            // Refresh succeeded but getMe failed — don't logout, keep stale state
+          }
+        }
+        // If refresh failed, DON'T logout — let user continue browsing
+        // ProtectedRoute will handle redirect on next navigation if needed
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Also handle window focus for standalone PWA on Android (WebAPK)
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, []);
+
   const login = async (phone, password) => {
     await api.login(phone, password);
     const userData = await api.getMe();
