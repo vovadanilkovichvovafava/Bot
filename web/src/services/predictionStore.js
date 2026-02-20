@@ -149,7 +149,42 @@ export function savePrediction({
 
   saveAll(predictions);
   syncToBackend();
+
+  // Also save to predictions DB table for ML verification & learning
+  syncToDB(entry);
+
   return entry;
+}
+
+/**
+ * Save a prediction to the backend predictions table (for ML tracking).
+ * Fires and forgets — doesn't block the UI.
+ */
+function syncToDB(entry) {
+  try {
+    const payload = {
+      match_id: parseInt(entry.matchId) || 0,
+      home_team: entry.homeTeam?.name || 'Home',
+      away_team: entry.awayTeam?.name || 'Away',
+      league: entry.league || null,
+      match_date: entry.matchDate || null,
+      bet_type: entry.prediction?.betType || null,
+      predicted_odds: entry.odds?.home ? parseFloat(entry.odds.home) : null,
+      confidence: entry.prediction?.confidence || null,
+      ai_analysis: entry.prediction?.advice || null,
+      api_prediction: entry.prediction ? {
+        winnerName: entry.prediction.winnerName,
+        homePct: entry.prediction.homePct,
+        drawPct: entry.prediction.drawPct,
+        awayPct: entry.prediction.awayPct,
+      } : null,
+    };
+    api.savePredictionToDB(payload).catch((e) => {
+      console.warn('Failed to save prediction to DB:', e);
+    });
+  } catch {
+    // ignore — DB sync is best-effort
+  }
 }
 
 /**

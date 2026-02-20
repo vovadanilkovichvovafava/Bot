@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -7,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api import auth, matches, predictions, users, football, analytics, support
 from app.core.database import init_db
+from app.services.prediction_verifier import verification_loop
 from app.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
@@ -53,8 +55,19 @@ async def lifespan(app: FastAPI):
 
     # Initialize database tables
     await init_db()
+
+    # Start prediction verification worker (runs every 2 hours)
+    verifier_task = asyncio.create_task(verification_loop())
+    logger.info("Prediction verification worker scheduled")
+
     yield
-    # Shutdown: cleanup if needed
+
+    # Shutdown: cancel background tasks
+    verifier_task.cancel()
+    try:
+        await verifier_task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(

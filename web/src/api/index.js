@@ -211,6 +211,19 @@ class ApiService {
     });
   }
 
+  // Save a single prediction to the predictions DB table (for ML tracking)
+  async savePredictionToDB(prediction) {
+    return this.request('/predictions/save', {
+      method: 'POST',
+      body: JSON.stringify(prediction),
+    });
+  }
+
+  // Get real ML stats from verified predictions
+  async getPredictionStats() {
+    return this.request('/predictions/stats');
+  }
+
   // Matches
   async getTodayMatches(league) {
     const params = league ? `?league=${league}` : '';

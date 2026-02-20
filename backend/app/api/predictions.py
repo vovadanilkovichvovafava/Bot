@@ -13,6 +13,7 @@ from app.core.database import get_db
 from app.models.prediction import Prediction
 from app.models.user import User
 from app.services.match_analyzer import MatchAnalyzer
+from app.services.prediction_verifier import get_accuracy_stats, get_learning_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -214,11 +215,22 @@ async def ai_chat(
             }
         )
 
+    # Enrich prompt with historical accuracy data (ML learning feedback)
+    learning_ctx = ""
+    try:
+        learning_ctx = await get_learning_context(db)
+    except Exception:
+        pass  # Don't block AI if stats fail
+
+    enriched_message = req.message
+    if learning_ctx:
+        enriched_message = req.message + learning_ctx
+
     # Call Claude AI
     analyzer = MatchAnalyzer()
     history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
     locale = (req.locale or "en").lower()[:2]
-    response = await analyzer.ai_chat(req.message, req.match_context or "", history, locale)
+    response = await analyzer.ai_chat(enriched_message, req.match_context or "", history, locale)
 
     # Increment counter AFTER successful response
     await increment_chat_usage(user_id, db)
@@ -274,7 +286,7 @@ async def save_prediction(
 ):
     """Save a prediction to the database"""
     prediction = Prediction(
-        user_id=current_user["id"],
+        user_id=current_user["user_id"],
         match_id=req.match_id,
         home_team=req.home_team,
         away_team=req.away_team,
@@ -302,12 +314,36 @@ async def get_saved_predictions(
     """Get user's saved predictions from database"""
     result = await db.execute(
         select(Prediction)
-        .where(Prediction.user_id == current_user["id"])
+        .where(Prediction.user_id == current_user["user_id"])
         .order_by(desc(Prediction.created_at))
         .offset(offset)
         .limit(limit)
     )
     return result.scalars().all()
+
+
+@router.get("/stats")
+async def get_prediction_stats(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get real prediction accuracy stats from verified predictions."""
+    user_stats = await get_accuracy_stats(db, user_id=current_user["user_id"])
+    global_stats = await get_accuracy_stats(db)
+    return {
+        "user": user_stats,
+        "global": global_stats,
+    }
+
+
+@router.get("/learning-context")
+async def get_ml_learning_context(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get historical accuracy context for AI prompt enrichment."""
+    context = await get_learning_context(db)
+    return {"context": context}
 
 
 @router.get("/history", response_model=List[PredictionResponse])
