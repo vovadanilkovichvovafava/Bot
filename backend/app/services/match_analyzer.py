@@ -12,6 +12,7 @@ import anthropic
 
 from app.config import settings, TOP_CLUBS
 from app.services.football_api import fetch_match_details, fetch_standings
+from app.services.ml_predictor import predict_match as ml_predict_match
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,17 @@ class MatchAnalyzer:
             standings=standings,
         )
 
+        # Get ML prediction if available
+        ml_prediction = None
+        try:
+            ml_prediction = await ml_predict_match(match_id)
+        except Exception as e:
+            logger.debug(f"ML prediction not available for match {match_id}: {e}")
+
+        # Enrich context with ML data
+        if ml_prediction and ml_prediction.get("markets"):
+            context += self._build_ml_context(ml_prediction)
+
         # Try AI analysis first
         analysis = await self._get_ai_analysis(home_team, away_team, context)
 
@@ -109,6 +121,12 @@ class MatchAnalyzer:
             "match_date": match_date,
             **analysis,
         }
+
+        # Add ML predictions to result
+        if ml_prediction:
+            result["ml_predictions"] = ml_prediction.get("markets", {})
+            result["ml_recommendations"] = ml_prediction.get("recommendations", [])
+            result["ml_model_info"] = ml_prediction.get("model_info", {})
 
         # Cache the result for other users
         _set_cached_analysis(match_id, result)
@@ -236,28 +254,96 @@ class MatchAnalyzer:
 
         return "\n".join(parts)
 
+    def _build_ml_context(self, ml_prediction: dict) -> str:
+        """Build ML prediction context for Claude prompt enrichment."""
+        parts = ["\n\n--- ML MODEL PREDICTIONS ---"]
+
+        markets = ml_prediction.get("markets", {})
+        model_info = ml_prediction.get("model_info", {})
+
+        # Show training info
+        if model_info:
+            sample_counts = [str(m.get("training_samples", 0)) for m in model_info.values() if m.get("training_samples")]
+            if sample_counts:
+                parts.append(f"(Trained on {sample_counts[0]}+ historical matches)")
+
+        # 1X2
+        if "1x2" in markets:
+            m = markets["1x2"]
+            parts.append(f"Match Outcome: Home {m['home_win']:.0%} | Draw {m['draw']:.0%} | Away {m['away_win']:.0%}")
+
+        # Over/Under
+        if "over_under_25" in markets:
+            m = markets["over_under_25"]
+            parts.append(f"Goals: Over 2.5 {m['over_2.5']:.0%} | Under 2.5 {m['under_2.5']:.0%}")
+
+        if "over_under_15" in markets:
+            m = markets["over_under_15"]
+            parts.append(f"       Over 1.5 {m['over_1.5']:.0%} | Under 1.5 {m['under_1.5']:.0%}")
+
+        if "over_under_35" in markets:
+            m = markets["over_under_35"]
+            parts.append(f"       Over 3.5 {m['over_3.5']:.0%} | Under 3.5 {m['under_3.5']:.0%}")
+
+        # BTTS
+        if "btts" in markets:
+            m = markets["btts"]
+            parts.append(f"BTTS: Yes {m['yes']:.0%} | No {m['no']:.0%}")
+
+        # Corners
+        if "corners_ou" in markets:
+            m = markets["corners_ou"]
+            parts.append(f"Corners: Over 9.5 {m['over_9.5']:.0%} | Under 9.5 {m['under_9.5']:.0%}")
+
+        # Cards
+        if "cards_ou" in markets:
+            m = markets["cards_ou"]
+            parts.append(f"Cards: Over 3.5 {m['over_3.5']:.0%} | Under 3.5 {m['under_3.5']:.0%}")
+
+        # Value bets
+        recommendations = ml_prediction.get("recommendations", [])
+        if recommendations:
+            parts.append("\nML Value Bets Found:")
+            for rec in recommendations[:3]:
+                parts.append(
+                    f"  → {rec['bet_name']} ({rec['bet_type']}): "
+                    f"Model {rec['model_probability']:.0%} vs Odds {rec.get('odds', 'N/A')} "
+                    f"(Edge: {rec['edge']:.0%}, EV: {rec['expected_value']:+.2f})"
+                )
+
+        parts.append(
+            "\nConsider these ML probabilities but use your expert judgment to adjust "
+            "based on qualitative factors (injuries, motivation, weather, etc.). "
+            "Provide 2-3 bet recommendations from different markets, not just one."
+        )
+
+        return "\n".join(parts)
+
     async def _get_ai_analysis(self, home_team: str, away_team: str, context: str) -> Optional[Dict]:
         """Get AI analysis from Claude"""
         if not self.claude_client:
             return None
 
-        prompt = f"""Analyze this football match and provide a betting prediction.
+        prompt = f"""Analyze this football match and provide betting predictions.
 
 {context}
 
 Respond in this exact JSON format:
 {{
-    "bet_type": "П1 or П2 or Х or ТБ2.5 or ТМ2.5 or BTTS or 1X or X2",
+    "bet_type": "best bet type (П1/П2/Х/ТБ2.5/ТМ2.5/BTTS/1X/X2/Over1.5/Under3.5)",
     "confidence": 65-95 (number),
     "odds": 1.5-3.0 (estimated fair odds),
     "reasoning": "2-3 sentences explaining the prediction",
-    "analysis": "Detailed 3-5 sentence analysis covering form, H2H, tactical factors",
-    "alt_bet_type": "alternative bet suggestion",
-    "alt_confidence": number
+    "analysis": "Detailed 3-5 sentence analysis covering form, H2H, tactical factors, and ML model insights",
+    "alt_bet_type": "alternative bet from different market",
+    "alt_confidence": number,
+    "alt_bet_type2": "third bet suggestion from yet another market",
+    "alt_confidence2": number
 }}
 
 Consider: current form, H2H record, standings position, home advantage, team quality.
-Be realistic with confidence - rarely above 80%. Only respond with JSON."""
+If ML model predictions are provided above, use them as a strong quantitative baseline.
+Be realistic with confidence - rarely above 85%. Only respond with JSON."""
 
         try:
             response = self.claude_client.messages.create(

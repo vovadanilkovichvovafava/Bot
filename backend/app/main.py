@@ -9,6 +9,9 @@ from app.config import settings
 from app.api import auth, matches, predictions, users, football, analytics, support
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
+from app.services.data_collector import data_collection_loop
+from app.services.ml_trainer import training_loop
+from app.services.ml_monitor import monitoring_loop
 from app.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
@@ -60,14 +63,25 @@ async def lifespan(app: FastAPI):
     verifier_task = asyncio.create_task(verification_loop())
     logger.info("Prediction verification worker scheduled")
 
+    # Start ML pipeline background tasks
+    data_task = asyncio.create_task(data_collection_loop())
+    logger.info("ML data collection worker scheduled (hourly)")
+
+    trainer_task = asyncio.create_task(training_loop())
+    logger.info("ML training worker scheduled (daily/weekly)")
+
+    monitor_task = asyncio.create_task(monitoring_loop())
+    logger.info("ML monitoring worker scheduled (daily)")
+
     yield
 
-    # Shutdown: cancel background tasks
-    verifier_task.cancel()
-    try:
-        await verifier_task
-    except asyncio.CancelledError:
-        pass
+    # Shutdown: cancel all background tasks
+    for task in [verifier_task, data_task, trainer_task, monitor_task]:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

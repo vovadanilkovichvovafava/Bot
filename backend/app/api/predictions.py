@@ -14,6 +14,8 @@ from app.models.prediction import Prediction
 from app.models.user import User
 from app.services.match_analyzer import MatchAnalyzer
 from app.services.prediction_verifier import get_accuracy_stats, get_learning_context
+from app.services.ml_predictor import predict_match, batch_predict_today, get_match_recommendation
+from app.services.ml_monitor import get_ml_dashboard_stats, calculate_roi
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -193,6 +195,31 @@ class ChatLimitResponse(BaseModel):
     is_premium: bool
 
 
+class MLPredictionResponse(BaseModel):
+    fixture_id: int
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    match_date: Optional[str] = None
+    markets: dict = {}
+    recommendations: list = []
+    model_info: dict = {}
+
+
+class MLRecommendationResponse(BaseModel):
+    fixture_id: int
+    recommendation: Optional[dict] = None
+    all_recommendations: Optional[list] = None
+    markets: dict = {}
+    has_value_bet: bool = False
+
+
+class MLDashboardResponse(BaseModel):
+    data: dict = {}
+    models: dict = {}
+    predictions: dict = {}
+    recent_events: list = []
+
+
 # === Endpoints ===
 
 @router.get("/chat/limit", response_model=ChatLimitResponse)
@@ -368,6 +395,70 @@ async def get_ml_learning_context(
     """Get historical accuracy context for AI prompt enrichment."""
     context = await get_learning_context(db)
     return {"context": context}
+
+
+# === ML Prediction Endpoints ===
+
+@router.get("/ml/{fixture_id}", response_model=MLPredictionResponse)
+async def get_ml_prediction(
+    fixture_id: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Get pure ML prediction for a fixture (no Claude, no API cost)."""
+    result = await predict_match(fixture_id)
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail="ML prediction not available. Model may not be trained yet or fixture data missing."
+        )
+    return MLPredictionResponse(**result)
+
+
+@router.get("/ml/recommend/{fixture_id}", response_model=MLRecommendationResponse)
+async def get_ml_recommendation(
+    fixture_id: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Get the best betting recommendation from ML model for a fixture."""
+    result = await get_match_recommendation(fixture_id)
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail="No recommendation available for this fixture."
+        )
+    return MLRecommendationResponse(**result)
+
+
+@router.post("/ml/batch-predict")
+async def trigger_batch_prediction(
+    current_user: dict = Depends(get_current_user),
+):
+    """Trigger batch ML predictions for today's matches. Admin/debug endpoint."""
+    count = await batch_predict_today()
+    return {"predicted": count, "status": "complete"}
+
+
+@router.get("/ml/dashboard")
+async def get_ml_dashboard(
+    current_user: dict = Depends(get_current_user),
+):
+    """Get ML pipeline dashboard stats."""
+    stats = await get_ml_dashboard_stats()
+    return stats
+
+
+@router.get("/ml/roi/{period}")
+async def get_roi_stats(
+    period: str = "weekly",
+    current_user: dict = Depends(get_current_user),
+):
+    """Get ROI statistics for a period (daily/weekly/monthly)."""
+    if period not in ("daily", "weekly", "monthly"):
+        raise HTTPException(status_code=400, detail="Period must be daily, weekly, or monthly")
+    result = await calculate_roi(period)
+    if not result:
+        return {"period": period, "message": "No verified predictions in this period"}
+    return result
 
 
 @router.get("/history", response_model=List[PredictionResponse])

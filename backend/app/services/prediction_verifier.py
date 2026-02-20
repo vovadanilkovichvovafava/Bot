@@ -13,7 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.models.prediction import Prediction
+from app.models.ml_models import MatchFeature, LearningLog
 from app.services.api_football import ApiFootballService
+from app.services.feature_engineer import update_elo_after_match
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +242,143 @@ def _check_prediction(pred: Prediction, home_goals: int, away_goals: int, fixtur
     )
 
 
+async def update_ml_after_verification():
+    """
+    After predictions are verified, update ML training data:
+    1. Mark MatchFeature records as verified (fill actual results)
+    2. Update Elo ratings based on match results
+    3. Log the event
+    """
+    import json
+
+    async with async_session_maker() as db:
+        try:
+            # Find MatchFeature records that have results but aren't verified yet
+            result = await db.execute(
+                select(MatchFeature).where(
+                    and_(
+                        MatchFeature.is_verified == False,
+                        MatchFeature.home_goals.isnot(None),
+                        MatchFeature.away_goals.isnot(None),
+                    )
+                ).limit(200)
+            )
+            unverified = result.scalars().all()
+
+            if not unverified:
+                return 0
+
+            updated = 0
+            for match in unverified:
+                try:
+                    # Update Elo ratings
+                    if match.result and match.home_team_id and match.away_team_id:
+                        await update_elo_after_match(
+                            db=db,
+                            home_team_id=match.home_team_id,
+                            away_team_id=match.away_team_id,
+                            home_team_name=match.home_team_name,
+                            away_team_name=match.away_team_name,
+                            league_id=match.league_id,
+                            league_name=match.league_name or "",
+                            home_goals=match.home_goals,
+                            away_goals=match.away_goals,
+                        )
+
+                    match.is_verified = True
+                    match.verified_at = datetime.utcnow()
+                    updated += 1
+                except Exception as e:
+                    logger.error(f"Error processing match {match.fixture_id}: {e}")
+
+            if updated > 0:
+                # Log the event
+                log = LearningLog(
+                    event_type="verify_batch",
+                    details_json=json.dumps({
+                        "verified_count": updated,
+                        "timestamp": datetime.utcnow().isoformat(),
+                    })
+                )
+                db.add(log)
+                await db.commit()
+                logger.info(f"ML training data updated: {updated} matches verified, Elo ratings updated")
+
+            return updated
+
+        except Exception as e:
+            logger.error(f"Error in update_ml_after_verification: {e}")
+            await db.rollback()
+            return 0
+
+
+async def sync_prediction_results_to_training():
+    """
+    Sync verified Prediction results back to MatchFeature training data.
+    When a Prediction is verified (has actual scores), update the corresponding
+    MatchFeature record with the actual results.
+    """
+    async with async_session_maker() as db:
+        try:
+            # Get recently verified predictions that might have MatchFeature counterparts
+            result = await db.execute(
+                select(Prediction).where(
+                    and_(
+                        Prediction.is_correct.isnot(None),
+                        Prediction.actual_home_score.isnot(None),
+                        Prediction.actual_away_score.isnot(None),
+                        Prediction.verified_at >= datetime.utcnow() - timedelta(hours=4),
+                    )
+                ).limit(200)
+            )
+            predictions = result.scalars().all()
+
+            if not predictions:
+                return 0
+
+            updated = 0
+            for pred in predictions:
+                try:
+                    # Find matching MatchFeature
+                    match_result = await db.execute(
+                        select(MatchFeature).where(
+                            MatchFeature.fixture_id == int(pred.match_id)
+                        )
+                    )
+                    feature = match_result.scalar_one_or_none()
+
+                    if feature and feature.home_goals is None:
+                        h = pred.actual_home_score
+                        a = pred.actual_away_score
+                        feature.home_goals = h
+                        feature.away_goals = a
+                        feature.total_goals = h + a
+                        feature.btts = (h > 0 and a > 0)
+
+                        if h > a:
+                            feature.result = "H"
+                        elif a > h:
+                            feature.result = "A"
+                        else:
+                            feature.result = "D"
+
+                        updated += 1
+                except (ValueError, TypeError):
+                    continue
+                except Exception as e:
+                    logger.error(f"Error syncing prediction {pred.id}: {e}")
+
+            if updated > 0:
+                await db.commit()
+                logger.info(f"Synced {updated} prediction results to training data")
+
+            return updated
+        except Exception as e:
+            logger.error(f"Error in sync_prediction_results_to_training: {e}")
+            await db.rollback()
+            return 0
+
+
 async def get_accuracy_stats(db: AsyncSession, user_id: int = None) -> dict:
     """
     Get real accuracy statistics from verified predictions.
@@ -400,6 +539,22 @@ async def verification_loop():
             count = await verify_pending_predictions()
             if count > 0:
                 logger.info(f"Verification cycle complete: {count} predictions verified")
+
+                # Sync results to ML training data
+                try:
+                    synced = await sync_prediction_results_to_training()
+                    if synced:
+                        logger.info(f"Synced {synced} results to ML training data")
+                except Exception as e:
+                    logger.error(f"Error syncing to training data: {e}")
+
+                # Update Elo ratings and mark training data as verified
+                try:
+                    ml_updated = await update_ml_after_verification()
+                    if ml_updated:
+                        logger.info(f"Updated {ml_updated} ML training records")
+                except Exception as e:
+                    logger.error(f"Error updating ML after verification: {e}")
             else:
                 logger.info("Verification cycle: no new verifications")
         except Exception as e:

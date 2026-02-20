@@ -37,6 +37,9 @@ Base = declarative_base()
 
 async def init_db():
     """Create all tables and run migrations"""
+    # Import all models so they register with Base.metadata
+    import app.models.ml_models  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -63,6 +66,15 @@ async def init_db():
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_home_score INTEGER",
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_away_score INTEGER",
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP",
+            # ML Pipeline tables — additional indexes
+            "CREATE INDEX IF NOT EXISTS ix_ml_training_fixture ON ml_training_data(fixture_id)",
+            "CREATE INDEX IF NOT EXISTS ix_ml_training_home_team ON ml_training_data(home_team_id)",
+            "CREATE INDEX IF NOT EXISTS ix_ml_training_away_team ON ml_training_data(away_team_id)",
+            "CREATE INDEX IF NOT EXISTS ix_elo_team_league ON league_learning(team_id, league_id)",
+            "CREATE INDEX IF NOT EXISTS ix_ml_models_active ON ml_models(model_name, is_active)",
+            "CREATE INDEX IF NOT EXISTS ix_cached_predictions_fixture ON cached_ai_responses(fixture_id)",
+            "CREATE INDEX IF NOT EXISTS ix_learning_log_type ON learning_log(event_type, created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_roi_analytics_period ON roi_analytics(period, period_start)",
         ]
 
         for migration in migrations:
