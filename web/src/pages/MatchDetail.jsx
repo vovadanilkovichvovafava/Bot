@@ -76,6 +76,27 @@ export default function MatchDetail() {
     }
   }, [id]);
 
+  // Phase 2: Load standings + H2H after fixture is available
+  useEffect(() => {
+    if (!enriched?.fixture || enriched?.standings) return;
+    const fixture = enriched.fixture;
+    const leagueId = fixture.league?.id;
+    const season = fixture.league?.season;
+    const homeId = enriched.homeId;
+    const awayId = enriched.awayId;
+
+    Promise.allSettled([
+      leagueId && season ? footballApi.getStandings(leagueId, season) : Promise.resolve([]),
+      homeId && awayId ? footballApi.getHeadToHead(homeId, awayId, 10) : Promise.resolve([]),
+    ]).then(([standings, h2h]) => {
+      setEnriched(prev => ({
+        ...prev,
+        standings: standings.status === 'fulfilled' ? standings.value : [],
+        h2hFixtures: h2h.status === 'fulfilled' ? h2h.value : [],
+      }));
+    });
+  }, [enriched?.fixture]);
+
   const loadMatch = async () => {
     // For numeric IDs (API-Football), load fixture and enriched data in parallel
     const isApiFootballId = /^\d+$/.test(id);
@@ -813,6 +834,15 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
         </div>
       )}
 
+      {/* Team Form */}
+      <TeamFormCard enriched={enriched} match={match} t={t} />
+
+      {/* H2H Matches */}
+      <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
+
+      {/* League Standings */}
+      <StandingsTable enriched={enriched} match={match} t={t} />
+
       {/* Match Info */}
       <div className="card border border-gray-100">
         <h3 className="font-bold text-lg mb-4">{t('matchDetail.matchInfo')}</h3>
@@ -932,6 +962,13 @@ function LineupsTab({ enriched, loading, t }) {
 
   return (
     <div className="space-y-4">
+      {/* Visual Formation Pitch */}
+      {enriched.lineups.length >= 2 && enriched.lineups[0]?.startXI?.[0]?.player?.grid && (
+        <div className="card border border-gray-100 p-0 overflow-hidden">
+          <FormationPitch homeLineup={enriched.lineups[0]} awayLineup={enriched.lineups[1]} />
+        </div>
+      )}
+
       {enriched.lineups.map((team, idx) => (
         <div key={idx} className="card border border-gray-100">
           <div className="flex items-center gap-3 mb-3">
@@ -1067,6 +1104,261 @@ function InfoRow({ icon, label, value }) {
         <span className="text-sm">{label}</span>
       </div>
       <span className="text-sm font-medium text-gray-900">{value}</span>
+    </div>
+  );
+}
+
+// ============================
+// Formation Pitch Visual
+// ============================
+function FormationPitch({ homeLineup, awayLineup }) {
+  const renderHalf = (lineup, isHome) => {
+    if (!lineup?.startXI?.length) return null;
+
+    // Group players by grid row
+    const rows = {};
+    lineup.startXI.forEach(p => {
+      const [row, col] = (p.player.grid || '').split(':').map(Number);
+      if (!row) return;
+      if (!rows[row]) rows[row] = [];
+      rows[row].push({ ...p.player, col });
+    });
+    Object.values(rows).forEach(r => r.sort((a, b) => a.col - b.col));
+    const maxRow = Math.max(...Object.keys(rows).map(Number));
+
+    return (
+      <div className="relative" style={{ height: '200px' }}>
+        {/* Team label */}
+        <div className={`absolute ${isHome ? 'top-1' : 'bottom-1'} left-2 z-10 flex items-center gap-1.5`}>
+          <img src={lineup.team.logo} alt="" className="w-4 h-4 object-contain"/>
+          <span className="text-[10px] font-bold text-white/80">{lineup.formation}</span>
+        </div>
+        {/* Players */}
+        {Object.entries(rows).map(([rowNum, players]) => {
+          const row = parseInt(rowNum);
+          // Home: GK at bottom (high Y), FWD at top (low Y)
+          // Away: GK at top (low Y), FWD at bottom (high Y)
+          const yPct = isHome
+            ? 8 + ((maxRow - row) / Math.max(maxRow - 1, 1)) * 80
+            : 12 + ((row - 1) / Math.max(maxRow - 1, 1)) * 80;
+          const numInRow = players.length;
+
+          return players.map((player, i) => {
+            const xPct = ((i + 1) / (numInRow + 1)) * 100;
+            return (
+              <div
+                key={player.id || `${rowNum}-${i}`}
+                className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${xPct}%`, top: `${yPct}%` }}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm ${
+                  isHome ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {player.number}
+                </div>
+                <span className="text-[8px] text-white/90 font-medium mt-0.5 max-w-[50px] truncate text-center leading-tight">
+                  {player.name?.split(' ').pop()}
+                </span>
+              </div>
+            );
+          });
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-gradient-to-b from-green-700 via-green-600 to-green-700 relative">
+      {/* Pitch markings */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Center line */}
+        <div className="absolute top-1/2 left-[5%] right-[5%] h-px bg-white/30"/>
+        {/* Center circle */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white/30 rounded-full"/>
+        {/* Center dot */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/40 rounded-full"/>
+        {/* Top penalty box */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[12%] border-b border-l border-r border-white/25"/>
+        {/* Bottom penalty box */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[12%] border-t border-l border-r border-white/25"/>
+        {/* Field border */}
+        <div className="absolute inset-[3%] border border-white/20 rounded"/>
+      </div>
+
+      {/* Home team (top half = attacking upwards) */}
+      {renderHalf(homeLineup, true)}
+      {/* Away team (bottom half = attacking downwards) */}
+      {renderHalf(awayLineup, false)}
+    </div>
+  );
+}
+
+// ============================
+// Team Form Card (last 5 results from standings)
+// ============================
+function TeamFormCard({ enriched, match, t }) {
+  const standings = enriched?.standings;
+  if (!standings?.length) return null;
+
+  const homeId = enriched.homeId;
+  const awayId = enriched.awayId;
+
+  const homeEntry = standings.find(s => s.team?.id === homeId);
+  const awayEntry = standings.find(s => s.team?.id === awayId);
+
+  if (!homeEntry && !awayEntry) return null;
+
+  const formBadges = (formStr) => {
+    if (!formStr) return null;
+    return formStr.split('').slice(-5).map((ch, i) => {
+      const colors = { W: 'bg-green-500', D: 'bg-gray-400', L: 'bg-red-500' };
+      return (
+        <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${colors[ch] || 'bg-gray-300'}`}>
+          {ch}
+        </span>
+      );
+    });
+  };
+
+  const renderTeamRow = (entry) => {
+    if (!entry) return null;
+    const all = entry.all || {};
+    return (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <img src={entry.team?.logo} alt="" className="w-6 h-6 object-contain shrink-0"/>
+          <span className="text-sm font-medium text-gray-900 truncate">{entry.team?.name}</span>
+          <span className="text-xs text-gray-400 shrink-0">#{entry.rank}</span>
+        </div>
+        <div className="flex items-center gap-2 ml-3">
+          <span className="text-xs text-gray-500 shrink-0">{all.win || 0}W {all.draw || 0}D {all.lose || 0}L</span>
+          <div className="flex gap-1">
+            {formBadges(entry.form)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="card border border-gray-100">
+      <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+        </svg>
+        {t('matchDetail.form') || 'Form'}
+      </h3>
+      <div className="space-y-3">
+        {renderTeamRow(homeEntry)}
+        {renderTeamRow(awayEntry)}
+      </div>
+    </div>
+  );
+}
+
+// ============================
+// H2H Matches List
+// ============================
+function H2HList({ enriched, match, t, formatDate }) {
+  const h2h = enriched?.h2hFixtures;
+  if (!h2h?.length) return null;
+
+  return (
+    <div className="card border border-gray-100">
+      <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
+        </svg>
+        Head to Head
+      </h3>
+      <div className="space-y-2">
+        {h2h.slice(0, 6).map((f, i) => {
+          const homeGoals = f.goals?.home ?? '?';
+          const awayGoals = f.goals?.away ?? '?';
+          const homeName = f.teams?.home?.name || '';
+          const awayName = f.teams?.away?.name || '';
+          const homeWin = f.teams?.home?.winner;
+          const awayWin = f.teams?.away?.winner;
+          const date = f.fixture?.date ? new Date(f.fixture.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
+
+          return (
+            <div key={f.fixture?.id || i} className="flex items-center gap-2 text-sm py-1.5 border-b border-gray-50 last:border-0">
+              <span className="text-[10px] text-gray-400 w-16 shrink-0">{date}</span>
+              <div className="flex-1 flex items-center justify-end gap-1 min-w-0">
+                <span className={`truncate text-right ${homeWin ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{homeName}</span>
+                <img src={f.teams?.home?.logo} alt="" className="w-4 h-4 object-contain shrink-0"/>
+              </div>
+              <div className="bg-gray-100 rounded px-2 py-0.5 font-bold text-xs text-gray-700 shrink-0 min-w-[40px] text-center">
+                {homeGoals} - {awayGoals}
+              </div>
+              <div className="flex-1 flex items-center gap-1 min-w-0">
+                <img src={f.teams?.away?.logo} alt="" className="w-4 h-4 object-contain shrink-0"/>
+                <span className={`truncate ${awayWin ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{awayName}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================
+// League Standings Table
+// ============================
+function StandingsTable({ enriched, match, t }) {
+  const standings = enriched?.standings;
+  if (!standings?.length) return null;
+
+  const homeId = enriched.homeId;
+  const awayId = enriched.awayId;
+  const leagueName = enriched.fixture?.league?.name || match.league;
+  const leagueLogo = enriched.fixture?.league?.logo;
+
+  return (
+    <div className="card border border-gray-100">
+      <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+        {leagueLogo && <img src={leagueLogo} alt="" className="w-5 h-5 object-contain"/>}
+        <span className="truncate">{leagueName}</span>
+      </h3>
+      <div className="overflow-x-auto -mx-4">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-400 border-b border-gray-100">
+              <th className="text-left pl-4 py-1.5 w-6">#</th>
+              <th className="text-left py-1.5">{t('matchDetail.teamLabel') || 'Team'}</th>
+              <th className="text-center py-1.5 w-8">P</th>
+              <th className="text-center py-1.5 w-8">W</th>
+              <th className="text-center py-1.5 w-8">D</th>
+              <th className="text-center py-1.5 w-8">L</th>
+              <th className="text-center py-1.5 w-8">GD</th>
+              <th className="text-center pr-4 py-1.5 w-8 font-bold">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((entry, i) => {
+              const isMatch = entry.team?.id === homeId || entry.team?.id === awayId;
+              return (
+                <tr key={entry.team?.id || i} className={`border-b border-gray-50 ${isMatch ? 'bg-primary-50/60 font-semibold' : ''}`}>
+                  <td className="pl-4 py-1.5 text-gray-500">{entry.rank}</td>
+                  <td className="py-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <img src={entry.team?.logo} alt="" className="w-4 h-4 object-contain shrink-0"/>
+                      <span className={`truncate max-w-[100px] ${isMatch ? 'text-primary-700' : 'text-gray-700'}`}>{entry.team?.name}</span>
+                    </div>
+                  </td>
+                  <td className="text-center text-gray-500">{entry.all?.played}</td>
+                  <td className="text-center text-gray-500">{entry.all?.win}</td>
+                  <td className="text-center text-gray-500">{entry.all?.draw}</td>
+                  <td className="text-center text-gray-500">{entry.all?.lose}</td>
+                  <td className="text-center text-gray-500">{entry.goalsDiff > 0 ? '+' : ''}{entry.goalsDiff}</td>
+                  <td className={`text-center pr-4 font-bold ${isMatch ? 'text-primary-700' : 'text-gray-900'}`}>{entry.points}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
