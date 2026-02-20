@@ -1005,12 +1005,15 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
           if (matched) {
             // Found the fixture — get enriched data by fixture ID
             const fixtureId = matched.fixture.id;
-            const [prediction, odds, stats, injuries, lineups] = await Promise.allSettled([
+            const homeId = matched.teams.home.id;
+            const awayId = matched.teams.away.id;
+            const [prediction, odds, stats, injuries, lineups, h2h] = await Promise.allSettled([
               footballApi.getPrediction(fixtureId),
               footballApi.getOdds(fixtureId),
               footballApi.getFixtureStatistics(fixtureId),
               footballApi.getInjuries(fixtureId),
               footballApi.getFixtureLineups(fixtureId),
+              footballApi.getHeadToHead(homeId, awayId, 10),
             ]);
             enriched = {
               fixture: matched,
@@ -1020,6 +1023,7 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
               stats: stats.status === 'fulfilled' ? stats.value : [],
               injuries: injuries.status === 'fulfilled' ? injuries.value : [],
               lineups: lineups.status === 'fulfilled' ? lineups.value : [],
+              h2h: h2h.status === 'fulfilled' ? h2h.value : [],
             };
           } else {
             // Opponent not found in upcoming, show all upcoming with deep data
@@ -1102,6 +1106,25 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
         }
       }
     }
+  }
+
+  // Head-to-Head history
+  if (enriched.h2h?.length > 0) {
+    parts.push('');
+    parts.push('--- Head-to-Head (last matches) ---');
+    let homeWins = 0, draws = 0, awayWins = 0;
+    for (const h of enriched.h2h.slice(0, 10)) {
+      const hHome = h.teams?.home?.name || '';
+      const hAway = h.teams?.away?.name || '';
+      const hg = h.goals?.home ?? '?';
+      const ag = h.goals?.away ?? '?';
+      const date = h.fixture?.date ? new Date(h.fixture.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+      parts.push(`${date} | ${hHome} ${hg} - ${ag} ${hAway}`);
+      if (hg > ag) homeWins++;
+      else if (hg < ag) awayWins++;
+      else draws++;
+    }
+    parts.push(`Summary: ${fixture.teams.home.name} ${homeWins}W - ${draws}D - ${awayWins}W ${fixture.teams.away.name}`);
   }
 
   // Injuries

@@ -186,46 +186,56 @@ class FootballApiService {
 
     const fixtureId = fixture.fixture.id;
 
+    const homeId = fixture.teams.home.id;
+    const awayId = fixture.teams.away.id;
+
     // Try to get all enriched data from backend in one call
     if (this.useBackend) {
       try {
-        const enriched = await this.backendRequest(`/fixtures/${fixtureId}/enriched`);
+        const [enriched, h2h] = await Promise.allSettled([
+          this.backendRequest(`/fixtures/${fixtureId}/enriched`),
+          this.getHeadToHead(homeId, awayId, 10),
+        ]);
+        const enrichedData = enriched.status === 'fulfilled' ? enriched.value : {};
         return {
-          fixture: enriched.fixture || fixture,
+          fixture: enrichedData.fixture || fixture,
           fixtureId,
-          homeId: fixture.teams.home.id,
-          awayId: fixture.teams.away.id,
-          prediction: enriched.prediction,
-          odds: enriched.odds || [],
-          stats: enriched.statistics || [],
-          events: enriched.events || [],
-          lineups: enriched.lineups || [],
-          injuries: enriched.injuries || [],
+          homeId,
+          awayId,
+          prediction: enrichedData.prediction,
+          odds: enrichedData.odds || [],
+          stats: enrichedData.statistics || [],
+          events: enrichedData.events || [],
+          lineups: enrichedData.lineups || [],
+          injuries: enrichedData.injuries || [],
+          h2h: h2h.status === 'fulfilled' ? h2h.value : [],
         };
       } catch {}
     }
 
     // Fallback: parallel fetch from API-Football directly
-    const [prediction, odds, stats, events, lineups, injuries] = await Promise.allSettled([
+    const [prediction, odds, stats, events, lineups, injuries, h2h] = await Promise.allSettled([
       this.getPrediction(fixtureId),
       this.getOdds(fixtureId),
       this.getFixtureStatistics(fixtureId),
       this.getFixtureEvents(fixtureId),
       this.getFixtureLineups(fixtureId),
       this.getInjuries(fixtureId),
+      this.getHeadToHead(homeId, awayId, 10),
     ]);
 
     return {
       fixture,
       fixtureId,
-      homeId: fixture.teams.home.id,
-      awayId: fixture.teams.away.id,
+      homeId,
+      awayId,
       prediction: prediction.status === 'fulfilled' ? prediction.value : null,
       odds: odds.status === 'fulfilled' ? odds.value : [],
       stats: stats.status === 'fulfilled' ? stats.value : [],
       events: events.status === 'fulfilled' ? events.value : [],
       lineups: lineups.status === 'fulfilled' ? lineups.value : [],
       injuries: injuries.status === 'fulfilled' ? injuries.value : [],
+      h2h: h2h.status === 'fulfilled' ? h2h.value : [],
     };
   }
 
