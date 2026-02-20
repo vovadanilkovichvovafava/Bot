@@ -417,6 +417,16 @@ export default function MatchDetail() {
 
   const odds1x2 = getOdds1x2();
 
+  // PRO users go directly to bookmaker, free users go to promo page
+  const handlePromoClick = (source) => {
+    if (user?.is_premium && advertiser?.link) {
+      trackClick(user.id, source);
+      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(`/promo?banner=${source}`);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
      <div className="flex-1 min-h-0 overflow-y-auto">
@@ -464,21 +474,21 @@ export default function MatchDetail() {
             <div className="mt-4 pt-3 border-t border-gray-100">
               <div className="grid grid-cols-3 gap-2">
                 <div
-                  onClick={() => navigate('/promo?banner=match_odds_home')}
+                  onClick={() => handlePromoClick('match_odds_home')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.home')}</p>
                   <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
                 </div>
                 <div
-                  onClick={() => navigate('/promo?banner=match_odds_draw')}
+                  onClick={() => handlePromoClick('match_odds_draw')}
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
                 >
                   <p className="text-[10px] text-gray-500 uppercase font-medium">{t('matchDetail.draw')}</p>
                   <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
                 </div>
                 <div
-                  onClick={() => navigate('/promo?banner=match_odds_away')}
+                  onClick={() => handlePromoClick('match_odds_away')}
                   className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
                 >
                   <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.away')}</p>
@@ -677,7 +687,14 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
               {/* Bottom: Free Bet CTA */}
               {bonusNumeric > 0 && (
                 <div
-                  onClick={() => navigate('/promo?banner=match_ai_bet')}
+                  onClick={() => {
+                    if (isPremium && advertiser?.link) {
+                      trackClick(user.id, 'match_ai_bet');
+                      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                    } else {
+                      navigate('/promo?banner=match_ai_bet');
+                    }
+                  }}
                   className="bg-gradient-to-r from-green-700 to-emerald-700 rounded-b-2xl p-4 cursor-pointer hover:from-green-800 hover:to-emerald-800 transition-colors"
                 >
                   <div className="flex items-center justify-between">
@@ -708,7 +725,8 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             match={match}
             enriched={enriched}
             advertiser={advertiser}
-
+            user={user}
+            trackClick={trackClick}
             adTexts={adTexts}
           />
         </div>
@@ -763,7 +781,8 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             match={match}
             enriched={enriched}
             advertiser={advertiser}
-
+            user={user}
+            trackClick={trackClick}
             adTexts={adTexts}
           />
         </div>
@@ -1049,7 +1068,7 @@ function InfoRow({ icon, label, value }) {
 }
 
 // Match Bonus Card with team colors diagonal split
-function MatchBonusCard({ match, enriched, advertiser, adTexts }) {
+function MatchBonusCard({ match, enriched, advertiser, user, trackClick, adTexts }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   // Get team IDs from enriched data or match data
@@ -1061,7 +1080,14 @@ function MatchBonusCard({ match, enriched, advertiser, adTexts }) {
 
   return (
     <div
-      onClick={() => navigate('/promo?banner=match_promo_banner')}
+      onClick={() => {
+        if (user?.is_premium && advertiser?.link) {
+          trackClick(user.id, 'match_promo_banner');
+          window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+        } else {
+          navigate('/promo?banner=match_promo_banner');
+        }
+      }}
       className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
       style={{ minHeight: '120px' }}
     >
