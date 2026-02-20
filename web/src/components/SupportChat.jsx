@@ -58,7 +58,31 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     } catch {}
     return crypto.randomUUID?.() || Date.now().toString();
   });
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    return user?.is_premium || false;
+  });
+
+  // Sync isPro when user object changes (e.g. deposit activates PRO)
+  // If user just became PRO, reset chat to show congratulation
+  useEffect(() => {
+    if (user?.is_premium && !isPro) {
+      setIsPro(true);
+      // Check if chat was started before PRO — reset to show congratulation
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (!parsed.wasPro) {
+            // User just got PRO — clear chat to trigger pro welcome
+            localStorage.removeItem(storageKey);
+            setMessages([]);
+            setChatHistory([]);
+            setSessionId(crypto.randomUUID?.() || Date.now().toString());
+          }
+        }
+      } catch {}
+    }
+  }, [user?.is_premium]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save chat state to localStorage whenever messages change
   useEffect(() => {
@@ -68,6 +92,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
           messages,
           chatHistory,
           sessionId,
+          wasPro: isPro,
         }));
       } catch {}
     }
@@ -89,15 +114,34 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   // Welcome message on first open (only if no saved history)
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const welcomeText = guest
-        ? t('support.guestWelcome', { name: agentName, defaultValue: `Hi! I'm ${agentName}, support manager. Need help with your password or account? I'm here to help!` })
-        : t('support.welcomeMessage', { name: agentName });
-      setMessages([{
+      let welcomeText;
+      if (guest) {
+        welcomeText = t('support.guestWelcome', { name: agentName, defaultValue: `Hi! I'm ${agentName}, support manager. Need help with your password or account? I'm here to help!` });
+      } else if (isPro) {
+        welcomeText = t('support.proWelcomeMessage', { name: agentName });
+      } else {
+        welcomeText = t('support.welcomeMessage', { name: agentName });
+      }
+
+      const welcomeMessages = [{
         id: 1,
         from: 'manager',
         text: welcomeText,
         time: new Date(),
-      }]);
+      }];
+
+      // Add PRO congratulation card as a special message
+      if (!guest && isPro) {
+        welcomeMessages.push({
+          id: 2,
+          from: 'manager',
+          text: '',
+          time: new Date(),
+          proCard: true,
+        });
+      }
+
+      setMessages(welcomeMessages);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -324,21 +368,65 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {messages.map(msg => (
             <div key={msg.id}>
-              <div className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.from === 'user'
-                    ? 'bg-primary-600 text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                  <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
-                    {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+              {/* PRO Congratulation Card */}
+              {msg.proCard && (
+                <div className="flex justify-start">
+                  <div className="max-w-[88%] rounded-2xl overflow-hidden shadow-sm border border-emerald-100">
+                    <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700 px-5 py-4 text-white">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-bold text-base">{t('support.proCardTitle', { defaultValue: 'PRO Activated' })}</p>
+                          <p className="text-emerald-100 text-xs">{t('support.proCardSubtitle', { defaultValue: 'All features unlocked' })}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white px-5 py-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
+                          <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                          {t('support.proFeature1', { defaultValue: 'Value Bet Finder' })}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
+                          <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                          {t('support.proFeature2', { defaultValue: 'Bankroll Tracker' })}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
+                          <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                          {t('support.proFeature3', { defaultValue: 'Unlimited AI' })}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
+                          <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/></svg>
+                          {t('support.proFeature4', { defaultValue: 'Priority Support' })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Regular text message */}
+              {!msg.proCard && (
+                <div className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    msg.from === 'user'
+                      ? 'bg-primary-600 text-white rounded-br-md'
+                      : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                  }`}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
+                      {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Simple promo link under each manager response (not for PRO or guest) */}
-              {!guest && !isPro && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && (
+              {!guest && !isPro && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && !msg.proCard && (
                 <div className="flex justify-start mt-1">
                   <button
                     onClick={() => navigate('/promo?banner=support_promo_link')}
@@ -403,25 +491,50 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         {!keyboardOpen && !guest && (
           <div className="px-5 py-2 border-t border-gray-100">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={openBookmakerLink}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
-              >
-                <span>🎁</span>
-                {t('support.getBonus', { bonus: advertiser?.bonusAmount })}
-              </button>
-              <button
-                onClick={() => setInput(t('support.wantPro'))}
-                className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-              >
-                {t('support.wantPro')}
-              </button>
-              <button
-                onClick={() => setInput(t('support.howToStart'))}
-                className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-              >
-                {t('support.howToStart')}
-              </button>
+              {isPro ? (
+                <>
+                  <button
+                    onClick={() => setInput(t('support.proQuickTools', { defaultValue: 'How to use PRO tools?' }))}
+                    className="flex-shrink-0 px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full border border-emerald-200"
+                  >
+                    {t('support.proQuickTools', { defaultValue: 'How to use PRO tools?' })}
+                  </button>
+                  <button
+                    onClick={() => setInput(t('support.proQuickValueBet', { defaultValue: 'Explain Value Bet Finder' }))}
+                    className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                  >
+                    {t('support.proQuickValueBet', { defaultValue: 'Value Bet Finder' })}
+                  </button>
+                  <button
+                    onClick={() => setInput(t('support.proQuickBankroll', { defaultValue: 'How does Bankroll Tracker work?' }))}
+                    className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                  >
+                    {t('support.proQuickBankroll', { defaultValue: 'Bankroll Tracker' })}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={openBookmakerLink}
+                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
+                  >
+                    <span>🎁</span>
+                    {t('support.getBonus', { bonus: advertiser?.bonusAmount })}
+                  </button>
+                  <button
+                    onClick={() => setInput(t('support.wantPro'))}
+                    className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                  >
+                    {t('support.wantPro')}
+                  </button>
+                  <button
+                    onClick={() => setInput(t('support.howToStart'))}
+                    className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                  >
+                    {t('support.howToStart')}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
