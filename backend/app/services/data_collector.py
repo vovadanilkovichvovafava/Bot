@@ -93,13 +93,13 @@ async def collect_daily_fixtures(date_str: str = None):
     logger.info(f"Found {len(league_fixtures)} fixtures in top-15 leagues (out of {len(all_fixtures)} total)")
 
     collected = 0
-    async with async_session_maker() as db:
-        for fixture in league_fixtures:
-            try:
-                fixture_id = fixture.get("fixture", {}).get("id")
-                if not fixture_id:
-                    continue
+    for fixture in league_fixtures:
+        try:
+            fixture_id = fixture.get("fixture", {}).get("id")
+            if not fixture_id:
+                continue
 
+            async with async_session_maker() as db:
                 # Check if already exists
                 existing = await db.execute(
                     select(MatchFeature).where(MatchFeature.fixture_id == fixture_id)
@@ -107,6 +107,7 @@ async def collect_daily_fixtures(date_str: str = None):
                 if existing.scalar_one_or_none():
                     # Update results if match finished
                     await _update_results(db, fixture)
+                    await db.commit()
                     continue
 
                 # Extract base data
@@ -173,30 +174,27 @@ async def collect_daily_fixtures(date_str: str = None):
                         feature.verified_at = datetime.utcnow()
 
                 db.add(feature)
+                await db.commit()
                 collected += 1
 
-            except Exception as e:
-                logger.error(f"Error processing fixture {fixture.get('fixture', {}).get('id')}: {e}")
-                continue
+        except Exception as e:
+            logger.error(f"Error processing fixture {fixture.get('fixture', {}).get('id')}: {e}")
+            continue
 
-        if collected > 0:
-            try:
-                await db.commit()
-                logger.info(f"Collected {collected} new fixtures for {date_str}")
-            except Exception as e:
-                logger.error(f"DB error committing fixtures: {e}")
-                await db.rollback()
+    if collected > 0:
+        logger.info(f"Collected {collected} new fixtures for {date_str}")
 
-        # Log the collection event
-        try:
+    # Log the collection event
+    try:
+        async with async_session_maker() as db:
             log_entry = LearningLog(
                 event_type="data_collect",
                 details_json=f'{{"date": "{date_str}", "collected": {collected}, "total_available": {len(league_fixtures)}}}'
             )
             db.add(log_entry)
             await db.commit()
-        except Exception:
-            await db.rollback()
+    except Exception:
+        pass
 
     return collected
 
