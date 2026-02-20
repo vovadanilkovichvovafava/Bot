@@ -401,7 +401,7 @@ export default function AIChat() {
                     }}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
-                    {isPremium ? t('aiChat.placeBetsNow', { defaultValue: 'Place your bets now' }) : t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
+                    {isPremium ? t('aiChat.turnInsightsIntoWins', { defaultValue: 'Turn insights into wins' }) : t('advertiser.freeBet', { bonus: advertiser.bonusAmount })}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -409,26 +409,31 @@ export default function AIChat() {
                 )}
               </div>
             </div>
-            {/* Ad block after certain responses */}
-            {msg.showAd && (
+            {/* Ad block after certain responses — skip for PRO if bet card already shown */}
+            {msg.showAd && !(isPremium && msg.bet) && (
               isPremium ? (
                 <div
                   onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); if (advertiser?.link) window.open(advertiser.link, '_blank', 'noopener,noreferrer'); }}
-                  className="mt-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                  className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    {/* Left icon */}
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                       </svg>
                     </div>
+                    {/* Center content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white">{t('aiChat.placeBetsNow', { defaultValue: 'Place your bets now' })}</p>
-                      <p className="text-xs text-emerald-100 mt-0.5">{t('aiChat.useAIPredictions', { defaultValue: 'Use AI predictions to win' })}</p>
+                      <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">{t('aiChat.bestBetLabel', { defaultValue: 'Best bet' })}</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">{t('aiChat.placeBetsNow')}</p>
                     </div>
-                    <svg className="w-5 h-5 text-white/70 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                    </svg>
+                    {/* Right arrow */}
+                    <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               ) : (
