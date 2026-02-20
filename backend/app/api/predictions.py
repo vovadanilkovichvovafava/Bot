@@ -171,6 +171,7 @@ class ChatRequest(BaseModel):
     message: str
     match_context: Optional[str] = None
     history: Optional[List[ChatMessage]] = None
+    locale: Optional[str] = "en"
 
 
 class ChatResponse(BaseModel):
