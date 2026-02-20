@@ -8,7 +8,7 @@ import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../components/FootballSpinner';
 import { track } from '../services/analytics';
 import useKeyboardScroll from '../hooks/useKeyboardScroll';
-import { LiveStatsBar, JoinedTodayBadge, SocialProofToast, RecentWinsTicker } from '../components/SocialProof';
+import { LiveStatsBar, JoinedTodayBadge, RecentWinsTicker } from '../components/SocialProof';
 
 
 export default function Register() {
@@ -243,8 +243,6 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Floating social proof toast */}
-      {!keyboardOpen && <SocialProofToast />}
     </div>
   );
 }
