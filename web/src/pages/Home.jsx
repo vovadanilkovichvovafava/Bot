@@ -210,21 +210,14 @@ export default function Home() {
         )}
 
         {/* PRO: Smart Bet Banner | Free: Featured Match Promo Banner */}
-        {isPremium && smartBet?.found ? (
-          <SmartBetBanner
-            data={smartBet}
-            advertiser={advertiser}
-            trackClick={trackClick}
-            userId={user?.id}
-          />
-        ) : (
-          <FeaturedMatchBanner
-            matches={matches}
-            advertiser={advertiser}
-            trackClick={trackClick}
-            userId={user?.id}
-          />
-        )}
+        <FeaturedMatchBanner
+          matches={matches}
+          advertiser={advertiser}
+          trackClick={trackClick}
+          userId={user?.id}
+          isPremium={isPremium}
+          smartBet={smartBet}
+        />
 
         {/* Value Bet Finder - Main Hook */}
         <div
@@ -476,14 +469,33 @@ function HomeMatchCard({ fixture, navigate }) {
 }
 
 // Featured Match Promo Banner with team logos and diagonal split
-function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremium, smartBet }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // For PRO with smart bet data: use smart bet match instead of matches[0]
+  const smartBetMatch = (isPremium && smartBet?.found) ? {
+    teams: { home: smartBet.home, away: smartBet.away },
+    fixture: { status: { short: smartBet.is_live ? '1H' : 'NS' } },
+    goals: smartBet.score ? { home: parseInt(smartBet.score.split('-')[0]), away: parseInt(smartBet.score.split('-')[1]) } : {},
+  } : null;
+
   // Get the first match from top leagues as featured match
-  const featuredMatch = matches?.[0];
+  const featuredMatch = smartBetMatch || matches?.[0];
+
+  // PRO: click goes directly to bookmaker. Free: click goes to promo page
+  const handleClick = () => {
+    if (isPremium && advertiser?.link) {
+      if (userId) trackClick(userId, smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match');
+      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate('/promo?banner=home_featured_match');
+    }
+  };
 
   // Use i18n for all advertiser texts (bonus amount comes from advertiser config)
   const bonus = advertiser?.bonusAmount || '';
+  const bet = smartBet?.bet;
   const texts = {
     freeBet: t('advertiser.freeBet', { bonus }),
     betOnMatch: t('advertiser.betOnMatch'),
@@ -497,10 +509,11 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
     const f = featuredMatch;
     if (!f?.teams?.home || !f?.teams?.away) return null;
     const { homeColor, awayColor } = getMatchColors(f.teams.home.id, f.teams.away.id);
+    const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
 
     return (
       <div
-        onClick={() => navigate('/promo?banner=home_featured_match')}
+        onClick={handleClick}
         className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
         style={{ minHeight: '140px' }}
       >
@@ -529,10 +542,20 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
               clipPath: 'polygon(63% 0, 67% 0, 37% 100%, 33% 100%)'
             }}
           />
+          {/* Dark overlay for PRO banner readability */}
+          {isPremium && <div className="absolute inset-0 bg-black/20"/>}
         </div>
 
         {/* Animated shine effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 6s infinite'}}/>
+
+        {/* LIVE badge for PRO */}
+        {isPremium && isLive && smartBet?.minute && (
+          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-red-500 px-2.5 py-1 rounded-lg">
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse"/>
+            <span className="text-[11px] font-bold text-white tracking-wide">LIVE {smartBet.minute}'</span>
+          </div>
+        )}
 
         {/* Sparkle decoration */}
         <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg">✨</div>
@@ -554,15 +577,52 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
             </span>
           </div>
 
-          {/* Center - Promo text */}
+          {/* Center - PRO: AI bet / Free: Promo text */}
           <div className="flex-1 flex flex-col items-center justify-center z-10 px-2">
-            <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
-            <p className="font-black text-base sm:text-lg leading-tight drop-shadow-lg text-center mb-2 max-w-[180px]">
-              {texts.promoTitle}
-            </p>
-            <div className="bg-white text-gray-800 font-bold px-5 py-2 rounded-xl text-sm shadow-lg hover:bg-gray-100 transition-colors">
-              {texts.promoCta}
-            </div>
+            {isPremium && bet ? (
+              <>
+                {isLive && smartBet?.score ? (
+                  <span className="text-white font-black text-xl mb-1 drop-shadow-lg">{smartBet.score.replace('-', ' : ')}</span>
+                ) : (
+                  <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+                )}
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 mb-2 border border-white/30">
+                  <p className="font-black text-sm leading-tight text-center drop-shadow-lg">
+                    {bet.market}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-0.5">
+                    <span className="text-yellow-300 font-bold text-xs">@ {bet.odds}</span>
+                    <span className="text-white/70 text-[10px]">AI: {bet.confidence}%</span>
+                  </div>
+                </div>
+                <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
+                  {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                  </svg>
+                </div>
+              </>
+            ) : isPremium ? (
+              <>
+                <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+                <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
+                  {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                  </svg>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
+                <p className="font-black text-base sm:text-lg leading-tight drop-shadow-lg text-center mb-2 max-w-[180px]">
+                  {texts.promoTitle}
+                </p>
+                <div className="bg-white text-gray-800 font-bold px-5 py-2 rounded-xl text-sm shadow-lg hover:bg-gray-100 transition-colors">
+                  {texts.promoCta}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Away team - right side */}
@@ -587,7 +647,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   // Fallback: Simple banner without match (similar to old design)
   return (
     <div
-      onClick={() => navigate('/promo?banner=home_fallback_banner')}
+      onClick={isPremium && advertiser?.link ? () => { if (userId) trackClick(userId, 'pro_fallback_banner'); window.open(advertiser.link, '_blank', 'noopener,noreferrer'); } : () => navigate('/promo?banner=home_fallback_banner')}
       className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] cursor-pointer"
     >
       {/* Animated shine effect */}
@@ -613,93 +673,4 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId }) {
   );
 }
 
-// Smart Bet Banner for PRO users — AI-picked best bet, click goes to bookmaker
-function SmartBetBanner({ data, advertiser, trackClick, userId }) {
-  const { t } = useTranslation();
 
-  const openBookmaker = () => {
-    if (userId) trackClick(userId, 'smart_bet_banner');
-    if (advertiser?.link) {
-      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const { homeColor, awayColor } = getMatchColors(data.home?.id, data.away?.id);
-  const bet = data.bet || {};
-
-  return (
-    <div
-      onClick={openBookmaker}
-      className="block relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
-      style={{ minHeight: '140px' }}
-    >
-      {/* Diagonal split background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0" style={{ backgroundColor: homeColor, clipPath: 'polygon(0 0, 65% 0, 35% 100%, 0 100%)' }}/>
-        <div className="absolute inset-0" style={{ backgroundColor: awayColor, clipPath: 'polygon(65% 0, 100% 0, 100% 100%, 35% 100%)' }}/>
-        <div className="absolute inset-0 bg-white/30" style={{ clipPath: 'polygon(63% 0, 67% 0, 37% 100%, 33% 100%)' }}/>
-        {/* Dark overlay for readability */}
-        <div className="absolute inset-0 bg-black/25"/>
-      </div>
-
-      {/* LIVE badge */}
-      {data.is_live && (
-        <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-red-500 px-2.5 py-1 rounded-lg">
-          <span className="w-2 h-2 bg-white rounded-full animate-pulse"/>
-          <span className="text-[11px] font-bold text-white tracking-wide">LIVE{data.minute ? ` ${data.minute}'` : ''}</span>
-        </div>
-      )}
-
-      {/* Sparkle */}
-      <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg z-10">✨</div>
-
-      {/* Content */}
-      <div className="relative flex items-center justify-between h-full p-4" style={{ minHeight: '140px' }}>
-        {/* Home team */}
-        <div className="flex flex-col items-center gap-1 z-10 w-20">
-          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
-            <img src={data.home?.logo} alt="" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }}/>
-          </div>
-          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[76px] truncate">
-            {data.home?.name}
-          </span>
-        </div>
-
-        {/* Center — AI Bet recommendation */}
-        <div className="flex-1 flex flex-col items-center justify-center z-10 px-1">
-          {data.is_live && data.score ? (
-            <span className="text-white font-black text-xl mb-1 drop-shadow-lg">{data.score.replace('-', ' : ')}</span>
-          ) : (
-            <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">VS</span>
-          )}
-          {/* AI Bet pill */}
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 mb-2 border border-white/30">
-            <p className="font-black text-sm leading-tight text-center drop-shadow-lg">
-              {bet.market || 'Over 2.5'}
-            </p>
-            <div className="flex items-center justify-center gap-2 mt-0.5">
-              <span className="text-yellow-300 font-bold text-xs">@ {bet.odds || '1.85'}</span>
-              <span className="text-white/70 text-[10px]">AI: {bet.confidence || 65}%</span>
-            </div>
-          </div>
-          <div className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-sm shadow-lg flex items-center gap-1.5">
-            {t('home.smartBetCta', { defaultValue: 'Place Bet' })}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-            </svg>
-          </div>
-        </div>
-
-        {/* Away team */}
-        <div className="flex flex-col items-center gap-1 z-10 w-20">
-          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
-            <img src={data.away?.logo} alt="" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }}/>
-          </div>
-          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[76px] truncate">
-            {data.away?.name}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
