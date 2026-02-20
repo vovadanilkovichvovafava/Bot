@@ -185,7 +185,7 @@ def _find_fixture(pred: Prediction, fixtures: list) -> Optional[dict]:
     # Try match_id first (exact match)
     for f in fixtures:
         fid = f.get("fixture", {}).get("id")
-        if fid and fid == pred.match_id:
+        if fid and str(fid) == str(pred.match_id):
             return f
 
     # Fuzzy name matching

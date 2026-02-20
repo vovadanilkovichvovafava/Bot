@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -262,7 +262,7 @@ async def ai_chat(
 
 
 class SavePredictionRequest(BaseModel):
-    match_id: int
+    match_id: Union[int, str]
     home_team: str
     away_team: str
     league: Optional[str] = None
@@ -276,16 +276,16 @@ class SavePredictionRequest(BaseModel):
 
 class SavedPredictionResponse(BaseModel):
     id: int
-    match_id: int
+    match_id: str
     home_team: str
     away_team: str
-    league: Optional[str]
-    match_date: Optional[datetime]
-    bet_type: Optional[str]
-    predicted_odds: Optional[float]
-    confidence: Optional[float]
-    ai_analysis: Optional[str]
-    is_correct: Optional[bool]
+    league: Optional[str] = None
+    match_date: Optional[datetime] = None
+    bet_type: Optional[str] = None
+    predicted_odds: Optional[float] = None
+    confidence: Optional[float] = None
+    ai_analysis: Optional[str] = None
+    is_correct: Optional[bool] = None
     created_at: datetime
 
     class Config:
@@ -301,20 +301,25 @@ async def save_prediction(
     """Save a prediction to the database"""
     prediction = Prediction(
         user_id=current_user["user_id"],
-        match_id=req.match_id,
+        match_id=str(req.match_id),
         home_team=req.home_team,
         away_team=req.away_team,
         league=req.league,
         match_date=req.match_date,
-        bet_type=req.bet_type,
+        bet_type=req.bet_type or "",
         predicted_odds=req.predicted_odds,
-        confidence=req.confidence,
+        confidence=req.confidence or 0.0,
         ai_analysis=req.ai_analysis,
         api_prediction=json.dumps(req.api_prediction) if req.api_prediction else None,
     )
     db.add(prediction)
-    await db.commit()
-    await db.refresh(prediction)
+    try:
+        await db.commit()
+        await db.refresh(prediction)
+    except Exception as e:
+        logger.error(f"DB error saving prediction: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=503, detail="Database error saving prediction")
     return prediction
 
 
