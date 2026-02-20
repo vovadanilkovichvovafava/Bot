@@ -189,8 +189,12 @@ const LEAGUE_KEYWORDS = {
 
 // Match query patterns — with "vs" separator (multilingual)
 const MATCH_PATTERNS_VS = [
-  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—|contra|contre|gegen|tegen|karşı)\s+(.+)/i,
-  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ|partita|partido|pronostic|pronostico|maç|mecz|jogo|مباراة|मैच|比赛)\s+(.+?)\s+(?:vs\.?|v\.?|—|contra|contre|gegen|karşı)\s+(.+)/i,
+  // Standard separators: vs, versus, against, v, —, -, contra, contre, gegen, etc.
+  /(.+?)\s+(?:vs\.?|versus|against|v\.?|—|–|contra|contre|gegen|tegen|karşı)\s+(.+)/i,
+  // "Team1 - Team2" with dashes (very common in CIS/European format)
+  /^(.{2,30}?)\s*[-–—]\s*(.{2,30})$/i,
+  // With command prefix: "матч X vs Y", "predict X vs Y", etc.
+  /(?:матч|match|game|predict|analyse|analyze|прогноз|анализ|ставка|ставку|partita|partido|pronostic|pronostico|maç|mecz|jogo|مباراة|मैच|比赛|bet on|next match)\s+(.+?)\s+(?:vs\.?|v\.?|—|–|-|contra|contre|gegen|karşı)\s+(.+)/i,
 ];
 
 // Well-known team names for detection without "vs" separator
@@ -1018,8 +1022,8 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
               lineups: lineups.status === 'fulfilled' ? lineups.value : [],
             };
           } else {
-            // Opponent not found in upcoming, show all upcoming
-            return buildUpcomingContext(results[0].team.name, fixtures);
+            // Opponent not found in upcoming, show all upcoming with deep data
+            return await enrichSingleTeam(results[0].team.name);
           }
         }
       }
@@ -1201,6 +1205,7 @@ async function enrichDayOverview(day) {
 
 /**
  * Fetch upcoming fixtures for a single team.
+ * For the nearest upcoming match, also fetches predictions, odds, and injuries.
  */
 async function enrichSingleTeam(teamName) {
   try {
@@ -1217,34 +1222,92 @@ async function enrichSingleTeam(teamName) {
     }
     if (!fixtures?.length) return `No upcoming fixtures found for ${team.name}.`;
 
-    return buildUpcomingContext(team.name, fixtures);
+    // Find the nearest upcoming (not started) fixture for deep enrichment
+    const nearestUpcoming = fixtures.find(f => f.fixture.status.short === 'NS');
+
+    // Build basic upcoming list
+    const parts = [`Upcoming fixtures for ${team.name}:`];
+    parts.push('');
+
+    for (const f of fixtures) {
+      const date = new Date(f.fixture.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      const time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const status = f.fixture.status.short;
+      let line = `${date} ${time} | ${f.teams.home.name} vs ${f.teams.away.name} (${f.league.name})`;
+      if (status === 'FT') {
+        line += ` [FT ${f.goals.home}-${f.goals.away}]`;
+      } else if (['1H', '2H', 'HT'].includes(status)) {
+        line += ` [LIVE ${f.goals.home}-${f.goals.away}]`;
+      }
+      parts.push(line);
+    }
+
+    // Fetch deep data for the nearest upcoming match
+    if (nearestUpcoming) {
+      const fixtureId = nearestUpcoming.fixture.id;
+      const [prediction, odds, injuries] = await Promise.allSettled([
+        footballApi.getPrediction(fixtureId),
+        footballApi.getOdds(fixtureId),
+        footballApi.getInjuries(fixtureId),
+      ]);
+
+      parts.push('');
+      parts.push(`--- NEAREST MATCH DETAILS: ${nearestUpcoming.teams.home.name} vs ${nearestUpcoming.teams.away.name} ---`);
+      parts.push(`Date: ${new Date(nearestUpcoming.fixture.date).toLocaleString()}`);
+      parts.push(`League: ${nearestUpcoming.league.name}`);
+
+      // Prediction data
+      const pred = prediction.status === 'fulfilled' ? prediction.value : null;
+      if (pred?.predictions) {
+        const p = pred.predictions;
+        const cmp = pred.comparison;
+        parts.push('');
+        parts.push('--- API Prediction Data ---');
+        if (p.winner?.name) parts.push(`Predicted winner: ${p.winner.name} (${p.winner.comment || ''})`);
+        if (p.advice) parts.push(`Advice: ${p.advice}`);
+        if (p.percent) parts.push(`Win probability: Home ${p.percent.home}, Draw ${p.percent.draw}, Away ${p.percent.away}`);
+        if (cmp) {
+          parts.push(`Form: Home ${cmp.form?.home || '?'} vs Away ${cmp.form?.away || '?'}`);
+          parts.push(`Attack: Home ${cmp.att?.home || '?'} vs Away ${cmp.att?.away || '?'}`);
+          parts.push(`Defense: Home ${cmp.def?.home || '?'} vs Away ${cmp.def?.away || '?'}`);
+        }
+      }
+
+      // Odds
+      const oddsData = odds.status === 'fulfilled' ? odds.value : [];
+      if (oddsData?.length > 0) {
+        const bookmaker = oddsData[0]?.bookmakers?.[0];
+        if (bookmaker) {
+          const market = bookmaker.bets?.find(b => b.name === 'Match Winner');
+          if (market) {
+            const home = market.values?.find(v => v.value === 'Home')?.odd;
+            const draw = market.values?.find(v => v.value === 'Draw')?.odd;
+            const away = market.values?.find(v => v.value === 'Away')?.odd;
+            if (home) {
+              parts.push('');
+              parts.push('--- Bookmaker Odds ---');
+              parts.push(`${bookmaker.name}: Home ${home}, Draw ${draw}, Away ${away}`);
+            }
+          }
+        }
+      }
+
+      // Injuries
+      const injuriesData = injuries.status === 'fulfilled' ? injuries.value : [];
+      if (injuriesData?.length > 0) {
+        parts.push('');
+        parts.push('--- Injuries/Suspensions ---');
+        for (const inj of injuriesData.slice(0, 8)) {
+          parts.push(`${inj.team.name}: ${inj.player.name} (${inj.player.reason || 'injured'})`);
+        }
+      }
+    }
+
+    return parts.join('\n');
   } catch (e) {
     console.error('Single team enrichment failed:', e);
     return null;
   }
-}
-
-/**
- * Build context string for upcoming fixtures list.
- */
-function buildUpcomingContext(teamName, fixtures) {
-  const parts = [`Upcoming fixtures for ${teamName}:`];
-  parts.push('');
-
-  for (const f of fixtures) {
-    const date = new Date(f.fixture.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const status = f.fixture.status.short;
-    let line = `${date} ${time} | ${f.teams.home.name} vs ${f.teams.away.name} (${f.league.name})`;
-    if (status === 'FT') {
-      line += ` [FT ${f.goals.home}-${f.goals.away}]`;
-    } else if (['1H', '2H', 'HT'].includes(status)) {
-      line += ` [LIVE ${f.goals.home}-${f.goals.away}]`;
-    }
-    parts.push(line);
-  }
-
-  return parts.join('\n');
 }
 
 /**
