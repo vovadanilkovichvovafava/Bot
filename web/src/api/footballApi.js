@@ -52,10 +52,13 @@ class FootballApiService {
   // === Backend Proxy Requests ===
 
   async backendRequest(endpoint) {
-    // Client-side cache — avoid redundant network requests
+    // Skip cache for live endpoints — always fetch fresh data
+    const isLive = endpoint.includes('/live');
     const cacheKey = `backend:${endpoint}`;
-    const cached = getLocalCache(cacheKey);
-    if (cached) return cached;
+    if (!isLive) {
+      const cached = getLocalCache(cacheKey);
+      if (cached) return cached;
+    }
 
     try {
       const response = await fetch(`${BACKEND_BASE}/football${endpoint}`, {
@@ -73,7 +76,7 @@ class FootballApiService {
       }
 
       const data = await response.json();
-      setLocalCache(cacheKey, data);
+      if (!isLive) setLocalCache(cacheKey, data);
       return data;
     } catch (e) {
       // Network errors (fetch failed entirely) — disable backend
