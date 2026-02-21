@@ -166,19 +166,23 @@ export function LiveStatsBar() {
   );
 }
 
+// Locale → country flag for JoinedTodayBadge
+const FLAG_BY_LOCALE = {
+  it: '🇮🇹', de: '🇩🇪', pl: '🇵🇱', es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧',
+};
+
 // --- Joined Today Badge ---
 export function JoinedTodayBadge() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const count = useAnimatedNumber(BASE_JOINED, 2000);
+  const flag = FLAG_BY_LOCALE[i18n.language?.slice(0, 2)] || FLAG_BY_LOCALE.en;
 
   return (
     <div className="flex items-center justify-center gap-2 bg-green-500/15 border border-green-500/20 rounded-full px-4 py-1.5 mx-auto max-w-fit">
       <div className="flex -space-x-1.5">
-        {['bg-blue-500', 'bg-amber-500', 'bg-green-500'].map((c, i) => (
-          <div key={i} className={`w-5 h-5 rounded-full ${c} border-2 border-gray-900 flex items-center justify-center`}>
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-            </svg>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="w-5 h-5 rounded-full bg-gray-800 border-2 border-gray-900 flex items-center justify-center text-[10px] leading-none">
+            {flag}
           </div>
         ))}
       </div>
