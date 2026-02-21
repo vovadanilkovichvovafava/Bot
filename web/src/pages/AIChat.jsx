@@ -12,12 +12,35 @@ import { useBottomNav } from '../context/BottomNavContext';
 const CHAT_HISTORY_KEY = 'ai_chat_history';
 const CHAT_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
-// Secondary questions - shown on expand (keys for i18n)
-const SECONDARY_QUESTIONS = [
+// Secondary questions - locale-specific leagues first, then international
+const SECONDARY_QUESTIONS_BY_LOCALE = {
+  it: [
+    { key: 'liveMatchesNow', emoji: '🔴' },
+    { key: 'serieAToday', emoji: '🇮🇹' },
+    { key: 'championsLeague', emoji: '⭐' },
+    { key: 'premierLeagueToday', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { key: 'laLigaToday', emoji: '🇪🇸' },
+  ],
+  de: [
+    { key: 'liveMatchesNow', emoji: '🔴' },
+    { key: 'bundesligaToday', emoji: '🇩🇪' },
+    { key: 'championsLeague', emoji: '⭐' },
+    { key: 'premierLeagueToday', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { key: 'laLigaToday', emoji: '🇪🇸' },
+  ],
+  pl: [
+    { key: 'liveMatchesNow', emoji: '🔴' },
+    { key: 'ekstraklasaToday', emoji: '🇵🇱' },
+    { key: 'championsLeague', emoji: '⭐' },
+    { key: 'premierLeagueToday', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { key: 'bundesligaToday', emoji: '🇩🇪' },
+  ],
+};
+const DEFAULT_SECONDARY = [
   { key: 'liveMatchesNow', emoji: '🔴' },
   { key: 'premierLeagueToday', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { key: 'laLigaToday', emoji: '🇪🇸' },
   { key: 'championsLeague', emoji: '⭐' },
+  { key: 'laLigaToday', emoji: '🇪🇸' },
   { key: 'serieAToday', emoji: '🇮🇹' },
 ];
 
@@ -519,7 +542,7 @@ export default function AIChat() {
           {/* Secondary Questions - Expandable */}
           {questionsExpanded && (
             <div className="flex flex-wrap gap-2 mb-2">
-              {SECONDARY_QUESTIONS.map(q => (
+              {(SECONDARY_QUESTIONS_BY_LOCALE[i18n.language] || DEFAULT_SECONDARY).map(q => (
                 <button
                   key={q.key}
                   onClick={() => sendMessage(t(`aiChat.${q.key}`))}
