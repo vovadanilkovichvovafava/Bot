@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getReferralLink, getReferredBy, clearReferralCode } from '../services/referralStore';
+import { getReferralLink, getReferredBy, clearReferralCode, getReferralStats, copyReferralLink } from '../services/referralStore';
+import api from '../api';
+
+vi.mock('../api', () => ({
+  default: {
+    getReferralStats: vi.fn(),
+  },
+}));
 
 describe('referralStore', () => {
   let sessionStorageMock;
@@ -22,6 +29,9 @@ describe('referralStore', () => {
       writable: true,
       value: { origin: 'https://example.com', search: '' },
     });
+
+    navigator.clipboard = { writeText: vi.fn() };
+    document.execCommand = vi.fn();
   });
 
   describe('getReferralLink', () => {
@@ -111,6 +121,65 @@ describe('referralStore', () => {
 
       clearReferralCode();
       expect(sessionStorage.getItem('referral_code')).toBeNull();
+    });
+  });
+
+  describe('getReferralStats', () => {
+    it('should return mapped data on success', async () => {
+      api.getReferralStats.mockResolvedValue({
+        code: 'REF123',
+        total_referrals: 10,
+        active_referrals: 5,
+        bonus_requests: 3,
+      });
+
+      const result = await getReferralStats();
+      expect(result).toEqual({
+        code: 'REF123',
+        totalReferrals: 10,
+        activeReferrals: 5,
+        freeRequests: 3,
+      });
+    });
+
+    it('should return null on API error', async () => {
+      api.getReferralStats.mockRejectedValue(new Error('Network error'));
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await getReferralStats();
+      expect(result).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to get referral stats:', expect.any(Error));
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('copyReferralLink', () => {
+    it('should use clipboard API and return success', async () => {
+      navigator.clipboard.writeText.mockResolvedValue(undefined);
+
+      const result = await copyReferralLink('ABC123');
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://example.com/register?ref=ABC123');
+      expect(result).toEqual({ success: true, link: 'https://example.com/register?ref=ABC123' });
+    });
+
+    it('should fall back to textarea when clipboard throws', async () => {
+      navigator.clipboard.writeText.mockRejectedValue(new Error('Clipboard not available'));
+      document.execCommand.mockReturnValue(true);
+
+      const result = await copyReferralLink('ABC123');
+      expect(document.execCommand).toHaveBeenCalledWith('copy');
+      expect(result).toEqual({ success: true, link: 'https://example.com/register?ref=ABC123' });
+    });
+
+    it('should return success false when both methods fail', async () => {
+      navigator.clipboard.writeText.mockRejectedValue(new Error('Clipboard not available'));
+      document.execCommand.mockImplementation(() => {
+        throw new Error('execCommand failed');
+      });
+
+      const result = await copyReferralLink('ABC123');
+      expect(result).toEqual({ success: false, link: 'https://example.com/register?ref=ABC123' });
     });
   });
 });

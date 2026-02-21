@@ -3,6 +3,7 @@ import {
   generatePredictionShareText,
   generateMatchShareText,
   getShareLinks,
+  sharePrediction,
 } from '../services/shareUtils';
 
 describe('generatePredictionShareText', () => {
@@ -52,6 +53,21 @@ describe('generatePredictionShareText', () => {
     const text = generatePredictionShareText(prediction);
     expect(text).toBeDefined();
     expect(typeof text).toBe('string');
+  });
+
+  it('includes "Prediction:" when winnerName exists', () => {
+    const text = generatePredictionShareText(basePrediction);
+    expect(text).toContain('Prediction: Arsenal');
+  });
+
+  it('falls back to "Home"/"Away" for missing team names', () => {
+    const prediction = {
+      ...basePrediction,
+      homeTeam: { name: null },
+      awayTeam: { name: null },
+    };
+    const text = generatePredictionShareText(prediction);
+    expect(text).toContain('Home vs Away');
   });
 });
 
@@ -123,5 +139,121 @@ describe('getShareLinks', () => {
   it('facebook URL contains only the encoded page URL', () => {
     const links = getShareLinks(sampleText, sampleUrl);
     expect(links.facebook).toContain(encodeURIComponent(sampleUrl));
+  });
+});
+
+describe('sharePrediction', () => {
+  const originalNavigator = { ...navigator };
+
+  beforeEach(() => {
+    // Reset navigator.share and navigator.clipboard before each test
+    delete navigator.share;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns { success: true, method: "native" } when navigator.share succeeds', async () => {
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+
+    const result = await sharePrediction('Test text', 'Test Title');
+
+    expect(navigator.share).toHaveBeenCalledWith({
+      title: 'Test Title',
+      text: 'Test text',
+    });
+    expect(result).toEqual({ success: true, method: 'native' });
+  });
+
+  it('returns { success: false, method: "cancelled" } when navigator.share throws AbortError', async () => {
+    const abortError = new Error('User cancelled');
+    abortError.name = 'AbortError';
+    navigator.share = vi.fn().mockRejectedValue(abortError);
+
+    const result = await sharePrediction('Test text');
+
+    expect(result).toEqual({ success: false, method: 'cancelled' });
+  });
+
+  it('falls back to clipboard when navigator.share is not available', async () => {
+    // navigator.share is already deleted in beforeEach
+    navigator.clipboard.writeText.mockResolvedValue(undefined);
+
+    const result = await sharePrediction('Test text');
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Test text');
+    expect(result).toEqual({ success: true, method: 'clipboard' });
+  });
+
+  it('returns { success: true, method: "clipboard" } when clipboard.writeText succeeds', async () => {
+    // navigator.share throws a non-AbortError so it falls through to clipboard
+    const genericError = new Error('Not supported');
+    genericError.name = 'TypeError';
+    navigator.share = vi.fn().mockRejectedValue(genericError);
+    navigator.clipboard.writeText.mockResolvedValue(undefined);
+
+    const result = await sharePrediction('Clipboard text');
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Clipboard text');
+    expect(result).toEqual({ success: true, method: 'clipboard' });
+  });
+
+  it('falls back to execCommand when clipboard fails', async () => {
+    navigator.clipboard.writeText.mockRejectedValue(new Error('Clipboard denied'));
+
+    const mockTextarea = {
+      value: '',
+      style: {},
+      select: vi.fn(),
+    };
+    const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockTextarea);
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+    const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+    document.execCommand = vi.fn().mockReturnValue(true);
+
+    const result = await sharePrediction('Fallback text');
+
+    expect(createElementSpy).toHaveBeenCalledWith('textarea');
+    expect(mockTextarea.value).toBe('Fallback text');
+    expect(mockTextarea.style.position).toBe('fixed');
+    expect(mockTextarea.style.opacity).toBe('0');
+    expect(appendChildSpy).toHaveBeenCalledWith(mockTextarea);
+    expect(mockTextarea.select).toHaveBeenCalled();
+    expect(document.execCommand).toHaveBeenCalledWith('copy');
+    expect(removeChildSpy).toHaveBeenCalledWith(mockTextarea);
+    expect(result).toEqual({ success: true, method: 'clipboard' });
+
+    createElementSpy.mockRestore();
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
+    delete document.execCommand;
+  });
+
+  it('returns { success: false, method: "failed" } when all methods fail', async () => {
+    navigator.clipboard.writeText.mockRejectedValue(new Error('Clipboard denied'));
+
+    const mockTextarea = {
+      value: '',
+      style: {},
+      select: vi.fn(),
+    };
+    vi.spyOn(document, 'createElement').mockReturnValue(mockTextarea);
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+    document.execCommand = vi.fn().mockImplementation(() => {
+      throw new Error('execCommand failed');
+    });
+
+    const result = await sharePrediction('Fail text');
+
+    expect(result).toEqual({ success: false, method: 'failed' });
+
+    delete document.execCommand;
   });
 });
