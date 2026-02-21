@@ -18,6 +18,8 @@ const FREE_AI_LIMIT = 3;
 const VALUE_BET_USED_KEY = 'value_bet_used';
 const SMART_BET_CACHE_KEY = 'smart_bet_cache';
 const SMART_BET_TTL = 45 * 60 * 1000; // 45 minutes
+const HOME_MATCHES_CACHE = 'home_matches_cache';
+const HOME_MATCHES_TTL = 3 * 60 * 1000; // 3 minutes — stale-while-revalidate
 
 // Top leagues to show on home
 const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
@@ -37,18 +39,22 @@ export default function Home() {
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
   useEffect(() => {
-    loadMatches();
     setLocalStats(getStats());
-    // Fetch AI chat remaining from server
+
+    // Launch all API requests in PARALLEL (not sequentially)
+    const promises = [loadMatches()];
+
     if (!user?.is_premium) {
-      api.getChatLimit()
-        .then(data => {
-          setAiRemaining(data.remaining ?? FREE_AI_LIMIT);
-          setAiLimit(data.limit ?? FREE_AI_LIMIT);
-        })
-        .catch(() => setAiRemaining(FREE_AI_LIMIT));
+      promises.push(
+        api.getChatLimit()
+          .then(data => {
+            setAiRemaining(data.remaining ?? FREE_AI_LIMIT);
+            setAiLimit(data.limit ?? FREE_AI_LIMIT);
+          })
+          .catch(() => setAiRemaining(FREE_AI_LIMIT))
+      );
     }
-    // Fetch smart bet for PRO users (with localStorage cache)
+
     if (user?.is_premium) {
       try {
         const cached = localStorage.getItem(SMART_BET_CACHE_KEY);
@@ -57,13 +63,16 @@ export default function Home() {
           if (Date.now() - parsed.ts < SMART_BET_TTL) {
             setSmartBet(parsed.data);
           } else {
-            fetchSmartBet();
+            promises.push(fetchSmartBet());
           }
         } else {
-          fetchSmartBet();
+          promises.push(fetchSmartBet());
         }
-      } catch { fetchSmartBet(); }
+      } catch { promises.push(fetchSmartBet()); }
     }
+
+    Promise.all(promises);
+
     // Show welcome modal for new registrations
     try {
       if (localStorage.getItem('show_welcome') === 'true') {
@@ -73,22 +82,40 @@ export default function Home() {
     } catch {}
   }, []);
 
+  const processFixtures = (fixtures) => {
+    return (fixtures || [])
+      .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
+      .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
+      .sort((a, b) => {
+        const aTop = TOP_LEAGUE_IDS.includes(a.league?.id) ? 0 : 1;
+        const bTop = TOP_LEAGUE_IDS.includes(b.league?.id) ? 0 : 1;
+        if (aTop !== bTop) return aTop - bTop;
+        return new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0);
+      })
+      .slice(0, 5);
+  };
+
   const loadMatches = async () => {
+    // Stale-while-revalidate: show cached data instantly, fetch fresh in background
+    try {
+      const raw = localStorage.getItem(HOME_MATCHES_CACHE);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached.ts < HOME_MATCHES_TTL) {
+          setMatches(cached.data);
+          setLoading(false); // Instant — no spinner!
+        }
+      }
+    } catch {}
+
+    // Fetch fresh data
     try {
       const fixtures = await footballApi.getTodayFixtures();
-      // Prioritize top leagues and upcoming matches
-      const upcoming = (fixtures || [])
-        .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
-        .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
-        .sort((a, b) => {
-          // Top leagues first
-          const aTop = TOP_LEAGUE_IDS.includes(a.league?.id) ? 0 : 1;
-          const bTop = TOP_LEAGUE_IDS.includes(b.league?.id) ? 0 : 1;
-          if (aTop !== bTop) return aTop - bTop;
-          // Then by time
-          return new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0);
-        });
-      setMatches(upcoming.slice(0, 5));
+      const upcoming = processFixtures(fixtures);
+      setMatches(upcoming);
+      try {
+        localStorage.setItem(HOME_MATCHES_CACHE, JSON.stringify({ data: upcoming, ts: Date.now() }));
+      } catch {}
     } catch (e) {
       console.error('Failed to load matches', e);
     } finally {

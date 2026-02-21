@@ -52,6 +52,11 @@ class FootballApiService {
   // === Backend Proxy Requests ===
 
   async backendRequest(endpoint) {
+    // Client-side cache — avoid redundant network requests
+    const cacheKey = `backend:${endpoint}`;
+    const cached = getLocalCache(cacheKey);
+    if (cached) return cached;
+
     try {
       const response = await fetch(`${BACKEND_BASE}/football${endpoint}`, {
         method: 'GET',
@@ -67,7 +72,9 @@ class FootballApiService {
         throw new Error(`Backend HTTP ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      setLocalCache(cacheKey, data);
+      return data;
     } catch (e) {
       // Network errors (fetch failed entirely) — disable backend
       if (!e.message?.startsWith('Backend HTTP')) {

@@ -76,38 +76,13 @@ export default function MatchDetail() {
     }
   }, [id]);
 
-  // Phase 2: Load standings + H2H after fixture is available
-  useEffect(() => {
-    if (!enriched?.fixture || enriched?.standings) return;
-    const fixture = enriched.fixture;
-    const leagueId = fixture.league?.id;
-    const season = fixture.league?.season;
-    const homeId = enriched.homeId;
-    const awayId = enriched.awayId;
-
-    Promise.allSettled([
-      leagueId && season ? footballApi.getStandings(leagueId, season) : Promise.resolve([]),
-      homeId && awayId ? footballApi.getHeadToHead(homeId, awayId, 10) : Promise.resolve([]),
-    ]).then(([standings, h2h]) => {
-      setEnriched(prev => ({
-        ...prev,
-        standings: standings.status === 'fulfilled' ? standings.value : [],
-        h2hFixtures: h2h.status === 'fulfilled' ? h2h.value : [],
-      }));
-    });
-  }, [enriched?.fixture]);
-
   const loadMatch = async () => {
-    // For numeric IDs (API-Football), load fixture and enriched data in parallel
+    // For numeric IDs (API-Football), load fixture first, then ALL enriched data in one parallel batch
     const isApiFootballId = /^\d+$/.test(id);
 
     if (isApiFootballId) {
       try {
-        // Start both requests in parallel for faster loading
-        const [fixture, enrichedData] = await Promise.all([
-          footballApi.getFixture(id),
-          loadEnrichedDataParallel(id),
-        ]);
+        const fixture = await footballApi.getFixture(id);
 
         if (fixture) {
           const converted = {
@@ -127,19 +102,28 @@ export default function MatchDetail() {
             away_score: fixture.goals?.away,
           };
           setMatch(converted);
+          setLoading(false);
+
+          // Extract IDs for standings/H2H — load ALL enriched data in ONE parallel batch
+          const leagueId = fixture.league?.id;
+          const season = fixture.league?.season;
+          const homeId = fixture.teams?.home?.id;
+          const awayId = fixture.teams?.away?.id;
+
+          const enrichedData = await loadEnrichedDataParallel(id, leagueId, season, homeId, awayId);
+
           setEnriched({
             fixture,
             fixtureId: id,
-            homeId: fixture.teams?.home?.id,
-            awayId: fixture.teams?.away?.id,
+            homeId,
+            awayId,
             ...enrichedData,
           });
           setEnrichedLoading(false);
-          setLoading(false);
           return;
         }
       } catch (e) {
-        console.warn('API-Football parallel load failed:', e);
+        console.warn('API-Football load failed:', e);
       }
     }
 
@@ -158,15 +142,17 @@ export default function MatchDetail() {
     setLoading(false);
   };
 
-  // Parallel enriched data loading (returns data instead of setting state)
-  const loadEnrichedDataParallel = async (fixtureId) => {
-    const [prediction, odds, stats, events, lineups, injuries] = await Promise.allSettled([
+  // All enriched data in ONE parallel batch — no waterfall
+  const loadEnrichedDataParallel = async (fixtureId, leagueId, season, homeId, awayId) => {
+    const [prediction, odds, stats, events, lineups, injuries, standings, h2h] = await Promise.allSettled([
       footballApi.getPrediction(fixtureId),
       footballApi.getOdds(fixtureId),
       footballApi.getFixtureStatistics(fixtureId),
       footballApi.getFixtureEvents(fixtureId),
       footballApi.getFixtureLineups(fixtureId),
       footballApi.getInjuries(fixtureId),
+      leagueId && season ? footballApi.getStandings(leagueId, season) : Promise.resolve([]),
+      homeId && awayId ? footballApi.getHeadToHead(homeId, awayId, 10) : Promise.resolve([]),
     ]);
 
     return {
@@ -176,6 +162,8 @@ export default function MatchDetail() {
       events: events.status === 'fulfilled' ? events.value : [],
       lineups: lineups.status === 'fulfilled' ? lineups.value : [],
       injuries: injuries.status === 'fulfilled' ? injuries.value : [],
+      standings: standings.status === 'fulfilled' ? standings.value : [],
+      h2hFixtures: h2h.status === 'fulfilled' ? h2h.value : [],
     };
   };
 
