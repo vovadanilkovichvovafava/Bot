@@ -174,6 +174,7 @@ export default function Register() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   placeholder={t('auth.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

@@ -132,6 +132,7 @@ export default function Login() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
