@@ -458,6 +458,7 @@
     "helpButton": "Contact support"
   },
   "proAccess": {
+    "oneClickBet": "1-Click Bet",
     "s1Title": "Your daily limit\nis exhausted",
     "s1Sub": "With PRO you get unlimited access — no subscription and no payment.",
     "s1Free": "Free",
@@ -687,7 +688,14 @@
     "step5Title": "All set! Let's start",
     "step5Desc": "You have 3 free AI requests per day. Pick a match and try your first AI prediction!",
     "goPredict": "Go to predictions",
-    "discoverPro": "Discover PRO (free)"
+    "discoverPro": "Discover PRO (free)",
+    "previewLeague": "Premier League",
+    "previewBadge": "AI Prediction",
+    "previewMatch": "Liverpool vs Man City",
+    "previewConfidence": "AI Confidence",
+    "chatTag1": "Best today",
+    "chatTag2": "Live now",
+    "chatTag3": "Premier League"
   },
   "guide": {
     "title": "Betting School",

@@ -118,7 +118,7 @@ export function BookmakerProvider({ children }) {
   }, [isConnected]);
 
   // Place bet
-  const placeBet = async ({ oddId, amount, currencyCode = 'USD' }) => {
+  const placeBet = async ({ oddId, amount, currencyCode = 'EUR' }) => {
     if (!isConnected) {
       throw new Error('Not connected to bookmaker');
     }

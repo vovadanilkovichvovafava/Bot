@@ -104,12 +104,12 @@ function Step2Predictions({ t }) {
       {/* Mini prediction preview */}
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-400">Premier League</span>
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">AI Prediction</span>
+          <span className="text-xs font-medium text-gray-400">{t('onboarding.previewLeague', { defaultValue: 'Serie A' })}</span>
+          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{t('onboarding.previewBadge', { defaultValue: 'Pronostico AI' })}</span>
         </div>
-        <p className="font-bold text-gray-900 text-sm mb-1">Liverpool vs Man City</p>
+        <p className="font-bold text-gray-900 text-sm mb-1">{t('onboarding.previewMatch', { defaultValue: 'Juventus vs Inter' })}</p>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">AI Confidence: <span className="text-primary-600 font-bold">78%</span></span>
+          <span className="text-xs text-gray-500">{t('onboarding.previewConfidence', { defaultValue: 'Affidabilità AI' })}: <span className="text-primary-600 font-bold">78%</span></span>
           <span className="text-xs text-gray-400">|</span>
           <span className="text-xs text-gray-500">Over 2.5 <span className="text-primary-600 font-bold">@ 1.85</span></span>
         </div>
@@ -146,9 +146,9 @@ function Step3Chat({ t }) {
           </div>
         </div>
         <div className="flex gap-2 justify-center pt-1">
-          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Migliori oggi</span>
-          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Live ora</span>
-          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Serie A</span>
+          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{t('onboarding.chatTag1', { defaultValue: 'Migliori oggi' })}</span>
+          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{t('onboarding.chatTag2', { defaultValue: 'In diretta' })}</span>
+          <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{t('onboarding.chatTag3', { defaultValue: 'Serie A' })}</span>
         </div>
       </div>
     </div>

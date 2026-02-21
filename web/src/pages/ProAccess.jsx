@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 
@@ -77,11 +78,17 @@ const CheckBold = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const Download = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 const Card = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
 
-const features = ['Value Bet Finder', 'Bankroll Tracker', 'Scommessa 1 clic', 'Kelly Calculator'];
-
 export default function ProAccess() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { advertiser } = useAdvertiser();
+
+  const features = [
+    'Value Bet Finder',
+    'Bankroll Tracker',
+    t('proAccess.oneClickBet', { defaultValue: 'Scommessa 1 clic' }),
+    'Kelly Calculator',
+  ];
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
@@ -210,10 +217,10 @@ export default function ProAccess() {
           <div className="q-stit">{t('proAccess.s4Title')}{'\n'}<em>{t('proAccess.s4TitleEm')}</em></div>
           <div className="q-ssub">{t('proAccess.s4Sub')}</div>
           <div className="q-dgrid">
-            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">5€</div><div className="dl">{t('proAccess.s4Min')}</div></div>
-            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">20€</div><div className="dl">{t('proAccess.s4Popular')}</div></div>
-            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('proAccess.s4Recommended')}</div><div className="da">50€</div><div className="dl">{t('proAccess.s4MoreBonus')}</div></div>
-            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">100€+</div><div className="dl">{t('proAccess.s4Serious')}</div></div>
+            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">{advertiser.depositAmounts?.[0] || '5 €'}</div><div className="dl">{t('proAccess.s4Min')}</div></div>
+            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">{advertiser.depositAmounts?.[1] || '20 €'}</div><div className="dl">{t('proAccess.s4Popular')}</div></div>
+            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('proAccess.s4Recommended')}</div><div className="da">{advertiser.depositAmounts?.[2] || '50 €'}</div><div className="dl">{t('proAccess.s4MoreBonus')}</div></div>
+            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">{advertiser.depositAmounts?.[3] || '100 €+'}</div><div className="dl">{t('proAccess.s4Serious')}</div></div>
           </div>
           <div className="q-slist">
             <div className="q-slrow"><div className="q-slico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><h4>{t('proAccess.s4Time')}</h4><p>{t('proAccess.s4TimeDesc')}</p></div></div>
@@ -242,7 +249,7 @@ export default function ProAccess() {
             <div className="ft">{t('proAccess.s5Title')}</div>
             <div className="fs">{t('proAccess.s5Sub')}</div>
           </div>
-          <div className="q-bfloat"><div className="q-bfl">{t('proAccess.s5BonusLabel')}</div><div className="q-bfa">€1.500</div><div className="q-bfd">{t('proAccess.s5BonusDesc')}</div></div>
+          <div className="q-bfloat"><div className="q-bfl">{t('proAccess.s5BonusLabel')}</div><div className="q-bfa">{advertiser.exampleAmounts?.bonusDisplay || '€1.500'}</div><div className="q-bfd">{t('proAccess.s5BonusDesc')}</div></div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('proAccess.s5Install')}</div></div>
             <div className="q-marr">→</div>

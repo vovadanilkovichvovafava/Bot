@@ -5,25 +5,18 @@ import { useAuth } from '../context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
 import api from '../api';
 import SupportChat from '../components/SupportChat';
-import { getReferralStats, copyReferralLink, getReferralLink } from '../services/referralStore';
 import FootballSpinner from '../components/FootballSpinner';
-
-
-// Default stats while loading
-const DEFAULT_REFERRAL_STATS = { code: '...', totalReferrals: 0, activeReferrals: 0, freeRequests: 0 };
 
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
 export default function Settings() {
   const { t } = useTranslation();
-  const { user, logout, bookmakerAccount, bookmakerBalance, connectBookmaker, disconnectBookmaker } = useAuth();
+  const { user, logout } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
-  const [showBookmakerModal, setShowBookmakerModal] = useState(false);
-  const [showReferralModal, setShowReferralModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationId, setVerificationId] = useState('');
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
@@ -31,15 +24,9 @@ export default function Settings() {
   const [editingUsername, setEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
-  const [bookmakerLogin, setBookmakerLogin] = useState('');
-  const [bookmakerPassword, setBookmakerPassword] = useState('');
-  const [connectingBookmaker, setConnectingBookmaker] = useState(false);
   const [minOdds, setMinOdds] = useState(user?.min_odds || 1.5);
   const [maxOdds, setMaxOdds] = useState(user?.max_odds || 3.0);
   const [riskLevel, setRiskLevel] = useState(user?.risk_level || 'medium');
-  const [referralStats, setReferralStats] = useState(DEFAULT_REFERRAL_STATS);
-  const [referralCopied, setReferralCopied] = useState(false);
-
   const RISK_OPTIONS = [
     {
       key: 'low',
@@ -85,15 +72,6 @@ export default function Settings() {
     },
   ];
 
-  // Load referral stats from backend
-  useEffect(() => {
-    if (user?.id) {
-      getReferralStats().then(stats => {
-        if (stats) setReferralStats(stats);
-      });
-    }
-  }, [user?.id]);
-
   const riskInfo = RISK_OPTIONS.find(r => r.key === riskLevel) || RISK_OPTIONS[1];
 
   const handleUpdate = async (data) => {
@@ -107,21 +85,6 @@ export default function Settings() {
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
-  };
-
-  const handleConnectBookmaker = async () => {
-    if (!bookmakerLogin || !bookmakerPassword) return;
-    setConnectingBookmaker(true);
-    try {
-      await connectBookmaker(bookmakerLogin, bookmakerPassword);
-      setShowBookmakerModal(false);
-      setBookmakerLogin('');
-      setBookmakerPassword('');
-    } catch (e) {
-      console.error('Failed to connect bookmaker:', e);
-    } finally {
-      setConnectingBookmaker(false);
-    }
   };
 
   const handleVerificationSubmit = async () => {
@@ -265,59 +228,6 @@ export default function Settings() {
           )}
         </div>
 
-        {/* One-Click Betting */}
-        <div className="mb-3 mt-4">
-          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.oneClickBetting')}</p>
-          <p className="text-xs text-gray-500 mb-3">{t('settings.oneClickDesc')}</p>
-        </div>
-
-        {bookmakerAccount ? (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-green-700">{t('settings.accountConnected')}</p>
-                <p className="text-xs text-gray-600">{bookmakerAccount.login}</p>
-                {bookmakerBalance && (
-                  <p className="text-xs text-green-600 font-medium mt-0.5">
-                    {t('settings.balance')}: ${bookmakerBalance.amount}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={disconnectBookmaker}
-                className="text-red-500 text-xs font-medium px-2 py-1"
-              >
-                {t('settings.disconnect')}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowBookmakerModal(true)}
-            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl p-4 mb-3 flex items-center gap-3"
-          >
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-semibold">{t('settings.connectAccount')}</p>
-              <p className="text-xs text-white/80">{t('settings.placeBetsFromApp')}</p>
-            </div>
-            <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </button>
-        )}
-
-        <div className="h-3"/>
-
         <SettingsItem
           icon={<span className="text-lg">💬</span>}
           label={t('settings.contactSupport')}
@@ -365,40 +275,6 @@ export default function Settings() {
           value={`${riskInfo.label} • ${riskLevel === 'low' ? '1-2%' : riskLevel === 'medium' ? '2-5%' : '5-10%'} stakes`}
           onClick={() => setShowRiskModal(true)}
         />
-
-        <div className="h-3"/>
-
-        {/* Referral Program */}
-        <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.referralProgram')}</p>
-          <p className="text-xs text-gray-500 mb-3">{t('settings.referralDesc')}</p>
-        </div>
-
-        <button
-          onClick={() => setShowReferralModal(true)}
-          className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 mb-3 flex items-center gap-3 text-white"
-        >
-          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-            </svg>
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-semibold">{t('settings.inviteFriends')}</p>
-            <p className="text-xs text-white/80">
-              {referralStats?.totalReferrals > 0
-                ? t('settings.friendsInvited', { count: referralStats.totalReferrals })
-                : t('settings.freeRequestPerInvite')}
-            </p>
-          </div>
-          <div className="text-right">
-            {referralStats?.freeRequests > 0 && (
-              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full">
-                +{referralStats.freeRequests}
-              </span>
-            )}
-          </div>
-        </button>
 
         <div className="h-3"/>
 
@@ -502,209 +378,6 @@ export default function Settings() {
 
       {/* Support Chat */}
       <SupportChat isOpen={showSupportChat} onClose={() => setShowSupportChat(false)} />
-
-      {/* Bookmaker Connection Modal */}
-      {showBookmakerModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowBookmakerModal(false)}>
-          <div
-            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl animate-slideUp"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{t('settings.connectAccountTitle')}</h3>
-              <button onClick={() => setShowBookmakerModal(false)} className="text-gray-400">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
-              <p className="text-xs text-amber-700">
-                <span className="font-semibold">Note:</span> {t('settings.enterCredentials', { name: advertiser.name })}
-                {' '}{t('settings.dataStoredLocally')}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.loginEmail')}</label>
-                <input
-                  type="text"
-                  value={bookmakerLogin}
-                  onChange={(e) => setBookmakerLogin(e.target.value)}
-                  placeholder={t('settings.enterLogin')}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label>
-                <input
-                  type="password"
-                  value={bookmakerPassword}
-                  onChange={(e) => setBookmakerPassword(e.target.value)}
-                  placeholder={t('settings.enterPassword')}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleConnectBookmaker}
-              disabled={!bookmakerLogin || !bookmakerPassword || connectingBookmaker}
-              className="w-full mt-6 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {connectingBookmaker ? (
-                <>
-                  <FootballSpinner size="xs" light />
-                  {t('settings.connecting')}
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                  </svg>
-                  {t('settings.connect')}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Referral Modal */}
-      {showReferralModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowReferralModal(false)}>
-          <div
-            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{t('settings.inviteFriends')}</h3>
-              <button onClick={() => setShowReferralModal(false)} className="text-gray-400">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* Reward explanation */}
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4 mb-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-bold text-purple-800">{t('settings.earnFreeRequests')}</p>
-                  <p className="text-xs text-purple-600">{t('settings.requestPerFriend')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Referral stats */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-gray-900">{referralStats.totalReferrals}</p>
-                <p className="text-xs text-gray-500">{t('settings.invited')}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-gray-900">{referralStats.activeReferrals}</p>
-                <p className="text-xs text-gray-500">{t('settings.active')}</p>
-              </div>
-              <div className="bg-green-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-green-600">+{referralStats.freeRequests}</p>
-                <p className="text-xs text-green-600">{t('settings.earned')}</p>
-              </div>
-            </div>
-
-            {/* Referral code */}
-            <div className="mb-5">
-              <p className="text-sm font-medium text-gray-700 mb-2">{t('settings.yourReferralCode')}</p>
-              <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-3">
-                <code className="flex-1 text-lg font-mono font-bold text-gray-900">{referralStats.code}</code>
-                <button
-                  onClick={async () => {
-                    await copyReferralLink(referralStats.code);
-                    setReferralCopied(true);
-                    setTimeout(() => setReferralCopied(false), 2000);
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    referralCopied
-                      ? 'bg-green-500 text-white'
-                      : 'bg-primary-500 text-white hover:bg-primary-600'
-                  }`}
-                >
-                  {referralCopied ? t('settings.copied') : t('settings.copyLink')}
-                </button>
-              </div>
-            </div>
-
-            {/* Share buttons */}
-            <div className="grid grid-cols-4 gap-3 mb-5">
-              <a
-                href={`https://t.me/share/url?url=${encodeURIComponent(getReferralLink(referralStats.code))}&text=${encodeURIComponent('Join me on PVA Betting App!')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-12 h-12 bg-[#0088cc] rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                  </svg>
-                </div>
-                <span className="text-[10px] text-gray-500">Telegram</span>
-              </a>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent('Join me on PVA Betting App! ' + getReferralLink(referralStats.code))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                </div>
-                <span className="text-[10px] text-gray-500">WhatsApp</span>
-              </a>
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('Join me on PVA Betting App!')}&url=${encodeURIComponent(getReferralLink(referralStats.code))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-12 h-12 bg-[#1DA1F2] rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </div>
-                <span className="text-[10px] text-gray-500">X</span>
-              </a>
-              <button
-                onClick={async () => {
-                  await copyReferralLink(referralStats.code);
-                  setReferralCopied(true);
-                  setTimeout(() => setReferralCopied(false), 2000);
-                }}
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-12 h-12 bg-gray-500 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
-                  </svg>
-                </div>
-                <span className="text-[10px] text-gray-500">Copy</span>
-              </button>
-            </div>
-
-            <p className="text-center text-xs text-gray-400">
-              {t('settings.shareReferralDesc')}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Manual Verification Modal */}
       {showVerificationModal && (

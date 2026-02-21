@@ -1268,5 +1268,44 @@
       "desc": "Dein PRO-Zugang ist nur einen Schritt entfernt! Mach eine Einzahlung, um unbegrenzte KI-Prognosen und Value Bets freizuschalten.",
       "cta": "PRO freischalten"
     }
+  },
+  "onboarding": {
+    "start": "Los geht's!",
+    "next": "Weiter",
+    "step1Title": "Willkommen bei AI Betting Bot!",
+    "step1Desc": "Dein persönlicher KI-Assistent für Fußball. Wir analysieren über 900 Ligen, um dir die genauesten Prognosen zu liefern.",
+    "feat1": "KI-Prognosen — datenbasierte Vorhersagen",
+    "feat2": "KI-Chat — frag alles über Spiele",
+    "feat3": "Statistiken — verfolge deine Ergebnisse",
+    "step2Title": "Kostenlose KI-Prognosen jeden Tag",
+    "step2Desc": "Jeden Tag hast du 3 kostenlose KI-Anfragen. Wähle ein Spiel, die KI analysiert Form, Statistiken, direkte Duelle und gibt dir ihre Empfehlung.",
+    "step3Title": "KI-Chat — dein persönlicher Analyst",
+    "step3Desc": "Hast du eine Frage zu einem Spiel? Frag die KI! Antworten basierend auf echten Daten, Statistiken und Echtzeit-Analyse.",
+    "chatExample1": "Wer gewinnt heute Abend Bayern vs Dortmund?",
+    "chatExample2": "Basierend auf den letzten 5 Spielen und der aktuellen Form...",
+    "step4Title": "Das kannst du alles machen",
+    "free1": "3 kostenlose KI-Prognosen pro Tag",
+    "free2": "KI-Chat mit kostenlosen Fragen pro Tag",
+    "free3": "Statistiken deiner Vorhersagen",
+    "free4": "Spielplan von 900+ Ligen",
+    "pro1": "Unbegrenzte Prognosen — PRO",
+    "pro2": "Unbegrenzter KI-Chat — PRO",
+    "pro3": "Value Bet Finder — PRO",
+    "pro4": "Bankroll Tracker — PRO",
+    "proNote": "PRO wird kostenlos freigeschaltet — erfahre wie auf der speziellen Seite",
+    "step5Title": "Alles bereit! Leg los",
+    "step5Desc": "Du hast 3 kostenlose KI-Anfragen pro Tag. Wähle ein Spiel und probiere deine erste KI-Prognose!",
+    "goPredict": "Zu den Prognosen",
+    "discoverPro": "PRO entdecken (kostenlos)",
+    "previewLeague": "Bundesliga",
+    "previewBadge": "KI-Prognose",
+    "previewMatch": "Bayern vs Dortmund",
+    "previewConfidence": "KI-Sicherheit",
+    "chatTag1": "Beste heute",
+    "chatTag2": "Jetzt live",
+    "chatTag3": "Bundesliga"
+  },
+  "proAccess": {
+    "oneClickBet": "1-Klick-Wette"
   }
 }

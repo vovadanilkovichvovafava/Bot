@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
 // Local storage key
 const STORAGE_KEY = 'bankroll_data';
@@ -10,7 +11,7 @@ const STORAGE_KEY = 'bankroll_data';
 const getDefaultData = () => ({
   startingBankroll: 0,
   currentBankroll: 0,
-  currency: 'USD',
+  currency: 'EUR',
   transactions: [], // { id, type: 'deposit'|'withdraw'|'bet_win'|'bet_loss', amount, date, note }
   createdAt: new Date().toISOString(),
 });
@@ -34,6 +35,7 @@ export default function BankrollTracker() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { advertiser } = useAdvertiser();
   const [data, setData] = useState(loadData);
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState('deposit'); // deposit | withdraw | bet_win | bet_loss
@@ -171,7 +173,8 @@ export default function BankrollTracker() {
 
   const formatAmount = (amt, type) => {
     const isPositive = type === 'deposit' || type === 'bet_win';
-    return `${isPositive ? '+' : '-'}$${amt.toFixed(2)}`;
+    const symbol = advertiser?.currency || '€';
+    return `${isPositive ? '+' : '-'}${symbol}${amt.toFixed(2)}`;
   };
 
   const getTypeColor = (type) => {
@@ -216,7 +219,7 @@ export default function BankrollTracker() {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">{t('bankroll.startingAmount')}</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">{advertiser?.currency || '€'}</span>
                 <input
                   type="number"
                   value={setupAmount}
@@ -259,7 +262,7 @@ export default function BankrollTracker() {
       <div className="px-5 mt-4">
         <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg">
           <p className="text-green-100 text-sm mb-1">{t('bankroll.currentBankroll')}</p>
-          <p className="text-4xl font-bold mb-4">${data.currentBankroll.toFixed(2)}</p>
+          <p className="text-4xl font-bold mb-4">{advertiser?.currency || '€'}{data.currentBankroll.toFixed(2)}</p>
 
           <div className="flex gap-3">
             <div className={`flex-1 rounded-xl p-3 ${profitLoss >= 0 ? 'bg-white/20' : 'bg-red-500/30'}`}>
@@ -285,28 +288,28 @@ export default function BankrollTracker() {
             <span className="text-green-500">↓</span>
             <span className="text-xs text-gray-500">{t('bankroll.deposits')}</span>
           </div>
-          <p className="text-lg font-bold text-gray-900">${totalDeposits.toFixed(2)}</p>
+          <p className="text-lg font-bold text-gray-900">{advertiser?.currency || '€'}{totalDeposits.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-orange-500">↑</span>
             <span className="text-xs text-gray-500">{t('bankroll.withdrawals')}</span>
           </div>
-          <p className="text-lg font-bold text-gray-900">${totalWithdrawals.toFixed(2)}</p>
+          <p className="text-lg font-bold text-gray-900">{advertiser?.currency || '€'}{totalWithdrawals.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-green-500">✓</span>
             <span className="text-xs text-gray-500">{t('bankroll.betsWon')} ({betsWon})</span>
           </div>
-          <p className="text-lg font-bold text-green-600">+${totalWins.toFixed(2)}</p>
+          <p className="text-lg font-bold text-green-600">+{advertiser?.currency || '€'}{totalWins.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-red-500">✗</span>
             <span className="text-xs text-gray-500">{t('bankroll.betsLost')} ({betsLost})</span>
           </div>
-          <p className="text-lg font-bold text-red-600">-${totalLosses.toFixed(2)}</p>
+          <p className="text-lg font-bold text-red-600">-{advertiser?.currency || '€'}{totalLosses.toFixed(2)}</p>
         </div>
       </div>
 
@@ -399,7 +402,7 @@ export default function BankrollTracker() {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('bankroll.amount')}</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{advertiser?.currency || '€'}</span>
                 <input
                   type="number"
                   value={amount}

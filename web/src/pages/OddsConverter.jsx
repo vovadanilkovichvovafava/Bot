@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
 const FORMATS = ['Decimal', 'Fractional', 'American', 'Implied %'];
 
@@ -91,6 +92,7 @@ function impliedToDecimal(pct) {
 export default function OddsConverter() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { advertiser } = useAdvertiser();
   const [decimalOdds, setDecimalOdds] = useState(2.0);
   const [activeInput, setActiveInput] = useState('Decimal');
   const [inputValues, setInputValues] = useState({
@@ -213,7 +215,7 @@ export default function OddsConverter() {
             <div className="mb-4">
               <label className="text-xs text-gray-500 mb-1 block">{t('oddsConverter.stakeAmount')}</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">{advertiser.currency}</span>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -228,11 +230,11 @@ export default function OddsConverter() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500">{t('oddsConverter.profit')}</p>
-                <p className="text-lg font-bold text-green-600">${profit.toFixed(2)}</p>
+                <p className="text-lg font-bold text-green-600">{advertiser.currency}{profit.toFixed(2)}</p>
               </div>
               <div className="bg-primary-50 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500">{t('oddsConverter.totalPayout')}</p>
-                <p className="text-lg font-bold text-primary-600">${payout.toFixed(2)}</p>
+                <p className="text-lg font-bold text-primary-600">{advertiser.currency}{payout.toFixed(2)}</p>
               </div>
             </div>
           </div>

@@ -2,14 +2,15 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Import translations — only supported languages
+// Import translations — supported languages
 import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
 import it from './locales/it.json';
 import pl from './locales/pl.json';
+import de from './locales/de.json';
 
-const SUPPORTED_LANGS = ['en', 'es', 'fr', 'it', 'pl'];
+const SUPPORTED_LANGS = ['en', 'es', 'fr', 'it', 'pl', 'de'];
 
 const resources = {
   en: { translation: en },
@@ -17,6 +18,7 @@ const resources = {
   fr: { translation: fr },
   it: { translation: it },
   pl: { translation: pl },
+  de: { translation: de },
 };
 
 // GeoIP → language mapping
@@ -27,6 +29,7 @@ const COUNTRY_TO_LANG = {
   FR: 'fr', BE: 'fr',
   IT: 'it',
   PL: 'pl',
+  DE: 'de', AT: 'de', CH: 'de',
 };
 
 // Detect language from GeoIP (async, updates after init)

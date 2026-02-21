@@ -1,25 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
+// Price tiers by currency code
+const PRICE_TIERS = {
+  EUR: { week: '15 €', month: '20 €', year: '100 €' },
+  PLN: { week: '60 zł', month: '80 zł', year: '400 zł' },
+};
 
 export default function Premium() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { advertiser } = useAdvertiser();
   const [selectedPlan, setSelectedPlan] = useState('month');
+
+  const prices = PRICE_TIERS[advertiser?.currencyCode] || PRICE_TIERS.EUR;
 
   const PLANS = [
     {
       id: 'week',
       days: t('premium.plan7Days'),
-      price: '$15',
+      price: prices.week,
       period: t('premium.periodWeek'),
       features: t('premium.featuresWeek'),
     },
     {
       id: 'month',
       days: t('premium.plan15Days'),
-      price: '$20',
+      price: prices.month,
       period: t('premium.period15Days'),
       features: t('premium.featuresMonth'),
       popular: true,
@@ -27,7 +36,7 @@ export default function Premium() {
     {
       id: 'year',
       days: t('premium.plan365Days'),
-      price: '$100',
+      price: prices.year,
       period: t('premium.periodYear'),
       features: t('premium.featuresYear'),
     },

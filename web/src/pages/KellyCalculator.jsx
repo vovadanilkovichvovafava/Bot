@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
 export default function KellyCalculator() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { advertiser } = useAdvertiser();
 
   const [odds, setOdds] = useState('');
   const [probability, setProbability] = useState('');
@@ -146,7 +148,7 @@ export default function KellyCalculator() {
               {t('kelly.bankroll')}
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{advertiser.currency}</span>
               <input
                 type="number"
                 step="1"
@@ -227,7 +229,7 @@ export default function KellyCalculator() {
                   </p>
                   {bankroll && (
                     <p className="text-lg font-semibold text-green-600 mt-1">
-                      ${result.stake.toFixed(2)}
+                      {advertiser.currency}{result.stake.toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -247,7 +249,7 @@ export default function KellyCalculator() {
                   <div className="bg-white rounded-xl p-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">{t('kelly.expectedValue')}</span>
-                      <span className="font-bold text-green-600">+${result.ev.toFixed(2)}</span>
+                      <span className="font-bold text-green-600">+{result.ev.toFixed(2)} {advertiser.currency}</span>
                     </div>
                   </div>
                 )}

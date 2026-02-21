@@ -134,7 +134,7 @@ class BookmakerApi {
    * @param {number} params.amount - Bet amount
    * @param {string} params.currencyCode - Currency code
    */
-  async placeBet({ oddId, amount, currencyCode = 'USD' }) {
+  async placeBet({ oddId, amount, currencyCode = 'EUR' }) {
     return this.request('/api/bets/place', {
       method: 'POST',
       body: JSON.stringify({

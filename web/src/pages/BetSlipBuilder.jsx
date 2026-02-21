@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import { formatAmount } from '../config/advertisers';
 
 const STORAGE_KEY = 'bet_slip_data';
 
@@ -13,6 +15,7 @@ const getDefaultData = () => ({
 export default function BetSlipBuilder() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { advertiser } = useAdvertiser();
   const [data, setData] = useState(getDefaultData);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSelection, setNewSelection] = useState({ event: '', selection: '', odds: '' });
@@ -236,7 +239,7 @@ export default function BetSlipBuilder() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('betSlip.stake')}</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{advertiser.currency}</span>
                     <input
                       type="number"
                       value={data.stake}
@@ -249,13 +252,13 @@ export default function BetSlipBuilder() {
 
                 {/* Quick Amounts */}
                 <div className="flex gap-2">
-                  {[5, 10, 25, 50, 100].map(amount => (
+                  {(advertiser.quickAmounts || [5, 10, 25, 50, 100]).map(amount => (
                     <button
                       key={amount}
                       onClick={() => setData(prev => ({ ...prev, stake: amount.toString() }))}
                       className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                     >
-                      ${amount}
+                      {formatAmount(amount, advertiser.currency, { decimals: 0 })}
                     </button>
                   ))}
                 </div>
@@ -268,15 +271,15 @@ export default function BetSlipBuilder() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">{t('betSlip.stake')}</span>
-                    <span className="font-semibold">${parseFloat(data.stake || 0).toFixed(2)}</span>
+                    <span className="font-semibold">{formatAmount(data.stake, advertiser.currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('betSlip.potentialWin')}</span>
-                    <span className="font-bold text-green-600 text-lg">${potentialWin.toFixed(2)}</span>
+                    <span className="font-bold text-green-600 text-lg">{formatAmount(potentialWin, advertiser.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">{t('betSlip.profit')}</span>
-                    <span className="font-semibold text-green-600">+${profit.toFixed(2)}</span>
+                    <span className="font-semibold text-green-600">{formatAmount(profit, advertiser.currency, { showPlus: true })}</span>
                   </div>
                 </div>
 

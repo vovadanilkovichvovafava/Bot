@@ -185,7 +185,7 @@ export function AuthProvider({ children }) {
     setBookmakerAccount(credentials);
     // TODO: Call backend to sync balance
     // For now, simulate a balance
-    setBookmakerBalance({ amount: 0, currency: 'USD', lastSync: new Date().toISOString() });
+    setBookmakerBalance({ amount: 0, currency: 'EUR', lastSync: new Date().toISOString() });
     return credentials;
   };
 
@@ -199,7 +199,7 @@ export function AuthProvider({ children }) {
     if (!bookmakerAccount) return null;
     // TODO: Call backend API to fetch actual balance
     // For now, return simulated balance
-    const balance = { amount: 0, currency: 'USD', lastSync: new Date().toISOString() };
+    const balance = { amount: 0, currency: 'EUR', lastSync: new Date().toISOString() };
     setBookmakerBalance(balance);
     return balance;
   };

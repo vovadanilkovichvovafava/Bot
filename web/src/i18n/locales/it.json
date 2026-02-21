@@ -471,6 +471,7 @@
     "helpButton": "Contatta il supporto"
   },
   "proAccess": {
+    "oneClickBet": "Scommessa 1 clic",
     "s1Title": "Il tuo limite giornaliero\nè esaurito",
     "s1Sub": "Con PRO hai accesso illimitato — senza abbonamento e senza pagare.",
     "s1Free": "Gratuito",
@@ -700,7 +701,14 @@
     "step5Title": "Tutto pronto! Inizia ora",
     "step5Desc": "Hai 3 richieste AI gratuite al giorno. Scegli una partita e prova il tuo primo pronostico AI!",
     "goPredict": "Vai ai pronostici",
-    "discoverPro": "Scopri PRO (gratuito)"
+    "discoverPro": "Scopri PRO (gratuito)",
+    "previewLeague": "Serie A",
+    "previewBadge": "Pronostico AI",
+    "previewMatch": "Juventus vs Inter",
+    "previewConfidence": "Affidabilità AI",
+    "chatTag1": "Migliori oggi",
+    "chatTag2": "In diretta",
+    "chatTag3": "Serie A"
   },
   "guide": {
     "title": "Scuola di Scommesse",

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAdvertiser } from '../context/AdvertiserContext';
 
 // --- Realistic data generators ---
 // Seeded random for consistent per-session values
@@ -38,6 +39,11 @@ const NAMES_BY_LOCALE = {
     { name: 'Kacper', city: 'Warszawa' }, { name: 'Jakub', city: 'Krakow' },
     { name: 'Mateusz', city: 'Wroclaw' }, { name: 'Szymon', city: 'Gdansk' },
     { name: 'Filip', city: 'Poznan' }, { name: 'Tomasz', city: 'Lodz' },
+  ],
+  de: [
+    { name: 'Lukas', city: 'Berlin' }, { name: 'Felix', city: 'München' },
+    { name: 'Jonas', city: 'Hamburg' }, { name: 'Leon', city: 'Köln' },
+    { name: 'Maximilian', city: 'Frankfurt' }, { name: 'Paul', city: 'Stuttgart' },
   ],
 };
 
@@ -246,6 +252,7 @@ export function SocialProofToast() {
 // --- Recent Wins Ticker ---
 export function RecentWinsTicker() {
   const { t, i18n } = useTranslation();
+  const { advertiser } = useAdvertiser();
   const [wins, setWins] = useState([]);
 
   useEffect(() => {
@@ -280,7 +287,7 @@ export function RecentWinsTicker() {
               </svg>
             </div>
             <span className="text-white/80 text-[11px] font-medium whitespace-nowrap">
-              {w.name} <span className="text-green-400 font-bold">+{w.amount}$</span>
+              {w.name} <span className="text-green-400 font-bold">+{w.amount} {advertiser.currency}</span>
             </span>
           </div>
         ))}

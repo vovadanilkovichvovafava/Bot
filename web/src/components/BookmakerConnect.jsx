@@ -94,7 +94,7 @@ export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
         email: email || undefined,
         phone: phone || undefined,
         password,
-        currency: 'USD',
+        currency: 'EUR',
       });
       onSuccess?.();
       onClose();

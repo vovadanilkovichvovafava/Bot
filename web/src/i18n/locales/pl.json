@@ -1367,5 +1367,44 @@
       "desc": "Dostęp PRO jest o jeden krok! Wpłać depozyt, aby odblokować nieograniczone prognozy AI i value bets.",
       "cta": "Odblokuj PRO"
     }
+  },
+  "onboarding": {
+    "start": "Zaczynamy!",
+    "next": "Dalej",
+    "step1Title": "Witaj w AI Betting Bot!",
+    "step1Desc": "Twój osobisty asystent AI do piłki nożnej. Analizujemy ponad 900 lig, by dawać Ci najdokładniejsze prognozy.",
+    "feat1": "Prognozy AI — oparte na danych",
+    "feat2": "Czat AI — pytaj o dowolny mecz",
+    "feat3": "Statystyki — śledź swoje wyniki",
+    "step2Title": "Darmowe prognozy AI codziennie",
+    "step2Desc": "Codziennie masz 3 darmowe zapytania AI. Wybierz mecz, AI analizuje formę, statystyki, bezpośrednie mecze i daje Ci rekomendację.",
+    "step3Title": "Czat AI — Twój osobisty analityk",
+    "step3Desc": "Masz pytanie o mecz? Zapytaj AI! Odpowiedzi oparte na prawdziwych danych, statystykach i analizie w czasie rzeczywistym.",
+    "chatExample1": "Kto wygra dziś wieczorem Legia vs Lech?",
+    "chatExample2": "Na podstawie ostatnich 5 meczów i aktualnej formy...",
+    "step4Title": "Oto co możesz zrobić",
+    "free1": "3 darmowe prognozy AI dziennie",
+    "free2": "Czat AI z darmowymi pytaniami dziennie",
+    "free3": "Statystyki Twoich prognoz",
+    "free4": "Kalendarz meczów z 900+ lig",
+    "pro1": "Nieograniczone prognozy — PRO",
+    "pro2": "Nieograniczony czat AI — PRO",
+    "pro3": "Value Bet Finder — PRO",
+    "pro4": "Bankroll Tracker — PRO",
+    "proNote": "PRO odblokowujesz za darmo — dowiedz się jak na stronie",
+    "step5Title": "Wszystko gotowe! Zaczynamy",
+    "step5Desc": "Masz 3 darmowe zapytania AI dziennie. Wybierz mecz i wypróbuj swoją pierwszą prognozę AI!",
+    "goPredict": "Idź do prognoz",
+    "discoverPro": "Odkryj PRO (za darmo)",
+    "previewLeague": "Ekstraklasa",
+    "previewBadge": "Prognoza AI",
+    "previewMatch": "Legia vs Lech",
+    "previewConfidence": "Pewność AI",
+    "chatTag1": "Najlepsze dziś",
+    "chatTag2": "Na żywo",
+    "chatTag3": "Ekstraklasa"
+  },
+  "proAccess": {
+    "oneClickBet": "Zakład 1 kliknięciem"
   }
 }

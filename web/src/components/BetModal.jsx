@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBookmaker } from '../context/BookmakerContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
+import { formatAmount } from '../config/advertisers';
 import BookmakerConnect, { BOOKMAKER } from './BookmakerConnect';
 import FootballSpinner from './FootballSpinner';
 
 export default function BetModal({ isOpen, onClose, bet }) {
   const { t } = useTranslation();
+  const { advertiser } = useAdvertiser();
   const { isConnected, balance, placeBet, loading: bkLoading } = useBookmaker();
   const [stake, setStake] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -45,7 +48,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
       await placeBet({
         oddId: bet.oddId || bet.id,
         amount: stakeAmount,
-        currencyCode: 'USD',
+        currencyCode: advertiser.currencyCode || 'EUR',
       });
 
       setPlacing(false);
@@ -61,7 +64,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
     }
   };
 
-  const quickAmounts = [10, 50, 100, 300];
+  const quickAmounts = advertiser.quickAmounts || [10, 50, 100, 300];
 
   // Not connected - show connect prompt
   if (!isConnected) {
@@ -132,10 +135,10 @@ export default function BetModal({ isOpen, onClose, bet }) {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">{t('betModal.betPlaced')}</h3>
             <p className="text-gray-500 text-sm mb-1">
-              ${stake} on {bet.type} @ {odds.toFixed(2)}
+              {formatAmount(stake, advertiser.currency)} on {bet.type} @ {odds.toFixed(2)}
             </p>
             <p className="text-green-600 font-semibold">
-              {t('betModal.potentialWin')}: ${potentialWin}
+              {t('betModal.potentialWin')}: {formatAmount(potentialWin, advertiser.currency)}
             </p>
           </div>
         </div>
@@ -203,7 +206,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">{t('betModal.stakeAmount')}</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xl">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xl">{advertiser.currency}</span>
               <input
                 type="number"
                 value={stake}
@@ -225,7 +228,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  ${amount}
+                  {formatAmount(amount, advertiser.currency, { decimals: 0 })}
                 </button>
               ))}
             </div>
@@ -235,7 +238,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">{t('betModal.potentialWin')}</span>
-              <span className="text-xl font-bold text-green-600">${potentialWin}</span>
+              <span className="text-xl font-bold text-green-600">{formatAmount(potentialWin, advertiser.currency)}</span>
             </div>
           </div>
 
@@ -243,7 +246,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">{t('betModal.accountBalance')}:</span>
             <span className="font-medium text-gray-700">
-              ${balanceAmount.toFixed(2)}
+              {formatAmount(balanceAmount, advertiser.currency)}
             </span>
           </div>
 
@@ -263,7 +266,7 @@ export default function BetModal({ isOpen, onClose, bet }) {
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
-                {t('betModal.placeBet')} {stake ? `$${stake}` : ''}
+                {t('betModal.placeBet')} {stake ? formatAmount(stake, advertiser.currency, { decimals: 0 }) : ''}
               </>
             )}
           </button>

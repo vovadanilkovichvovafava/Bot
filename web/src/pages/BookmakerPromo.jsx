@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useAdvertiser } from '../context/AdvertiserContext';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../services/analytics';
 
@@ -62,6 +63,8 @@ const Card = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 export default function BookmakerPromo() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { advertiser } = useAdvertiser();
+  const ex = advertiser.exampleAmounts || {};
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
@@ -97,10 +100,10 @@ export default function BookmakerPromo() {
           <div className="q-ssub">{t('promo.s1Sub')}</div>
           <div className="q-ctable">
             <div className="q-chead"><Clock />{t('promo.s1TableHead')}</div>
-            <div className="q-crow"><div className="q-cname top">{t('promo.s1OurPartner')}</div><div className="q-bwrap"><div className="q-bar top" style={{ width: '95%' }}>1.45 <span className="q-btag">TOP</span></div></div></div>
-            <div className="q-crow"><div className="q-cname">Bet365</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '82%' }}>1.38</div></div></div>
-            <div className="q-crow"><div className="q-cname">Unibet</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '74%' }}>1.36</div></div></div>
-            <div className="q-crow"><div className="q-cname">William Hill</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '86%' }}>1.40</div></div></div>
+            <div className="q-crow"><div className="q-cname top">{t('promo.s1OurPartner')}</div><div className="q-bwrap"><div className="q-bar top" style={{ width: '95%' }}>{ex.ourOdds} <span className="q-btag">TOP</span></div></div></div>
+            <div className="q-crow"><div className="q-cname">Bet365</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '82%' }}>{ex.bet365Odds}</div></div></div>
+            <div className="q-crow"><div className="q-cname">Unibet</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '74%' }}>{ex.unibetOdds}</div></div></div>
+            <div className="q-crow"><div className="q-cname">William Hill</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '86%' }}>{ex.williamHillOdds}</div></div></div>
           </div>
           <div className="q-callout gold"><strong>{t('promo.s1CalloutBold')}</strong> {t('promo.s1Callout')}</div>
           <div className="q-bet-ex">
@@ -108,9 +111,9 @@ export default function BookmakerPromo() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               {t('promo.s1BetExample')}
             </div>
-            <div className="q-bet-row"><div className="q-bet-name top">{t('promo.s1OurPartner')} (1.45)</div><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><div className="q-bet-gain top">+72.50€</div><div className="q-bet-diff">+3.50€</div></div></div>
-            <div className="q-bet-row"><div className="q-bet-name">Bet365 (1.38)</div><div className="q-bet-gain gray">+69.00€</div></div>
-            <div className="q-bet-row"><div className="q-bet-name">William Hill (1.40)</div><div className="q-bet-gain gray">+70.00€</div></div>
+            <div className="q-bet-row"><div className="q-bet-name top">{t('promo.s1OurPartner')} ({ex.ourOdds})</div><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><div className="q-bet-gain top">{ex.ourProfit}</div><div className="q-bet-diff">{ex.profitDiff}</div></div></div>
+            <div className="q-bet-row"><div className="q-bet-name">Bet365 ({ex.bet365Odds})</div><div className="q-bet-gain gray">{ex.bet365Profit}</div></div>
+            <div className="q-bet-row"><div className="q-bet-name">William Hill ({ex.williamHillOdds})</div><div className="q-bet-gain gray">{ex.williamHillProfit}</div></div>
           </div>
         </div>
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s1Btn')}<ArrowRight /></button></div>
@@ -124,10 +127,10 @@ export default function BookmakerPromo() {
           </div>
           <div className="q-stit">{t('promo.s2Title')}</div>
           <div className="q-ssub">{t('promo.s2Sub')}</div>
-          <div className="q-bigstat"><div className="bl">{t('promo.s2StatLabel')}</div><div className="bv">+47€</div><div className="bd">{t('promo.s2StatDesc')}</div></div>
+          <div className="q-bigstat"><div className="bl">{t('promo.s2StatLabel')}</div><div className="bv">{ex.monthlyExtra}</div><div className="bd">{t('promo.s2StatDesc')}</div></div>
           <div className="q-srow">
-            <div className="q-sbox"><span className="sv">+0.05</span><span className="sl">{t('promo.s2HigherOdds')}</span></div>
-            <div className="q-sbox"><span className="sv">564€</span><span className="sl">{t('promo.s2ExtraAnnual')}</span></div>
+            <div className="q-sbox"><span className="sv">+{ex.higherOdds}</span><span className="sl">{t('promo.s2HigherOdds')}</span></div>
+            <div className="q-sbox"><span className="sv">{ex.annualExtra}</span><span className="sl">{t('promo.s2ExtraAnnual')}</span></div>
             <div className="q-sbox"><span className="sv">87%</span><span className="sl">{t('promo.s2AiAccuracy')}</span></div>
           </div>
           <div className="q-callout blue"><strong>{t('promo.s2CalloutBold')}</strong> {t('promo.s2Callout')}</div>
@@ -136,9 +139,9 @@ export default function BookmakerPromo() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
               {t('promo.s2ProjTitle')}
             </div>
-            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month1')}</div><div className="q-pbg"><div className="q-pbar2 s1" style={{ width: '27%' }}>+47€</div></div></div>
-            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month6')}</div><div className="q-pbg"><div className="q-pbar2 s2" style={{ width: '55%' }}>+282€</div></div></div>
-            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month12')}</div><div className="q-pbg"><div className="q-pbar2 s3" style={{ width: '95%' }}>+564€</div></div></div>
+            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month1')}</div><div className="q-pbg"><div className="q-pbar2 s1" style={{ width: '27%' }}>{ex.monthlyBar}</div></div></div>
+            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month6')}</div><div className="q-pbg"><div className="q-pbar2 s2" style={{ width: '55%' }}>{ex.sixMonthBar}</div></div></div>
+            <div className="q-prow"><div className="q-plbl">{t('promo.s2Month12')}</div><div className="q-pbg"><div className="q-pbar2 s3" style={{ width: '95%' }}>{ex.annualBar}</div></div></div>
           </div>
         </div>
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s2Btn')}<ArrowRight /></button></div>
@@ -167,10 +170,10 @@ export default function BookmakerPromo() {
           <div className="q-stit">{t('promo.s4Title')}</div>
           <div className="q-ssub">{t('promo.s4Sub')}</div>
           <div className="q-dgrid">
-            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">5€</div><div className="dl">{t('promo.s4Min')}</div></div>
-            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">20€</div><div className="dl">{t('promo.s4Popular')}</div></div>
-            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('promo.s4Recommended')}</div><div className="da">50€</div><div className="dl">{t('promo.s4MoreBonus')}</div></div>
-            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">100€+</div><div className="dl">{t('promo.s4Serious')}</div></div>
+            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">{advertiser.depositAmounts?.[0] || '5 €'}</div><div className="dl">{t('promo.s4Min')}</div></div>
+            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">{advertiser.depositAmounts?.[1] || '20 €'}</div><div className="dl">{t('promo.s4Popular')}</div></div>
+            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('promo.s4Recommended')}</div><div className="da">{advertiser.depositAmounts?.[2] || '50 €'}</div><div className="dl">{t('promo.s4MoreBonus')}</div></div>
+            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">{advertiser.depositAmounts?.[3] || '100 €+'}</div><div className="dl">{t('promo.s4Serious')}</div></div>
           </div>
           <div className="q-cklist">
             <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4FreeReg')}</h4><p>{t('promo.s4FreeRegDesc')}</p></div></div>
@@ -199,7 +202,7 @@ export default function BookmakerPromo() {
             <div className="ft">{t('promo.s5Title')}</div>
             <div className="fs">{t('promo.s5Sub')}</div>
           </div>
-          <div className="q-bfloat"><div className="q-bfl">{t('promo.s5BonusLabel')}</div><div className="q-bfa">€1.500</div><div className="q-bfd">{t('promo.s5BonusDesc')}</div></div>
+          <div className="q-bfloat"><div className="q-bfl">{t('promo.s5BonusLabel')}</div><div className="q-bfa">{ex.bonusDisplay}</div><div className="q-bfd">{t('promo.s5BonusDesc')}</div></div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('promo.s5Install')}</div></div>
             <div className="q-marr">→</div>
