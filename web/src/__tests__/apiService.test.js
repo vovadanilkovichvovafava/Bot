@@ -20,7 +20,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 globalThis.fetch = vi.fn();
 
 // ── Now import the singleton ──
-import { api } from '../api/index';
+import { api } from '../shared/api/index';
 
 // ── Constants ──
 const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1';

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getReferralLink, getReferredBy, clearReferralCode, getReferralStats, copyReferralLink } from '../services/referralStore';
-import api from '../api';
+import { getReferralLink, getReferredBy, clearReferralCode, getReferralStats, copyReferralLink } from '../features/auth/services/referralStore';
+import api from '../shared/api';
 
-vi.mock('../api', () => ({
+vi.mock('../shared/api', () => ({
   default: {
     getReferralStats: vi.fn(),
   },

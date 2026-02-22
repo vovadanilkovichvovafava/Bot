@@ -5,7 +5,7 @@ import {
   getSupportedCountries,
   ADVERTISERS,
   DEFAULT_ADVERTISER,
-} from '../config/advertisers';
+} from '../shared/config/advertisers';
 
 describe('formatAmount', () => {
   it('formats integer amount with currency symbol after number', () => {

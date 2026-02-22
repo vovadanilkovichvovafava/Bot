@@ -29,7 +29,7 @@ globalThis.fetch = vi.fn();
 // ============================================================
 async function loadApi() {
   vi.resetModules();
-  const mod = await import('../services/bookmakerApi');
+  const mod = await import('../features/betting/api/bookmakerApi');
   return { api: mod.default, BookmakerApi: mod.BookmakerApi, BKPROXY_URL: mod.BKPROXY_URL };
 }
 

@@ -31,7 +31,7 @@ import {
   getAllFavourites,
   isMatchFavourite,
   clearAll,
-} from '../services/favouritesStore';
+} from '../features/matches/services/favouritesStore';
 
 const teamA = { id: 1, name: 'Arsenal', logo: 'arsenal.png' };
 const teamB = { id: 2, name: 'Barcelona', logo: 'barca.png' };

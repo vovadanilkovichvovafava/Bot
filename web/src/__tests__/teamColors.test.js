@@ -6,7 +6,7 @@ import {
   getTeamColor,
   colorsSimilar,
   getMatchColors,
-} from '../utils/teamColors';
+} from '../shared/utils/teamColors';
 
 describe('TEAM_COLORS', () => {
   it('contains known team entries with primary, secondary, and name', () => {

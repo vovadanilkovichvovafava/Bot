@@ -13,7 +13,7 @@ const {
   mockGetNotificationTeams: vi.fn(() => []),
 }));
 
-vi.mock('../services/notificationStore', () => ({
+vi.mock('../shared/services/notificationStore', () => ({
   savePushSubscription: mockSavePushSubscription,
   enableNotifications: mockEnableNotifications,
   disableNotifications: mockDisableNotifications,
@@ -63,7 +63,7 @@ import {
   notifyValueBetFound,
   notifyReEngagement,
   checkAndScheduleFavoriteMatchReminders,
-} from '../services/pushNotificationService';
+} from '../shared/services/pushNotificationService';
 
 // notificationStore functions are accessed via mockSavePushSubscription, etc.
 

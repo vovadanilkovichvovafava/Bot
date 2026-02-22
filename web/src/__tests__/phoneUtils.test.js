@@ -8,7 +8,7 @@ import {
   detectCountry,
   getCountryByCode,
   COUNTRIES,
-} from '../utils/phoneUtils';
+} from '../shared/utils/phoneUtils';
 
 describe('onlyDigits', () => {
   it('strips non-digit characters from a formatted phone string', () => {

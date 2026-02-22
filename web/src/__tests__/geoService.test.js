@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { geoService } from '../services/geoService';
+import { geoService } from '../shared/services/geoService';
 
 // ---------------------------------------------------------------------------
 // Helpers

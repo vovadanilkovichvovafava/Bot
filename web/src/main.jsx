@@ -1,15 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { BookmakerProvider } from './context/BookmakerContext';
-import { AdvertiserProvider } from './context/AdvertiserContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './features/auth/context/AuthContext';
+import { BookmakerProvider } from './features/betting/context/BookmakerContext';
+import { AdvertiserProvider } from './shared/context/AdvertiserContext';
+import { ThemeProvider } from './shared/context/ThemeContext';
 import App from './App';
 import './index.css';
 
 // Initialize i18n (auto-detects phone/browser language)
-import './i18n';
+import './shared/i18n';
 
 // ONE-TIME forced cache clear after haiku model migration
 // Runs once per device, clears stale AI caches + forces SW update, then never again

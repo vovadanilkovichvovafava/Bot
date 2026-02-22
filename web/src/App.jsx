@@ -1,10 +1,10 @@
 import { useEffect, useRef, Component, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import FootballSpinner from './components/FootballSpinner';
-import { saveTrackingParams } from './services/trackingService';
-import { track } from './services/analytics';
-import Layout from './components/Layout';
+import { useAuth } from './features/auth/context/AuthContext';
+import FootballSpinner from './shared/components/FootballSpinner';
+import { saveTrackingParams } from './features/betting/services/trackingService';
+import { track } from './shared/services/analytics';
+import Layout from './shared/components/Layout';
 
 // ErrorBoundary — catches React render crashes, shows fallback instead of white screen
 class ErrorBoundary extends Component {
@@ -66,31 +66,31 @@ class ErrorBoundary extends Component {
   }
 }
 // Critical path — loaded eagerly
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
+import Login from './features/auth/pages/Login';
+import Register from './features/auth/pages/Register';
+import Home from './features/matches/pages/Home';
 
 // Lazy-loaded pages — split into separate chunks
-const Matches = lazy(() => import('./pages/Matches'));
-const MatchDetail = lazy(() => import('./pages/MatchDetail'));
-const AIChat = lazy(() => import('./pages/AIChat'));
-const ProTools = lazy(() => import('./pages/ProTools'));
-const Settings = lazy(() => import('./pages/Settings'));
-const Statistics = lazy(() => import('./pages/Statistics'));
-const Favourites = lazy(() => import('./pages/Favourites'));
-const LeagueMatches = lazy(() => import('./pages/LeagueMatches'));
-const ValueFinder = lazy(() => import('./pages/ValueFinder'));
-const PredictionHistory = lazy(() => import('./pages/PredictionHistory'));
-const OddsConverter = lazy(() => import('./pages/OddsConverter'));
-const YourStats = lazy(() => import('./pages/YourStats'));
-const LiveMatchDetail = lazy(() => import('./pages/LiveMatchDetail'));
-const BookmakerPromo = lazy(() => import('./pages/BookmakerPromo'));
-const ProAccess = lazy(() => import('./pages/ProAccess'));
-const BeginnerGuide = lazy(() => import('./pages/BeginnerGuide'));
-const BankrollTracker = lazy(() => import('./pages/BankrollTracker'));
-const BetSlipBuilder = lazy(() => import('./pages/BetSlipBuilder'));
-const KellyCalculator = lazy(() => import('./pages/KellyCalculator'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+const Matches = lazy(() => import('./features/matches/pages/Matches'));
+const MatchDetail = lazy(() => import('./features/matches/pages/MatchDetail'));
+const AIChat = lazy(() => import('./features/predictions/pages/AIChat'));
+const ProTools = lazy(() => import('./features/tools/pages/ProTools'));
+const Settings = lazy(() => import('./features/tools/pages/Settings'));
+const Statistics = lazy(() => import('./features/predictions/pages/Statistics'));
+const Favourites = lazy(() => import('./features/matches/pages/Favourites'));
+const LeagueMatches = lazy(() => import('./features/matches/pages/LeagueMatches'));
+const ValueFinder = lazy(() => import('./features/tools/pages/ValueFinder'));
+const PredictionHistory = lazy(() => import('./features/predictions/pages/PredictionHistory'));
+const OddsConverter = lazy(() => import('./features/tools/pages/OddsConverter'));
+const YourStats = lazy(() => import('./features/predictions/pages/YourStats'));
+const LiveMatchDetail = lazy(() => import('./features/matches/pages/LiveMatchDetail'));
+const BookmakerPromo = lazy(() => import('./features/betting/pages/BookmakerPromo'));
+const ProAccess = lazy(() => import('./features/betting/pages/ProAccess'));
+const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'));
+const BankrollTracker = lazy(() => import('./features/tools/pages/BankrollTracker'));
+const BetSlipBuilder = lazy(() => import('./features/betting/pages/BetSlipBuilder'));
+const KellyCalculator = lazy(() => import('./features/tools/pages/KellyCalculator'));
+const NotFound = lazy(() => import('./shared/components/NotFound'));
 
 function hasAccountFlag() {
   try { return localStorage.getItem('hasAccount') === 'true'; } catch { return false; }

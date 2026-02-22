@@ -17,7 +17,7 @@ Object.defineProperty(globalThis, 'sessionStorage', {
 });
 
 // ── Now import the module under test ──
-import { saveTrackingParams, getTrackingLink } from '../services/trackingService';
+import { saveTrackingParams, getTrackingLink } from '../features/betting/services/trackingService';
 
 // ── Helpers ──
 const SAVE_URL = 'https://postbackapi-production.up.railway.app/api/tracking/save';

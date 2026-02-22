@@ -51,7 +51,7 @@ beforeEach(async () => {
   // Re‑import with a cache‑busting query so each test gets a fresh module
   // (SESSION_ID is regenerated each time).
   vi.resetModules();
-  const mod = await import('../services/analytics');
+  const mod = await import('../shared/services/analytics');
   track = mod.track;
 });
 

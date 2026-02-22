@@ -5,13 +5,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies before importing
-vi.mock('../api/footballApi', () => ({
+vi.mock('../features/matches/api/footballApi', () => ({
   default: {
     getFixturesByDate: vi.fn(() => Promise.resolve([])),
   },
 }));
 
-vi.mock('../api', () => ({
+vi.mock('../shared/api', () => ({
   default: {
     saveMyPredictions: vi.fn(() => Promise.resolve()),
     getMyPredictions: vi.fn(() => Promise.resolve({ predictions: [] })),
@@ -27,10 +27,10 @@ import {
   clearAll,
   verifyPredictions,
   loadFromBackend,
-} from '../services/predictionStore';
+} from '../features/predictions/services/predictionStore';
 
-import footballApi from '../api/footballApi';
-import api from '../api';
+import footballApi from '../features/matches/api/footballApi';
+import api from '../shared/api';
 
 // Set up localStorage mock before any tests run
 let store = {};

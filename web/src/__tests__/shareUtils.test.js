@@ -4,7 +4,7 @@ import {
   generateMatchShareText,
   getShareLinks,
   sharePrediction,
-} from '../services/shareUtils';
+} from '../features/predictions/services/shareUtils';
 
 describe('generatePredictionShareText', () => {
   const basePrediction = {
