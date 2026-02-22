@@ -98,6 +98,9 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_cached_predictions_fixture ON cached_ai_responses(fixture_id)",
             "CREATE INDEX IF NOT EXISTS ix_learning_log_type ON learning_log(event_type, created_at)",
             "CREATE INDEX IF NOT EXISTS ix_roi_analytics_period ON roi_analytics(period, period_start)",
+            # Country column for user geo tracking
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_country ON users(country)",
         ]
 
         for migration in migrations:
@@ -134,6 +137,44 @@ async def init_db():
                     text("UPDATE users SET public_id = :public_id WHERE id = :id"),
                     {"public_id": public_id, "id": row[0]}
                 )
+        except Exception:
+            pass
+
+        # Backfill country from phone prefix for existing users
+        try:
+            await conn.execute(text("""
+                UPDATE users SET country = CASE
+                    WHEN phone LIKE '+971%' THEN 'AE'
+                    WHEN phone LIKE '+380%' THEN 'UA'
+                    WHEN phone LIKE '+375%' THEN 'BY'
+                    WHEN phone LIKE '+370%' THEN 'LT'
+                    WHEN phone LIKE '+351%' THEN 'PT'
+                    WHEN phone LIKE '+48%' THEN 'PL'
+                    WHEN phone LIKE '+49%' THEN 'DE'
+                    WHEN phone LIKE '+47%' THEN 'NO'
+                    WHEN phone LIKE '+46%' THEN 'SE'
+                    WHEN phone LIKE '+45%' THEN 'DK'
+                    WHEN phone LIKE '+44%' THEN 'GB'
+                    WHEN phone LIKE '+43%' THEN 'AT'
+                    WHEN phone LIKE '+42%' THEN 'CZ'
+                    WHEN phone LIKE '+41%' THEN 'CH'
+                    WHEN phone LIKE '+40%' THEN 'RO'
+                    WHEN phone LIKE '+39%' THEN 'IT'
+                    WHEN phone LIKE '+38%' THEN 'RS'
+                    WHEN phone LIKE '+36%' THEN 'HU'
+                    WHEN phone LIKE '+35%' THEN 'IE'
+                    WHEN phone LIKE '+34%' THEN 'ES'
+                    WHEN phone LIKE '+33%' THEN 'FR'
+                    WHEN phone LIKE '+32%' THEN 'BE'
+                    WHEN phone LIKE '+31%' THEN 'NL'
+                    WHEN phone LIKE '+30%' THEN 'GR'
+                    WHEN phone LIKE '+27%' THEN 'ZA'
+                    WHEN phone LIKE '+7%' THEN 'RU'
+                    WHEN phone LIKE '+1%' THEN 'US'
+                    ELSE NULL
+                END
+                WHERE country IS NULL AND phone IS NOT NULL
+            """))
         except Exception:
             pass
 
