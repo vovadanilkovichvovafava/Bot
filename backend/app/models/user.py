@@ -24,6 +24,7 @@ class User(Base):
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     registration_ip = Column(String, index=True, nullable=True)
+    country = Column(String, nullable=True, index=True)  # ISO 3166-1 alpha-2 (IT, PL, DE, etc.)
 
     language = Column(String, default="en")
     timezone = Column(String, default="UTC")

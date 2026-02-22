@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.phone_country import detect_country_from_phone
 from app.core.database import get_db
 from app.models.user import User
 
@@ -168,6 +169,9 @@ async def register(
         )
         referrer = ref_result.scalar_one_or_none()
 
+    # Detect country from phone prefix
+    country = detect_country_from_phone(user.phone)
+
     # Create new user with IP
     new_user = User(
         email=user.email,
@@ -175,6 +179,7 @@ async def register(
         username=user.username or user.email.split("@")[0],
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
+        country=country,
         referred_by_id=referrer.id if referrer else None,
     )
     db.add(new_user)
