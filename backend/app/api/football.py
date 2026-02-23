@@ -297,12 +297,20 @@ async def _compute_smart_bet() -> Dict:
     status = chosen_fixture.get("fixture", {}).get("status", {})
     is_live = status.get("short") in ("1H", "2H", "HT")
 
-    # Step 4: Get prediction data from API-Football
+    # Step 4: Get prediction data and real odds from API-Football
     prediction = None
+    odds_data = []
     try:
         prediction = await api_football.get_prediction(fixture_id)
     except Exception:
         pass
+    try:
+        odds_data = await api_football.get_odds(fixture_id)
+    except Exception:
+        pass
+
+    # Parse real bookmaker odds into a flat dict
+    real_odds = _parse_odds(odds_data)
 
     # Step 5: Ask Claude AI for the best bet recommendation
     bet_recommendation = await _ai_pick_best_bet(
@@ -313,6 +321,7 @@ async def _compute_smart_bet() -> Dict:
         score=f"{goals.get('home', 0)}-{goals.get('away', 0)}" if is_live else None,
         minute=status.get("elapsed"),
         prediction=prediction,
+        real_odds=real_odds,
     )
 
     return {
@@ -341,17 +350,101 @@ async def _compute_smart_bet() -> Dict:
     }
 
 
+def _parse_odds(odds_data: list) -> Dict[str, float]:
+    """Parse API-Football odds response into a flat {market_name: odds} dict."""
+    result = {}
+    if not odds_data:
+        return result
+
+    # Use first bookmaker
+    bookmaker = odds_data[0] if isinstance(odds_data, list) and odds_data else None
+    if not bookmaker:
+        return result
+
+    bets = bookmaker.get("bets") or bookmaker.get("bookmakers", [{}])[0].get("bets", []) if isinstance(bookmaker, dict) else []
+    # Handle nested structure: odds_data[0] might be the fixture wrapper
+    if not bets and isinstance(bookmaker, dict):
+        bookmakers_list = bookmaker.get("bookmakers", [])
+        if bookmakers_list:
+            bets = bookmakers_list[0].get("bets", [])
+
+    for bet in bets:
+        bet_name = bet.get("name", "")
+        values = bet.get("values", [])
+
+        for v in values:
+            val = str(v.get("value", ""))
+            odd = v.get("odd")
+            try:
+                odd = float(odd)
+            except (ValueError, TypeError):
+                continue
+
+            if bet_name == "Match Winner":
+                if val == "Home":
+                    result["Home Win"] = odd
+                elif val == "Draw":
+                    result["Draw"] = odd
+                elif val == "Away":
+                    result["Away Win"] = odd
+            elif bet_name in ("Goals Over/Under", "Over/Under"):
+                result[f"Over {val}"] = odd if "Over" in val else odd
+                if "Over" in val:
+                    result[val] = odd
+                elif "Under" in val:
+                    result[val] = odd
+            elif bet_name == "Both Teams Score":
+                if val == "Yes":
+                    result["BTTS Yes"] = odd
+                elif val == "No":
+                    result["BTTS No"] = odd
+            elif bet_name == "Asian Handicap":
+                result[f"AH {val}"] = odd
+            elif "Handicap" in bet_name:
+                result[f"Handicap {val}"] = odd
+            elif bet_name == "Exact Score":
+                continue  # skip
+            else:
+                # Store as-is for other markets
+                result[f"{bet_name} {val}"] = odd
+
+    return result
+
+
+def _match_real_odds(market: str, real_odds: Dict[str, float]) -> float | None:
+    """Try to find the real odds for a given market name."""
+    if not real_odds:
+        return None
+
+    # Direct match
+    if market in real_odds:
+        return real_odds[market]
+
+    # Fuzzy match — lowercase comparison
+    market_lower = market.lower()
+    for key, odd in real_odds.items():
+        if key.lower() == market_lower:
+            return odd
+
+    # Partial match
+    for key, odd in real_odds.items():
+        if market_lower in key.lower() or key.lower() in market_lower:
+            return odd
+
+    return None
+
+
 async def _ai_pick_best_bet(
     home_team: str, away_team: str, league_name: str,
     is_live: bool, score: str | None, minute: int | None,
     prediction: dict | None,
+    real_odds: Dict[str, float] | None = None,
 ) -> Dict:
     """Use Claude AI to pick the single most attractive bet."""
 
     claude_key = os.getenv("CLAUDE_API_KEY", "")
     if not claude_key:
-        # Fallback without AI
-        return _fallback_bet(prediction, home_team, away_team)
+        return _fallback_bet(prediction, home_team, away_team, real_odds)
 
     # Build context from prediction data
     ctx_parts = [f"Match: {home_team} vs {away_team}", f"League: {league_name}"]
@@ -369,6 +462,11 @@ async def _ai_pick_best_bet(
             for key, vals in comparison.items():
                 ctx_parts.append(f"{key}: Home {vals.get('home', '?')} vs Away {vals.get('away', '?')}")
 
+    # Add real bookmaker odds to context
+    if real_odds:
+        odds_lines = [f"  {k}: {v}" for k, v in sorted(real_odds.items())]
+        ctx_parts.append(f"Real bookmaker odds:\n" + "\n".join(odds_lines))
+
     context = "\n".join(ctx_parts)
 
     prompt = f"""You are a professional sports betting analyst. Based on this match data, pick THE SINGLE BEST bet.
@@ -376,9 +474,9 @@ async def _ai_pick_best_bet(
 {context}
 
 Respond in this exact JSON format only:
-{{"market": "short market name (e.g. Over 2.5, Under 3.5, BTTS Yes, Handicap -1.5 Home, Handicap +1.5 Away, Over 1.5 1st Half, Corner Over 9.5)", "odds": estimated fair odds as number (e.g. 1.85), "confidence": confidence 50-95 as number, "reason": "one short sentence why this bet is good"}}
+{{"market": "exact market name from the real odds list above", "confidence": confidence 50-95 as number, "reason": "one short sentence why this bet is good"}}
 
-IMPORTANT: Prefer advanced markets — totals (Over/Under goals), handicaps (Asian or European), BTTS, corners, half-time totals. Avoid plain "Home Win" or "Away Win" unless the data strongly supports it. Advanced markets are more interesting and often have better value.
+IMPORTANT: You MUST pick a market from the real bookmaker odds list above. Prefer advanced markets — totals (Over/Under goals), handicaps, BTTS. Avoid plain "Home Win" or "Away Win" unless the data strongly supports it.
 Only respond with JSON."""
 
     try:
@@ -394,31 +492,45 @@ Only respond with JSON."""
         if start >= 0 and end > start:
             parsed = json.loads(text[start:end])
             if "market" in parsed:
+                market = str(parsed.get("market", ""))
+                # Use real odds if available
+                matched_odds = _match_real_odds(market, real_odds) if real_odds else None
                 return {
-                    "market": str(parsed.get("market", "")),
-                    "odds": float(parsed.get("odds", 1.80)),
+                    "market": market,
+                    "odds": matched_odds or float(parsed.get("odds", 1.80)),
                     "confidence": int(parsed.get("confidence", 65)),
                     "reason": str(parsed.get("reason", "")),
                 }
     except Exception as e:
         logger.error(f"Smart bet AI error: {e}")
 
-    return _fallback_bet(prediction, home_team, away_team)
+    return _fallback_bet(prediction, home_team, away_team, real_odds)
 
 
-def _fallback_bet(prediction: dict | None, home_team: str, away_team: str) -> Dict:
-    """Fallback bet when AI is unavailable — prefers advanced markets."""
+def _fallback_bet(prediction: dict | None, home_team: str, away_team: str, real_odds: Dict[str, float] | None = None) -> Dict:
+    """Fallback bet when AI is unavailable — prefers advanced markets with real odds."""
+    # Try to pick from real odds
+    if real_odds:
+        # Prefer Over 2.5 > BTTS Yes > Under 3.5 from real odds
+        for market in ["Over 2.5", "BTTS Yes", "Under 3.5", "Over 1.5"]:
+            if market in real_odds:
+                return {"market": market, "odds": real_odds[market], "confidence": 65, "reason": "Popular market with good value"}
+
     if prediction:
         pct = prediction.get("predictions", {}).get("percent", {})
         home_pct = int((pct.get("home") or "0").replace("%", "") or 0)
         away_pct = int((pct.get("away") or "0").replace("%", "") or 0)
         if home_pct >= 65:
-            return {"market": f"Handicap -1.5 {home_team}", "odds": 2.10, "confidence": home_pct - 5, "reason": f"{home_team} dominant — expect comfortable win"}
+            odds = real_odds.get("Home Win", 2.10) if real_odds else 2.10
+            return {"market": f"Handicap -1.5 {home_team}", "odds": odds, "confidence": home_pct - 5, "reason": f"{home_team} dominant — expect comfortable win"}
         elif away_pct >= 65:
-            return {"market": f"Handicap -1.5 {away_team}", "odds": 2.10, "confidence": away_pct - 5, "reason": f"{away_team} dominant — expect comfortable win"}
+            odds = real_odds.get("Away Win", 2.10) if real_odds else 2.10
+            return {"market": f"Handicap -1.5 {away_team}", "odds": odds, "confidence": away_pct - 5, "reason": f"{away_team} dominant — expect comfortable win"}
         elif home_pct >= 50 or away_pct >= 50:
-            return {"market": "BTTS Yes", "odds": 1.80, "confidence": 66, "reason": "Both teams in good attacking form"}
-    return {"market": "Over 2.5", "odds": 1.85, "confidence": 62, "reason": "Competitive match, goals expected"}
+            odds = real_odds.get("BTTS Yes", 1.80) if real_odds else 1.80
+            return {"market": "BTTS Yes", "odds": odds, "confidence": 66, "reason": "Both teams in good attacking form"}
+    odds = real_odds.get("Over 2.5", 1.85) if real_odds else 1.85
+    return {"market": "Over 2.5", "odds": odds, "confidence": 62, "reason": "Competitive match, goals expected"}
 
 
 # === Cache Management (admin) ===
