@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
+import footballApi from '../../matches/api/footballApi';
 
 const LESSONS = (t, advertiser) => [
   {
@@ -191,12 +192,23 @@ const LESSONS = (t, advertiser) => [
   },
 ];
 
+const BANKROLL_PRESETS = [500, 1000, 5000];
+const STAKE_PERCENT = 10;
+
 export default function BeginnerGuide() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { advertiser } = useAdvertiser();
   const [currentLesson, setCurrentLesson] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
+  const [smartBet, setSmartBet] = useState(null);
+  const [bankroll, setBankroll] = useState(1000);
+
+  useEffect(() => {
+    footballApi.getSmartBet().then(data => {
+      if (data?.found) setSmartBet(data);
+    }).catch(() => {});
+  }, []);
 
   const lessons = useMemo(() => LESSONS(t, advertiser), [t, advertiser]);
   const lesson = lessons[currentLesson];
@@ -342,16 +354,162 @@ export default function BeginnerGuide() {
 
         {/* Last lesson CTA */}
         {lesson.isLast && (
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-3 text-center text-white">
-            <p className="text-sm font-bold mb-1">{t('guide.congrats', { defaultValue: 'Complimenti! Sei pronto!' })}</p>
-            <p className="text-white/80 text-[11px] mb-2">{t('guide.congratsDesc', { defaultValue: 'Hai completato la scuola di scommesse. Ora prova il tuo primo pronostico AI!' })}</p>
-            <button
-              onClick={() => navigate('/matches')}
-              className="w-full bg-white text-green-700 font-bold py-2.5 rounded-lg text-sm"
-            >
-              {t('guide.goPredict', { defaultValue: 'Vai ai pronostici' })}
-            </button>
-          </div>
+          <>
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-3 text-center text-white">
+              <p className="text-sm font-bold mb-1">{t('guide.congrats', { defaultValue: 'Complimenti! Sei pronto!' })}</p>
+              <p className="text-white/80 text-[11px] mb-2">{t('guide.congratsDesc', { defaultValue: 'Hai completato la scuola di scommesse. Ora prova il tuo primo pronostico AI!' })}</p>
+              <button
+                onClick={() => navigate('/matches')}
+                className="w-full bg-white text-green-700 font-bold py-2.5 rounded-lg text-sm"
+              >
+                {t('guide.goPredict', { defaultValue: 'Vai ai pronostici' })}
+              </button>
+            </div>
+
+            {/* ===== MATCH OF THE DAY — real smart bet with profit calculator ===== */}
+            {smartBet?.found && smartBet.bet && (() => {
+              const odds = smartBet.bet.odds || 1.85;
+              const stake = bankroll * STAKE_PERCENT / 100;
+              const totalReturn = Math.round(stake * odds * 100) / 100;
+              const profit = Math.round((totalReturn - stake) * 100) / 100;
+              const kickOff = smartBet.kick_off ? new Date(smartBet.kick_off) : null;
+              const timeStr = kickOff ? kickOff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+              return (
+                <div className="relative overflow-hidden rounded-2xl border-2 border-amber-400/50">
+                  {/* Gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+
+                  <div className="relative p-4">
+                    {/* Header badge */}
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <div className="h-px flex-1 bg-white/20" />
+                      <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        {t('guide.matchOfDay', { defaultValue: "Match del giorno" })}
+                      </span>
+                      <div className="h-px flex-1 bg-white/20" />
+                    </div>
+
+                    {/* League */}
+                    <div className="flex items-center justify-center gap-1.5 mb-2">
+                      {smartBet.league?.logo && (
+                        <img src={smartBet.league.logo} alt="" className="w-4 h-4 object-contain" />
+                      )}
+                      <span className="text-white/70 text-[10px] font-medium">{smartBet.league?.name}</span>
+                      {timeStr && <span className="text-white/50 text-[10px]">• {timeStr}</span>}
+                    </div>
+
+                    {/* Teams */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col items-center gap-1 w-24">
+                        {smartBet.home?.logo && (
+                          <img src={smartBet.home.logo} alt="" className="w-10 h-10 object-contain drop-shadow-lg" />
+                        )}
+                        <span className="text-white font-bold text-[11px] text-center leading-tight">{smartBet.home?.name}</span>
+                      </div>
+
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-white/50 text-xs font-bold">VS</span>
+                      </div>
+
+                      <div className="flex flex-col items-center gap-1 w-24">
+                        {smartBet.away?.logo && (
+                          <img src={smartBet.away.logo} alt="" className="w-10 h-10 object-contain drop-shadow-lg" />
+                        )}
+                        <span className="text-white font-bold text-[11px] text-center leading-tight">{smartBet.away?.name}</span>
+                      </div>
+                    </div>
+
+                    {/* AI Recommendation card */}
+                    <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 mb-3 border border-white/10">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-white/60 font-medium">{t('guide.aiSuggests', { defaultValue: "L'AI consiglia" })}</span>
+                          <span className="bg-emerald-400/20 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            {smartBet.bet.confidence}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-black text-base">{smartBet.bet.market}</span>
+                        <span className="bg-yellow-400 text-gray-900 font-black text-lg px-3 py-0.5 rounded-lg shadow-lg">
+                          {odds.toFixed(2)}
+                        </span>
+                      </div>
+                      {smartBet.bet.reason && (
+                        <p className="text-white/60 text-[10px] mt-1 leading-snug">{smartBet.bet.reason}</p>
+                      )}
+                    </div>
+
+                    {/* Bankroll selector */}
+                    <div className="mb-3">
+                      <p className="text-white/70 text-[10px] font-medium mb-1.5 text-center">
+                        {t('guide.yourBankroll', { defaultValue: 'Il tuo bankroll' })}
+                      </p>
+                      <div className="flex gap-1.5 justify-center">
+                        {BANKROLL_PRESETS.map(amount => (
+                          <button
+                            key={amount}
+                            onClick={() => setBankroll(amount)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                              bankroll === amount
+                                ? 'bg-white text-orange-600 shadow-lg scale-105'
+                                : 'bg-white/15 text-white border border-white/20'
+                            }`}
+                          >
+                            €{amount.toLocaleString('de-DE')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Profit calculator */}
+                    <div className="bg-black/20 backdrop-blur-sm rounded-xl p-3 mb-3 border border-white/10">
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-white/50 text-[9px] font-medium mb-0.5">
+                            {t('guide.stakeCalc', { pct: STAKE_PERCENT, defaultValue: 'Puntata ({{pct}}%)' })}
+                          </p>
+                          <p className="text-white font-bold text-sm">€{stake.toLocaleString('de-DE')}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50 text-[9px] font-medium mb-0.5">
+                            {t('guide.returnCalc', { defaultValue: 'Vincita' })}
+                          </p>
+                          <p className="text-emerald-300 font-black text-lg">€{totalReturn.toLocaleString('de-DE')}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50 text-[9px] font-medium mb-0.5">
+                            {t('guide.profitCalc', { defaultValue: 'Profitto' })}
+                          </p>
+                          <p className="text-yellow-300 font-black text-lg">+€{profit.toLocaleString('de-DE')}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CTA button */}
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-emerald-400 rounded-xl blur-md opacity-50 animate-pulse" />
+                      <button
+                        onClick={() => navigate(`/match/${smartBet.fixture_id}`)}
+                        className="relative w-full bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-xl flex items-center justify-center gap-2"
+                      >
+                        {t('guide.placeBetNow', { defaultValue: 'Piazza la scommessa ora' })}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <p className="text-white/40 text-[9px] text-center mt-2">
+                      {t('guide.betDisclaimer', { defaultValue: 'Scommetti responsabilmente. Solo fondi che puoi permetterti di perdere.' })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
 
