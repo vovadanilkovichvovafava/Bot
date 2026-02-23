@@ -60,6 +60,28 @@ async def get_overview(
         select(func.count(Prediction.id)).where(Prediction.created_at >= today_start)
     )).scalar() or 0
 
+    # New PRO users today
+    pro_new_today = (await db.execute(
+        select(func.count(User.id)).where(
+            and_(
+                User.is_premium == True,
+                User.premium_until > now,
+                User.updated_at >= today_start,
+            )
+        )
+    )).scalar() or 0
+
+    # Predictions yesterday (for comparison)
+    yesterday_start = today_start - timedelta(days=1)
+    yesterday_predictions = (await db.execute(
+        select(func.count(Prediction.id)).where(
+            and_(
+                Prediction.created_at >= yesterday_start,
+                Prediction.created_at < today_start,
+            )
+        )
+    )).scalar() or 0
+
     # AI chats today
     ai_chats_today = (await db.execute(
         select(func.count(SupportChatMessage.id)).where(
@@ -70,9 +92,27 @@ async def get_overview(
         )
     )).scalar() or 0
 
+    # AI chats yesterday (for comparison)
+    ai_chats_yesterday = (await db.execute(
+        select(func.count(SupportChatMessage.id)).where(
+            and_(
+                SupportChatMessage.created_at >= yesterday_start,
+                SupportChatMessage.created_at < today_start,
+                SupportChatMessage.role == "user",
+            )
+        )
+    )).scalar() or 0
+
     # Support total unique sessions
     total_support_sessions = (await db.execute(
         select(func.count(func.distinct(SupportChatMessage.session_id)))
+    )).scalar() or 0
+
+    # Support sessions today
+    support_sessions_today = (await db.execute(
+        select(func.count(func.distinct(SupportChatMessage.session_id))).where(
+            SupportChatMessage.created_at >= today_start
+        )
     )).scalar() or 0
 
     accuracy = round((correct / verified * 100), 1) if verified > 0 else 0.0
@@ -81,6 +121,7 @@ async def get_overview(
         "users": {
             "total": total_users,
             "pro": pro_users,
+            "pro_new_today": pro_new_today,
             "new_today": new_today,
             "new_week": new_week,
         },
@@ -90,9 +131,12 @@ async def get_overview(
             "correct": correct,
             "accuracy": accuracy,
             "today": today_predictions,
+            "yesterday": yesterday_predictions,
         },
         "ai_chats_today": ai_chats_today,
+        "ai_chats_yesterday": ai_chats_yesterday,
         "support_sessions": total_support_sessions,
+        "support_sessions_today": support_sessions_today,
     }
 
 
