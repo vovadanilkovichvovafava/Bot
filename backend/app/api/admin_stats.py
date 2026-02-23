@@ -670,9 +670,19 @@ async def translate_messages(
     admin: dict = Depends(get_current_admin),
 ):
     """Translate messages to Russian and extract key phrases using Claude."""
+    import os
+    import anthropic
+    import json as json_mod
+    import re
+
     messages = payload.get("messages", [])
     if not messages:
         return {"translated": [], "keywords": ""}
+
+    api_key = os.getenv("CLAUDE_API_KEY")
+    if not api_key:
+        logger.warning("CLAUDE_API_KEY not set — cannot translate")
+        return {"translated": [], "keywords": "", "error": "AI not configured"}
 
     # Build text for translation
     dialog_text = "\n".join(
@@ -681,12 +691,8 @@ async def translate_messages(
     )
 
     try:
-        import anthropic
-        import json as json_mod
-        import re
-
-        client = anthropic.AsyncAnthropic()
-        resp = await client.messages.create(
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=4000,
             messages=[{
@@ -710,5 +716,5 @@ async def translate_messages(
         result = json_mod.loads(raw)
         return result
     except Exception as e:
-        logger.warning(f"Translation failed: {e}")
-        return {"translated": [], "keywords": ""}
+        logger.error(f"Translation failed: {e}")
+        return {"translated": [], "keywords": "", "error": str(e)}

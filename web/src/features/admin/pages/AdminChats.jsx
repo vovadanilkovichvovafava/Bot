@@ -104,21 +104,26 @@ function SupportChatTab() {
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId) {
+      if (translatingRef.current === sessionId && result?.translated?.length) {
         setTranslations(prev => ({ ...prev, [sessionId]: result }))
       }
-    } catch { /* silent */ }
-    finally { setTranslating(false) }
+    } catch (e) {
+      console.warn('Translate failed:', e)
+    } finally {
+      setTranslating(false)
+    }
   }, [translations])
 
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
+    setMessages([])
     setMsgLoading(true)
     adminApi.getSupportSessionMessages(sessionId)
       .then(d => {
         const msgs = d.messages || []
         setMessages(msgs)
+        // fire translate in background
         autoTranslate(sessionId, msgs)
       })
       .catch(() => setMessages([]))
@@ -276,16 +281,20 @@ function AIChatTab() {
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId) {
+      if (translatingRef.current === sessionId && result?.translated?.length) {
         setTranslations(prev => ({ ...prev, [sessionId]: result }))
       }
-    } catch { /* silent */ }
-    finally { setTranslating(false) }
+    } catch (e) {
+      console.warn('Translate failed:', e)
+    } finally {
+      setTranslating(false)
+    }
   }, [translations])
 
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
+    setMessages([])
     setMsgLoading(true)
     adminApi.getAIChatSessionMessages(sessionId)
       .then(d => {
