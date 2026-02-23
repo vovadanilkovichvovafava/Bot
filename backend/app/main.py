@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics, support
+from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
@@ -125,6 +125,8 @@ CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",       # admin panel dev
+    "http://127.0.0.1:5174",
 ]
 
 app.add_middleware(
@@ -144,6 +146,7 @@ app.include_router(predictions.router, prefix="/api/v1/predictions", tags=["pred
 app.include_router(football.router, prefix="/api/v1/football", tags=["football"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["support"])
+app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["admin"])
 
 
 @app.get("/")
