@@ -376,9 +376,10 @@ async def _ai_pick_best_bet(
 {context}
 
 Respond in this exact JSON format only:
-{{"market": "short market name (e.g. Over 2.5, BTTS Yes, Home Win, Draw, Away Win, 1X, X2, Under 3.5)", "odds": estimated fair odds as number (e.g. 1.85), "confidence": confidence 50-95 as number, "reason": "one short sentence why this bet is good"}}
+{{"market": "short market name (e.g. Over 2.5, Under 3.5, BTTS Yes, Handicap -1.5 Home, Handicap +1.5 Away, Over 1.5 1st Half, Corner Over 9.5)", "odds": estimated fair odds as number (e.g. 1.85), "confidence": confidence 50-95 as number, "reason": "one short sentence why this bet is good"}}
 
-Pick a bet that is ATTRACTIVE — good value with reasonable confidence. Only respond with JSON."""
+IMPORTANT: Prefer advanced markets — totals (Over/Under goals), handicaps (Asian or European), BTTS, corners, half-time totals. Avoid plain "Home Win" or "Away Win" unless the data strongly supports it. Advanced markets are more interesting and often have better value.
+Only respond with JSON."""
 
     try:
         client = anthropic.Anthropic(api_key=claude_key)
@@ -406,15 +407,17 @@ Pick a bet that is ATTRACTIVE — good value with reasonable confidence. Only re
 
 
 def _fallback_bet(prediction: dict | None, home_team: str, away_team: str) -> Dict:
-    """Fallback bet when AI is unavailable."""
+    """Fallback bet when AI is unavailable — prefers advanced markets."""
     if prediction:
         pct = prediction.get("predictions", {}).get("percent", {})
         home_pct = int((pct.get("home") or "0").replace("%", "") or 0)
         away_pct = int((pct.get("away") or "0").replace("%", "") or 0)
-        if home_pct >= 55:
-            return {"market": "Home Win", "odds": round(100 / max(home_pct, 1), 2), "confidence": home_pct, "reason": f"{home_team} are strong favourites"}
-        elif away_pct >= 55:
-            return {"market": "Away Win", "odds": round(100 / max(away_pct, 1), 2), "confidence": away_pct, "reason": f"{away_team} are strong favourites"}
+        if home_pct >= 65:
+            return {"market": f"Handicap -1.5 {home_team}", "odds": 2.10, "confidence": home_pct - 5, "reason": f"{home_team} dominant — expect comfortable win"}
+        elif away_pct >= 65:
+            return {"market": f"Handicap -1.5 {away_team}", "odds": 2.10, "confidence": away_pct - 5, "reason": f"{away_team} dominant — expect comfortable win"}
+        elif home_pct >= 50 or away_pct >= 50:
+            return {"market": "BTTS Yes", "odds": 1.80, "confidence": 66, "reason": "Both teams in good attacking form"}
     return {"market": "Over 2.5", "odds": 1.85, "confidence": 62, "reason": "Competitive match, goals expected"}
 
 

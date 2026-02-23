@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../auth/context/AuthContext';
+import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import footballApi from '../../matches/api/footballApi';
 
 const BANKROLL_PRESETS = [100, 300, 500];
@@ -9,6 +11,8 @@ const STAKE_PERCENT = 10;
 export default function ProGuide() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const [smartBet, setSmartBet] = useState(null);
   const [bankroll, setBankroll] = useState(300);
 
@@ -254,11 +258,16 @@ export default function ProGuide() {
                   </div>
                 </div>
 
-                {/* CTA button */}
+                {/* CTA button — opens bookmaker */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-emerald-400 rounded-xl blur-md opacity-50 animate-pulse" />
                   <button
-                    onClick={() => navigate(`/match/${smartBet.fixture_id}`)}
+                    onClick={() => {
+                      if (advertiser?.link) {
+                        if (user?.id) trackClick(user.id, 'pro_guide_value_bet');
+                        window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                     className="relative w-full bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-xl flex items-center justify-center gap-2"
                   >
                     {t('proGuide.placeBet', { defaultValue: 'Scommetti ora sull\'errore' })}
