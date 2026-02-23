@@ -53,19 +53,51 @@ function StatCard({ label, value, sub, subColor, color = 'blue', icon }) {
   )
 }
 
-function MiniBar({ data, maxVal }) {
+function BarChart({ data, color = 'blue' }) {
   if (!data.length) return null
-  const max = maxVal || Math.max(...data.map(d => d.count), 1)
+  const items = data.slice(-14)
+  const max = Math.max(...items.map(d => d.count), 1)
+  // Y-axis: 4 ticks
+  const yTicks = [max, Math.round(max * 0.66), Math.round(max * 0.33), 0]
+  const barColor = color === 'green' ? 'bg-emerald-500/50 hover:bg-emerald-400/70' : 'bg-blue-500/50 hover:bg-blue-400/70'
+
   return (
-    <div className="flex items-end gap-[3px] h-28">
-      {data.slice(-14).map((d, i) => (
-        <div
-          key={i}
-          className="flex-1 bg-blue-500/50 rounded-t min-w-[6px] transition-all hover:bg-blue-400/70"
-          style={{ height: `${Math.max((d.count / max) * 100, 4)}%` }}
-          title={`${d.date}: ${d.count}`}
-        />
-      ))}
+    <div className="flex gap-0">
+      {/* Y axis */}
+      <div className="flex flex-col justify-between h-32 pr-2 shrink-0">
+        {yTicks.map((v, i) => (
+          <span key={i} className="text-[9px] text-slate-500 font-mono leading-none text-right min-w-[24px]">{v}</span>
+        ))}
+      </div>
+      {/* Chart area */}
+      <div className="flex-1 flex flex-col">
+        <div className="flex items-end gap-[3px] h-32 border-l border-b border-slate-700/50 pl-1 pb-1">
+          {items.map((d, i) => (
+            <div
+              key={i}
+              className={`flex-1 ${barColor} rounded-t min-w-[6px] transition-all relative group`}
+              style={{ height: `${Math.max((d.count / max) * 100, 3)}%` }}
+            >
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 font-mono">
+                {d.count}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* X axis */}
+        <div className="flex justify-between mt-1.5 pl-1">
+          {items.map((d, i) => {
+            // Show label for first, last, and every ~3rd bar
+            const show = i === 0 || i === items.length - 1 || i % 3 === 0
+            const label = d.date ? d.date.slice(5) : '' // "MM-DD"
+            return (
+              <span key={i} className="flex-1 text-center text-[8px] text-slate-500 font-mono">
+                {show ? label : ''}
+              </span>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -173,13 +205,7 @@ export default function AdminDashboard() {
             </div>
             <Link to="/admin/users" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>
           </div>
-          <MiniBar data={usersStats?.daily_registrations || []} />
-          {usersStats?.daily_registrations?.length > 0 && (
-            <div className="flex justify-between mt-2 text-[10px] text-slate-400">
-              <span>{usersStats.daily_registrations[Math.max(0, usersStats.daily_registrations.length - 14)]?.date}</span>
-              <span>{usersStats.daily_registrations[usersStats.daily_registrations.length - 1]?.date}</span>
-            </div>
-          )}
+          <BarChart data={usersStats?.daily_registrations || []} color="blue" />
         </div>
 
         {/* Predictions trend */}
@@ -191,13 +217,7 @@ export default function AdminDashboard() {
             </div>
             <Link to="/admin/predictions" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>
           </div>
-          <MiniBar data={predStats?.daily_predictions || []} />
-          {predStats?.daily_predictions?.length > 0 && (
-            <div className="flex justify-between mt-2 text-[10px] text-slate-400">
-              <span>{predStats.daily_predictions[Math.max(0, predStats.daily_predictions.length - 14)]?.date}</span>
-              <span>{predStats.daily_predictions[predStats.daily_predictions.length - 1]?.date}</span>
-            </div>
-          )}
+          <BarChart data={predStats?.daily_predictions || []} color="green" />
         </div>
       </div>
 

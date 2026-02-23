@@ -105,7 +105,6 @@ function SupportChatTab() {
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
-  const tr = openSession ? translations[openSession] : null
 
   return (
     <div className="space-y-4">
@@ -117,7 +116,9 @@ function SupportChatTab() {
 
       {/* Sessions list */}
       <div className="space-y-2">
-        {sessions.map(s => (
+        {sessions.map(s => {
+          const tr = translations[s.session_id]
+          return (
           <div key={s.session_id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
             {/* Session header - clickable */}
             <button
@@ -223,7 +224,8 @@ function SupportChatTab() {
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {!sessions.length && (
