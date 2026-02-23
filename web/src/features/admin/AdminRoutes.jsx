@@ -4,6 +4,11 @@ import AdminLayout from './components/AdminLayout'
 import AdminLogin from './pages/AdminLogin'
 import AdminRegister from './pages/AdminRegister'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminUsers from './pages/AdminUsers'
+import AdminPredictions from './pages/AdminPredictions'
+import AdminSupport from './pages/AdminSupport'
+import AdminML from './pages/AdminML'
+import AdminTeam from './pages/AdminTeam'
 
 function AdminProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAdminAuth()
@@ -35,6 +40,11 @@ export default function AdminRoutes() {
         <Route path="registration" element={<AdminRegister />} />
         <Route path="" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="predictions" element={<AdminPredictions />} />
+          <Route path="support" element={<AdminSupport />} />
+          <Route path="ml" element={<AdminML />} />
+          <Route path="team" element={<AdminTeam />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

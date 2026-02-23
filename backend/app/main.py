@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth
+from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
@@ -147,6 +147,7 @@ app.include_router(football.router, prefix="/api/v1/football", tags=["football"]
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["support"])
 app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["admin"])
+app.include_router(admin_stats.router, prefix="/api/v1/admin/stats", tags=["admin-stats"])
 
 
 @app.get("/")

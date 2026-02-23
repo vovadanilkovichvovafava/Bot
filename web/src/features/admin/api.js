@@ -62,4 +62,11 @@ export const adminApi = {
   createInvite: (role = 'admin', expires_hours = 72) =>
     request('/auth/invites', { method: 'POST', body: JSON.stringify({ role, expires_hours }) }),
   getInvites: () => request('/auth/invites'),
+
+  // Stats
+  getOverview: () => request('/stats/overview'),
+  getUsersStats: () => request('/stats/users'),
+  getPredictionsStats: () => request('/stats/predictions'),
+  getMLStats: () => request('/stats/ml'),
+  getSupportStats: () => request('/stats/support'),
 }
