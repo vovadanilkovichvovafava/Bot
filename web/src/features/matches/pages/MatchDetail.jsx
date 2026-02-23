@@ -310,7 +310,10 @@ export default function MatchDetail() {
       }
 
       const prompt = buildAIPrompt();
-      const data = await api.aiChat(prompt);
+      // Split: match data goes as match_context, question as message
+      const matchContext = prompt;
+      const userMessage = `Analyze the match ${match.home_team?.name} vs ${match.away_team?.name} and provide a detailed prediction with betting recommendation.`;
+      const data = await api.aiChat(userMessage, [], matchContext);
 
       // Refresh AI remaining counter from server (AFTER successful response)
       if (!user?.is_premium) {

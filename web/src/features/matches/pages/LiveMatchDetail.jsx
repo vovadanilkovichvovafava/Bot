@@ -124,7 +124,9 @@ export default function LiveMatchDetail() {
       prompt += `\nExample: [BET] Next Goal: ${home} @ 3.5`;
       prompt += `\nExample: [BET] Over 1.5 Goals @ 1.85`;
 
-      const data = await api.aiChat(prompt);
+      // Split: match data goes as match_context, question as message
+      const userMessage = `Analyze this LIVE match ${home} vs ${away} and provide betting recommendation.`;
+      const data = await api.aiChat(userMessage, [], prompt);
 
       // Increment AI request counter for non-premium users (AFTER successful response)
       const isPremium = user?.is_premium;
