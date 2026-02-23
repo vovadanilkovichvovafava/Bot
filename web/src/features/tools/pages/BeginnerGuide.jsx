@@ -192,7 +192,7 @@ const LESSONS = (t, advertiser) => [
   },
 ];
 
-const BANKROLL_PRESETS = [500, 1000, 5000];
+const BANKROLL_PRESETS = [100, 300, 500];
 const STAKE_PERCENT = 10;
 
 export default function BeginnerGuide() {
@@ -202,7 +202,7 @@ export default function BeginnerGuide() {
   const [currentLesson, setCurrentLesson] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [smartBet, setSmartBet] = useState(null);
-  const [bankroll, setBankroll] = useState(1000);
+  const [bankroll, setBankroll] = useState(300);
 
   useEffect(() => {
     footballApi.getSmartBet().then(data => {
