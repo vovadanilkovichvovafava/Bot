@@ -29,6 +29,34 @@ LEAGUE_IDS = {
     "BSA": 2013,   # Brasileirão
 }
 
+# Football-Data.org competition ID → API-Football league ID
+_FDO_TO_AF_LEAGUE = {
+    2021: 39,   # Premier League
+    2014: 140,  # La Liga
+    2002: 78,   # Bundesliga
+    2019: 135,  # Serie A
+    2015: 61,   # Ligue 1
+    2001: 2,    # Champions League
+    2146: 3,    # Europa League
+    2016: 40,   # Championship
+    2003: 88,   # Eredivisie
+    2017: 94,   # Primeira Liga
+    2013: 71,   # Brasileirão
+}
+
+# Football-Data.org status → API-Football status
+_FDO_STATUS_MAP = {
+    "SCHEDULED": ("NS", "Not Started"),
+    "TIMED":     ("NS", "Not Started"),
+    "IN_PLAY":   ("2H", "Second Half"),
+    "PAUSED":    ("HT", "Halftime"),
+    "FINISHED":  ("FT", "Match Finished"),
+    "POSTPONED": ("PST", "Match Postponed"),
+    "CANCELLED": ("CANC", "Match Cancelled"),
+    "SUSPENDED": ("SUSP", "Match Suspended"),
+    "AWARDED":   ("AWD", "Match Awarded"),
+}
+
 # Cache for matches (simple in-memory cache)
 _cache: Dict[str, Dict] = {}
 CACHE_TTL = 300  # 5 minutes
@@ -272,3 +300,167 @@ async def fetch_leagues() -> List[Dict]:
 
     _set_cache(cache_key, leagues)
     return leagues
+
+
+def _convert_fdo_to_fixture(match: Dict) -> Dict:
+    """Convert a Football-Data.org match to API-Football fixture format."""
+    fdo_status = match.get("status", "SCHEDULED")
+    af_short, af_long = _FDO_STATUS_MAP.get(fdo_status, ("NS", "Not Started"))
+
+    comp = match.get("competition", {})
+    comp_id = comp.get("id")
+    af_league_id = _FDO_TO_AF_LEAGUE.get(comp_id, comp_id or 0)
+
+    score = match.get("score", {})
+    ft = score.get("fullTime", {})
+    home_goals = ft.get("home")
+    away_goals = ft.get("away")
+
+    home_team = match.get("homeTeam", {})
+    away_team = match.get("awayTeam", {})
+
+    # Determine winner
+    home_winner = None
+    away_winner = None
+    if home_goals is not None and away_goals is not None:
+        if home_goals > away_goals:
+            home_winner, away_winner = True, False
+        elif away_goals > home_goals:
+            home_winner, away_winner = False, True
+        else:
+            home_winner, away_winner = None, None
+
+    return {
+        "fixture": {
+            "id": match.get("id", 0),
+            "date": match.get("utcDate", ""),
+            "timestamp": int(datetime.fromisoformat(match["utcDate"].replace("Z", "+00:00")).timestamp()) if match.get("utcDate") else 0,
+            "status": {
+                "short": af_short,
+                "long": af_long,
+                "elapsed": match.get("minute") if fdo_status == "IN_PLAY" else None,
+            },
+        },
+        "league": {
+            "id": af_league_id,
+            "name": comp.get("name", ""),
+            "country": match.get("area", {}).get("name", ""),
+            "logo": comp.get("emblem", ""),
+            "season": match.get("season", {}).get("id"),
+        },
+        "teams": {
+            "home": {
+                "id": home_team.get("id", 0),
+                "name": home_team.get("name", ""),
+                "logo": home_team.get("crest", ""),
+                "winner": home_winner,
+            },
+            "away": {
+                "id": away_team.get("id", 0),
+                "name": away_team.get("name", ""),
+                "logo": away_team.get("crest", ""),
+                "winner": away_winner,
+            },
+        },
+        "goals": {
+            "home": home_goals,
+            "away": away_goals,
+        },
+        "_fallback": True,
+    }
+
+
+async def fetch_fixtures_fallback(date: str) -> List[Dict]:
+    """Fetch matches for a date from Football-Data.org, returned in API-Football format.
+    Used as fallback when API-Football rate limit is hit.
+    """
+    api_key = get_football_api_key()
+    if not api_key:
+        logger.warning("FOOTBALL_API_KEY not set for fallback")
+        return []
+
+    cache_key = f"fdo_fixtures_{date}"
+    cached = _get_cache(cache_key)
+    if cached is not None:
+        return cached
+
+    headers = {"X-Auth-Token": api_key}
+    all_fixtures = []
+    leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+
+    async with httpx.AsyncClient() as client:
+        for lg_code in leagues_to_fetch:
+            try:
+                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+                params = {"dateFrom": date, "dateTo": date}
+
+                response = await client.get(url, headers=headers, params=params, timeout=15.0)
+                if response.status_code != 200:
+                    logger.warning(f"FDO fallback: failed to fetch {lg_code}: {response.status_code}")
+                    continue
+
+                data = response.json()
+                for match in data.get("matches", []):
+                    try:
+                        all_fixtures.append(_convert_fdo_to_fixture(match))
+                    except Exception as e:
+                        logger.debug(f"FDO fallback: skip match conversion: {e}")
+                        continue
+
+            except Exception as e:
+                logger.error(f"FDO fallback error for {lg_code}: {e}")
+                continue
+
+    all_fixtures.sort(key=lambda f: f["fixture"]["date"])
+    logger.info(f"FDO fallback: {len(all_fixtures)} fixtures for {date}")
+
+    _set_cache(cache_key, all_fixtures)
+    return all_fixtures
+
+
+async def fetch_live_fallback() -> List[Dict]:
+    """Fetch live matches from Football-Data.org, returned in API-Football format.
+    Used as fallback when API-Football rate limit is hit.
+    """
+    api_key = get_football_api_key()
+    if not api_key:
+        return []
+
+    cache_key = "fdo_live"
+    cached = _get_cache(cache_key)
+    if cached is not None:
+        return cached
+
+    headers = {"X-Auth-Token": api_key}
+    live_fixtures = []
+    leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+
+    async with httpx.AsyncClient() as client:
+        for lg_code in leagues_to_fetch:
+            try:
+                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+                params = {"status": "IN_PLAY,PAUSED"}
+
+                response = await client.get(url, headers=headers, params=params, timeout=15.0)
+                if response.status_code != 200:
+                    continue
+
+                data = response.json()
+                for match in data.get("matches", []):
+                    try:
+                        live_fixtures.append(_convert_fdo_to_fixture(match))
+                    except Exception:
+                        continue
+
+            except Exception as e:
+                logger.error(f"FDO live fallback error for {lg_code}: {e}")
+                continue
+
+    logger.info(f"FDO live fallback: {len(live_fixtures)} live fixtures")
+
+    # Short TTL for live data (60 seconds)
+    _cache[cache_key] = {
+        "value": live_fixtures,
+        "timestamp": datetime.utcnow().timestamp()
+    }
+    return live_fixtures

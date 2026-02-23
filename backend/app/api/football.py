@@ -13,6 +13,7 @@ import anthropic
 import os
 
 from app.services.api_football import api_football, get_cache_stats, clear_expired_cache
+from app.services.football_api import fetch_fixtures_fallback, fetch_live_fallback
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -22,22 +23,47 @@ logger = logging.getLogger(__name__)
 
 @router.get("/fixtures/date/{date}")
 async def get_fixtures_by_date(date: str) -> List[Dict]:
-    """Get all fixtures for a specific date (YYYY-MM-DD)"""
+    """Get all fixtures for a specific date (YYYY-MM-DD).
+    Falls back to Football-Data.org when API-Football returns empty (rate limit)."""
     try:
-        return await api_football.get_fixtures_by_date(date)
+        fixtures = await api_football.get_fixtures_by_date(date)
+        if fixtures:
+            return fixtures
+        # API-Football returned empty — try Football-Data.org fallback
+        logger.warning(f"API-Football empty for {date}, trying Football-Data.org fallback")
+        fallback = await fetch_fixtures_fallback(date)
+        if fallback:
+            return fallback
+        return fixtures  # return original empty list
     except Exception as e:
         logger.error(f"Error fetching fixtures for date {date}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch fixtures")
+        # Even on error, try fallback
+        try:
+            return await fetch_fixtures_fallback(date)
+        except Exception:
+            raise HTTPException(status_code=502, detail="Failed to fetch fixtures")
 
 
 @router.get("/fixtures/live")
 async def get_live_fixtures() -> List[Dict]:
-    """Get all currently live fixtures"""
+    """Get all currently live fixtures.
+    Falls back to Football-Data.org when API-Football returns empty (rate limit)."""
     try:
-        return await api_football.get_live_fixtures()
+        fixtures = await api_football.get_live_fixtures()
+        if fixtures:
+            return fixtures
+        # API-Football returned empty — try Football-Data.org fallback
+        logger.warning("API-Football live empty, trying Football-Data.org fallback")
+        fallback = await fetch_live_fallback()
+        if fallback:
+            return fallback
+        return fixtures
     except Exception as e:
         logger.error(f"Error fetching live fixtures: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch live fixtures")
+        try:
+            return await fetch_live_fallback()
+        except Exception:
+            raise HTTPException(status_code=502, detail="Failed to fetch live fixtures")
 
 
 @router.get("/fixtures/{fixture_id}")
@@ -242,20 +268,33 @@ async def get_smart_bet() -> Dict:
 async def _compute_smart_bet() -> Dict:
     """Find the best match and use AI to pick the best market."""
 
-    # Step 1: Get LIVE fixtures
+    # Step 1: Get LIVE fixtures (with fallback)
     live_fixtures = []
     try:
         live_fixtures = await api_football.get_live_fixtures()
+        if not live_fixtures:
+            live_fixtures = await fetch_live_fallback()
     except Exception as e:
         logger.warning(f"Failed to fetch live fixtures: {e}")
+        try:
+            live_fixtures = await fetch_live_fallback()
+        except Exception:
+            pass
 
-    # Step 2: Get today's fixtures (for fallback)
+    # Step 2: Get today's fixtures (with fallback)
     today_fixtures = []
     try:
         today = datetime.utcnow().strftime("%Y-%m-%d")
         today_fixtures = await api_football.get_fixtures_by_date(today)
+        if not today_fixtures:
+            today_fixtures = await fetch_fixtures_fallback(today)
     except Exception as e:
         logger.warning(f"Failed to fetch today fixtures: {e}")
+        try:
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            today_fixtures = await fetch_fixtures_fallback(today)
+        except Exception:
+            pass
 
     # Step 3: Pick the best match by priority
     chosen_fixture = None
