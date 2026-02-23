@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy import select, func, case, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -666,7 +666,7 @@ async def get_ai_session_messages(
 
 @router.post("/chats/translate")
 async def translate_messages(
-    payload: dict,
+    payload: dict = Body(...),
     admin: dict = Depends(get_current_admin),
 ):
     """Translate messages to Russian and extract key phrases using Claude."""
@@ -682,6 +682,9 @@ async def translate_messages(
 
     try:
         import anthropic
+        import json as json_mod
+        import re
+
         client = anthropic.AsyncAnthropic()
         resp = await client.messages.create(
             model="claude-haiku-4-5-20251001",
@@ -692,15 +695,19 @@ async def translate_messages(
                     f"You have a dialog between a user and an AI assistant about football betting.\n\n"
                     f"Dialog:\n{dialog_text}\n\n"
                     f"Do two things:\n"
-                    f"1. Translate EVERY message to Russian (keep the same order).\n"
+                    f"1. Translate EVERY message to Russian (keep the same order). There are exactly {len(messages)} messages.\n"
                     f"2. Extract 2-4 key phrases/topics discussed in the entire dialog (in Russian).\n\n"
-                    f"Respond in this exact JSON format:\n"
+                    f"IMPORTANT: Respond with ONLY raw JSON, no markdown, no code blocks.\n"
                     f'{{"translated": ["translated msg 1", "translated msg 2", ...], "keywords": "keyword1, keyword2, keyword3"}}'
                 ),
             }],
         )
-        import json
-        result = json.loads(resp.content[0].text)
+        raw = resp.content[0].text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        result = json_mod.loads(raw)
         return result
     except Exception as e:
         logger.warning(f"Translation failed: {e}")

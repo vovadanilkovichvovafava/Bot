@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { adminApi } from '../api'
 
 const TABS = [
@@ -6,44 +6,7 @@ const TABS = [
   { key: 'ai', label: 'AI Chat' },
 ]
 
-/* ── Translate button + keyword badge ──────────────────────────── */
-
-function TranslateButton({ messages, onTranslated }) {
-  const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState(false)
-
-  const handleTranslate = async () => {
-    setLoading(true)
-    try {
-      const result = await adminApi.translateMessages(messages)
-      onTranslated(result)
-      setDone(true)
-    } catch {
-      // silent
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (done) return null
-
-  return (
-    <button
-      onClick={handleTranslate}
-      disabled={loading}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-lg hover:bg-indigo-600/30 transition-colors disabled:opacity-50"
-    >
-      {loading ? (
-        <div className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
-      ) : (
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802" />
-        </svg>
-      )}
-      {loading ? 'Translating...' : 'Translate to RU'}
-    </button>
-  )
-}
+/* ── Keyword badge ─────────────────────────────────────────────── */
 
 function KeywordsBadge({ keywords }) {
   if (!keywords) return null
@@ -54,6 +17,56 @@ function KeywordsBadge({ keywords }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
       </svg>
       <span className="text-[11px] text-amber-300">{keywords}</span>
+    </div>
+  )
+}
+
+function TranslatingSpinner() {
+  return (
+    <div className="px-4 pt-3 flex items-center gap-2">
+      <div className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      <span className="text-[11px] text-indigo-400">Translating to Russian...</span>
+    </div>
+  )
+}
+
+
+/* ── Chat messages display ─────────────────────────────────────── */
+
+function ChatMessages({ messages, translation, assistantLabel }) {
+  return (
+    <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
+      {messages.map((m, idx) => (
+        <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+            m.role === 'user'
+              ? 'bg-blue-600/20 border border-blue-500/20 text-slate-200'
+              : 'bg-slate-800/70 border border-slate-700/50 text-slate-300'
+          }`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-[10px] font-semibold ${
+                m.role === 'user' ? 'text-blue-400' : 'text-cyan-400'
+              }`}>
+                {m.role === 'user' ? 'User' : (assistantLabel || m.agent_name || 'Assistant')}
+              </span>
+              <span className="text-[9px] text-slate-600">
+                {m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+              {translation?.translated?.[idx] || m.content}
+            </p>
+            {translation?.translated?.[idx] && (
+              <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed whitespace-pre-wrap break-words border-t border-slate-700/30 pt-1.5">
+                {m.content}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+      {!messages.length && (
+        <p className="text-xs text-slate-600 text-center py-4">No messages</p>
+      )}
     </div>
   )
 }
@@ -69,7 +82,9 @@ function SupportChatTab() {
   const [openSession, setOpenSession] = useState(null)
   const [messages, setMessages] = useState([])
   const [msgLoading, setMsgLoading] = useState(false)
-  const [translations, setTranslations] = useState({}) // sessionId -> { translated, keywords }
+  const [translations, setTranslations] = useState({})
+  const [translating, setTranslating] = useState(false)
+  const translatingRef = useRef(null) // track which session is being translated
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
@@ -82,18 +97,32 @@ function SupportChatTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Auto-translate when messages are loaded
+  const autoTranslate = useCallback(async (sessionId, msgs) => {
+    if (translations[sessionId] || !msgs.length) return
+    setTranslating(true)
+    translatingRef.current = sessionId
+    try {
+      const result = await adminApi.translateMessages(msgs)
+      if (translatingRef.current === sessionId) {
+        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      }
+    } catch { /* silent */ }
+    finally { setTranslating(false) }
+  }, [translations])
+
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
     setMsgLoading(true)
     adminApi.getSupportSessionMessages(sessionId)
-      .then(d => setMessages(d.messages || []))
+      .then(d => {
+        const msgs = d.messages || []
+        setMessages(msgs)
+        autoTranslate(sessionId, msgs)
+      })
       .catch(() => setMessages([]))
       .finally(() => setMsgLoading(false))
-  }
-
-  const handleTranslated = (sessionId, result) => {
-    setTranslations(prev => ({ ...prev, [sessionId]: result }))
   }
 
   if (loading && !sessions.length) {
@@ -108,26 +137,22 @@ function SupportChatTab() {
 
   return (
     <div className="space-y-4">
-      {/* Stats bar */}
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span>{total} sessions total</span>
         {totalPages > 1 && <span>Page {page + 1} / {totalPages}</span>}
       </div>
 
-      {/* Sessions list */}
       <div className="space-y-2">
         {sessions.map(s => {
           const tr = translations[s.session_id]
           return (
           <div key={s.session_id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-            {/* Session header - clickable */}
             <button
               onClick={() => openChat(s.session_id)}
               className="w-full text-left px-4 py-3.5 hover:bg-slate-800/40 transition-colors"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {/* User avatar */}
                   <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
                     {s.user_id === 0 ? 'G' : `U${s.user_id}`}
                   </div>
@@ -168,7 +193,6 @@ function SupportChatTab() {
               </div>
             </button>
 
-            {/* Expanded chat */}
             {openSession === s.session_id && (
               <div className="border-t border-slate-800 bg-slate-950/50">
                 {msgLoading ? (
@@ -177,48 +201,13 @@ function SupportChatTab() {
                   </div>
                 ) : (
                   <>
-                    {/* Translate bar + keywords */}
-                    <div className="px-4 pt-3 flex items-center gap-3 flex-wrap">
-                      <TranslateButton
-                        messages={messages}
-                        onTranslated={(r) => handleTranslated(s.session_id, r)}
-                      />
-                      {tr?.keywords && <KeywordsBadge keywords={tr.keywords} />}
-                    </div>
-
-                    <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-                      {messages.map((m, idx) => (
-                        <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                            m.role === 'user'
-                              ? 'bg-blue-600/20 border border-blue-500/20 text-slate-200'
-                              : 'bg-slate-800/70 border border-slate-700/50 text-slate-300'
-                          }`}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-[10px] font-semibold ${
-                                m.role === 'user' ? 'text-blue-400' : 'text-cyan-400'
-                              }`}>
-                                {m.role === 'user' ? 'User' : m.agent_name || 'Assistant'}
-                              </span>
-                              <span className="text-[9px] text-slate-600">
-                                {m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}
-                              </span>
-                            </div>
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                              {tr?.translated?.[idx] || m.content}
-                            </p>
-                            {tr?.translated?.[idx] && (
-                              <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed whitespace-pre-wrap break-words border-t border-slate-700/30 pt-1.5">
-                                {m.content}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {!messages.length && (
-                        <p className="text-xs text-slate-600 text-center py-4">No messages</p>
-                      )}
-                    </div>
+                    {translating && !tr && <TranslatingSpinner />}
+                    {tr?.keywords && (
+                      <div className="px-4 pt-3">
+                        <KeywordsBadge keywords={tr.keywords} />
+                      </div>
+                    )}
+                    <ChatMessages messages={messages} translation={tr} assistantLabel={null} />
                   </>
                 )}
               </div>
@@ -232,7 +221,6 @@ function SupportChatTab() {
         <p className="text-sm text-slate-600 text-center py-12">No support sessions yet</p>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <button
@@ -268,6 +256,8 @@ function AIChatTab() {
   const [messages, setMessages] = useState([])
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
+  const [translating, setTranslating] = useState(false)
+  const translatingRef = useRef(null)
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
@@ -280,18 +270,31 @@ function AIChatTab() {
 
   useEffect(() => { load() }, [load])
 
+  const autoTranslate = useCallback(async (sessionId, msgs) => {
+    if (translations[sessionId] || !msgs.length) return
+    setTranslating(true)
+    translatingRef.current = sessionId
+    try {
+      const result = await adminApi.translateMessages(msgs)
+      if (translatingRef.current === sessionId) {
+        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      }
+    } catch { /* silent */ }
+    finally { setTranslating(false) }
+  }, [translations])
+
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
     setMsgLoading(true)
     adminApi.getAIChatSessionMessages(sessionId)
-      .then(d => setMessages(d.messages || []))
+      .then(d => {
+        const msgs = d.messages || []
+        setMessages(msgs)
+        autoTranslate(sessionId, msgs)
+      })
       .catch(() => setMessages([]))
       .finally(() => setMsgLoading(false))
-  }
-
-  const handleTranslated = (sessionId, result) => {
-    setTranslations(prev => ({ ...prev, [sessionId]: result }))
   }
 
   if (loading && !sessions.length) {
@@ -326,7 +329,6 @@ function AIChatTab() {
           const tr = translations[s.session_id]
           return (
             <div key={s.session_id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-              {/* Session header */}
               <button
                 onClick={() => openChat(s.session_id)}
                 className="w-full text-left px-4 py-3.5 hover:bg-slate-800/40 transition-colors"
@@ -370,7 +372,6 @@ function AIChatTab() {
                 </div>
               </button>
 
-              {/* Expanded chat */}
               {openSession === s.session_id && (
                 <div className="border-t border-slate-800 bg-slate-950/50">
                   {msgLoading ? (
@@ -379,48 +380,13 @@ function AIChatTab() {
                     </div>
                   ) : (
                     <>
-                      {/* Translate bar + keywords */}
-                      <div className="px-4 pt-3 flex items-center gap-3 flex-wrap">
-                        <TranslateButton
-                          messages={messages}
-                          onTranslated={(r) => handleTranslated(s.session_id, r)}
-                        />
-                        {tr?.keywords && <KeywordsBadge keywords={tr.keywords} />}
-                      </div>
-
-                      <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-                        {messages.map((m, idx) => (
-                          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                              m.role === 'user'
-                                ? 'bg-blue-600/20 border border-blue-500/20 text-slate-200'
-                                : 'bg-slate-800/70 border border-slate-700/50 text-slate-300'
-                            }`}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-[10px] font-semibold ${
-                                  m.role === 'user' ? 'text-blue-400' : 'text-green-400'
-                                }`}>
-                                  {m.role === 'user' ? 'User' : 'AI Assistant'}
-                                </span>
-                                <span className="text-[9px] text-slate-600">
-                                  {m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}
-                                </span>
-                              </div>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                                {tr?.translated?.[idx] || m.content}
-                              </p>
-                              {tr?.translated?.[idx] && (
-                                <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed whitespace-pre-wrap break-words border-t border-slate-700/30 pt-1.5">
-                                  {m.content}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {!messages.length && (
-                          <p className="text-xs text-slate-600 text-center py-4">No messages</p>
-                        )}
-                      </div>
+                      {translating && !tr && <TranslatingSpinner />}
+                      {tr?.keywords && (
+                        <div className="px-4 pt-3">
+                          <KeywordsBadge keywords={tr.keywords} />
+                        </div>
+                      )}
+                      <ChatMessages messages={messages} translation={tr} assistantLabel="AI Assistant" />
                     </>
                   )}
                 </div>
@@ -430,7 +396,6 @@ function AIChatTab() {
         })}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <button
@@ -467,7 +432,6 @@ export default function AdminChats() {
         <p className="text-sm text-slate-500 mt-1">Review AI and Support chat conversations</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl w-fit">
         {TABS.map(t => (
           <button
@@ -484,7 +448,6 @@ export default function AdminChats() {
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === 'support' && <SupportChatTab />}
       {tab === 'ai' && <AIChatTab />}
     </div>
