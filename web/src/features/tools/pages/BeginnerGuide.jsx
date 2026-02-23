@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import footballApi from '../../matches/api/footballApi';
 
@@ -193,19 +192,17 @@ const LESSONS = (t, advertiser) => [
   },
 ];
 
-const BANKROLL_PRESETS = [100, 300, 500];
+const BANKROLL_PRESETS = [500, 1000, 5000];
 const STAKE_PERCENT = 10;
 
 export default function BeginnerGuide() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user } = useAuth();
   const { advertiser } = useAdvertiser();
-  const isPremium = user?.is_premium;
   const [currentLesson, setCurrentLesson] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [smartBet, setSmartBet] = useState(null);
-  const [bankroll, setBankroll] = useState(300);
+  const [bankroll, setBankroll] = useState(1000);
 
   useEffect(() => {
     footballApi.getSmartBet().then(data => {
@@ -369,59 +366,8 @@ export default function BeginnerGuide() {
               </button>
             </div>
 
-            {/* ===== MATCH OF THE DAY — PRO only ===== */}
-            {smartBet?.found && smartBet.bet && !isPremium && (
-              <div className="relative overflow-hidden rounded-2xl border-2 border-amber-400/30">
-                {/* Blurred preview */}
-                <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-4 filter blur-[2px] opacity-60">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <div className="h-px flex-1 bg-white/20" />
-                    <span className="bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                      {t('guide.matchOfDay', { defaultValue: "Match del giorno" })}
-                    </span>
-                    <div className="h-px flex-1 bg-white/20" />
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-col items-center gap-1 w-24">
-                      <div className="w-10 h-10 bg-white/20 rounded-full" />
-                      <span className="text-white font-bold text-[11px]">{smartBet.home?.name}</span>
-                    </div>
-                    <span className="text-white/50 text-xs font-bold">VS</span>
-                    <div className="flex flex-col items-center gap-1 w-24">
-                      <div className="w-10 h-10 bg-white/20 rounded-full" />
-                      <span className="text-white font-bold text-[11px]">{smartBet.away?.name}</span>
-                    </div>
-                  </div>
-                  <div className="bg-black/20 rounded-xl p-3">
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div><div className="w-8 h-4 bg-white/20 rounded mx-auto" /></div>
-                      <div><div className="w-10 h-5 bg-white/20 rounded mx-auto" /></div>
-                      <div><div className="w-10 h-5 bg-white/20 rounded mx-auto" /></div>
-                    </div>
-                  </div>
-                </div>
-                {/* PRO overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[1px]">
-                  <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full mb-2 uppercase tracking-wider shadow-lg">
-                    PRO
-                  </div>
-                  <p className="text-white font-bold text-sm mb-1 text-center px-4">
-                    {t('guide.proMatchTitle', { defaultValue: 'Calcolatore profitto AI' })}
-                  </p>
-                  <p className="text-white/70 text-[10px] text-center px-6 mb-3">
-                    {t('guide.proMatchDesc', { defaultValue: 'Match del giorno + calcolo automatico della puntata e del profitto' })}
-                  </p>
-                  <button
-                    onClick={() => navigate('/pro-access?reason=limit&feature=profit-calculator')}
-                    className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-lg"
-                  >
-                    {t('guide.unlockPro', { defaultValue: 'Sblocca PRO' })}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {smartBet?.found && smartBet.bet && isPremium && (() => {
+            {/* ===== MATCH OF THE DAY — real smart bet with profit calculator ===== */}
+            {smartBet?.found && smartBet.bet && (() => {
               const odds = smartBet.bet.odds || 1.85;
               const stake = bankroll * STAKE_PERCENT / 100;
               const totalReturn = Math.round(stake * odds * 100) / 100;

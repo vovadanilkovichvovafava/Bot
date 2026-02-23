@@ -87,6 +87,7 @@ const LiveMatchDetail = lazy(() => import('./features/matches/pages/LiveMatchDet
 const BookmakerPromo = lazy(() => import('./features/betting/pages/BookmakerPromo'));
 const ProAccess = lazy(() => import('./features/betting/pages/ProAccess'));
 const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'));
+const ProGuide = lazy(() => import('./features/tools/pages/ProGuide'));
 const BankrollTracker = lazy(() => import('./features/tools/pages/BankrollTracker'));
 const BetSlipBuilder = lazy(() => import('./features/betting/pages/BetSlipBuilder'));
 const KellyCalculator = lazy(() => import('./features/tools/pages/KellyCalculator'));
@@ -237,6 +238,9 @@ export default function App() {
         } />
         <Route path="/guide" element={
           <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
+        } />
+        <Route path="/pro-guide" element={
+          <ProtectedRoute><ProGuide /></ProtectedRoute>
         } />
         <Route path="/bankroll-tracker" element={
           <ProtectedRoute><BankrollTracker /></ProtectedRoute>
