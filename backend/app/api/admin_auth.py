@@ -99,6 +99,36 @@ class InviteCreateRequest(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────
 
+@router.post("/bootstrap")
+async def bootstrap_invite(db: AsyncSession = Depends(get_db)):
+    """
+    One-time bootstrap: creates an owner invite code.
+    Only works when there are ZERO admin users in the database.
+    After the first admin registers, this endpoint stops working forever.
+    """
+    result = await db.execute(select(AdminUser).limit(1))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Bootstrap disabled — admins already exist")
+
+    invite = AdminInvite(
+        created_by_id=None,
+        role="owner",
+        expires_at=datetime.utcnow() + timedelta(hours=72),
+    )
+    db.add(invite)
+    await db.commit()
+    await db.refresh(invite)
+
+    logger.info(f"Bootstrap invite created: {invite.code}")
+
+    return {
+        "code": invite.code,
+        "role": invite.role,
+        "expires_at": invite.expires_at.isoformat(),
+        "message": "Use this code to register as the first owner. This endpoint will stop working after registration.",
+    }
+
+
 @router.post("/register")
 async def admin_register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register as admin using an invite code."""
