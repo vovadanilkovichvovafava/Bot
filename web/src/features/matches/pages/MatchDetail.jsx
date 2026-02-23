@@ -23,7 +23,15 @@ const getCachedPrediction = (matchId) => {
     const cache = JSON.parse(localStorage.getItem(PREDICTION_CACHE_KEY) || '{}');
     const entry = cache[matchId];
     if (!entry) return null;
+    // Expire old entries
     if (Date.now() - entry.timestamp > PREDICTION_CACHE_TTL) {
+      delete cache[matchId];
+      localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
+      return null;
+    }
+    // Invalidate cached entries that have no real bet (broken/generic responses)
+    const analysis = entry.data?.claudeAnalysis || '';
+    if (!analysis.includes('[BET]')) {
       delete cache[matchId];
       localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
       return null;
@@ -325,12 +333,16 @@ export default function MatchDetail() {
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
       setPrediction(result);
 
-      // Cache only if AI returned a real analysis (not generic fallback)
+      // Cache only if AI returned a real analysis with a bet recommendation
+      const hasRealBet = data.response && data.response.includes('[BET]');
       const isGeneric = !data.response ||
         data.response.includes("I don't have real-time") ||
         data.response.includes("cannot provide") ||
-        data.response.includes("I need") && data.response.includes("Confirmation");
-      if (!isGeneric) {
+        data.response.includes("do not have") ||
+        data.response.includes("no real-time") ||
+        data.response.includes("don't have access") ||
+        (data.response.includes("I need") && data.response.includes("Confirmation"));
+      if (hasRealBet && !isGeneric) {
         saveCachedPrediction(id, result);
       }
 
