@@ -104,6 +104,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         now = time.time()
 
+        # Skip rate limiting for admin panel entirely
+        if path.startswith("/api/v1/admin/"):
+            return await call_next(request)
+
         # Determine limit based on path
         if "/auth/" in path:
             limit = self.AUTH_LIMIT
