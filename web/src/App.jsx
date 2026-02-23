@@ -70,7 +70,7 @@ import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import Home from './features/matches/pages/Home';
 
-const AdminRegister = lazy(() => import('./features/auth/pages/AdminRegister'));
+const AdminRoutes = lazy(() => import('./features/admin/AdminRoutes'));
 
 // Lazy-loaded pages — split into separate chunks
 const Matches = lazy(() => import('./features/matches/pages/Matches'));
@@ -195,7 +195,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-        <Route path="/admin/registration" element={<AdminRegister />} />
+        <Route path="/admin/*" element={<AdminRoutes />} />
         <Route path="/" element={
           <ProtectedRoute><Layout /></ProtectedRoute>
         }>

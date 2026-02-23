@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-
-const ADMIN_API = 'https://appbot-production-152e.up.railway.app/api/v1/admin'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function AdminRegister() {
+  const { register } = useAdminAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [inviteCode, setInviteCode] = useState(searchParams.get('code') || '')
   const [email, setEmail] = useState('')
@@ -11,7 +12,6 @@ export default function AdminRegister() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,48 +24,13 @@ export default function AdminRegister() {
 
     setLoading(true)
     try {
-      const res = await fetch(`${ADMIN_API}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invite_code: inviteCode.trim(),
-          email,
-          password,
-          name,
-        }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(err.detail || 'Registration failed')
-      }
-
-      const data = await res.json()
-      // Save admin tokens
-      localStorage.setItem('admin_token', data.access_token)
-      localStorage.setItem('admin_refresh_token', data.refresh_token)
-      setSuccess(true)
+      await register(inviteCode.trim(), email, password, name)
+      navigate('/admin')
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <div className="w-14 h-14 bg-green-600 rounded-2xl mx-auto flex items-center justify-center text-2xl">
-            ✓
-          </div>
-          <h1 className="text-lg font-semibold text-slate-100">Account created</h1>
-          <p className="text-sm text-slate-400">
-            You are now registered as an admin. The admin dashboard will be available soon.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -143,6 +108,13 @@ export default function AdminRegister() {
         >
           {loading ? 'Creating account...' : 'Create account'}
         </button>
+
+        <p className="text-center text-xs text-slate-500">
+          Already have an account?{' '}
+          <Link to="/admin/login" className="text-blue-400 hover:text-blue-300">
+            Sign in
+          </Link>
+        </p>
       </form>
     </div>
   )
