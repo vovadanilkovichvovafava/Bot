@@ -5,8 +5,9 @@ All endpoints require admin authentication.
 
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func, case, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -378,3 +379,173 @@ async def get_support_stats(
         "by_locale": by_locale,
         "recent_sessions": sessions,
     }
+
+
+# ── Chat history endpoints (for AdminChats page) ──────────────────────
+
+
+@router.get("/chats/support-sessions")
+async def get_support_sessions(
+    limit: int = Query(30, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Paginated support chat sessions with preview."""
+    # Subquery: first user message per session for preview
+    preview_sq = (
+        select(
+            SupportChatMessage.session_id,
+            func.min(
+                case(
+                    (SupportChatMessage.role == "user", SupportChatMessage.id),
+                )
+            ).label("first_user_msg_id"),
+        )
+        .group_by(SupportChatMessage.session_id)
+        .subquery()
+    )
+
+    rows = (await db.execute(
+        select(
+            SupportChatMessage.session_id,
+            SupportChatMessage.user_id,
+            SupportChatMessage.locale,
+            SupportChatMessage.was_pro,
+            SupportChatMessage.agent_name,
+            func.min(SupportChatMessage.created_at).label("started"),
+            func.max(SupportChatMessage.created_at).label("last_msg"),
+            func.count(SupportChatMessage.id).label("total_msgs"),
+            func.count(case((SupportChatMessage.role == "user", 1))).label("user_msgs"),
+        )
+        .group_by(
+            SupportChatMessage.session_id,
+            SupportChatMessage.user_id,
+            SupportChatMessage.locale,
+            SupportChatMessage.was_pro,
+            SupportChatMessage.agent_name,
+        )
+        .order_by(func.max(SupportChatMessage.created_at).desc())
+        .limit(limit)
+        .offset(offset)
+    )).all()
+
+    # Get previews for these sessions
+    session_ids = [r[0] for r in rows]
+    previews = {}
+    if session_ids:
+        preview_rows = (await db.execute(
+            select(SupportChatMessage.session_id, SupportChatMessage.content)
+            .where(
+                and_(
+                    SupportChatMessage.session_id.in_(session_ids),
+                    SupportChatMessage.role == "user",
+                )
+            )
+            .distinct(SupportChatMessage.session_id)
+            .order_by(SupportChatMessage.session_id, SupportChatMessage.created_at)
+        )).all()
+        previews = {r[0]: r[1][:120] for r in preview_rows}
+
+    total = (await db.execute(
+        select(func.count(func.distinct(SupportChatMessage.session_id)))
+    )).scalar() or 0
+
+    sessions = [
+        {
+            "session_id": r[0],
+            "user_id": r[1],
+            "locale": r[2],
+            "was_pro": r[3],
+            "agent_name": r[4],
+            "started": r[5].isoformat() if r[5] else None,
+            "last_message": r[6].isoformat() if r[6] else None,
+            "total_messages": r[7],
+            "user_messages": r[8],
+            "preview": previews.get(r[0], ""),
+        }
+        for r in rows
+    ]
+
+    return {"total": total, "sessions": sessions}
+
+
+@router.get("/chats/support-sessions/{session_id}")
+async def get_support_session_messages(
+    session_id: str,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """All messages in a specific support session."""
+    rows = (await db.execute(
+        select(SupportChatMessage)
+        .where(SupportChatMessage.session_id == session_id)
+        .order_by(SupportChatMessage.created_at)
+    )).scalars().all()
+
+    if not rows:
+        return {"messages": [], "session_id": session_id}
+
+    messages = [
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "locale": m.locale,
+            "agent_name": m.agent_name,
+            "was_pro": m.was_pro,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in rows
+    ]
+
+    return {
+        "session_id": session_id,
+        "user_id": rows[0].user_id,
+        "locale": rows[0].locale,
+        "agent_name": rows[0].agent_name,
+        "was_pro": rows[0].was_pro,
+        "messages": messages,
+    }
+
+
+@router.get("/chats/ai-sessions")
+async def get_ai_chat_sessions(
+    limit: int = Query(30, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """AI prediction chat sessions — predictions with AI analysis."""
+    rows = (await db.execute(
+        select(Prediction)
+        .where(Prediction.ai_analysis.isnot(None))
+        .order_by(Prediction.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )).scalars().all()
+
+    total = (await db.execute(
+        select(func.count(Prediction.id))
+        .where(Prediction.ai_analysis.isnot(None))
+    )).scalar() or 0
+
+    sessions = [
+        {
+            "id": p.id,
+            "user_id": p.user_id,
+            "match_id": p.match_id,
+            "home_team": p.home_team,
+            "away_team": p.away_team,
+            "league": p.league,
+            "match_date": p.match_date.isoformat() if p.match_date else None,
+            "bet_type": p.bet_type,
+            "confidence": float(p.confidence) if p.confidence else 0,
+            "ai_analysis": p.ai_analysis,
+            "is_correct": p.is_correct,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        for p in rows
+    ]
+
+    return {"total": total, "sessions": sessions}
