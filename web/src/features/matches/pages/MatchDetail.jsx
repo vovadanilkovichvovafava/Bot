@@ -688,59 +688,77 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             })}
           </div>
 
-          {/* AI Recommended Bet - Two-level card with free bet CTA */}
+          {/* AI Recommended Bet - Two-level card with CTA */}
           {recommendedBet && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              {/* Top: Recommendation */}
-              <div className={`bg-gradient-to-r from-green-500 to-emerald-500 p-4 ${bonusNumeric > 0 && !isPremium ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <p className="text-sm text-white/80 font-semibold uppercase tracking-wide">{t('matchDetail.aiRecommendedBet')}</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-white text-lg">{recommendedBet.type}</p>
-                  <div className="bg-white text-green-700 font-bold text-lg px-4 py-1.5 rounded-xl shadow-sm">
-                    {recommendedBet.odds.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-              {/* Bottom: Free Bet CTA - hidden for PRO users */}
-              {bonusNumeric > 0 && !isPremium && (
+              <button
+                onClick={() => {
+                  if (isPremium && advertiser?.link) {
+                    trackClick(user?.id, 'match_ai_bet');
+                    window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                  } else {
+                    navigate('/promo?banner=match_ai_bet');
+                  }
+                }}
+                className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
+                style={{ background: '#059669' }}
+              >
+                {/* Animated shimmer overlay */}
                 <div
-                  onClick={() => {
-                    if (isPremium && advertiser?.link) {
-                      trackClick(user.id, 'match_ai_bet');
-                      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
-                    } else {
-                      navigate('/promo?banner=match_ai_bet');
-                    }
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
+                    animation: 'shimmer 5s infinite',
+                    backgroundSize: '200% 100%',
                   }}
-                  className="bg-gradient-to-r from-green-700 to-emerald-700 rounded-b-2xl p-4 cursor-pointer hover:from-green-800 hover:to-emerald-800 transition-colors"
+                />
+
+                {/* Top section - Recommendation */}
+                <div className="relative p-4 pb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      </svg>
+                      <span className="text-sm font-semibold text-emerald-100 uppercase tracking-wide">{t('matchDetail.aiRecommendedBet')}</span>
+                    </div>
+                    <span className="bg-white text-emerald-700 text-sm font-bold px-3 py-0.5 rounded-lg shadow">
+                      {recommendedBet.odds.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-lg font-bold text-white">{recommendedBet.type}</p>
+                </div>
+
+                {/* Bottom section - CTA */}
+                <div
+                  className="relative px-4 py-3"
+                  style={{
+                    background: 'rgba(0,0,0,0.15)',
+                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                  }}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-amber-300 font-bold text-xs uppercase tracking-wider mb-1">
-                        {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
-                      </p>
-                      <p className="text-white font-bold text-sm">
-                        {advertiser?.bonusAmount} &times; {recommendedBet.odds.toFixed(2)} = {formatWinAmount(potentialWin)} {advertiser?.texts?.potentialWin || 'Win'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-white/90 shrink-0 ml-3">
-                      <span className="text-xs font-medium max-w-[80px] text-right leading-tight">
-                        {advertiser?.texts?.betAndTakeIt || 'Use it now!'}
-                      </span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                      </svg>
-                    </div>
+                    {isPremium ? (
+                      <div>
+                        <p className="text-white font-bold text-sm">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
+                        <p className="text-emerald-200 text-xs mt-0.5">{recommendedBet.type} @ {recommendedBet.odds.toFixed(2)}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-amber-300 font-bold text-xs uppercase tracking-wider mb-1">
+                          {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
+                        </p>
+                        <p className="text-white font-bold text-sm">
+                          {advertiser?.bonusAmount} &times; {recommendedBet.odds.toFixed(2)} = {formatWinAmount(potentialWin)} {advertiser?.texts?.potentialWin || 'Win'}
+                        </p>
+                      </div>
+                    )}
+                    <svg className="w-5 h-5 text-white/70 shrink-0 ml-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                    </svg>
                   </div>
                 </div>
-              )}
+              </button>
             </div>
           )}
 

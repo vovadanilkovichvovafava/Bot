@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
@@ -27,6 +28,7 @@ export default function LiveMatchDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { advertiser, trackClick } = useAdvertiser();
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -305,6 +307,9 @@ export default function LiveMatchDetail() {
               getLiveAnalysis={getLiveAnalysis}
               user={user}
               isFinished={isFinished}
+              advertiser={advertiser}
+              trackClick={trackClick}
+              navigate={navigate}
               t={t}
             />
           )}
@@ -363,7 +368,7 @@ function QuickStats({ stats, t }) {
 }
 
 // Overview Tab
-function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, t }) {
+function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t }) {
   const recentEvents = events.slice(-5).reverse();
 
   // Parse AI recommended bet from analysis
@@ -406,23 +411,78 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
               })}
             </div>
 
-            {/* AI Recommended Bet - Green card */}
+            {/* AI Recommended Bet - CTA card */}
             {recommendedBet && (
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    <p className="text-xs text-green-700 font-semibold uppercase">{t('liveMatch.aiLiveBetRecommendation')}</p>
+                <button
+                  onClick={() => {
+                    const isPremium = user?.is_premium;
+                    if (isPremium && advertiser?.link) {
+                      trackClick(user?.id, 'live_ai_bet');
+                      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                    } else {
+                      navigate('/promo?banner=live_ai_bet');
+                    }
+                  }}
+                  className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
+                  style={{ background: '#059669' }}
+                >
+                  {/* Animated shimmer overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
+                      animation: 'shimmer 5s infinite',
+                      backgroundSize: '200% 100%',
+                    }}
+                  />
+
+                  {/* Top section - Recommendation */}
+                  <div className="relative p-4 pb-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        </svg>
+                        <span className="text-sm font-semibold text-emerald-100 uppercase tracking-wide">{t('liveMatch.aiLiveBetRecommendation')}</span>
+                      </div>
+                      <span className="bg-white text-emerald-700 text-sm font-bold px-3 py-0.5 rounded-lg shadow">
+                        {recommendedBet.odds.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-lg font-bold text-white">{recommendedBet.type}</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-gray-900">{recommendedBet.type}</p>
-                    <div className="bg-green-600 text-white font-bold text-lg px-3 py-1 rounded-lg">
-                      {recommendedBet.odds.toFixed(2)}
+
+                  {/* Bottom section - CTA */}
+                  <div
+                    className="relative px-4 py-3"
+                    style={{
+                      background: 'rgba(0,0,0,0.15)',
+                      borderTop: '1px solid rgba(255,255,255,0.1)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      {user?.is_premium ? (
+                        <div>
+                          <p className="text-white font-bold text-sm">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
+                          <p className="text-emerald-200 text-xs mt-0.5">{recommendedBet.type} @ {recommendedBet.odds.toFixed(2)}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-amber-300 font-bold text-xs uppercase tracking-wider mb-1">
+                            {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
+                          </p>
+                          <p className="text-white font-bold text-sm">
+                            {advertiser?.bonusAmount} &times; {recommendedBet.odds.toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                      <svg className="w-5 h-5 text-white/70 shrink-0 ml-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                      </svg>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
             )}
           </>
