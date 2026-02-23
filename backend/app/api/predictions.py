@@ -1,6 +1,7 @@
 """Predictions endpoints - real AI analysis via Claude + degressive limits"""
 import json
 import logging
+import uuid
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.prediction import Prediction
 from app.models.user import User
+from app.models.ai_chat import AIChatMessage
 from app.services.match_analyzer import MatchAnalyzer
 from app.services.prediction_verifier import get_accuracy_stats, get_learning_context
 from app.services.ml_predictor import predict_match, batch_predict_today, get_match_recommendation
@@ -174,6 +176,7 @@ class ChatRequest(BaseModel):
     match_context: Optional[str] = None
     history: Optional[List[ChatMessage]] = None
     locale: Optional[str] = "en"
+    session_id: Optional[str] = None  # frontend sends to group messages
 
 
 class ChatResponse(BaseModel):
@@ -275,6 +278,27 @@ async def ai_chat(
 
     # Increment counter AFTER successful response
     await increment_chat_usage(user_id, db)
+
+    # Save chat messages to DB for admin viewing
+    try:
+        sess_id = req.session_id or str(uuid.uuid4())[:12]
+        user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        is_pro = bool(user_obj and user_obj.is_premium)
+        # Save user message
+        db.add(AIChatMessage(
+            user_id=user_id, session_id=sess_id, role="user",
+            content=req.message, locale=locale,
+            match_context=req.match_context, was_pro=is_pro,
+        ))
+        # Save assistant response
+        db.add(AIChatMessage(
+            user_id=user_id, session_id=sess_id, role="assistant",
+            content=response, locale=locale,
+            match_context=req.match_context, was_pro=is_pro,
+        ))
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to save AI chat message: {e}")
 
     # Get updated limits to return to frontend
     updated_limits = await check_and_update_limits(user_id, db)

@@ -40,6 +40,7 @@ async def init_db():
     # Import all models so they register with Base.metadata
     import app.models.ml_models  # noqa: F401
     import app.models.admin  # noqa: F401
+    import app.models.ai_chat  # noqa: F401
 
     async with engine.begin() as conn:
         # === DROP old ML tables that have wrong schema ===

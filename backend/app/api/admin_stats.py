@@ -16,6 +16,7 @@ from app.api.admin_auth import get_current_admin
 from app.models.user import User
 from app.models.prediction import Prediction
 from app.models.support_chat import SupportChatMessage
+from app.models.ai_chat import AIChatMessage
 from app.models.ml_models import MLModel, ROIAnalytics, LearningLog
 
 logger = logging.getLogger(__name__)
@@ -560,36 +561,147 @@ async def get_ai_chat_sessions(
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """AI prediction chat sessions — predictions with AI analysis."""
+    """AI chat sessions — real user ↔ AI dialogs."""
     rows = (await db.execute(
-        select(Prediction)
-        .where(Prediction.ai_analysis.isnot(None))
-        .order_by(Prediction.created_at.desc())
+        select(
+            AIChatMessage.session_id,
+            AIChatMessage.user_id,
+            AIChatMessage.locale,
+            AIChatMessage.was_pro,
+            AIChatMessage.match_context,
+            func.min(AIChatMessage.created_at).label("started"),
+            func.max(AIChatMessage.created_at).label("last_msg"),
+            func.count(AIChatMessage.id).label("total_msgs"),
+            func.count(case((AIChatMessage.role == "user", 1))).label("user_msgs"),
+        )
+        .group_by(
+            AIChatMessage.session_id,
+            AIChatMessage.user_id,
+            AIChatMessage.locale,
+            AIChatMessage.was_pro,
+            AIChatMessage.match_context,
+        )
+        .order_by(func.max(AIChatMessage.created_at).desc())
         .limit(limit)
         .offset(offset)
-    )).scalars().all()
+    )).all()
+
+    # Get previews (first user message per session)
+    session_ids = [r[0] for r in rows]
+    previews = {}
+    if session_ids:
+        preview_rows = (await db.execute(
+            select(AIChatMessage.session_id, AIChatMessage.content)
+            .where(
+                and_(
+                    AIChatMessage.session_id.in_(session_ids),
+                    AIChatMessage.role == "user",
+                )
+            )
+            .distinct(AIChatMessage.session_id)
+            .order_by(AIChatMessage.session_id, AIChatMessage.created_at)
+        )).all()
+        previews = {r[0]: r[1][:120] for r in preview_rows}
 
     total = (await db.execute(
-        select(func.count(Prediction.id))
-        .where(Prediction.ai_analysis.isnot(None))
+        select(func.count(func.distinct(AIChatMessage.session_id)))
     )).scalar() or 0
 
     sessions = [
         {
-            "id": p.id,
-            "user_id": p.user_id,
-            "match_id": p.match_id,
-            "home_team": p.home_team,
-            "away_team": p.away_team,
-            "league": p.league,
-            "match_date": p.match_date.isoformat() if p.match_date else None,
-            "bet_type": p.bet_type,
-            "confidence": float(p.confidence) if p.confidence else 0,
-            "ai_analysis": p.ai_analysis,
-            "is_correct": p.is_correct,
-            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "session_id": r[0],
+            "user_id": r[1],
+            "locale": r[2],
+            "was_pro": r[3],
+            "match_context": r[4],
+            "started": r[5].isoformat() if r[5] else None,
+            "last_message": r[6].isoformat() if r[6] else None,
+            "total_messages": r[7],
+            "user_messages": r[8],
+            "preview": previews.get(r[0], ""),
         }
-        for p in rows
+        for r in rows
     ]
 
     return {"total": total, "sessions": sessions}
+
+
+@router.get("/chats/ai-sessions/{session_id}")
+async def get_ai_session_messages(
+    session_id: str,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """All messages in a specific AI chat session."""
+    rows = (await db.execute(
+        select(AIChatMessage)
+        .where(AIChatMessage.session_id == session_id)
+        .order_by(AIChatMessage.created_at)
+    )).scalars().all()
+
+    if not rows:
+        return {"messages": [], "session_id": session_id}
+
+    messages = [
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "locale": m.locale,
+            "match_context": m.match_context,
+            "was_pro": m.was_pro,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in rows
+    ]
+
+    return {
+        "session_id": session_id,
+        "user_id": rows[0].user_id,
+        "locale": rows[0].locale,
+        "was_pro": rows[0].was_pro,
+        "messages": messages,
+    }
+
+
+@router.post("/chats/translate")
+async def translate_messages(
+    payload: dict,
+    admin: dict = Depends(get_current_admin),
+):
+    """Translate messages to Russian and extract key phrases using Claude."""
+    messages = payload.get("messages", [])
+    if not messages:
+        return {"translated": [], "keywords": ""}
+
+    # Build text for translation
+    dialog_text = "\n".join(
+        f"{'User' if m.get('role') == 'user' else 'AI'}: {m.get('content', '')}"
+        for m in messages
+    )
+
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic()
+        resp = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4000,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"You have a dialog between a user and an AI assistant about football betting.\n\n"
+                    f"Dialog:\n{dialog_text}\n\n"
+                    f"Do two things:\n"
+                    f"1. Translate EVERY message to Russian (keep the same order).\n"
+                    f"2. Extract 2-4 key phrases/topics discussed in the entire dialog (in Russian).\n\n"
+                    f"Respond in this exact JSON format:\n"
+                    f'{{"translated": ["translated msg 1", "translated msg 2", ...], "keywords": "keyword1, keyword2, keyword3"}}'
+                ),
+            }],
+        )
+        import json
+        result = json.loads(resp.content[0].text)
+        return result
+    except Exception as e:
+        logger.warning(f"Translation failed: {e}")
+        return {"translated": [], "keywords": ""}
