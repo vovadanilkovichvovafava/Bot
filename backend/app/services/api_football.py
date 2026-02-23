@@ -120,10 +120,20 @@ class ApiFootballService:
                 )
                 response.raise_for_status()
                 data = response.json()
+
+                # Check for API errors (rate limit, etc.)
+                errors = data.get("errors", {})
+                if errors:
+                    error_msg = str(errors)
+                    logger.warning(f"API-Football error for {endpoint}: {error_msg}")
+                    # Do NOT cache error responses — return empty so fallback triggers
+                    return []
+
                 result = data.get("response", [])
 
-                # Cache the result
-                _set_cache(cache_key, result, cache_type)
+                # Only cache non-empty results to avoid caching rate-limit empty responses
+                if result:
+                    _set_cache(cache_key, result, cache_type)
                 return result
 
         except httpx.TimeoutException:
