@@ -24,6 +24,30 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+async def _get_football_api_status() -> dict:
+    """Fetch API-Football account status (requests used today / daily limit)."""
+    import httpx, os
+    api_key = os.getenv("API_FOOTBALL_KEY", "")
+    if not api_key:
+        return {"used": 0, "limit": 0}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                "https://v3.football.api-sports.io/status",
+                headers={"x-apisports-key": api_key},
+                timeout=10.0,
+            )
+            data = resp.json()
+            req = data.get("response", {}).get("requests", {})
+            return {
+                "used": req.get("current", 0),
+                "limit": req.get("limit_day", 0),
+            }
+    except Exception as e:
+        logger.warning(f"Failed to fetch API-Football status: {e}")
+        return {"used": 0, "limit": 0}
+
+
 @router.get("/overview")
 async def get_overview(
     admin: dict = Depends(get_current_admin),
@@ -118,6 +142,15 @@ async def get_overview(
 
     accuracy = round((correct / verified * 100), 1) if verified > 0 else 0.0
 
+    # Online users (active in last 15 minutes)
+    online_cutoff = now - timedelta(minutes=15)
+    online_users = (await db.execute(
+        select(func.count(User.id)).where(User.updated_at >= online_cutoff)
+    )).scalar() or 0
+
+    # Football API usage today
+    football_api_today = await _get_football_api_status()
+
     return {
         "users": {
             "total": total_users,
@@ -125,6 +158,7 @@ async def get_overview(
             "pro_new_today": pro_new_today,
             "new_today": new_today,
             "new_week": new_week,
+            "online": online_users,
         },
         "predictions": {
             "total": total_predictions,
@@ -138,6 +172,7 @@ async def get_overview(
         "ai_chats_yesterday": ai_chats_yesterday,
         "support_sessions": total_support_sessions,
         "support_sessions_today": support_sessions_today,
+        "football_api": football_api_today,
     }
 
 
