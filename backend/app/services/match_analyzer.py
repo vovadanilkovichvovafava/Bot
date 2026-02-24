@@ -161,6 +161,8 @@ class MatchAnalyzer:
             "Guidelines:\n"
             "- When real-time data is provided, use it as the PRIMARY basis, supplemented by your knowledge.\n"
             "- ALWAYS provide a concrete betting recommendation with [BET] tag — never refuse if a match is specified.\n"
+            "- STRICTLY follow user's min/max odds range. If the obvious bet has odds outside the user's range, "
+            "find alternative markets (handicap, over/under, BTTS, corners, cards, halftime result, etc.) that FIT the range.\n"
             "- Structure predictions clearly: predicted outcome, confidence level, key factors, and a specific betting recommendation.\n"
             "- For match analysis, cover: current form, head-to-head, injuries, tactical matchup, and market value.\n"
             "- Use **bold** for key points and team names.\n"

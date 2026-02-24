@@ -370,18 +370,20 @@ export default function MatchDetail() {
       high: 'Aggressive approach - value picks, accumulators, correct scores allowed. Suggest 5-10% of bankroll per bet.'
     };
 
-    prompt += `\n\n**USER BETTING PREFERENCES (IMPORTANT - FOLLOW THESE):**`;
-    prompt += `\n- Minimum acceptable odds: ${minOdds}`;
-    prompt += `\n- Maximum acceptable odds: ${maxOdds}`;
+    prompt += `\n\n**=== MANDATORY BETTING RULES (NEVER VIOLATE) ===**`;
+    prompt += `\n- MINIMUM odds: ${minOdds} — NEVER recommend anything below ${minOdds}!`;
+    prompt += `\n- MAXIMUM odds: ${maxOdds} — NEVER recommend anything above ${maxOdds}!`;
     prompt += `\n- Risk level: ${riskLevel.toUpperCase()}`;
     prompt += `\n- Strategy: ${riskDesc[riskLevel]}`;
-    prompt += `\n\nONLY recommend bets with odds between ${minOdds} and ${maxOdds}. Adjust your recommendations based on the ${riskLevel} risk profile.`;
+    prompt += `\n\n⚠️ STRICT REQUIREMENT: Every [BET] recommendation MUST have odds between ${minOdds} and ${maxOdds}.`;
+    prompt += `\nIf a market's odds are outside this range, find a DIFFERENT market that fits.`;
+    prompt += `\nFor example, if Match Winner odds are 1.10 (below ${minOdds}), suggest Over/Under, BTTS, Handicap, or Corners instead.`;
 
     prompt += `\n\nProvide a detailed prediction with probabilities and key factors.`;
     prompt += `\n\n**IMPORTANT: End your analysis with exactly this format:**`;
-    prompt += `\n[BET] Bet Type Here @ Odds Here`;
+    prompt += `\n[BET] Bet Type @ Odds (must be between ${minOdds} and ${maxOdds})`;
     prompt += `\nExample: [BET] Over 2.5 Goals @ 1.85`;
-    prompt += `\nExample: [BET] ${home} Win @ 2.10`;
+    prompt += `\nExample: [BET] ${home} -1.5 Handicap @ 2.10`;
     prompt += `\nExample: [BET] Both Teams to Score @ 1.75`;
     return prompt;
   };
