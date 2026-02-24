@@ -195,13 +195,21 @@ async def debug_user(public_id: str):
     from sqlalchemy import select
 
     async with async_session() as db:
-        result = await db.execute(select(User).where(User.public_id == public_id))
+        if public_id.startswith("usr_"):
+            result = await db.execute(select(User).where(User.public_id == public_id))
+        else:
+            try:
+                int_id = int(public_id)
+                result = await db.execute(select(User).where(User.id == int_id))
+            except ValueError:
+                return {"error": "invalid_id", "public_id": public_id}
         user = result.scalar_one_or_none()
 
     if not user:
         return {"error": "not_found", "public_id": public_id}
 
     return {
+        "id": user.id,
         "public_id": user.public_id,
         "country": user.country,
         "language": user.language,
