@@ -85,13 +85,15 @@ async def get_overview(
         select(func.count(Prediction.id)).where(Prediction.created_at >= today_start)
     )).scalar() or 0
 
-    # New PRO users today
+    # New PRO users today — premium_until set to ~now+15d on activation,
+    # so today's activations have premium_until in [today+15d, tomorrow+15d)
+    tomorrow_start = today_start + timedelta(days=1)
     pro_new_today = (await db.execute(
         select(func.count(User.id)).where(
             and_(
                 User.is_premium == True,
-                User.premium_until > now,
-                User.updated_at >= today_start,
+                User.premium_until >= today_start + timedelta(days=15),
+                User.premium_until < tomorrow_start + timedelta(days=15),
             )
         )
     )).scalar() or 0
