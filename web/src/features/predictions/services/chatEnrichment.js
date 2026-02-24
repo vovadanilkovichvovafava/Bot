@@ -419,7 +419,11 @@ const KNOWN_TEAMS = [
   'rapid vienna', 'рапид',
   'young boys', 'янг бойз',
   'basel', 'базель',
-  'malmo', 'мальмё',
+  'malmo', 'malmö', 'мальмё',
+  'bodo/glimt', 'bodø/glimt', 'боде/глимт', 'боде глимт', 'глимт',
+  'rosenborg', 'русенборг',
+  'molde', 'молде',
+  'brann', 'бранн',
   'copenhagen', 'копенгаген',
   'midtjylland', 'мидтьюлланд',
   'dinamo zagreb', 'динамо загреб',
@@ -994,7 +998,14 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
         }
         if (fixtures?.length > 0) {
           // Try to find the specific opponent
-          const normalize = n => (n || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+          // Transliterate accented chars (ø→o, é→e, etc.) before stripping non-alpha
+          const normalize = n => {
+            const manual = { 'ø': 'o', 'Ø': 'O', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE', 'ı': 'i', 'İ': 'I' };
+            return (n || '')
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+              .replace(/[øØłŁđĐßæÆœŒıİ]/g, ch => manual[ch] || ch)
+              .toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+          };
           const awayNorm = normalize(awayTeam);
           const matched = fixtures.find(f => {
             const h = normalize(f.teams.home.name);

@@ -25,9 +25,18 @@ function setLocalCache(key, data) {
   localCache.set(key, { data, ts: Date.now() });
 }
 
+// Transliterate accented/special characters to ASCII equivalents
+// Handles characters that NFD decomposition doesn't cover (ø, ł, đ, ß, etc.)
+function transliterate(str) {
+  const manual = { 'ø': 'o', 'Ø': 'O', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE', 'ı': 'i', 'İ': 'I', 'ð': 'd', 'Ð': 'D', 'þ': 'th', 'Þ': 'Th' };
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // é→e, ü→u, ñ→n, etc.
+    .replace(/[øØłŁđĐßæÆœŒıİðÐþÞ]/g, ch => manual[ch] || ch); // ø→o, ß→ss, etc.
+}
+
 // Normalize team name for fuzzy matching
 function normalize(name) {
-  return (name || '')
+  return transliterate(name || '')
     .toLowerCase()
     .replace(/\bfc\b|\bcf\b|\bafc\b|\bsc\b|\bac\b|\bssc\b|\bsv\b|\bcd\b/gi, '')
     .replace(/[^a-z0-9]/g, '')
