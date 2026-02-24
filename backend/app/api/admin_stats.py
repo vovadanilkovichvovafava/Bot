@@ -790,7 +790,11 @@ async def get_chat_insights(
 
     # Grab last 60 user messages from support chats (last 7 days)
     support_msgs = (await db.execute(
-        select(SupportChatMessage.content, SupportChatMessage.locale)
+        select(
+            SupportChatMessage.content,
+            SupportChatMessage.locale,
+            SupportChatMessage.session_id,
+        )
         .where(
             and_(
                 SupportChatMessage.role == "user",
@@ -803,7 +807,11 @@ async def get_chat_insights(
 
     # Grab last 60 user messages from AI chats (last 7 days)
     ai_msgs = (await db.execute(
-        select(AIChatMessage.content, AIChatMessage.locale)
+        select(
+            AIChatMessage.content,
+            AIChatMessage.locale,
+            AIChatMessage.session_id,
+        )
         .where(
             and_(
                 AIChatMessage.role == "user",
@@ -865,12 +873,19 @@ async def get_chat_insights(
     if not api_key:
         return {**stats, "insights": None, "error": "AI not configured"}
 
-    # Build text for analysis
+    # Build numbered text for analysis — Claude returns msg_indices per issue
+    trimmed = all_msgs[:80]
     lines = []
-    for i, (content, locale) in enumerate(all_msgs[:80]):
+    for i, (content, locale, sid) in enumerate(trimmed):
         snippet = content[:200].replace("\n", " ")
-        lines.append(f"[{locale}] {snippet}")
+        lines.append(f"#{i} [{locale}] {snippet}")
     all_text = "\n".join(lines)
+
+    # Map index → (session_id, source_type)
+    idx_map = []
+    for content, locale, sid in trimmed:
+        src = "support" if (content, locale, sid) in support_msgs else "ai"
+        idx_map.append({"session_id": sid, "type": src})
 
     try:
         client = anthropic.Anthropic(api_key=api_key)
@@ -880,14 +895,16 @@ async def get_chat_insights(
             messages=[{
                 "role": "user",
                 "content": (
-                    f"You are analyzing {len(all_msgs)} recent user messages from a football betting app's chats (support + AI chats) over the last 7 days.\n\n"
+                    f"You are analyzing {len(trimmed)} recent user messages from a football betting app's chats (support + AI chats) over the last 7 days.\n"
+                    f"Each message starts with #N (its index number).\n\n"
                     f"Messages:\n{all_text}\n\n"
                     f"Analyze these messages and return a JSON with:\n"
-                    f"1. 'top_topics' — array of 5-8 most discussed topics, each: {{'topic': '...', 'count_approx': N, 'emoji': '...'}}\n"
-                    f"2. 'bugs_issues' — array of bug reports or technical issues found (0-5), each: {{'issue': '...', 'severity': 'low'|'medium'|'high', 'count_approx': N}}\n"
+                    f"1. 'top_topics' — array of 5-8 most discussed topics, each: {{'topic': '...', 'count_approx': N, 'emoji': '...', 'msg_indices': [list of #N numbers]}}\n"
+                    f"2. 'bugs_issues' — array of bug reports or technical issues found (0-5), each: {{'issue': '...', 'severity': 'low'|'medium'|'high', 'count_approx': N, 'msg_indices': [list of #N numbers]}}\n"
                     f"3. 'user_sentiment' — object: {{'positive': N, 'neutral': N, 'negative': N}} (percentage, total 100)\n"
-                    f"4. 'feature_requests' — array of feature requests or wishes (0-5), each: {{'request': '...', 'count_approx': N}}\n"
+                    f"4. 'feature_requests' — array of feature requests or wishes (0-5), each: {{'request': '...', 'count_approx': N, 'msg_indices': [list of #N numbers]}}\n"
                     f"5. 'summary' — 2-3 sentence Russian summary of the overall trends\n\n"
+                    f"msg_indices must contain actual message index numbers (#N) that relate to each topic/issue/request.\n"
                     f"ALL text in topics/issues/requests/summary must be in RUSSIAN.\n"
                     f"IMPORTANT: Respond with ONLY raw JSON, no markdown, no code blocks."
                 ),
@@ -898,6 +915,25 @@ async def get_chat_insights(
             raw = re.sub(r'^```(?:json)?\s*', '', raw)
             raw = re.sub(r'\s*```$', '', raw)
         insights = json_mod.loads(raw)
+
+        # Resolve msg_indices → unique session references
+        def resolve_sessions(items):
+            for item in (items or []):
+                indices = item.pop("msg_indices", []) or []
+                seen = set()
+                sessions = []
+                for idx in indices:
+                    if isinstance(idx, int) and 0 <= idx < len(idx_map):
+                        info = idx_map[idx]
+                        if info["session_id"] not in seen:
+                            seen.add(info["session_id"])
+                            sessions.append(info)
+                item["sessions"] = sessions
+
+        resolve_sessions(insights.get("bugs_issues"))
+        resolve_sessions(insights.get("feature_requests"))
+        resolve_sessions(insights.get("top_topics"))
+
         return {**stats, "insights": insights}
     except Exception as e:
         logger.error(f"Insights analysis failed: {e}")
