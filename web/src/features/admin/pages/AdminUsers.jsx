@@ -18,6 +18,61 @@ function MiniBar({ data }) {
   )
 }
 
+const COUNTRY_FLAGS = {
+  PL: '\u{1F1F5}\u{1F1F1}', IT: '\u{1F1EE}\u{1F1F9}', DE: '\u{1F1E9}\u{1F1EA}', ES: '\u{1F1EA}\u{1F1F8}',
+  FR: '\u{1F1EB}\u{1F1F7}', GB: '\u{1F1EC}\u{1F1E7}', AT: '\u{1F1E6}\u{1F1F9}', CH: '\u{1F1E8}\u{1F1ED}',
+  UA: '\u{1F1FA}\u{1F1E6}', RU: '\u{1F1F7}\u{1F1FA}', BR: '\u{1F1E7}\u{1F1F7}', PT: '\u{1F1F5}\u{1F1F9}',
+  IN: '\u{1F1EE}\u{1F1F3}', US: '\u{1F1FA}\u{1F1F8}', NL: '\u{1F1F3}\u{1F1F1}', BE: '\u{1F1E7}\u{1F1EA}',
+}
+
+function DailyByCountry({ data }) {
+  if (!data.length) return null
+
+  // Group by date
+  const byDate = {}
+  data.forEach(r => {
+    if (!byDate[r.date]) byDate[r.date] = []
+    byDate[r.date].push({ country: r.country, count: r.count })
+  })
+
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-800">
+        <h3 className="text-sm font-semibold">Registrations by Country</h3>
+        <p className="text-[11px] text-slate-500 mt-0.5">Last 30 days, grouped by day</p>
+      </div>
+      <div className="divide-y divide-slate-800/50">
+        {dates.map(date => {
+          const rows = byDate[date]
+          const total = rows.reduce((s, r) => s + r.count, 0)
+          return (
+            <div key={date} className="px-5 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-slate-300">{date}</span>
+                <span className="text-xs font-mono text-slate-400">Total: {total}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rows.map(r => (
+                  <span
+                    key={r.country}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-xs"
+                  >
+                    <span>{COUNTRY_FLAGS[r.country] || '\u{1F30D}'}</span>
+                    <span className="text-slate-300">{r.country}</span>
+                    <span className="text-slate-500 font-mono">{r.count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminUsers() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -56,6 +111,9 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+
+      {/* Daily registrations by country */}
+      <DailyByCountry data={stats?.daily_by_country || []} />
 
       {/* Stats row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

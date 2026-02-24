@@ -179,6 +179,22 @@ async def get_users_stats(
     )).all()
     daily_registrations = [{"date": str(r[0]), "count": r[1]} for r in growth_rows]
 
+    # Daily registrations by country — last 30 days
+    daily_country_rows = (await db.execute(
+        select(
+            func.date(User.created_at).label("day"),
+            User.country,
+            func.count(User.id).label("cnt"),
+        )
+        .where(User.created_at >= now - timedelta(days=30))
+        .group_by(func.date(User.created_at), User.country)
+        .order_by(func.date(User.created_at).desc(), func.count(User.id).desc())
+    )).all()
+    daily_by_country = [
+        {"date": str(r[0]), "country": r[1] or "Unknown", "count": r[2]}
+        for r in daily_country_rows
+    ]
+
     # Referral stats
     total_referred = (await db.execute(
         select(func.count(User.id)).where(User.referred_by_id.isnot(None))
@@ -208,6 +224,7 @@ async def get_users_stats(
         "by_country": by_country,
         "by_language": by_language,
         "daily_registrations": daily_registrations,
+        "daily_by_country": daily_by_country,
         "total_referred": total_referred,
         "recent_users": recent_users,
     }
