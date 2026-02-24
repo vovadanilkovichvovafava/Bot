@@ -4,6 +4,7 @@ import { adminApi } from '../api'
 const TABS = [
   { key: 'support', label: 'Support Chat' },
   { key: 'ai', label: 'AI Chat' },
+  { key: 'analytics', label: 'Analytics' },
 ]
 
 /* ── Keyword badge ─────────────────────────────────────────────── */
@@ -429,6 +430,200 @@ function AIChatTab() {
 }
 
 
+/* ── Analytics Tab ───────────────────────────────────────────────── */
+
+const SEVERITY_COLORS = {
+  high: 'bg-red-500/20 text-red-400 border-red-500/20',
+  medium: 'bg-amber-500/20 text-amber-400 border-amber-500/20',
+  low: 'bg-slate-700/50 text-slate-400 border-slate-700/50',
+}
+
+function AnalyticsTab() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    adminApi.getChatInsights()
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-slate-500">Analyzing chats with AI...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return <p className="text-sm text-red-400 text-center py-12">{error}</p>
+  }
+
+  const ins = data?.insights
+
+  return (
+    <div className="space-y-5">
+      {/* Week stats cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Support msgs (7d)', value: data?.support_messages_week || 0, color: 'text-blue-400' },
+          { label: 'AI msgs (7d)', value: data?.ai_messages_week || 0, color: 'text-green-400' },
+          { label: 'Support sessions', value: data?.support_sessions_week || 0, color: 'text-cyan-400' },
+          { label: 'AI sessions', value: data?.ai_sessions_week || 0, color: 'text-emerald-400' },
+        ].map(s => (
+          <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-[11px] text-slate-500">{s.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value.toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Language distribution */}
+      {data?.by_locale?.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-3">Messages by Language (7d)</h3>
+          <div className="flex gap-3 flex-wrap">
+            {data.by_locale.map(l => {
+              const total = data.by_locale.reduce((s, x) => s + x.count, 0) || 1
+              const pct = Math.round(l.count / total * 100)
+              return (
+                <div key={l.locale} className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 rounded-lg">
+                  <span className="text-xs uppercase font-mono font-bold text-slate-300">{l.locale || '??'}</span>
+                  <span className="text-[11px] text-slate-500">{l.count}</span>
+                  <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-[10px] text-slate-600">{pct}%</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* AI Summary */}
+      {ins?.summary && (
+        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/15 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+            </svg>
+            <h3 className="text-sm font-semibold text-indigo-300">AI Summary</h3>
+          </div>
+          <p className="text-sm text-slate-300 leading-relaxed">{ins.summary}</p>
+        </div>
+      )}
+
+      {/* Top Topics + Sentiment row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Topics */}
+        {ins?.top_topics?.length > 0 && (
+          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-3">Top Topics</h3>
+            <div className="space-y-2">
+              {ins.top_topics.map((t, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-slate-800/40 rounded-lg">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base">{t.emoji || '#'}</span>
+                    <span className="text-sm text-slate-200">{t.topic}</span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono">~{t.count_approx}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sentiment */}
+        {ins?.user_sentiment && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-4">User Sentiment</h3>
+            <div className="space-y-4">
+              {[
+                { label: 'Positive', value: ins.user_sentiment.positive || 0, color: 'bg-green-500', text: 'text-green-400' },
+                { label: 'Neutral', value: ins.user_sentiment.neutral || 0, color: 'bg-slate-500', text: 'text-slate-400' },
+                { label: 'Negative', value: ins.user_sentiment.negative || 0, color: 'bg-red-500', text: 'text-red-400' },
+              ].map(s => (
+                <div key={s.label}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={`text-xs ${s.text}`}>{s.label}</span>
+                    <span className="text-xs font-mono text-slate-400">{s.value}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className={`h-full ${s.color} rounded-full transition-all`} style={{ width: `${s.value}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bugs & Feature Requests row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Bugs / Issues */}
+        {ins?.bugs_issues?.length > 0 && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+              <h3 className="text-sm font-semibold">Bugs & Issues</h3>
+            </div>
+            <div className="space-y-2">
+              {ins.bugs_issues.map((b, i) => (
+                <div key={i} className="flex items-start gap-3 px-3 py-2.5 bg-slate-800/40 rounded-lg">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 mt-0.5 ${SEVERITY_COLORS[b.severity] || SEVERITY_COLORS.low}`}>
+                    {b.severity}
+                  </span>
+                  <span className="text-sm text-slate-300 flex-1">{b.issue}</span>
+                  <span className="text-xs text-slate-600 font-mono shrink-0">~{b.count_approx}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feature Requests */}
+        {ins?.feature_requests?.length > 0 && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/>
+              </svg>
+              <h3 className="text-sm font-semibold">Feature Requests</h3>
+            </div>
+            <div className="space-y-2">
+              {ins.feature_requests.map((f, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-slate-800/40 rounded-lg">
+                  <span className="text-sm text-slate-300">{f.request}</span>
+                  <span className="text-xs text-slate-600 font-mono shrink-0 ml-3">~{f.count_approx}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* No insights fallback */}
+      {!ins && (
+        <div className="text-center py-12">
+          <svg className="w-12 h-12 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/>
+          </svg>
+          <p className="text-sm text-slate-500">Not enough chat data for insights</p>
+          <p className="text-xs text-slate-600 mt-1">Analytics will appear once users start chatting</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 /* ── Main Page ───────────────────────────────────────────────────── */
 
 export default function AdminChats() {
@@ -438,7 +633,7 @@ export default function AdminChats() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Chats</h1>
-        <p className="text-sm text-slate-500 mt-1">Review AI and Support chat conversations</p>
+        <p className="text-sm text-slate-500 mt-1">Review conversations and chat analytics</p>
       </div>
 
       <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl w-fit">
@@ -459,6 +654,7 @@ export default function AdminChats() {
 
       {tab === 'support' && <SupportChatTab />}
       {tab === 'ai' && <AIChatTab />}
+      {tab === 'analytics' && <AnalyticsTab />}
     </div>
   )
 }

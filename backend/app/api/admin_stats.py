@@ -772,3 +772,133 @@ async def translate_messages(
     except Exception as e:
         logger.error(f"Translation failed: {e}")
         return {"translated": [], "keywords": "", "error": str(e)}
+
+
+@router.get("/chats/insights")
+async def get_chat_insights(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Analyze recent chats with Claude — extract common topics, bugs, user pain points."""
+    import os
+    import anthropic
+    import json as json_mod
+    import re
+
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+
+    # Grab last 60 user messages from support chats (last 7 days)
+    support_msgs = (await db.execute(
+        select(SupportChatMessage.content, SupportChatMessage.locale)
+        .where(
+            and_(
+                SupportChatMessage.role == "user",
+                SupportChatMessage.created_at >= week_ago,
+            )
+        )
+        .order_by(SupportChatMessage.created_at.desc())
+        .limit(60)
+    )).all()
+
+    # Grab last 60 user messages from AI chats (last 7 days)
+    ai_msgs = (await db.execute(
+        select(AIChatMessage.content, AIChatMessage.locale)
+        .where(
+            and_(
+                AIChatMessage.role == "user",
+                AIChatMessage.created_at >= week_ago,
+            )
+        )
+        .order_by(AIChatMessage.created_at.desc())
+        .limit(60)
+    )).all()
+
+    # Aggregate stats
+    total_support_week = (await db.execute(
+        select(func.count(SupportChatMessage.id)).where(
+            and_(SupportChatMessage.created_at >= week_ago, SupportChatMessage.role == "user")
+        )
+    )).scalar() or 0
+
+    total_ai_week = (await db.execute(
+        select(func.count(AIChatMessage.id)).where(
+            and_(AIChatMessage.created_at >= week_ago, AIChatMessage.role == "user")
+        )
+    )).scalar() or 0
+
+    support_sessions_week = (await db.execute(
+        select(func.count(func.distinct(SupportChatMessage.session_id))).where(
+            SupportChatMessage.created_at >= week_ago
+        )
+    )).scalar() or 0
+
+    ai_sessions_week = (await db.execute(
+        select(func.count(func.distinct(AIChatMessage.session_id))).where(
+            AIChatMessage.created_at >= week_ago
+        )
+    )).scalar() or 0
+
+    # Language distribution
+    locale_rows = (await db.execute(
+        select(SupportChatMessage.locale, func.count(SupportChatMessage.id).label("cnt"))
+        .where(SupportChatMessage.created_at >= week_ago)
+        .group_by(SupportChatMessage.locale)
+        .order_by(func.count(SupportChatMessage.id).desc())
+    )).all()
+    by_locale = [{"locale": r[0], "count": r[1]} for r in locale_rows]
+
+    stats = {
+        "support_messages_week": total_support_week,
+        "ai_messages_week": total_ai_week,
+        "support_sessions_week": support_sessions_week,
+        "ai_sessions_week": ai_sessions_week,
+        "by_locale": by_locale,
+    }
+
+    # If no messages, return just stats
+    all_msgs = support_msgs + ai_msgs
+    if not all_msgs:
+        return {**stats, "insights": None}
+
+    api_key = os.getenv("CLAUDE_API_KEY")
+    if not api_key:
+        return {**stats, "insights": None, "error": "AI not configured"}
+
+    # Build text for analysis
+    lines = []
+    for i, (content, locale) in enumerate(all_msgs[:80]):
+        snippet = content[:200].replace("\n", " ")
+        lines.append(f"[{locale}] {snippet}")
+    all_text = "\n".join(lines)
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=3000,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"You are analyzing {len(all_msgs)} recent user messages from a football betting app's chats (support + AI chats) over the last 7 days.\n\n"
+                    f"Messages:\n{all_text}\n\n"
+                    f"Analyze these messages and return a JSON with:\n"
+                    f"1. 'top_topics' — array of 5-8 most discussed topics, each: {{'topic': '...', 'count_approx': N, 'emoji': '...'}}\n"
+                    f"2. 'bugs_issues' — array of bug reports or technical issues found (0-5), each: {{'issue': '...', 'severity': 'low'|'medium'|'high', 'count_approx': N}}\n"
+                    f"3. 'user_sentiment' — object: {{'positive': N, 'neutral': N, 'negative': N}} (percentage, total 100)\n"
+                    f"4. 'feature_requests' — array of feature requests or wishes (0-5), each: {{'request': '...', 'count_approx': N}}\n"
+                    f"5. 'summary' — 2-3 sentence Russian summary of the overall trends\n\n"
+                    f"ALL text in topics/issues/requests/summary must be in RUSSIAN.\n"
+                    f"IMPORTANT: Respond with ONLY raw JSON, no markdown, no code blocks."
+                ),
+            }],
+        )
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r'^```(?:json)?\s*', '', raw)
+            raw = re.sub(r'\s*```$', '', raw)
+        insights = json_mod.loads(raw)
+        return {**stats, "insights": insights}
+    except Exception as e:
+        logger.error(f"Insights analysis failed: {e}")
+        return {**stats, "insights": None, "error": str(e)}

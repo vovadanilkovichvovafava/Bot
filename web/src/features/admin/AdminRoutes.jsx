@@ -6,7 +6,6 @@ import AdminRegister from './pages/AdminRegister'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminUsers from './pages/AdminUsers'
 import AdminPredictions from './pages/AdminPredictions'
-import AdminSupport from './pages/AdminSupport'
 import AdminChats from './pages/AdminChats'
 import AdminML from './pages/AdminML'
 import AdminTeam from './pages/AdminTeam'
@@ -43,7 +42,6 @@ export default function AdminRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="predictions" element={<AdminPredictions />} />
-          <Route path="support" element={<AdminSupport />} />
           <Route path="chats" element={<AdminChats />} />
           <Route path="ml" element={<AdminML />} />
           <Route path="team" element={<AdminTeam />} />

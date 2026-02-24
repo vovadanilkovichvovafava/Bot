@@ -84,4 +84,5 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify({ messages }),
     }),
+  getChatInsights: () => request('/stats/chats/insights'),
 }
