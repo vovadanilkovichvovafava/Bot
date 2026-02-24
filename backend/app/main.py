@@ -226,7 +226,7 @@ async def debug_registrations():
     from app.core.database import async_session_maker as async_session
     from app.models.user import User
     from sqlalchemy import select, func
-    from datetime import timedelta
+    from datetime import datetime, timedelta
 
     now = datetime.utcnow()
     async with async_session() as db:
