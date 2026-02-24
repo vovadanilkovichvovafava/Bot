@@ -220,6 +220,33 @@ async def debug_user(public_id: str):
     }
 
 
+@app.get("/debug/registrations")
+async def debug_registrations():
+    """Debug: daily registrations by country for the last 7 days"""
+    from app.core.database import async_session_maker as async_session
+    from app.models.user import User
+    from sqlalchemy import select, func
+    from datetime import timedelta
+
+    now = datetime.utcnow()
+    async with async_session() as db:
+        rows = (await db.execute(
+            select(
+                func.date(User.created_at).label("day"),
+                User.country,
+                func.count(User.id).label("cnt"),
+            )
+            .where(User.created_at >= now - timedelta(days=7))
+            .group_by(func.date(User.created_at), User.country)
+            .order_by(func.date(User.created_at).desc(), func.count(User.id).desc())
+        )).all()
+
+    return [
+        {"date": str(r[0]), "country": r[1] or "Unknown", "count": r[2]}
+        for r in rows
+    ]
+
+
 @app.get("/debug/football-api")
 async def debug_football_api():
     """Debug endpoint to test Football API connection"""
