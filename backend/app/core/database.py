@@ -43,29 +43,8 @@ async def init_db():
     import app.models.ai_chat  # noqa: F401
 
     async with engine.begin() as conn:
-        # === DROP old ML tables that have wrong schema ===
-        # These tables existed before our ML pipeline with different/missing columns.
-        # create_all won't modify existing tables, so we drop them first.
-        # They're empty anyway — no data loss.
-        ml_tables_to_recreate = [
-            "DROP TABLE IF EXISTS ml_training_data CASCADE",
-            "DROP TABLE IF EXISTS league_learning CASCADE",
-            "DROP TABLE IF EXISTS ml_models CASCADE",
-            "DROP TABLE IF EXISTS cached_ai_responses CASCADE",
-            "DROP TABLE IF EXISTS learning_log CASCADE",
-            "DROP TABLE IF EXISTS roi_analytics CASCADE",
-            "DROP TABLE IF EXISTS confidence_calibration CASCADE",
-            "DROP TABLE IF EXISTS feature_error_patterns CASCADE",
-            "DROP TABLE IF EXISTS learning_patterns CASCADE",
-            "DROP TABLE IF EXISTS ensemble_models CASCADE",
-        ]
-        for stmt in ml_tables_to_recreate:
-            try:
-                await conn.execute(text(stmt))
-            except Exception:
-                pass
-
-        # Now create_all will recreate ML tables with correct schema
+        # Create all tables (will not modify existing ones — that's fine,
+        # column additions are handled via ALTER TABLE migrations below)
         await conn.run_sync(Base.metadata.create_all)
 
         # Add missing columns (migrations)

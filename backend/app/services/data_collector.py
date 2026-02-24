@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.core.database import async_session_maker
 from app.models.ml_models import MatchFeature, LearningLog
 from app.services.api_football import ApiFootballService
+from app.services.feature_engineer import process_verified_matches
 
 logger = logging.getLogger(__name__)
 
@@ -590,6 +591,9 @@ async def data_collection_loop():
         logger.info("Less than 100 training samples, starting 30-day backfill")
         try:
             await backfill_historical(days=30)
+            # Enrich all backfilled matches with Elo/form/H2H features
+            enriched = await process_verified_matches()
+            logger.info(f"Post-backfill: enriched {enriched} matches with ML features")
         except Exception as e:
             logger.error(f"Backfill error: {e}")
 
@@ -601,6 +605,16 @@ async def data_collection_loop():
             # Also check yesterday (for late-finishing matches)
             yesterday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
             await collect_daily_fixtures(yesterday)
+
+            # Enrich verified matches with Elo, form, H2H features
+            # (needed for ML training — without this, home_elo stays NULL
+            #  and training data query returns 0 matches)
+            try:
+                enriched = await process_verified_matches()
+                if enriched:
+                    logger.info(f"Enriched {enriched} verified matches with ML features")
+            except Exception as e:
+                logger.error(f"Feature enrichment error: {e}")
 
         except Exception as e:
             logger.error(f"Data collection loop error: {e}")
