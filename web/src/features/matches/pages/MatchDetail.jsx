@@ -226,46 +226,141 @@ export default function MatchDetail() {
     }
   };
 
-  // Build a rich prompt for Claude with real data
+  // Build a rich prompt for Claude with ALL available enriched data
   const buildAIPrompt = () => {
     const home = match.home_team?.name;
     const away = match.away_team?.name;
-    let prompt = `Analyze the match ${home} vs ${away} in ${match.league}.`;
+    const league = enriched?.fixture?.league?.name || match.league || '';
+    const country = enriched?.fixture?.league?.country || '';
+    const matchDate = match.match_date || enriched?.fixture?.fixture?.date;
+    const status = enriched?.fixture?.fixture?.status?.long || match.status || 'Scheduled';
 
+    let prompt = `Match: ${home} vs ${away}`;
+    prompt += `\nLeague: ${league}${country ? ` (${country})` : ''}`;
+    if (matchDate) prompt += `\nDate: ${new Date(matchDate).toLocaleString()}`;
+    prompt += `\nStatus: ${status}`;
+
+    // Score if available (live/finished)
+    if (enriched?.fixture?.goals?.home !== null && enriched?.fixture?.goals?.home !== undefined) {
+      prompt += `\nScore: ${enriched.fixture.goals.home} - ${enriched.fixture.goals.away}`;
+    }
+
+    // API-Football Prediction data
     if (enriched?.prediction) {
-      const p = enriched.prediction.predictions;
+      const p = enriched.prediction.predictions || enriched.prediction;
       const cmp = enriched.prediction.comparison;
-      prompt += `\n\nAPI-Football Data:`;
-      prompt += `\nPrediction: ${p?.winner?.name || 'N/A'} (${p?.winner?.comment || ''})`;
-      prompt += `\nAdvice: ${p?.advice || 'N/A'}`;
+      prompt += `\n\n--- API Prediction ---`;
+      if (p?.winner?.name) prompt += `\nPredicted winner: ${p.winner.name} (${p.winner.comment || ''})`;
+      if (p?.advice) prompt += `\nAdvice: ${p.advice}`;
       if (p?.percent) {
-        prompt += `\nWin probabilities: Home ${p.percent.home}, Draw ${p.percent.draw}, Away ${p.percent.away}`;
+        prompt += `\nWin probability: Home ${p.percent.home}, Draw ${p.percent.draw}, Away ${p.percent.away}`;
       }
       if (cmp) {
-        prompt += `\nForm comparison: Home ${cmp.form?.home || '?'}% vs Away ${cmp.form?.away || '?'}%`;
+        prompt += `\nForm: Home ${cmp.form?.home || '?'}% vs Away ${cmp.form?.away || '?'}%`;
         prompt += `\nAttack: Home ${cmp.att?.home || '?'}% vs Away ${cmp.att?.away || '?'}%`;
         prompt += `\nDefense: Home ${cmp.def?.home || '?'}% vs Away ${cmp.def?.away || '?'}%`;
+        prompt += `\nOverall: Home ${cmp.total?.home || '?'}% vs Away ${cmp.total?.away || '?'}%`;
       }
     }
 
-    if (enriched?.injuries?.length > 0) {
-      const homeInj = enriched.injuries.filter(i => i.team.id === enriched.homeId);
-      const awayInj = enriched.injuries.filter(i => i.team.id === enriched.awayId);
-      if (homeInj.length) prompt += `\n${home} injuries: ${homeInj.map(i => `${i.player.name} (${i.player.reason})`).join(', ')}`;
-      if (awayInj.length) prompt += `\n${away} injuries: ${awayInj.map(i => `${i.player.name} (${i.player.reason})`).join(', ')}`;
-    }
-
+    // Odds
     const odds1x2 = getOdds1x2();
     if (odds1x2) {
-      prompt += `\nOdds: Home ${odds1x2.home}, Draw ${odds1x2.draw}, Away ${odds1x2.away}`;
+      prompt += `\n\n--- Odds ---`;
+      prompt += `\nMatch Winner: Home ${odds1x2.home}, Draw ${odds1x2.draw}, Away ${odds1x2.away} (${odds1x2.bookmaker || 'bookmaker'})`;
+    }
+    // Additional odds markets
+    if (enriched?.odds?.length > 0) {
+      const bookmaker = enriched.odds[0]?.bookmakers?.[0];
+      if (bookmaker?.bets) {
+        const ouMarket = bookmaker.bets.find(b => b.name === 'Goals Over/Under' || b.name === 'Over/Under');
+        if (ouMarket?.values) {
+          const lines = ouMarket.values.slice(0, 6).map(v => `${v.value}: ${v.odd}`).join(', ');
+          prompt += `\nOver/Under: ${lines}`;
+        }
+        const bttsMarket = bookmaker.bets.find(b => b.name === 'Both Teams Score');
+        if (bttsMarket?.values) {
+          const yes = bttsMarket.values.find(v => v.value === 'Yes')?.odd;
+          const no = bttsMarket.values.find(v => v.value === 'No')?.odd;
+          if (yes) prompt += `\nBTTS: Yes ${yes}, No ${no}`;
+        }
+        const dcMarket = bookmaker.bets.find(b => b.name === 'Double Chance');
+        if (dcMarket?.values) {
+          const dc = dcMarket.values.map(v => `${v.value}: ${v.odd}`).join(', ');
+          prompt += `\nDouble Chance: ${dc}`;
+        }
+      }
     }
 
-    if (match.head_to_head?.total_matches > 0) {
+    // Standings (league positions)
+    if (enriched?.standings?.length > 0) {
+      prompt += `\n\n--- League Standings ---`;
+      const homeStd = enriched.standings.find(s => s.team?.name?.toLowerCase().includes(home?.toLowerCase()?.split(' ')[0]));
+      const awayStd = enriched.standings.find(s => s.team?.name?.toLowerCase().includes(away?.toLowerCase()?.split(' ')[0]));
+      if (homeStd) {
+        prompt += `\n${home}: ${homeStd.rank || homeStd.position}th, ${homeStd.points}pts, ${homeStd.all?.win || 0}W-${homeStd.all?.draw || 0}D-${homeStd.all?.lose || 0}L, GD ${homeStd.goalsDiff ?? '?'}, Form: ${homeStd.form || '?'}`;
+      }
+      if (awayStd) {
+        prompt += `\n${away}: ${awayStd.rank || awayStd.position}th, ${awayStd.points}pts, ${awayStd.all?.win || 0}W-${awayStd.all?.draw || 0}D-${awayStd.all?.lose || 0}L, GD ${awayStd.goalsDiff ?? '?'}, Form: ${awayStd.form || '?'}`;
+      }
+    }
+
+    // Head-to-Head fixtures
+    if (enriched?.h2hFixtures?.length > 0) {
+      prompt += `\n\n--- Head-to-Head (last ${enriched.h2hFixtures.length} meetings) ---`;
+      let homeWins = 0, draws = 0, awayWins = 0;
+      for (const f of enriched.h2hFixtures.slice(0, 10)) {
+        const hg = f.goals?.home ?? 0;
+        const ag = f.goals?.away ?? 0;
+        const hName = f.teams?.home?.name || '?';
+        const aName = f.teams?.away?.name || '?';
+        const date = f.fixture?.date ? new Date(f.fixture.date).toLocaleDateString() : '?';
+        prompt += `\n${date}: ${hName} ${hg}-${ag} ${aName}`;
+        if (hg > ag) homeWins++;
+        else if (hg < ag) awayWins++;
+        else draws++;
+      }
+      prompt += `\nH2H Summary: ${homeWins}W-${draws}D-${awayWins}L`;
+    } else if (match.head_to_head?.total_matches > 0) {
       const h = match.head_to_head;
+      prompt += `\n\n--- Head-to-Head ---`;
       prompt += `\nH2H (${h.total_matches} matches): Home ${h.home_wins}W, ${h.draws}D, Away ${h.away_wins}W`;
     }
 
-    // Add user betting preferences
+    // Injuries
+    if (enriched?.injuries?.length > 0) {
+      prompt += `\n\n--- Injuries & Suspensions ---`;
+      const homeInj = enriched.injuries.filter(i => i.team?.id === enriched.homeId);
+      const awayInj = enriched.injuries.filter(i => i.team?.id === enriched.awayId);
+      if (homeInj.length) prompt += `\n${home}: ${homeInj.map(i => `${i.player?.name} (${i.player?.reason || i.player?.type || 'injured'})`).join(', ')}`;
+      if (awayInj.length) prompt += `\n${away}: ${awayInj.map(i => `${i.player?.name} (${i.player?.reason || i.player?.type || 'injured'})`).join(', ')}`;
+    }
+
+    // Lineups
+    if (enriched?.lineups?.length > 0) {
+      prompt += `\n\n--- Lineups ---`;
+      for (const lineup of enriched.lineups) {
+        const teamName = lineup.team?.name || '?';
+        const formation = lineup.formation || '?';
+        const starters = (lineup.startXI || []).map(p => p.player?.name || '?').join(', ');
+        prompt += `\n${teamName} (${formation}): ${starters}`;
+      }
+    }
+
+    // Match Statistics (if live/finished)
+    if (enriched?.stats?.length > 0) {
+      prompt += `\n\n--- Match Statistics ---`;
+      for (const teamStats of enriched.stats) {
+        const teamName = teamStats.team?.name || '?';
+        const statsArr = teamStats.statistics || [];
+        if (statsArr.length > 0) {
+          const statLine = statsArr.map(s => `${s.type}: ${s.value ?? 0}`).join(', ');
+          prompt += `\n${teamName}: ${statLine}`;
+        }
+      }
+    }
+
+    // User betting preferences
     const minOdds = user?.min_odds || 1.5;
     const maxOdds = user?.max_odds || 3.0;
     const riskLevel = user?.risk_level || 'medium';
