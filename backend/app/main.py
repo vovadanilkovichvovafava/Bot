@@ -187,6 +187,31 @@ async def health_check():
     }
 
 
+@app.get("/debug/user/{public_id}")
+async def debug_user(public_id: str):
+    """Debug endpoint to check user premium status by public_id"""
+    from app.core.database import async_session_maker as async_session
+    from app.models.user import User
+    from sqlalchemy import select
+
+    async with async_session() as db:
+        result = await db.execute(select(User).where(User.public_id == public_id))
+        user = result.scalar_one_or_none()
+
+    if not user:
+        return {"error": "not_found", "public_id": public_id}
+
+    return {
+        "public_id": user.public_id,
+        "country": user.country,
+        "language": user.language,
+        "is_premium": user.is_premium,
+        "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "registration_ip": user.registration_ip,
+    }
+
+
 @app.get("/debug/football-api")
 async def debug_football_api():
     """Debug endpoint to test Football API connection"""
