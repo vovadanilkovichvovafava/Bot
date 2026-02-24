@@ -1,19 +1,52 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../api'
 
-function MiniBar({ data }) {
+function BarChart({ data, color = 'green' }) {
   if (!data.length) return null
   const max = Math.max(...data.map(d => d.count), 1)
+  const bg = color === 'blue' ? 'bg-blue-500/40' : 'bg-green-500/40'
+  const bgHover = color === 'blue' ? 'hover:bg-blue-400/60' : 'hover:bg-green-400/60'
+
+  // Y-axis: 4 ticks
+  const ticks = [0, Math.round(max / 3), Math.round((max * 2) / 3), max]
+  // X-axis: show ~5 evenly spaced dates
+  const step = Math.max(1, Math.floor((data.length - 1) / 4))
+  const xLabels = data.reduce((acc, d, i) => {
+    if (i === 0 || i === data.length - 1 || i % step === 0) acc.push({ i, label: d.date?.slice(5) })
+    return acc
+  }, [])
+
   return (
-    <div className="flex items-end gap-[2px] h-20">
-      {data.map((d, i) => (
-        <div
-          key={i}
-          className="flex-1 bg-green-500/40 rounded-t-sm min-w-[2px] hover:bg-green-400/60 transition-colors"
-          style={{ height: `${Math.max((d.count / max) * 100, 3)}%` }}
-          title={`${d.date}: ${d.count}`}
-        />
-      ))}
+    <div className="flex">
+      {/* Y axis */}
+      <div className="flex flex-col justify-between items-end pr-2 h-24 py-0.5">
+        {[...ticks].reverse().map((t, i) => (
+          <span key={i} className="text-[9px] text-slate-600 font-mono leading-none">{t}</span>
+        ))}
+      </div>
+      <div className="flex-1 min-w-0">
+        {/* Bars */}
+        <div className="flex items-end gap-[2px] h-24 border-l border-b border-slate-700/50">
+          {data.map((d, i) => (
+            <div
+              key={i}
+              className={`flex-1 ${bg} rounded-t-sm min-w-[2px] ${bgHover} transition-colors`}
+              style={{ height: `${Math.max((d.count / max) * 100, 2)}%` }}
+              title={`${d.date}: ${d.count}`}
+            />
+          ))}
+        </div>
+        {/* X axis labels */}
+        <div className="relative h-4 mt-1">
+          {xLabels.map(({ i, label }) => (
+            <span
+              key={i}
+              className="absolute text-[9px] text-slate-600 font-mono -translate-x-1/2"
+              style={{ left: `${(i / (data.length - 1)) * 100}%` }}
+            >{label}</span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -70,13 +103,7 @@ export default function AdminPredictions() {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <h3 className="text-sm font-semibold mb-1">Daily Predictions Volume</h3>
         <p className="text-[11px] text-slate-500 mb-4">Last 30 days</p>
-        <MiniBar data={stats?.daily_predictions || []} />
-        {stats?.daily_predictions?.length > 0 && (
-          <div className="flex justify-between mt-2 text-[10px] text-slate-600">
-            <span>{stats.daily_predictions[0]?.date}</span>
-            <span>{stats.daily_predictions[stats.daily_predictions.length - 1]?.date}</span>
-          </div>
-        )}
+        <BarChart data={stats?.daily_predictions || []} color="green" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
