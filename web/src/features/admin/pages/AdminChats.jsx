@@ -73,6 +73,40 @@ function ChatMessages({ messages, translation, assistantLabel }) {
 }
 
 
+/* ── Chat search bar ─────────────────────────────────────────────── */
+
+function ChatSearchBar({ query, setQuery, locale, setLocale, onSearch }) {
+  return (
+    <div className="flex flex-wrap gap-2 items-end">
+      <div className="flex-1 min-w-[180px]">
+        <input
+          type="text"
+          placeholder="Search by user ID or message content..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onSearch()}
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+        />
+      </div>
+      <select
+        value={locale}
+        onChange={e => { setLocale(e.target.value); }}
+        className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:outline-none"
+      >
+        <option value="">All languages</option>
+        {['en', 'it', 'de', 'pl', 'pt', 'fr', 'es', 'ru', 'uk', 'nl'].map(l => (
+          <option key={l} value={l}>{l.toUpperCase()}</option>
+        ))}
+      </select>
+      <button
+        onClick={onSearch}
+        className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+      >Search</button>
+    </div>
+  )
+}
+
+
 /* ── Support Chat Tab ────────────────────────────────────────────── */
 
 function SupportChatTab() {
@@ -85,16 +119,18 @@ function SupportChatTab() {
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
-  const translatingRef = useRef(null) // track which session is being translated
+  const translatingRef = useRef(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLocale, setSearchLocale] = useState('')
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
     setLoading(true)
-    adminApi.getSupportSessions(PAGE_SIZE, page * PAGE_SIZE)
+    adminApi.getSupportSessions(PAGE_SIZE, page * PAGE_SIZE, searchQuery, searchLocale)
       .then(d => { setSessions(d.sessions || []); setTotal(d.total || 0) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page])
+  }, [page, searchQuery, searchLocale])
 
   useEffect(() => { load() }, [load])
 
@@ -141,8 +177,15 @@ function SupportChatTab() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
+  const doSearch = () => { setPage(0); load() }
+
   return (
     <div className="space-y-4">
+      <ChatSearchBar
+        query={searchQuery} setQuery={setSearchQuery}
+        locale={searchLocale} setLocale={setSearchLocale}
+        onSearch={doSearch}
+      />
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span>{total} sessions total</span>
         {totalPages > 1 && <span>Page {page + 1} / {totalPages}</span>}
@@ -264,15 +307,17 @@ function AIChatTab() {
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
   const translatingRef = useRef(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLocale, setSearchLocale] = useState('')
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
     setLoading(true)
-    adminApi.getAIChatSessions(PAGE_SIZE, page * PAGE_SIZE)
+    adminApi.getAIChatSessions(PAGE_SIZE, page * PAGE_SIZE, searchQuery, searchLocale)
       .then(d => { setSessions(d.sessions || []); setTotal(d.total || 0) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page])
+  }, [page, searchQuery, searchLocale])
 
   useEffect(() => { load() }, [load])
 
@@ -317,14 +362,21 @@ function AIChatTab() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
+  const doSearch = () => { setPage(0); load() }
+
   return (
     <div className="space-y-4">
+      <ChatSearchBar
+        query={searchQuery} setQuery={setSearchQuery}
+        locale={searchLocale} setLocale={setSearchLocale}
+        onSearch={doSearch}
+      />
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span>{total} AI chat sessions</span>
         {totalPages > 1 && <span>Page {page + 1} / {totalPages}</span>}
       </div>
 
-      {!sessions.length && (
+      {!sessions.length && !loading && (
         <div className="text-center py-16">
           <svg className="w-12 h-12 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>

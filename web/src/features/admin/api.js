@@ -66,17 +66,21 @@ export const adminApi = {
   // Stats
   getOverview: () => request('/stats/overview'),
   getUsersStats: () => request('/stats/users'),
+  searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1) =>
+    request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}`),
+  getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
+  getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
   getMLStats: () => request('/stats/ml'),
   getSupportStats: () => request('/stats/support'),
 
   // Chats
-  getSupportSessions: (limit = 30, offset = 0) =>
-    request(`/stats/chats/support-sessions?limit=${limit}&offset=${offset}`),
+  getSupportSessions: (limit = 30, offset = 0, q = '', locale = '') =>
+    request(`/stats/chats/support-sessions?limit=${limit}&offset=${offset}&q=${encodeURIComponent(q)}&locale=${locale}`),
   getSupportSessionMessages: (sessionId) =>
     request(`/stats/chats/support-sessions/${sessionId}`),
-  getAIChatSessions: (limit = 30, offset = 0) =>
-    request(`/stats/chats/ai-sessions?limit=${limit}&offset=${offset}`),
+  getAIChatSessions: (limit = 30, offset = 0, q = '', locale = '') =>
+    request(`/stats/chats/ai-sessions?limit=${limit}&offset=${offset}&q=${encodeURIComponent(q)}&locale=${locale}`),
   getAIChatSessionMessages: (sessionId) =>
     request(`/stats/chats/ai-sessions/${sessionId}`),
   translateMessages: (messages) =>

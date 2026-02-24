@@ -102,11 +102,92 @@ function BarChart({ data, color = 'blue' }) {
   )
 }
 
+function RetentionTable({ cohorts }) {
+  if (!cohorts?.length) return <p className="text-xs text-slate-600 text-center py-6">No cohort data</p>
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-slate-800 text-slate-500">
+            <th className="text-left px-3 py-2 font-medium">Week</th>
+            <th className="text-right px-3 py-2 font-medium">Registered</th>
+            <th className="text-right px-3 py-2 font-medium">Activated</th>
+            <th className="text-right px-3 py-2 font-medium">Retained</th>
+            <th className="text-right px-3 py-2 font-medium">Converted</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/50">
+          {cohorts.map(c => (
+            <tr key={c.week} className="hover:bg-slate-800/20">
+              <td className="px-3 py-2 font-mono text-slate-300">{c.week}</td>
+              <td className="px-3 py-2 text-right font-mono text-slate-400">{c.registered}</td>
+              <td className="px-3 py-2 text-right font-mono">
+                <span className="text-slate-400">{c.made_prediction}</span>
+                {c.activation_pct > 0 && <span className="text-blue-400 ml-1">({c.activation_pct}%)</span>}
+              </td>
+              <td className="px-3 py-2 text-right font-mono">
+                <span className="text-slate-400">{c.returned_week1}</span>
+                {c.retention_pct > 0 && (
+                  <span className={`ml-1 ${c.retention_pct >= 30 ? 'text-green-400' : c.retention_pct >= 15 ? 'text-amber-400' : 'text-red-400'}`}>
+                    ({c.retention_pct}%)
+                  </span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-right font-mono">
+                <span className="text-slate-400">{c.converted_pro}</span>
+                {c.conversion_pct > 0 && <span className="text-purple-400 ml-1">({c.conversion_pct}%)</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ConversionFunnel({ funnel }) {
+  if (!funnel) return null
+  const steps = [
+    { label: 'Registered', value: funnel.registered, color: 'bg-blue-500' },
+    { label: 'Activated', value: funnel.activated, color: 'bg-green-500' },
+    { label: 'PRO', value: funnel.converted_pro, color: 'bg-purple-500' },
+  ]
+  const max = Math.max(funnel.registered, 1)
+
+  return (
+    <div className="space-y-3">
+      {steps.map((s, i) => {
+        const pct = Math.round((s.value / max) * 100)
+        const prevValue = i > 0 ? steps[i - 1].value : null
+        const convRate = prevValue && prevValue > 0 ? Math.round((s.value / prevValue) * 100) : null
+        return (
+          <div key={s.label}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-300">{s.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-slate-400">{s.value}</span>
+                {convRate !== null && (
+                  <span className="text-[10px] text-slate-500">{convRate}% conv</span>
+                )}
+              </div>
+            </div>
+            <div className="h-5 bg-slate-800 rounded-full overflow-hidden">
+              <div className={`h-full ${s.color}/40 rounded-full transition-all`} style={{ width: `${Math.max(pct, 2)}%` }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const { admin } = useAdminAuth()
   const [overview, setOverview] = useState(null)
   const [usersStats, setUsersStats] = useState(null)
   const [predStats, setPredStats] = useState(null)
+  const [retention, setRetention] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -114,10 +195,12 @@ export default function AdminDashboard() {
       adminApi.getOverview().catch(() => null),
       adminApi.getUsersStats().catch(() => null),
       adminApi.getPredictionsStats().catch(() => null),
-    ]).then(([ov, us, ps]) => {
+      adminApi.getRetentionStats().catch(() => null),
+    ]).then(([ov, us, ps, rt]) => {
       setOverview(ov)
       setUsersStats(us)
       setPredStats(ps)
+      setRetention(rt)
       setLoading(false)
     })
   }, [])
@@ -308,12 +391,46 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Retention & Conversion */}
+      {retention && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Conversion funnel */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-semibold">Conversion Funnel</h3>
+              <span className="text-[10px] text-slate-500">Last 30 days</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mb-4">Registered &rarr; Activated &rarr; PRO</p>
+            <ConversionFunnel funnel={retention.funnel_30d} />
+            {retention.overall && (
+              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800">
+                <div>
+                  <p className="text-[10px] text-slate-500">Overall Activation</p>
+                  <p className="text-lg font-bold text-blue-400">{retention.overall.activation_rate}%</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500">Overall Conversion</p>
+                  <p className="text-lg font-bold text-purple-400">{retention.overall.conversion_rate}%</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Cohort retention */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-1">Weekly Cohorts</h3>
+            <p className="text-[11px] text-slate-500 mb-3">Retention, activation, and conversion by registration week</p>
+            <RetentionTable cohorts={retention.cohorts} />
+          </div>
+        </div>
+      )}
+
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { to: '/admin/users', label: 'Manage Users', desc: 'View & search users' },
           { to: '/admin/predictions', label: 'Analytics', desc: 'Bet types & leagues' },
-          { to: '/admin/support', label: 'Support Chat', desc: 'Read conversations' },
+          { to: '/admin/chats', label: 'Chats', desc: 'Support & AI conversations' },
           { to: '/admin/team', label: 'Team', desc: 'Manage admin access' },
         ].map(item => (
           <Link

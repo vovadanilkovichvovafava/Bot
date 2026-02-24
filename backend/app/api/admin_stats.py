@@ -267,6 +267,302 @@ async def get_users_stats(
     }
 
 
+@router.get("/retention")
+async def get_retention_stats(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retention cohorts and Free->PRO conversion metrics."""
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Weekly retention cohorts (last 8 weeks)
+    cohorts = []
+    for weeks_ago in range(8):
+        cohort_start = today_start - timedelta(days=7 * (weeks_ago + 1))
+        cohort_end = today_start - timedelta(days=7 * weeks_ago)
+
+        # Users registered in this week
+        total_in_cohort = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(User.created_at >= cohort_start, User.created_at < cohort_end)
+            )
+        )).scalar() or 0
+
+        if total_in_cohort == 0:
+            cohorts.append({
+                "week": cohort_start.strftime("%m/%d"),
+                "registered": 0,
+                "returned_week1": 0,
+                "converted_pro": 0,
+                "made_prediction": 0,
+            })
+            continue
+
+        # How many came back (had activity after first week = updated_at > cohort_end)
+        returned = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    User.created_at >= cohort_start,
+                    User.created_at < cohort_end,
+                    User.updated_at >= cohort_end,
+                )
+            )
+        )).scalar() or 0
+
+        # How many converted to PRO
+        converted = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    User.created_at >= cohort_start,
+                    User.created_at < cohort_end,
+                    User.is_premium == True,
+                )
+            )
+        )).scalar() or 0
+
+        # How many made at least one prediction
+        made_prediction = (await db.execute(
+            select(func.count(func.distinct(Prediction.user_id))).where(
+                and_(
+                    Prediction.user_id.in_(
+                        select(User.id).where(
+                            and_(User.created_at >= cohort_start, User.created_at < cohort_end)
+                        )
+                    )
+                )
+            )
+        )).scalar() or 0
+
+        cohorts.append({
+            "week": cohort_start.strftime("%m/%d"),
+            "registered": total_in_cohort,
+            "returned_week1": returned,
+            "retention_pct": round(returned / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
+            "converted_pro": converted,
+            "conversion_pct": round(converted / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
+            "made_prediction": made_prediction,
+            "activation_pct": round(made_prediction / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
+        })
+
+    cohorts.reverse()  # oldest first
+
+    # Overall conversion stats
+    total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
+    total_pro = (await db.execute(
+        select(func.count(User.id)).where(and_(User.is_premium == True, User.premium_until > now))
+    )).scalar() or 0
+    total_with_predictions = (await db.execute(
+        select(func.count(User.id)).where(User.total_predictions > 0)
+    )).scalar() or 0
+
+    # 30-day conversion funnel
+    month_ago = now - timedelta(days=30)
+    new_30d = (await db.execute(
+        select(func.count(User.id)).where(User.created_at >= month_ago)
+    )).scalar() or 0
+    activated_30d = (await db.execute(
+        select(func.count(func.distinct(Prediction.user_id))).where(
+            Prediction.user_id.in_(
+                select(User.id).where(User.created_at >= month_ago)
+            )
+        )
+    )).scalar() or 0
+    pro_30d = (await db.execute(
+        select(func.count(User.id)).where(
+            and_(User.created_at >= month_ago, User.is_premium == True)
+        )
+    )).scalar() or 0
+
+    return {
+        "cohorts": cohorts,
+        "overall": {
+            "total_users": total_users,
+            "total_pro": total_pro,
+            "conversion_rate": round(total_pro / total_users * 100, 1) if total_users > 0 else 0,
+            "activation_rate": round(total_with_predictions / total_users * 100, 1) if total_users > 0 else 0,
+        },
+        "funnel_30d": {
+            "registered": new_30d,
+            "activated": activated_30d,
+            "converted_pro": pro_30d,
+        },
+    }
+
+
+@router.get("/users/search")
+async def search_users(
+    q: str = Query("", max_length=100),
+    status: Optional[str] = Query(None),  # pro, free
+    country: Optional[str] = Query(None),
+    sort: str = Query("created_at"),  # created_at, total_predictions
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Search users by phone, email, public_id, username."""
+    now = datetime.utcnow()
+    query = select(User)
+    count_query = select(func.count(User.id))
+
+    # Search filter
+    if q.strip():
+        search = f"%{q.strip()}%"
+        search_filter = User.phone.ilike(search) | User.email.ilike(search) | User.public_id.ilike(search) | User.username.ilike(search)
+        query = query.where(search_filter)
+        count_query = count_query.where(search_filter)
+
+    # Status filter
+    if status == "pro":
+        f = and_(User.is_premium == True, User.premium_until > now)
+        query = query.where(f)
+        count_query = count_query.where(f)
+    elif status == "free":
+        f = (User.is_premium == False) | (User.premium_until <= now) | (User.premium_until.is_(None))
+        query = query.where(f)
+        count_query = count_query.where(f)
+
+    # Country filter
+    if country:
+        query = query.where(User.country == country)
+        count_query = count_query.where(User.country == country)
+
+    # Sorting
+    if sort == "total_predictions":
+        query = query.order_by(User.total_predictions.desc())
+    else:
+        query = query.order_by(User.created_at.desc())
+
+    total = (await db.execute(count_query)).scalar() or 0
+    offset = (page - 1) * per_page
+    rows = (await db.execute(query.limit(per_page).offset(offset))).scalars().all()
+
+    users = [
+        {
+            "id": u.id,
+            "public_id": u.public_id,
+            "phone": u.phone,
+            "email": u.email,
+            "username": u.username,
+            "country": u.country,
+            "language": u.language,
+            "is_premium": u.is_premium,
+            "premium_until": u.premium_until.isoformat() if u.premium_until else None,
+            "total_predictions": u.total_predictions,
+            "correct_predictions": u.correct_predictions,
+            "daily_requests": u.daily_requests,
+            "daily_limit": u.daily_limit,
+            "referral_code": u.referral_code,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        }
+        for u in rows
+    ]
+
+    return {"total": total, "page": page, "per_page": per_page, "users": users}
+
+
+@router.get("/users/{user_id}/profile")
+async def get_user_profile(
+    user_id: int,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Detailed user profile with activity stats."""
+    user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+    if not user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.utcnow()
+
+    # Predictions by this user
+    user_predictions = (await db.execute(
+        select(
+            func.count(Prediction.id).label("total"),
+            func.count(case((Prediction.is_correct == True, 1))).label("correct"),
+            func.count(case((Prediction.is_correct.isnot(None), 1))).label("verified"),
+        ).where(Prediction.user_id == user.id)
+    )).first()
+
+    # Recent predictions
+    recent_preds = (await db.execute(
+        select(Prediction)
+        .where(Prediction.user_id == user.id)
+        .order_by(Prediction.created_at.desc())
+        .limit(10)
+    )).scalars().all()
+    preds_list = [
+        {
+            "id": p.id,
+            "home_team": p.home_team,
+            "away_team": p.away_team,
+            "bet_type": p.bet_type,
+            "league": p.league,
+            "is_correct": p.is_correct,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        for p in recent_preds
+    ]
+
+    # Support chat sessions count
+    support_sessions = (await db.execute(
+        select(func.count(func.distinct(SupportChatMessage.session_id)))
+        .where(SupportChatMessage.user_id == user.id)
+    )).scalar() or 0
+
+    # AI chat sessions count
+    ai_sessions = (await db.execute(
+        select(func.count(func.distinct(AIChatMessage.session_id)))
+        .where(AIChatMessage.user_id == user.id)
+    )).scalar() or 0
+
+    # Referrals count
+    referrals_count = (await db.execute(
+        select(func.count(User.id)).where(User.referred_by_id == user.id)
+    )).scalar() or 0
+
+    # Activity: days since registration
+    days_since_reg = (now - user.created_at).days if user.created_at else 0
+
+    return {
+        "user": {
+            "id": user.id,
+            "public_id": user.public_id,
+            "phone": user.phone,
+            "email": user.email,
+            "username": user.username,
+            "country": user.country,
+            "language": user.language,
+            "is_premium": user.is_premium,
+            "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+            "daily_requests": user.daily_requests,
+            "daily_limit": user.daily_limit,
+            "daily_chat_requests": user.daily_chat_requests,
+            "bonus_predictions": user.bonus_predictions,
+            "referral_code": user.referral_code,
+            "referral_bonus_requests": user.referral_bonus_requests,
+            "registration_ip": user.registration_ip,
+            "risk_level": user.risk_level,
+            "min_odds": user.min_odds,
+            "max_odds": user.max_odds,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        },
+        "stats": {
+            "total_predictions": user_predictions[0] if user_predictions else 0,
+            "correct_predictions": user_predictions[1] if user_predictions else 0,
+            "verified_predictions": user_predictions[2] if user_predictions else 0,
+            "accuracy": round(user_predictions[1] / user_predictions[2] * 100, 1) if user_predictions and user_predictions[2] > 0 else 0,
+            "support_sessions": support_sessions,
+            "ai_sessions": ai_sessions,
+            "referrals_count": referrals_count,
+            "days_since_registration": days_since_reg,
+        },
+        "recent_predictions": preds_list,
+    }
+
+
 @router.get("/predictions")
 async def get_predictions_stats(
     admin: dict = Depends(get_current_admin),
@@ -361,29 +657,49 @@ async def get_ml_stats(
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """ML pipeline stats."""
+    """ML pipeline stats with feature importance and training data overview."""
+    import json as json_mod
+    from app.models.ml_models import MatchFeature
+
     # Active models
     model_rows = (await db.execute(
-        select(MLModel).order_by(MLModel.created_at.desc()).limit(10)
+        select(MLModel).order_by(MLModel.created_at.desc()).limit(20)
     )).scalars().all()
-    models = [
-        {
+
+    # Parse feature importance for active model
+    active_feature_importance = None
+    models = []
+    for m in model_rows:
+        model_data = {
             "id": m.id,
             "name": m.model_name,
             "type": m.model_type,
             "version": m.version,
             "accuracy": float(m.accuracy) if m.accuracy else None,
             "f1_score": float(m.f1_score) if m.f1_score else None,
+            "brier_score": float(m.brier_score) if m.brier_score else None,
+            "log_loss": float(m.log_loss_val) if m.log_loss_val else None,
             "training_samples": m.training_samples,
+            "training_duration_sec": float(m.training_duration_sec) if m.training_duration_sec else None,
             "is_active": m.is_active,
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
-        for m in model_rows
-    ]
+        models.append(model_data)
+        if m.is_active and m.feature_importance_json and active_feature_importance is None:
+            try:
+                fi = json_mod.loads(m.feature_importance_json)
+                # Sort by importance, take top 20
+                if isinstance(fi, dict):
+                    sorted_fi = sorted(fi.items(), key=lambda x: abs(float(x[1])), reverse=True)[:20]
+                    active_feature_importance = [{"feature": k, "importance": float(v)} for k, v in sorted_fi]
+                elif isinstance(fi, list):
+                    active_feature_importance = fi[:20]
+            except Exception:
+                pass
 
     # Recent learning events
     log_rows = (await db.execute(
-        select(LearningLog).order_by(LearningLog.created_at.desc()).limit(20)
+        select(LearningLog).order_by(LearningLog.created_at.desc()).limit(30)
     )).scalars().all()
     learning_log = [
         {
@@ -394,9 +710,35 @@ async def get_ml_stats(
         for l in log_rows
     ]
 
+    # Training data overview
+    total_matches = (await db.execute(select(func.count(MatchFeature.id)))).scalar() or 0
+    verified_matches = (await db.execute(
+        select(func.count(MatchFeature.id)).where(MatchFeature.is_verified == True)
+    )).scalar() or 0
+    enriched_matches = (await db.execute(
+        select(func.count(MatchFeature.id)).where(MatchFeature.home_elo.isnot(None))
+    )).scalar() or 0
+
+    # Matches by league (top 10)
+    league_rows = (await db.execute(
+        select(MatchFeature.league_name, func.count(MatchFeature.id).label("cnt"))
+        .where(MatchFeature.league_name.isnot(None))
+        .group_by(MatchFeature.league_name)
+        .order_by(func.count(MatchFeature.id).desc())
+        .limit(10)
+    )).all()
+    training_by_league = [{"league": r[0], "count": r[1]} for r in league_rows]
+
     return {
         "models": models,
+        "feature_importance": active_feature_importance,
         "learning_log": learning_log,
+        "training_data": {
+            "total_matches": total_matches,
+            "verified_matches": verified_matches,
+            "enriched_matches": enriched_matches,
+            "by_league": training_by_league,
+        },
     }
 
 
@@ -487,47 +829,52 @@ async def get_support_stats(
 async def get_support_sessions(
     limit: int = Query(30, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    q: str = Query("", max_length=100),
+    locale: Optional[str] = Query(None),
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Paginated support chat sessions with preview."""
-    # Subquery: first user message per session for preview
-    preview_sq = (
-        select(
-            SupportChatMessage.session_id,
-            func.min(
-                case(
-                    (SupportChatMessage.role == "user", SupportChatMessage.id),
-                )
-            ).label("first_user_msg_id"),
-        )
-        .group_by(SupportChatMessage.session_id)
-        .subquery()
-    )
+    """Paginated support chat sessions with preview and search."""
+    filters = []
+    if locale:
+        filters.append(SupportChatMessage.locale == locale)
+    if q.strip():
+        try:
+            uid = int(q.strip())
+            filters.append(SupportChatMessage.user_id == uid)
+        except ValueError:
+            matching = (await db.execute(
+                select(func.distinct(SupportChatMessage.session_id))
+                .where(SupportChatMessage.content.ilike(f"%{q.strip()}%"))
+                .limit(200)
+            )).scalars().all()
+            if matching:
+                filters.append(SupportChatMessage.session_id.in_(matching))
+            else:
+                return {"total": 0, "sessions": []}
 
-    rows = (await db.execute(
-        select(
-            SupportChatMessage.session_id,
-            SupportChatMessage.user_id,
-            SupportChatMessage.locale,
-            SupportChatMessage.was_pro,
-            SupportChatMessage.agent_name,
-            func.min(SupportChatMessage.created_at).label("started"),
-            func.max(SupportChatMessage.created_at).label("last_msg"),
-            func.count(SupportChatMessage.id).label("total_msgs"),
-            func.count(case((SupportChatMessage.role == "user", 1))).label("user_msgs"),
-        )
-        .group_by(
-            SupportChatMessage.session_id,
-            SupportChatMessage.user_id,
-            SupportChatMessage.locale,
-            SupportChatMessage.was_pro,
-            SupportChatMessage.agent_name,
-        )
-        .order_by(func.max(SupportChatMessage.created_at).desc())
-        .limit(limit)
-        .offset(offset)
-    )).all()
+    base_q = select(
+        SupportChatMessage.session_id,
+        SupportChatMessage.user_id,
+        SupportChatMessage.locale,
+        SupportChatMessage.was_pro,
+        SupportChatMessage.agent_name,
+        func.min(SupportChatMessage.created_at).label("started"),
+        func.max(SupportChatMessage.created_at).label("last_msg"),
+        func.count(SupportChatMessage.id).label("total_msgs"),
+        func.count(case((SupportChatMessage.role == "user", 1))).label("user_msgs"),
+    )
+    for f in filters:
+        base_q = base_q.where(f)
+    base_q = base_q.group_by(
+        SupportChatMessage.session_id,
+        SupportChatMessage.user_id,
+        SupportChatMessage.locale,
+        SupportChatMessage.was_pro,
+        SupportChatMessage.agent_name,
+    ).order_by(func.max(SupportChatMessage.created_at).desc())
+
+    rows = (await db.execute(base_q.limit(limit).offset(offset))).all()
 
     # Get previews for these sessions
     session_ids = [r[0] for r in rows]
@@ -546,9 +893,11 @@ async def get_support_sessions(
         )).all()
         previews = {r[0]: r[1][:120] for r in preview_rows}
 
-    total = (await db.execute(
-        select(func.count(func.distinct(SupportChatMessage.session_id)))
-    )).scalar() or 0
+    # Total count with filters
+    count_q = select(func.count(func.distinct(SupportChatMessage.session_id)))
+    for f in filters:
+        count_q = count_q.where(f)
+    total = (await db.execute(count_q)).scalar() or 0
 
     sessions = [
         {
@@ -612,33 +961,52 @@ async def get_support_session_messages(
 async def get_ai_chat_sessions(
     limit: int = Query(30, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    q: str = Query("", max_length=100),
+    locale: Optional[str] = Query(None),
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """AI chat sessions — real user ↔ AI dialogs."""
-    rows = (await db.execute(
-        select(
-            AIChatMessage.session_id,
-            AIChatMessage.user_id,
-            AIChatMessage.locale,
-            AIChatMessage.was_pro,
-            AIChatMessage.match_context,
-            func.min(AIChatMessage.created_at).label("started"),
-            func.max(AIChatMessage.created_at).label("last_msg"),
-            func.count(AIChatMessage.id).label("total_msgs"),
-            func.count(case((AIChatMessage.role == "user", 1))).label("user_msgs"),
-        )
-        .group_by(
-            AIChatMessage.session_id,
-            AIChatMessage.user_id,
-            AIChatMessage.locale,
-            AIChatMessage.was_pro,
-            AIChatMessage.match_context,
-        )
-        .order_by(func.max(AIChatMessage.created_at).desc())
-        .limit(limit)
-        .offset(offset)
-    )).all()
+    """AI chat sessions with search/filter."""
+    filters = []
+    if locale:
+        filters.append(AIChatMessage.locale == locale)
+    if q.strip():
+        try:
+            uid = int(q.strip())
+            filters.append(AIChatMessage.user_id == uid)
+        except ValueError:
+            matching = (await db.execute(
+                select(func.distinct(AIChatMessage.session_id))
+                .where(AIChatMessage.content.ilike(f"%{q.strip()}%"))
+                .limit(200)
+            )).scalars().all()
+            if matching:
+                filters.append(AIChatMessage.session_id.in_(matching))
+            else:
+                return {"total": 0, "sessions": []}
+
+    base_q = select(
+        AIChatMessage.session_id,
+        AIChatMessage.user_id,
+        AIChatMessage.locale,
+        AIChatMessage.was_pro,
+        AIChatMessage.match_context,
+        func.min(AIChatMessage.created_at).label("started"),
+        func.max(AIChatMessage.created_at).label("last_msg"),
+        func.count(AIChatMessage.id).label("total_msgs"),
+        func.count(case((AIChatMessage.role == "user", 1))).label("user_msgs"),
+    )
+    for f in filters:
+        base_q = base_q.where(f)
+    base_q = base_q.group_by(
+        AIChatMessage.session_id,
+        AIChatMessage.user_id,
+        AIChatMessage.locale,
+        AIChatMessage.was_pro,
+        AIChatMessage.match_context,
+    ).order_by(func.max(AIChatMessage.created_at).desc())
+
+    rows = (await db.execute(base_q.limit(limit).offset(offset))).all()
 
     # Get previews (first user message per session)
     session_ids = [r[0] for r in rows]
@@ -657,9 +1025,10 @@ async def get_ai_chat_sessions(
         )).all()
         previews = {r[0]: r[1][:120] for r in preview_rows}
 
-    total = (await db.execute(
-        select(func.count(func.distinct(AIChatMessage.session_id)))
-    )).scalar() or 0
+    count_q = select(func.count(func.distinct(AIChatMessage.session_id)))
+    for f in filters:
+        count_q = count_q.where(f)
+    total = (await db.execute(count_q)).scalar() or 0
 
     sessions = [
         {

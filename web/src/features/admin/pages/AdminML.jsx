@@ -1,6 +1,82 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../api'
 
+function FeatureImportanceChart({ data }) {
+  if (!data?.length) return null
+  const max = Math.max(...data.map(d => d.importance))
+
+  return (
+    <div className="space-y-2">
+      {data.map((d, i) => (
+        <div key={d.feature} className="flex items-center gap-3">
+          <span className="text-[10px] text-slate-500 w-4 text-right shrink-0">{i + 1}</span>
+          <span className="text-[11px] text-slate-300 w-40 truncate shrink-0 font-mono" title={d.feature}>
+            {d.feature}
+          </span>
+          <div className="flex-1 h-4 bg-slate-800 rounded overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500/60 to-cyan-500/60 rounded transition-all"
+              style={{ width: `${Math.max((d.importance / max) * 100, 1)}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono w-12 text-right shrink-0">
+            {(d.importance * 100).toFixed(1)}%
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ModelComparisonChart({ models }) {
+  // Only show models with accuracy data
+  const valid = models.filter(m => m.accuracy != null).slice(0, 10).reverse()
+  if (!valid.length) return null
+  const maxAcc = Math.max(...valid.map(m => m.accuracy), 0.01)
+
+  return (
+    <div>
+      <div className="flex items-end gap-1.5 h-36 border-l border-b border-slate-700/50 pl-1 pb-1">
+        {valid.map((m, i) => {
+          const pct = (m.accuracy / maxAcc) * 100
+          return (
+            <div key={m.id} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+              <span className="text-[8px] text-slate-500 font-mono">{(m.accuracy * 100).toFixed(0)}%</span>
+              <div className="w-full relative group">
+                <div
+                  className={`w-full rounded-t transition-all ${m.is_active ? 'bg-green-500/60' : 'bg-slate-600/40'}`}
+                  style={{ height: `${Math.max(pct, 3)}%`, minHeight: '4px', height: `${Math.max(pct * 1.2, 4)}px` }}
+                />
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-[8px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                  {m.name} v{m.version}
+                  {m.f1_score != null && ` F1:${m.f1_score.toFixed(2)}`}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex mt-1 pl-1">
+        {valid.map(m => (
+          <span key={m.id} className="flex-1 text-center text-[7px] text-slate-600 font-mono truncate">
+            v{m.version}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 mt-3 justify-center">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-green-500/60" />
+          <span className="text-[10px] text-slate-500">Active</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-slate-600/40" />
+          <span className="text-[10px] text-slate-500">Previous</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminML() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -21,12 +97,13 @@ export default function AdminML() {
   }
 
   const activeModel = (stats?.models || []).find(m => m.is_active)
+  const td = stats?.training_data || {}
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">ML Pipeline</h1>
-        <p className="text-sm text-slate-500 mt-1">Model versions, training logs, and performance</p>
+        <p className="text-sm text-slate-500 mt-1">Model versions, training data, feature importance, and performance</p>
       </div>
 
       {/* Active model highlight */}
@@ -36,7 +113,7 @@ export default function AdminML() {
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <h3 className="text-sm font-semibold text-green-400">Active Model</h3>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
             <div>
               <p className="text-[10px] text-slate-500 uppercase">Name</p>
               <p className="text-sm font-mono font-bold mt-0.5">{activeModel.name}</p>
@@ -52,9 +129,85 @@ export default function AdminML() {
               </p>
             </div>
             <div>
+              <p className="text-[10px] text-slate-500 uppercase">F1 Score</p>
+              <p className="text-sm font-mono mt-0.5">
+                {activeModel.f1_score ? activeModel.f1_score.toFixed(3) : '\u2014'}
+              </p>
+            </div>
+            <div>
               <p className="text-[10px] text-slate-500 uppercase">Training Samples</p>
               <p className="text-sm font-mono mt-0.5">{activeModel.training_samples?.toLocaleString() || '\u2014'}</p>
             </div>
+            <div>
+              <p className="text-[10px] text-slate-500 uppercase">Training Time</p>
+              <p className="text-sm font-mono mt-0.5">
+                {activeModel.training_duration_sec ? `${activeModel.training_duration_sec.toFixed(0)}s` : '\u2014'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Training Data Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Matches', value: td.total_matches?.toLocaleString() || '0', color: 'text-slate-100' },
+          { label: 'Verified', value: td.verified_matches?.toLocaleString() || '0', color: 'text-blue-400' },
+          { label: 'Enriched (with features)', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-green-400' },
+          { label: 'Ready for Training', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-purple-400' },
+        ].map(s => (
+          <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-[10px] text-slate-500">{s.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Feature Importance */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-1">Feature Importance</h3>
+          <p className="text-[11px] text-slate-500 mb-4">Top features from active model</p>
+          {stats?.feature_importance ? (
+            <FeatureImportanceChart data={stats.feature_importance} />
+          ) : (
+            <p className="text-xs text-slate-600 text-center py-8">No feature importance data available yet</p>
+          )}
+        </div>
+
+        {/* Model Comparison */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-1">Model Accuracy History</h3>
+          <p className="text-[11px] text-slate-500 mb-4">Accuracy across model versions</p>
+          <ModelComparisonChart models={stats?.models || []} />
+          {!stats?.models?.filter(m => m.accuracy != null).length && (
+            <p className="text-xs text-slate-600 text-center py-8">No trained models yet</p>
+          )}
+        </div>
+      </div>
+
+      {/* Training data by league */}
+      {td.by_league?.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4">Training Data by League</h3>
+          <div className="space-y-2.5">
+            {td.by_league.map((l, i) => {
+              const maxCount = td.by_league[0]?.count || 1
+              return (
+                <div key={l.league}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-600 w-4">{i + 1}</span>
+                      <span className="text-xs text-slate-300">{l.league}</span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">{l.count}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden ml-6">
+                    <div className="h-full bg-cyan-500/50 rounded-full" style={{ width: `${(l.count / maxCount) * 100}%` }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -73,6 +226,7 @@ export default function AdminML() {
                 <th className="text-center px-3 py-3 font-medium">Version</th>
                 <th className="text-right px-3 py-3 font-medium">Accuracy</th>
                 <th className="text-right px-3 py-3 font-medium">F1</th>
+                <th className="text-right px-3 py-3 font-medium">Brier</th>
                 <th className="text-right px-3 py-3 font-medium">Samples</th>
                 <th className="text-center px-3 py-3 font-medium">Status</th>
                 <th className="text-right px-5 py-3 font-medium">Created</th>
@@ -89,6 +243,9 @@ export default function AdminML() {
                   </td>
                   <td className="px-3 py-3 text-right text-xs font-mono text-slate-400">
                     {m.f1_score ? m.f1_score.toFixed(3) : '\u2014'}
+                  </td>
+                  <td className="px-3 py-3 text-right text-xs font-mono text-slate-400">
+                    {m.brier_score ? m.brier_score.toFixed(3) : '\u2014'}
                   </td>
                   <td className="px-3 py-3 text-right text-xs font-mono text-slate-400">
                     {m.training_samples?.toLocaleString() || '\u2014'}
