@@ -91,6 +91,11 @@ export const adminApi = {
     request(`/stats/chats/ai-sessions?limit=${limit}&offset=${offset}&q=${encodeURIComponent(q)}&locale=${locale}`),
   getAIChatSessionMessages: (sessionId) =>
     request(`/stats/chats/ai-sessions/${sessionId}`),
+  replyToAIChat: (sessionId, message) =>
+    request(`/stats/chats/ai-sessions/${sessionId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
   translateMessages: (messages) =>
     request('/stats/chats/translate', {
       method: 'POST',

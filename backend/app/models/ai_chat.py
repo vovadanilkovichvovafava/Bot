@@ -15,6 +15,7 @@ class AIChatMessage(Base):
     locale = Column(String(5), default="en", nullable=False)
     match_context = Column(Text, nullable=True)  # match info if provided
     was_pro = Column(Boolean, default=False, nullable=False)
+    is_admin_reply = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), index=True)
 
     user = relationship("User", backref="ai_chat_messages")

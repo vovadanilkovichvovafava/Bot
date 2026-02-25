@@ -355,6 +355,8 @@ function AIChatTab() {
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
@@ -383,10 +385,31 @@ function AIChatTab() {
     }
   }, [translations])
 
+  const sendReply = async (sessionId) => {
+    if (!replyText.trim() || sending) return
+    setSending(true)
+    try {
+      const result = await adminApi.replyToAIChat(sessionId, replyText.trim())
+      setMessages(prev => [...prev, {
+        id: result.id,
+        role: 'assistant',
+        content: replyText.trim(),
+        is_admin_reply: true,
+        created_at: result.created_at || new Date().toISOString(),
+      }])
+      setReplyText('')
+    } catch (e) {
+      alert('Failed to send: ' + (e.message || e))
+    } finally {
+      setSending(false)
+    }
+  }
+
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
     setMessages([])
+    setReplyText('')
     setMsgLoading(true)
     adminApi.getAIChatSessionMessages(sessionId)
       .then(d => {
@@ -495,6 +518,24 @@ function AIChatTab() {
                         </div>
                       )}
                       <ChatMessages messages={messages} translation={tr} assistantLabel="AI Assistant" />
+                      {/* Admin reply input */}
+                      <div className="px-4 py-3 border-t border-slate-800 flex gap-2">
+                        <input
+                          type="text"
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply(s.session_id)}
+                          placeholder="Reply to user..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                        />
+                        <button
+                          onClick={() => sendReply(s.session_id)}
+                          disabled={!replyText.trim() || sending}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+                        >
+                          {sending ? '...' : 'Send'}
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -536,6 +577,8 @@ function InsightSessionCard({ sessionId, sourceType }) {
   const [loading, setLoading] = useState(false)
   const [translation, setTranslation] = useState(null)
   const [translating, setTranslating] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
 
   const toggle = () => {
     if (open) { setOpen(false); return }
@@ -560,6 +603,27 @@ function InsightSessionCard({ sessionId, sourceType }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+  }
+
+  const sendReply = async () => {
+    if (!replyText.trim() || sending) return
+    setSending(true)
+    try {
+      const replyFn = sourceType === 'ai' ? adminApi.replyToAIChat : adminApi.replyToSupport
+      const result = await replyFn(sessionId, replyText.trim())
+      setMessages(prev => [...prev, {
+        id: result.id,
+        role: 'assistant',
+        content: replyText.trim(),
+        is_admin_reply: true,
+        created_at: result.created_at || new Date().toISOString(),
+      }])
+      setReplyText('')
+    } catch (e) {
+      alert('Failed to send: ' + (e.message || e))
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -596,6 +660,24 @@ function InsightSessionCard({ sessionId, sourceType }) {
                 translation={translation}
                 assistantLabel={sourceType === 'ai' ? 'AI Assistant' : null}
               />
+              {/* Admin reply input */}
+              <div className="px-3 py-2 border-t border-slate-800 flex gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply()}
+                  placeholder="Reply to user..."
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  onClick={sendReply}
+                  disabled={!replyText.trim() || sending}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+                >
+                  {sending ? '...' : 'Send'}
+                </button>
+              </div>
             </>
           )}
         </div>

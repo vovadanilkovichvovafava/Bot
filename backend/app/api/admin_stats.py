@@ -1181,6 +1181,7 @@ async def get_ai_session_messages(
             "locale": m.locale,
             "match_context": m.match_context,
             "was_pro": m.was_pro,
+            "is_admin_reply": getattr(m, 'is_admin_reply', False),
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         for m in rows
@@ -1192,6 +1193,57 @@ async def get_ai_session_messages(
         "locale": rows[0].locale,
         "was_pro": rows[0].was_pro,
         "messages": messages,
+    }
+
+
+@router.post("/chats/ai-sessions/{session_id}/reply")
+async def admin_reply_to_ai_chat(
+    session_id: str,
+    payload: dict = Body(...),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin sends a reply to a user's AI chat session."""
+    message = (payload.get("message") or "").strip()
+    if not message:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    if len(message) > 1000:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Message too long (max 1000 chars)")
+
+    first_msg = (await db.execute(
+        select(AIChatMessage)
+        .where(AIChatMessage.session_id == session_id)
+        .order_by(AIChatMessage.created_at)
+        .limit(1)
+    )).scalars().first()
+
+    if not first_msg:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    admin_msg = AIChatMessage(
+        user_id=first_msg.user_id,
+        session_id=session_id,
+        role="assistant",
+        content=message,
+        locale=first_msg.locale,
+        was_pro=first_msg.was_pro,
+        is_admin_reply=True,
+    )
+    db.add(admin_msg)
+    await db.commit()
+    await db.refresh(admin_msg)
+
+    logger.info(f"Admin AI reply: admin={admin.get('email')}, session={session_id[:8]}, user={first_msg.user_id}")
+
+    return {
+        "id": admin_msg.id,
+        "session_id": session_id,
+        "user_id": first_msg.user_id,
+        "content": message,
+        "created_at": admin_msg.created_at.isoformat() if admin_msg.created_at else None,
     }
 
 

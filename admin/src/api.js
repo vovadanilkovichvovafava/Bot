@@ -69,17 +69,4 @@ export const api = {
 
   // ── Stats ────────────────────────────
   getTrafficStats: () => request('/stats/traffic'),
-
-  // ── Support Chats ────────────────────
-  getSupportSessions: (limit = 30, offset = 0, q = '') =>
-    request(`/stats/chats/support-sessions?limit=${limit}&offset=${offset}&q=${encodeURIComponent(q)}`),
-
-  getSupportSessionMessages: (sessionId) =>
-    request(`/stats/chats/support-sessions/${sessionId}`),
-
-  replyToSupport: (sessionId, message) =>
-    request(`/stats/chats/support-sessions/${sessionId}/reply`, {
-      method: 'POST',
-      body: JSON.stringify({ message }),
-    }),
 }

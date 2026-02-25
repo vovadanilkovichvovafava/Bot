@@ -87,6 +87,8 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
             # Admin reply flag for support chat messages
             "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
+            # Admin reply flag for AI chat messages
+            "ALTER TABLE ai_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
         ]
 
         for migration in migrations:
