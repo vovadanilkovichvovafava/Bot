@@ -1160,37 +1160,90 @@ async def translate_messages(
         logger.warning("CLAUDE_API_KEY not set — cannot translate")
         return {"translated": [], "keywords": "", "error": "AI not configured"}
 
-    # Build text for translation
-    dialog_text = "\n".join(
-        f"{'User' if m.get('role') == 'user' else 'AI'}: {m.get('content', '')}"
-        for m in messages
-    )
+    client = anthropic.AsyncAnthropic(api_key=api_key)
 
-    try:
-        client = anthropic.Anthropic(api_key=api_key)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=4000,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"You have a dialog between a user and an AI assistant about football betting.\n\n"
-                    f"Dialog:\n{dialog_text}\n\n"
-                    f"Do two things:\n"
-                    f"1. Translate EVERY message to Russian (keep the same order). There are exactly {len(messages)} messages.\n"
-                    f"2. Extract 2-4 key phrases/topics discussed in the entire dialog (in Russian).\n\n"
-                    f"IMPORTANT: Respond with ONLY raw JSON, no markdown, no code blocks.\n"
-                    f'{{"translated": ["translated msg 1", "translated msg 2", ...], "keywords": "keyword1, keyword2, keyword3"}}'
-                ),
-            }],
-        )
-        raw = resp.content[0].text.strip()
-        # Strip markdown code fences if present
+    def _parse_json(raw: str) -> dict:
+        raw = raw.strip()
         if raw.startswith("```"):
             raw = re.sub(r'^```(?:json)?\s*', '', raw)
             raw = re.sub(r'\s*```$', '', raw)
-        result = json_mod.loads(raw)
-        return result
+        return json_mod.loads(raw)
+
+    async def _translate_batch(batch: list[dict], batch_idx: int) -> list[str]:
+        dialog_text = "\n".join(
+            f"[{i+1}] {'User' if m.get('role') == 'user' else 'AI'}: {m.get('content', '')}"
+            for i, m in enumerate(batch)
+        )
+        resp = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=4096,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Translate each numbered message to Russian. Keep the same order.\n"
+                    f"There are exactly {len(batch)} messages.\n\n"
+                    f"{dialog_text}\n\n"
+                    f"Respond with ONLY a raw JSON array of {len(batch)} translated strings, no markdown.\n"
+                    f'["перевод 1", "перевод 2", ...]'
+                ),
+            }],
+        )
+        parsed = _parse_json(resp.content[0].text)
+        if isinstance(parsed, list):
+            return parsed
+        if isinstance(parsed, dict) and "translated" in parsed:
+            return parsed["translated"]
+        return [m.get("content", "") for m in batch]
+
+    try:
+        # Split into batches of 15 messages to avoid output truncation
+        BATCH_SIZE = 15
+        all_translated: list[str] = []
+
+        if len(messages) <= BATCH_SIZE:
+            all_translated = await _translate_batch(messages, 0)
+        else:
+            import asyncio
+            batches = [
+                messages[i:i + BATCH_SIZE]
+                for i in range(0, len(messages), BATCH_SIZE)
+            ]
+            results = await asyncio.gather(
+                *[_translate_batch(b, idx) for idx, b in enumerate(batches)],
+                return_exceptions=True,
+            )
+            for idx, res in enumerate(results):
+                if isinstance(res, Exception):
+                    logger.error(f"Translation batch {idx} failed: {res}")
+                    # fallback: keep originals for this batch
+                    all_translated.extend(
+                        m.get("content", "") for m in batches[idx]
+                    )
+                else:
+                    all_translated.extend(res)
+
+        # Extract keywords from full dialog (short summary request)
+        keywords = ""
+        try:
+            summary_text = "\n".join(
+                m.get("content", "")[:150] for m in messages
+            )
+            kw_resp = await client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=200,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Выдели 2-4 ключевые темы этого диалога (на русском, через запятую):\n\n"
+                        f"{summary_text[:2000]}"
+                    ),
+                }],
+            )
+            keywords = kw_resp.content[0].text.strip()
+        except Exception as e:
+            logger.warning(f"Keywords extraction failed: {e}")
+
+        return {"translated": all_translated, "keywords": keywords}
     except Exception as e:
         logger.error(f"Translation failed: {e}")
         return {"translated": [], "keywords": "", "error": str(e)}
