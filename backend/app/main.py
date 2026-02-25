@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics
+from app.api import auth, matches, predictions, users, football, analytics, fonbet
 from app.core.database import init_db
 from app.middleware import (
     SecurityHeadersMiddleware,
@@ -75,7 +75,10 @@ app.add_middleware(InjectionDetectionMiddleware)
 CORS_ORIGINS = [
     "https://sportscoreai.com",
     "https://www.sportscoreai.com",
+    "https://prescoreai.vip",
+    "https://www.prescoreai.vip",
     "https://pwa-production-20b5.up.railway.app",
+    "https://pwa-2-production.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
     "http://localhost:3000",
     "http://localhost:5173",
@@ -99,6 +102,7 @@ app.include_router(matches.router, prefix="/api/v1/matches", tags=["matches"])
 app.include_router(predictions.router, prefix="/api/v1/predictions", tags=["predictions"])
 app.include_router(football.router, prefix="/api/v1/football", tags=["football"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(fonbet.router, prefix="/api/v1/fonbet", tags=["fonbet"])
 
 
 @app.get("/")
