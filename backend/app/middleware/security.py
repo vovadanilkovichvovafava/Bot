@@ -105,15 +105,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Periodically remove stale IP entries to prevent memory leak."""
         while True:
             await asyncio.sleep(3600)  # every hour
-            now = time.time()
-            stale_keys = [
-                k for k, v in rate_limit_storage.items()
-                if not v or now - max(v) > 300  # no activity for 5 min
-            ]
-            for k in stale_keys:
-                del rate_limit_storage[k]
-            if stale_keys:
-                logger.debug(f"Rate limit cleanup: removed {len(stale_keys)} stale keys")
+            try:
+                now = time.time()
+                stale_keys = [
+                    k for k, v in rate_limit_storage.items()
+                    if not v or now - max(v) > 300  # no activity for 5 min
+                ]
+                for k in stale_keys:
+                    del rate_limit_storage[k]
+                if stale_keys:
+                    logger.debug(f"Rate limit cleanup: removed {len(stale_keys)} stale keys")
+            except Exception as e:
+                logger.warning(f"Rate limit cleanup error: {e}")
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Start cleanup task once
