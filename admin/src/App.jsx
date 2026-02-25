@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import TrafficSources from './pages/TrafficSources'
 import Layout from './components/Layout'
 
 function ProtectedRoute({ children }) {
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="traffic" element={<TrafficSources />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

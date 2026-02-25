@@ -1,0 +1,349 @@
+import { useState, useEffect, useMemo } from 'react'
+import { api } from '../api'
+
+// Simple color palette for sources
+const SOURCE_COLORS = [
+  { bg: 'bg-blue-500', text: 'text-blue-400', bar: 'bg-blue-500', light: 'bg-blue-500/20' },
+  { bg: 'bg-purple-500', text: 'text-purple-400', bar: 'bg-purple-500', light: 'bg-purple-500/20' },
+  { bg: 'bg-green-500', text: 'text-green-400', bar: 'bg-green-500', light: 'bg-green-500/20' },
+  { bg: 'bg-amber-500', text: 'text-amber-400', bar: 'bg-amber-500', light: 'bg-amber-500/20' },
+  { bg: 'bg-red-500', text: 'text-red-400', bar: 'bg-red-500', light: 'bg-red-500/20' },
+  { bg: 'bg-cyan-500', text: 'text-cyan-400', bar: 'bg-cyan-500', light: 'bg-cyan-500/20' },
+]
+
+function getColor(i) {
+  return SOURCE_COLORS[i % SOURCE_COLORS.length]
+}
+
+export default function TrafficSources() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api.getTrafficStats()
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Build daily chart data
+  const chartData = useMemo(() => {
+    if (!data?.daily_by_source) return null
+
+    const sources = [...new Set(data.daily_by_source.map(d => d.source))]
+    const dates = [...new Set(data.daily_by_source.map(d => d.date))].sort()
+
+    // Build map: date -> source -> count
+    const map = {}
+    for (const row of data.daily_by_source) {
+      if (!map[row.date]) map[row.date] = {}
+      map[row.date][row.source] = row.count
+    }
+
+    return { sources, dates, map }
+  }, [data])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
+        <p className="text-red-400 text-sm">{error}</p>
+      </div>
+    )
+  }
+
+  if (!data) return null
+
+  const maxDaily = chartData
+    ? Math.max(...chartData.dates.map(d =>
+        chartData.sources.reduce((sum, s) => sum + (chartData.map[d]?.[s] || 0), 0)
+      ), 1)
+    : 1
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold">Traffic Sources</h1>
+        <p className="text-sm text-dark-400 mt-1">Registrations, conversions and retention by traffic source</p>
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {data.by_source.map((s, i) => {
+          const c = getColor(i)
+          return (
+            <div key={s.source} className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-3 h-3 rounded-full ${c.bg}`} />
+                <span className="text-xs font-medium text-dark-300 uppercase tracking-wide">{s.source}</span>
+              </div>
+              <p className="text-2xl font-bold">{s.total}</p>
+              <p className="text-xs text-dark-500 mt-1">{s.percent}% of total</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Comparison Table */}
+      <section>
+        <h2 className="text-sm font-semibold text-dark-300 mb-3">Source Comparison</h2>
+        <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-dark-700 text-dark-400 text-xs">
+                <th className="text-left px-4 py-3 font-medium">Source</th>
+                <th className="text-right px-4 py-3 font-medium">Users</th>
+                <th className="text-right px-4 py-3 font-medium">PRO</th>
+                <th className="text-right px-4 py-3 font-medium">Conv %</th>
+                <th className="text-right px-4 py-3 font-medium">Activated</th>
+                <th className="text-right px-4 py-3 font-medium">Act %</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-dark-700">
+              {data.by_source.map((s, i) => {
+                const c = getColor(i)
+                return (
+                  <tr key={s.source} className="hover:bg-dark-700/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${c.bg}`} />
+                        <span className="font-medium">{s.source}</span>
+                      </div>
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono">{s.total}</td>
+                    <td className="text-right px-4 py-3 font-mono">{s.pro}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        s.conversion_pct >= 5 ? 'bg-green-500/20 text-green-400' :
+                        s.conversion_pct >= 2 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-dark-600 text-dark-300'
+                      }`}>
+                        {s.conversion_pct}%
+                      </span>
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono">{s.activated}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        s.activation_pct >= 30 ? 'bg-green-500/20 text-green-400' :
+                        s.activation_pct >= 15 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-dark-600 text-dark-300'
+                      }`}>
+                        {s.activation_pct}%
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Daily Registrations Chart (bar chart) */}
+      {chartData && chartData.dates.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-dark-300 mb-3">Daily Registrations by Source (30 days)</h2>
+          <div className="bg-dark-800 rounded-xl border border-dark-700 p-4">
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 mb-4">
+              {chartData.sources.map((src, i) => (
+                <div key={src} className="flex items-center gap-1.5">
+                  <div className={`w-3 h-3 rounded ${getColor(i).bg}`} />
+                  <span className="text-xs text-dark-300">{src}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Stacked bar chart */}
+            <div className="flex items-end gap-[2px] h-40">
+              {chartData.dates.map(date => {
+                const dayTotal = chartData.sources.reduce((sum, s) => sum + (chartData.map[date]?.[s] || 0), 0)
+                return (
+                  <div key={date} className="flex-1 flex flex-col justify-end h-full group relative">
+                    {chartData.sources.map((src, i) => {
+                      const val = chartData.map[date]?.[src] || 0
+                      if (val === 0) return null
+                      const h = (val / maxDaily) * 100
+                      return (
+                        <div
+                          key={src}
+                          className={`${getColor(i).bg} opacity-80 hover:opacity-100 transition-opacity min-h-[2px]`}
+                          style={{ height: `${h}%` }}
+                        />
+                      )
+                    })}
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                      <div className="bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-lg">
+                        <p className="font-medium text-dark-200 mb-1">{date}</p>
+                        {chartData.sources.map((src, i) => {
+                          const val = chartData.map[date]?.[src] || 0
+                          if (val === 0) return null
+                          return (
+                            <div key={src} className="flex items-center gap-1.5">
+                              <div className={`w-2 h-2 rounded ${getColor(i).bg}`} />
+                              <span className="text-dark-400">{src}:</span>
+                              <span className="font-mono text-dark-200">{val}</span>
+                            </div>
+                          )
+                        })}
+                        <div className="border-t border-dark-700 mt-1 pt-1 text-dark-300">
+                          Total: <span className="font-mono">{dayTotal}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* X-axis labels (every 5th day) */}
+            <div className="flex gap-[2px] mt-1">
+              {chartData.dates.map((date, i) => (
+                <div key={date} className="flex-1 text-center">
+                  {i % 5 === 0 && (
+                    <span className="text-[9px] text-dark-500">
+                      {date.slice(5)}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Retention by Source */}
+      {data.retention_by_source.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-dark-300 mb-3">Week-1 Retention by Source</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {data.retention_by_source.map((r, i) => {
+              const c = getColor(data.by_source.findIndex(s => s.source === r.source) ?? i)
+              return (
+                <div key={r.source} className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-3 h-3 rounded-full ${c.bg}`} />
+                    <span className="text-xs font-medium text-dark-300 uppercase">{r.source}</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {r.retention_pct}%
+                  </p>
+                  <p className="text-xs text-dark-500 mt-1">
+                    {r.returned}/{r.registered} returned
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* New This Week / Month */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section>
+          <h2 className="text-sm font-semibold text-dark-300 mb-3">New This Week</h2>
+          <div className="bg-dark-800 rounded-xl border border-dark-700 divide-y divide-dark-700">
+            {data.new_week.map((r, i) => {
+              const c = getColor(data.by_source.findIndex(s => s.source === r.source) ?? i)
+              const maxWeek = Math.max(...data.new_week.map(w => w.count), 1)
+              return (
+                <div key={r.source} className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${c.bg}`} />
+                      <span className="text-sm font-medium">{r.source}</span>
+                    </div>
+                    <span className="text-sm font-mono">{r.count}</span>
+                  </div>
+                  <div className="w-full bg-dark-700 rounded-full h-1.5">
+                    <div
+                      className={`${c.bar} h-1.5 rounded-full transition-all`}
+                      style={{ width: `${(r.count / maxWeek) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            {data.new_week.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-dark-500">No registrations this week</p>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold text-dark-300 mb-3">New This Month</h2>
+          <div className="bg-dark-800 rounded-xl border border-dark-700 divide-y divide-dark-700">
+            {data.new_month.map((r, i) => {
+              const c = getColor(data.by_source.findIndex(s => s.source === r.source) ?? i)
+              const maxMonth = Math.max(...data.new_month.map(w => w.count), 1)
+              return (
+                <div key={r.source} className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${c.bg}`} />
+                      <span className="text-sm font-medium">{r.source}</span>
+                    </div>
+                    <span className="text-sm font-mono">{r.count}</span>
+                  </div>
+                  <div className="w-full bg-dark-700 rounded-full h-1.5">
+                    <div
+                      className={`${c.bar} h-1.5 rounded-full transition-all`}
+                      style={{ width: `${(r.count / maxMonth) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            {data.new_month.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-dark-500">No registrations this month</p>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Country breakdown by source */}
+      {data.by_source_country.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-dark-300 mb-3">Top Countries by Source</h2>
+          <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-dark-700 text-dark-400 text-xs">
+                  <th className="text-left px-4 py-3 font-medium">Source</th>
+                  <th className="text-left px-4 py-3 font-medium">Country</th>
+                  <th className="text-right px-4 py-3 font-medium">Users</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-700">
+                {data.by_source_country.map((r, idx) => {
+                  const c = getColor(data.by_source.findIndex(s => s.source === r.source) ?? 0)
+                  return (
+                    <tr key={idx} className="hover:bg-dark-700/50 transition-colors">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${c.bg}`} />
+                          <span className="text-xs">{r.source}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs">{r.country || 'Unknown'}</td>
+                      <td className="text-right px-4 py-2.5 font-mono text-xs">{r.count}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

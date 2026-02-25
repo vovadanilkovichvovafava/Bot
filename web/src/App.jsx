@@ -149,6 +149,9 @@ function SplashScreen() {
     for (const [key, val] of params.entries()) {
       if (val) sessionStorage.setItem(`tracking_${key}`, val);
     }
+    // Persist traffic source for registration (from ?source=pwa-2)
+    const source = params.get('source');
+    if (source) localStorage.setItem('traffic_source', source);
   } catch {}
 })();
 

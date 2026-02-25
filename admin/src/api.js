@@ -66,4 +66,7 @@ export const api = {
   createInvite: (role = 'admin', expires_hours = 72) =>
     request('/auth/invites', { method: 'POST', body: JSON.stringify({ role, expires_hours }) }),
   getInvites: () => request('/auth/invites'),
+
+  // ── Stats ────────────────────────────
+  getTrafficStats: () => request('/stats/traffic'),
 }

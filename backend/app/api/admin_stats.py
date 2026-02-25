@@ -1582,3 +1582,147 @@ async def get_pro_analytics(
         logger.error(traceback.format_exc())
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"PRO analytics error: {str(e)}")
+
+
+# ── Traffic Sources Analytics ──────────────────────────────────────────
+
+
+@router.get("/traffic")
+async def get_traffic_analytics(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Traffic source analytics — registrations, conversions, retention by source."""
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    try:
+        # ── Overview: users by source ──
+        source_rows = (await db.execute(
+            select(
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                func.count(User.id).label("total"),
+                func.count(case((
+                    and_(User.is_premium == True, User.premium_until > now), 1
+                ))).label("pro"),
+                func.count(case((User.total_predictions > 0, 1))).label("activated"),
+            )
+            .group_by(func.coalesce(User.traffic_source, "direct"))
+            .order_by(func.count(User.id).desc())
+        )).all()
+
+        total_all = sum(r[1] for r in source_rows) or 1
+
+        by_source = [
+            {
+                "source": r[0],
+                "total": r[1],
+                "percent": round(r[1] / total_all * 100, 1),
+                "pro": r[2],
+                "conversion_pct": round(r[2] / r[1] * 100, 1) if r[1] > 0 else 0,
+                "activated": r[3],
+                "activation_pct": round(r[3] / r[1] * 100, 1) if r[1] > 0 else 0,
+            }
+            for r in source_rows
+        ]
+
+        # ── Daily registrations by source (last 30 days) ──
+        daily_rows = (await db.execute(
+            select(
+                func.date(User.created_at).label("day"),
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                func.count(User.id).label("cnt"),
+            )
+            .where(User.created_at >= month_ago)
+            .group_by(func.date(User.created_at), func.coalesce(User.traffic_source, "direct"))
+            .order_by(func.date(User.created_at))
+        )).all()
+
+        daily_by_source = [
+            {"date": str(r[0]), "source": r[1], "count": r[2]}
+            for r in daily_rows
+        ]
+
+        # ── New this week / month per source ──
+        week_rows = (await db.execute(
+            select(
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                func.count(User.id).label("cnt"),
+            )
+            .where(User.created_at >= week_ago)
+            .group_by(func.coalesce(User.traffic_source, "direct"))
+            .order_by(func.count(User.id).desc())
+        )).all()
+        new_week = [{"source": r[0], "count": r[1]} for r in week_rows]
+
+        month_rows = (await db.execute(
+            select(
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                func.count(User.id).label("cnt"),
+            )
+            .where(User.created_at >= month_ago)
+            .group_by(func.coalesce(User.traffic_source, "direct"))
+            .order_by(func.count(User.id).desc())
+        )).all()
+        new_month = [{"source": r[0], "count": r[1]} for r in month_rows]
+
+        # ── Retention by source (week-1 return rate) ──
+        retention_by_source = []
+        # Look at users registered 7-14 days ago, check if they came back
+        cohort_start = today_start - timedelta(days=14)
+        cohort_end = today_start - timedelta(days=7)
+
+        ret_rows = (await db.execute(
+            select(
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                func.count(User.id).label("registered"),
+                func.count(case((User.updated_at >= cohort_end, 1))).label("returned"),
+            )
+            .where(and_(User.created_at >= cohort_start, User.created_at < cohort_end))
+            .group_by(func.coalesce(User.traffic_source, "direct"))
+        )).all()
+
+        retention_by_source = [
+            {
+                "source": r[0],
+                "registered": r[1],
+                "returned": r[2],
+                "retention_pct": round(r[2] / r[1] * 100, 1) if r[1] > 0 else 0,
+            }
+            for r in ret_rows
+        ]
+
+        # ── Country breakdown per source ──
+        country_rows = (await db.execute(
+            select(
+                func.coalesce(User.traffic_source, "direct").label("source"),
+                User.country,
+                func.count(User.id).label("cnt"),
+            )
+            .where(User.country.isnot(None))
+            .group_by(func.coalesce(User.traffic_source, "direct"), User.country)
+            .order_by(func.count(User.id).desc())
+            .limit(30)
+        )).all()
+
+        by_source_country = [
+            {"source": r[0], "country": r[1], "count": r[2]}
+            for r in country_rows
+        ]
+
+        return {
+            "by_source": by_source,
+            "daily_by_source": daily_by_source,
+            "new_week": new_week,
+            "new_month": new_month,
+            "retention_by_source": retention_by_source,
+            "by_source_country": by_source_country,
+        }
+    except Exception as e:
+        logger.error(f"Traffic analytics error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Traffic analytics error: {str(e)}")

@@ -166,8 +166,14 @@ class ApiService {
   }
 
   async register(phone, password, referralCode = null) {
+    const { ENV } = await import('../config/env');
     const body = { phone, password };
     if (referralCode) body.referral_code = referralCode;
+    // Attach traffic source: from ENV config, URL param, or localStorage
+    const source = ENV.TRAFFIC_SOURCE
+      || new URLSearchParams(window.location.search).get('source')
+      || ((() => { try { return localStorage.getItem('traffic_source'); } catch { return null; } })());
+    if (source) body.source = source;
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),

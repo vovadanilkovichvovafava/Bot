@@ -82,6 +82,9 @@ async def init_db():
             # Country column for user geo tracking
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_country ON users(country)",
+            # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
         ]
 
         for migration in migrations:

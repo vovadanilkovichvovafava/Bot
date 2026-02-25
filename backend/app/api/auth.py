@@ -42,6 +42,7 @@ class UserRegister(BaseModel):
     email: Optional[EmailStr] = None  # Optional, for password recovery
     username: Optional[str] = None
     referral_code: Optional[str] = None
+    source: Optional[str] = None  # Traffic source: "pwa-1", "pwa-2", etc.
 
     @field_validator("phone")
     @classmethod
@@ -181,6 +182,7 @@ async def register(
         registration_ip=client_ip,
         country=country,
         referred_by_id=referrer.id if referrer else None,
+        traffic_source=user.source,
     )
     db.add(new_user)
     await db.commit()
