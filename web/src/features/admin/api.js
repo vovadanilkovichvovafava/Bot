@@ -89,4 +89,7 @@ export const adminApi = {
       body: JSON.stringify({ messages }),
     }),
   getChatInsights: () => request('/stats/chats/insights'),
+
+  // PRO Analytics
+  getProAnalytics: () => request('/stats/pro'),
 }
