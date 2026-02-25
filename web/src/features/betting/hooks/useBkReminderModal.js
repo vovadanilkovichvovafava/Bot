@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const POSTBACK_API = 'https://postbackapi-production.up.railway.app';
+const POSTBACK_API = import.meta.env.VITE_TRACKING_API || 'https://postbackapi-production.up.railway.app';
 
 // localStorage keys
 const BK_REG_SEEN_KEY = 'bk_reminder_congrats_seen';

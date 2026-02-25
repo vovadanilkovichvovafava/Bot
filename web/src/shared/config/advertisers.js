@@ -3,8 +3,8 @@
  * Localized partner bookmaker with region-specific bonuses, currencies, and amounts
  */
 
-// Base partner link (tracker URL)
-const PARTNER_LINK = 'https://siteofficialred.com/KnSQ1M';
+// Base partner link (tracker URL) — configurable via env for multi-domain deployments
+const PARTNER_LINK = import.meta.env.VITE_OFFER_URL || 'https://siteofficialred.com/KnSQ1M';
 
 /**
  * Format amount with currency symbol

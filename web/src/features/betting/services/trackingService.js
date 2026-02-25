@@ -9,7 +9,7 @@
  * - utm_source, utm_medium, utm_campaign, utm_content, utm_term — UTM метки
  */
 
-const TRACKING_API = 'https://postbackapi-production.up.railway.app';
+const TRACKING_API = import.meta.env.VITE_TRACKING_API || 'https://postbackapi-production.up.railway.app';
 
 /**
  * Собрать ВСЕ tracking параметры из URL + sessionStorage.
@@ -121,7 +121,7 @@ export async function saveTrackingParams(userId) {
  *   sub_id_12..15 = из клоачной ссылки (as-is)
  *   + fbclid, utm_* отдельными параметрами
  */
-const OFFER_BASE_URL = 'https://siteofficialred.com/KnSQ1M';
+const OFFER_BASE_URL = import.meta.env.VITE_OFFER_URL || 'https://siteofficialred.com/KnSQ1M';
 
 export function getTrackingLink(userId, banner = '') {
   if (!userId) return null;

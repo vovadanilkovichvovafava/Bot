@@ -129,6 +129,11 @@ CORS_ORIGINS = [
     "http://127.0.0.1:5174",
 ]
 
+# Allow extra CORS origins via env (comma-separated) for multi-domain deployments
+_extra_origins = os.getenv("EXTRA_CORS_ORIGINS", "")
+if _extra_origins:
+    CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

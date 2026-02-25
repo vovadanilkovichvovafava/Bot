@@ -5,6 +5,7 @@ Security middleware for FastAPI
 - Security logging
 """
 
+import os
 import time
 import logging
 import re
@@ -83,6 +84,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "http://localhost:3000",
         "http://localhost:5173",
     }
+
+    # Add extra origins from env for multi-domain deployments
+    _extra = os.getenv("EXTRA_CORS_ORIGINS", "")
+    if _extra:
+        CORS_ORIGINS.update(o.strip() for o in _extra.split(",") if o.strip())
 
     def _cors_headers(self, request: Request) -> dict:
         """Add CORS headers so browser doesn't mask 429 as CORS error"""

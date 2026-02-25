@@ -1,4 +1,4 @@
-const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1/admin'
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1') + '/admin'
 
 function getToken() {
   try { return localStorage.getItem('admin_token') } catch { return null }

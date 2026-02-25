@@ -3,7 +3,7 @@
  * Потом Claude вытаскивает через SQL когда нужна аналитика.
  */
 
-const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
 
 // Unique session ID per browser tab
 const SESSION_ID = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

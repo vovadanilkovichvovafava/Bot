@@ -1,4 +1,4 @@
-const API_BASE = 'https://appbot-production-152e.up.railway.app/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
 
 class ApiService {
   constructor() {
