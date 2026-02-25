@@ -188,6 +188,7 @@ export default function AdminDashboard() {
   const [usersStats, setUsersStats] = useState(null)
   const [predStats, setPredStats] = useState(null)
   const [retention, setRetention] = useState(null)
+  const [onlineHistory, setOnlineHistory] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -196,11 +197,13 @@ export default function AdminDashboard() {
       adminApi.getUsersStats().catch(() => null),
       adminApi.getPredictionsStats().catch(() => null),
       adminApi.getRetentionStats().catch(() => null),
-    ]).then(([ov, us, ps, rt]) => {
+      adminApi.getOnlineHistory().catch(() => null),
+    ]).then(([ov, us, ps, rt, oh]) => {
       setOverview(ov)
       setUsersStats(us)
       setPredStats(ps)
       setRetention(rt)
+      setOnlineHistory(oh)
       setLoading(false)
     })
   }, [])
@@ -302,6 +305,79 @@ export default function AdminDashboard() {
           <BarChart data={predStats?.daily_predictions || []} color="green" />
         </div>
       </div>
+
+      {/* Peak Online — 24h */}
+      {onlineHistory?.hours?.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold">Online Users — Last 24h</h3>
+              <p className="text-[11px] text-slate-500">
+                Peak: <span className="text-cyan-400 font-mono font-semibold">{onlineHistory.peak_users}</span> at <span className="text-slate-300 font-mono">{onlineHistory.peak_hour || '—'}</span>
+                {' · '}Now: <span className="text-green-400 font-mono font-semibold">{onlineHistory.current_online}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Bar visualization */}
+          <div className="flex items-end gap-[2px] h-24 mb-2">
+            {onlineHistory.hours.map((h, i) => {
+              const max = onlineHistory.peak_users || 1
+              const pct = Math.max((h.unique_users / max) * 100, 3)
+              const isPeak = h.unique_users === onlineHistory.peak_users
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-t min-w-[4px] transition-all relative group ${
+                    isPeak ? 'bg-cyan-400' : 'bg-cyan-500/40 hover:bg-cyan-400/60'
+                  }`}
+                  style={{ height: `${pct}%` }}
+                >
+                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 font-mono">
+                    {h.hour}: {h.unique_users} users
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* X-axis labels */}
+          <div className="flex gap-[2px]">
+            {onlineHistory.hours.map((h, i) => (
+              <div key={i} className="flex-1 text-center">
+                {i % 3 === 0 && <span className="text-[8px] text-slate-500 font-mono">{h.hour}</span>}
+              </div>
+            ))}
+          </div>
+
+          {/* Table */}
+          <div className="mt-4 max-h-48 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-500">
+                  <th className="text-left px-2 py-1.5 font-medium">Hour</th>
+                  <th className="text-right px-2 py-1.5 font-medium">Users</th>
+                  <th className="text-right px-2 py-1.5 font-medium">Events</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {[...onlineHistory.hours].reverse().map((h, i) => {
+                  const isPeak = h.unique_users === onlineHistory.peak_users
+                  return (
+                    <tr key={i} className={isPeak ? 'bg-cyan-500/10' : 'hover:bg-slate-800/30'}>
+                      <td className="px-2 py-1.5 font-mono text-slate-300">{h.hour}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">
+                        <span className={isPeak ? 'text-cyan-400 font-semibold' : 'text-slate-400'}>{h.unique_users}</span>
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-slate-500">{h.total_events}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

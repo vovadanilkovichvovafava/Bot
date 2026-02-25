@@ -178,6 +178,59 @@ async def get_overview(
     }
 
 
+@router.get("/online-history")
+async def get_online_history(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Unique active users per hour for the last 24 hours (from analytics_events)."""
+    now = datetime.utcnow()
+    day_ago = now - timedelta(hours=24)
+
+    try:
+        rows = (await db.execute(text("""
+            SELECT
+                date_trunc('hour', created_at) AS hour,
+                COUNT(DISTINCT user_id) AS unique_users,
+                COUNT(*) AS total_events
+            FROM analytics_events
+            WHERE created_at >= :since
+              AND user_id IS NOT NULL
+            GROUP BY date_trunc('hour', created_at)
+            ORDER BY hour
+        """), {"since": day_ago})).all()
+
+        hours = []
+        peak_users = 0
+        peak_hour = None
+
+        for r in rows:
+            h = r[0]
+            users = r[1]
+            events = r[2]
+            hours.append({
+                "hour": h.strftime("%H:%M") if h else "?",
+                "hour_full": h.isoformat() if h else None,
+                "unique_users": users,
+                "total_events": events,
+            })
+            if users > peak_users:
+                peak_users = users
+                peak_hour = h.strftime("%H:%M") if h else None
+
+        return {
+            "hours": hours,
+            "peak_users": peak_users,
+            "peak_hour": peak_hour,
+            "current_online": (await db.execute(
+                select(func.count(User.id)).where(User.updated_at >= now - timedelta(minutes=15))
+            )).scalar() or 0,
+        }
+    except Exception as e:
+        logger.error(f"Online history error: {e}")
+        return {"hours": [], "peak_users": 0, "peak_hour": None, "current_online": 0}
+
+
 @router.get("/users")
 async def get_users_stats(
     admin: dict = Depends(get_current_admin),

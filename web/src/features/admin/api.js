@@ -67,6 +67,7 @@ export const adminApi = {
 
   // Stats
   getOverview: () => request('/stats/overview'),
+  getOnlineHistory: () => request('/stats/online-history'),
   getUsersStats: () => request('/stats/users'),
   searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1) =>
     request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}`),
