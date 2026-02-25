@@ -154,7 +154,7 @@ async def init_db():
                 "UPDATE users SET traffic_source = 'prescoreai' WHERE traffic_source = 'sportscoreai'"
             ))
             await conn.execute(text(
-                "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic'"
+                "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic' OR traffic_source IS NULL"
             ))
         except Exception:
             pass
