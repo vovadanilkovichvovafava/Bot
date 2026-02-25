@@ -147,6 +147,18 @@ async def init_db():
         except Exception:
             pass
 
+        # Rename traffic sources: organic → sportscoreai, sportscoreai → prescoreai
+        # Order matters: rename sportscoreai first to avoid collision
+        try:
+            await conn.execute(text(
+                "UPDATE users SET traffic_source = 'prescoreai' WHERE traffic_source = 'sportscoreai'"
+            ))
+            await conn.execute(text(
+                "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic'"
+            ))
+        except Exception:
+            pass
+
         # Backfill country from phone prefix for existing users
         try:
             await conn.execute(text("""
