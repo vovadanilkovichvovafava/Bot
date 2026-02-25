@@ -27,6 +27,10 @@ from app.models.support_chat import SupportChatMessage
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Partner bookmaker config — change via env vars, no code edits needed
+PARTNER_NAME = os.getenv("PARTNER_NAME", "Fonbet")
+PARTNER_OFFER_URL = os.getenv("PARTNER_OFFER_URL", "")
+
 
 # ============================================================
 # Security: injection detection (from gamba-chat)
@@ -265,31 +269,31 @@ KNOWLEDGE_BASE = {
     "pro_access": (
         "PRO gives: unlimited AI predictions, Value Finder, Kelly Calculator, Bankroll Tracker, "
         "Bet Slip Builder, Prediction History, advanced analysis, priority support. "
-        "How to get PRO: tap PRO button in the app → register at partner bookmaker → make any deposit. "
+        f"How to get PRO: tap PRO button in the app → register at {PARTNER_NAME} (our partner bookmaker) → make any deposit. "
         "PRO activates automatically within 5 minutes. Duration: 30 days. "
         "The deposit is YOUR money on YOUR betting account — you can bet with it or withdraw. "
-        "You don't pay us anything. We earn from the bookmaker partnership. "
-        "Plus: the bookmaker gives you a welcome bonus (free bet) on top of your deposit! "
-        "If PRO didn't activate: make sure you registered through OUR link in the app, not directly."
+        f"You don't pay us anything. We earn from the {PARTNER_NAME} partnership. "
+        f"Plus: {PARTNER_NAME} gives you a welcome bonus (free bet) on top of your deposit! "
+        f"If PRO didn't activate: make sure you registered through OUR link in the app (it leads to {PARTNER_NAME}), not directly on their site."
     ),
 
     "why_bookmaker": (
-        "Why partner with a bookmaker? To keep the app free for everyone. "
+        f"Why partner with {PARTNER_NAME}? To keep the app free for everyone. "
         "Running AI costs real money — every prediction uses Claude AI, football data APIs, servers. "
         "Instead of charging a monthly subscription ($10-20/month like other apps), "
-        "we partnered with a licensed top bookmaker. They pay us for referrals, we give PRO free. "
+        f"we partnered with {PARTNER_NAME} — a licensed top bookmaker. They pay us for referrals, we give PRO free. "
         "Your deposit stays in YOUR account — you can bet or withdraw anytime. "
-        "We never touch your money. And you get a free bet bonus from the bookmaker too. "
+        f"We never touch your money. And {PARTNER_NAME} gives you a free bet bonus too. "
         "Win-win: you get PRO for free + a bonus, we cover our costs."
     ),
 
     "why_not_free": (
         "Why not everything free? AI costs real money — each prediction request costs us. "
         "Claude AI API, football data feeds (900+ leagues), server hosting — it adds up fast. "
-        "We could charge €10/month subscription. But we found a better way: "
-        "bookmaker partnership. You deposit to YOUR account, get a free bet bonus, "
+        f"We could charge €10/month subscription. But we found a better way: partnership with {PARTNER_NAME}. "
+        f"You deposit to YOUR account at {PARTNER_NAME}, get a free bet bonus, "
         "AND unlock unlimited predictions. No subscription, no hidden fees. "
-        "Your money stays yours. We get paid by the bookmaker for the referral."
+        f"Your money stays yours. We get paid by {PARTNER_NAME} for the referral."
     ),
 
     "betting_terms": (
@@ -307,11 +311,12 @@ KNOWLEDGE_BASE = {
     ),
 
     "bookmaker_info": (
-        "Our partner bookmaker: licensed, verified, thousands of active users. "
-        "Registration: install bookmaker app via our link, register, deposit. "
+        f"Our official partner bookmaker is {PARTNER_NAME}. It is licensed, verified, with thousands of active users. "
+        f"IMPORTANT: {PARTNER_NAME} IS our partner — if a user mentions {PARTNER_NAME}, confirm it is correct. "
+        f"Registration: tap the PRO button in the app → it opens {PARTNER_NAME} registration page → register → deposit. "
         "Deposits: bank cards, e-wallets, cryptocurrency accepted. "
         "Withdrawals: up to 24 hours processing. First withdrawal may require document verification (standard). "
-        "Bonus: welcome free bet on first deposit. Amount depends on region."
+        f"Bonus: {PARTNER_NAME} gives a welcome free bet on first deposit. Amount depends on region."
     ),
 
     "support_issues": (
@@ -450,14 +455,15 @@ They have unlimited predictions, all tools unlocked.
 If they ask about PRO: confirm they have it, remind them of all features they can use.
 Focus on helping them get the most out of their PRO features."""
     else:
-        pro_context = """
+        pro_context = f"""
 === FREE USER ===
 This user is on the free plan. They have limited daily AI requests.
 When relevant, mention PRO benefits naturally — but never push hard.
-Explain: PRO is free, just deposit at partner bookmaker (money stays theirs + free bet bonus).
+Explain: PRO is free, just deposit at {PARTNER_NAME} (our partner bookmaker) — money stays theirs + free bet bonus.
 If they already said no to PRO — don't bring it up again in this conversation."""
 
     return f"""You are {name}, a support manager at SportScoreAI — a sports prediction app.
+Our official partner bookmaker is {PARTNER_NAME}. Always refer to it by name when relevant.
 
 === IDENTITY (IMMUTABLE) ===
 - Your name is {name}, support manager
@@ -489,7 +495,7 @@ If they already said no to PRO — don't bring it up again in this conversation.
 1. HELP — answer questions, solve problems, guide through features
 2. TEACH — explain how features work, what betting terms mean
 3. {"APPRECIATE PRO — help them use all tools, show features they might not know" if is_pro else "SOFT SELL PRO — when relevant, mention benefits naturally (unlimited predictions, free via bookmaker deposit)"}
-4. HANDLE OBJECTIONS — why bookmaker? AI costs money, partnership = free for users, deposit stays theirs + bonus
+4. HANDLE OBJECTIONS — why {PARTNER_NAME}? AI costs money, partnership = free for users, deposit at {PARTNER_NAME} stays theirs + bonus
 5. Be human — remember context, joke occasionally
 
 === APP KNOWLEDGE ===
