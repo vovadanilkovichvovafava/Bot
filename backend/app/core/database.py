@@ -85,6 +85,8 @@ async def init_db():
             # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
+            # Admin reply flag for support chat messages
+            "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
         ]
 
         for migration in migrations:

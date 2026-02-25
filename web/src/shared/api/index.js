@@ -293,6 +293,11 @@ class ApiService {
     });
   }
 
+  // Check for new admin replies in support chat
+  async checkNewSupportMessages(sessionId, afterId = 0) {
+    return this.request(`/support/new-messages?session_id=${encodeURIComponent(sessionId)}&after_id=${afterId}`);
+  }
+
   // Guest Support Chat (no auth required — for login page password reset)
   async guestSupportChat(message, history = [], locale = 'en', sessionId = '') {
     const url = `${API_BASE}/support/guest-chat`;

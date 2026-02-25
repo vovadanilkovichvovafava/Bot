@@ -813,6 +813,47 @@ async def _save_messages(
 # Admin: Read Support Messages (secret key auth)
 # ============================================================
 
+@router.get("/new-messages")
+async def check_new_messages(
+    session_id: str,
+    after_id: int = 0,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if there are new admin replies in the user's support session."""
+    from sqlalchemy import desc
+
+    user_id = current_user["user_id"]
+
+    stmt = (
+        select(SupportChatMessage)
+        .where(
+            SupportChatMessage.session_id == session_id,
+            SupportChatMessage.user_id == user_id,
+            SupportChatMessage.role == "assistant",
+            SupportChatMessage.is_admin_reply == True,
+            SupportChatMessage.id > after_id,
+        )
+        .order_by(SupportChatMessage.created_at)
+    )
+
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+
+    return {
+        "has_new": len(messages) > 0,
+        "messages": [
+            {
+                "id": m.id,
+                "content": m.content,
+                "agent_name": m.agent_name,
+                "created_at": str(m.created_at),
+            }
+            for m in messages
+        ],
+    }
+
+
 class SupportMessageOut(BaseModel):
     id: int
     user_id: int

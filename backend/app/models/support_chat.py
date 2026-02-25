@@ -15,6 +15,7 @@ class SupportChatMessage(Base):
     locale = Column(String(5), default="en", nullable=False)
     agent_name = Column(String(50), nullable=True)  # Marco, Max, Kuba, Alex
     was_pro = Column(Boolean, default=False, nullable=False)  # PRO at time of message
+    is_admin_reply = Column(Boolean, default=False, nullable=False)  # True if sent by admin manually
     created_at = Column(DateTime, server_default=func.now(), index=True)
 
     # Relationships

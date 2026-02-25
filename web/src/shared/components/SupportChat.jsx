@@ -106,6 +106,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const followUpTimerRef = useRef(null);
+  const pollTimerRef = useRef(null);
+  const lastAdminMsgIdRef = useRef(0);
 
   // Get current locale and agent name
   const locale = i18n.language?.slice(0, 2) || 'en';
@@ -177,8 +179,58 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   useEffect(() => {
     return () => {
       if (followUpTimerRef.current) clearTimeout(followUpTimerRef.current);
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
   }, []);
+
+  // Poll for new admin replies
+  useEffect(() => {
+    if (guest || !sessionId) return;
+
+    const pollForAdminReplies = async () => {
+      try {
+        const data = await api.checkNewSupportMessages(sessionId, lastAdminMsgIdRef.current);
+        if (data.has_new && data.messages?.length > 0) {
+          const newMsgs = data.messages.map(m => ({
+            id: m.id,
+            from: 'manager',
+            text: m.content,
+            time: new Date(m.created_at),
+            isAdminReply: true,
+          }));
+          // Only add messages we haven't shown yet
+          setMessages(prev => {
+            const existingIds = new Set(prev.filter(m => m.isAdminReply).map(m => m.id));
+            const truly_new = newMsgs.filter(m => !existingIds.has(m.id));
+            if (truly_new.length === 0) return prev;
+            return [...prev, ...truly_new];
+          });
+          // Update last seen ID
+          const maxId = Math.max(...data.messages.map(m => m.id));
+          lastAdminMsgIdRef.current = maxId;
+          // Update chat history for context
+          data.messages.forEach(m => {
+            setChatHistory(prev => [...prev, { role: 'assistant', content: m.content }]);
+          });
+          // Notify if chat is closed
+          if (!isOpen && onUnread) onUnread(true);
+        }
+      } catch {
+        // Silently fail — polling errors are not critical
+      }
+    };
+
+    // Poll every 30s when open, every 2min when closed
+    const interval = isOpen ? 30000 : 120000;
+    pollTimerRef.current = setInterval(pollForAdminReplies, interval);
+
+    // Also poll once immediately
+    pollForAdminReplies();
+
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [sessionId, isOpen, guest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mark as read when opened
   useEffect(() => {
