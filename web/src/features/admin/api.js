@@ -94,4 +94,7 @@ export const adminApi = {
 
   // PRO Analytics
   getProAnalytics: () => request('/stats/pro'),
+
+  // Traffic Sources
+  getTrafficStats: () => request('/stats/traffic'),
 }

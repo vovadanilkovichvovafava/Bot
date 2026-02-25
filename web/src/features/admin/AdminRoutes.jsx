@@ -9,6 +9,7 @@ import AdminPredictions from './pages/AdminPredictions'
 import AdminChats from './pages/AdminChats'
 import AdminML from './pages/AdminML'
 import AdminPro from './pages/AdminPro'
+import AdminTraffic from './pages/AdminTraffic'
 import AdminTeam from './pages/AdminTeam'
 
 function AdminProtectedRoute({ children }) {
@@ -46,6 +47,7 @@ export default function AdminRoutes() {
           <Route path="chats" element={<AdminChats />} />
           <Route path="ml" element={<AdminML />} />
           <Route path="pro" element={<AdminPro />} />
+          <Route path="traffic" element={<AdminTraffic />} />
           <Route path="team" element={<AdminTeam />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />
