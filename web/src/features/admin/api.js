@@ -101,6 +101,14 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify({ messages }),
     }),
+  // Session takeover (auto/manual mode)
+  getSessionMode: (sessionId) =>
+    request(`/stats/chats/sessions/${sessionId}/mode`),
+  toggleTakeover: (sessionId, isTakeover, sourceType = 'support') =>
+    request(`/stats/chats/sessions/${sessionId}/takeover`, {
+      method: 'POST',
+      body: JSON.stringify({ is_takeover: isTakeover, source_type: sourceType }),
+    }),
   getChatInsights: () => request('/stats/chats/insights'),
 
   // PRO Analytics

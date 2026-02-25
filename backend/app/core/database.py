@@ -100,6 +100,14 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_users_cohort ON users(created_at, country)",
             "CREATE INDEX IF NOT EXISTS ix_users_created ON users(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_support_user_created ON support_chat_messages(user_id, created_at DESC)",
+            # Admin session takeover table (auto/manual mode per session)
+            """CREATE TABLE IF NOT EXISTS admin_session_overrides (
+                session_id VARCHAR PRIMARY KEY,
+                source_type VARCHAR NOT NULL DEFAULT 'support',
+                is_takeover BOOLEAN NOT NULL DEFAULT FALSE,
+                admin_email VARCHAR,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
         ]
 
         for migration in migrations:

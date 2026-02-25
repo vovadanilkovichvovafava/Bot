@@ -16,7 +16,7 @@ from typing import List, Optional
 import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
@@ -566,6 +566,36 @@ async def support_chat(
 
     agent_name = PERSONA_NAMES.get(lang, "Alex")
     session_id = req.session_id or str(uuid.uuid4())
+
+    # Check if admin has taken over this session (manual mode)
+    takeover_row = (await db.execute(
+        text("SELECT is_takeover FROM admin_session_overrides WHERE session_id = :sid AND is_takeover = TRUE"),
+        {"sid": session_id},
+    )).first()
+
+    if takeover_row:
+        # Save user message but don't call AI — admin will respond manually
+        _TAKEOVER_RESPONSES = {
+            "en": "Your message has been received. Our support team will reply shortly.",
+            "ru": "Ваше сообщение получено. Наша команда скоро ответит.",
+            "es": "Tu mensaje ha sido recibido. Nuestro equipo responderá pronto.",
+            "de": "Ihre Nachricht wurde empfangen. Unser Team wird in Kürze antworten.",
+            "fr": "Votre message a été reçu. Notre équipe vous répondra bientôt.",
+            "it": "Il tuo messaggio è stato ricevuto. Il nostro team risponderà a breve.",
+            "pt": "Sua mensagem foi recebida. Nossa equipe responderá em breve.",
+            "uk": "Ваше повідомлення отримано. Наша команда незабаром відповість.",
+            "pl": "Twoja wiadomość została odebrana. Nasz zespół wkrótce odpowie.",
+            "tr": "Mesajınız alındı. Ekibimiz kısa sürede yanıt verecektir.",
+        }
+        wait_msg = _TAKEOVER_RESPONSES.get(lang, _TAKEOVER_RESPONSES["en"])
+
+        await _save_messages(db, user_id, session_id, lang, agent_name, is_pro,
+                             req.message, wait_msg)
+
+        return SupportChatResponse(
+            response=wait_msg, agent_name=agent_name,
+            session_id=session_id, is_pro=is_pro,
+        )
 
     # Security: injection check
     if is_injection(req.message):

@@ -86,6 +86,47 @@ function ChatMessages({ messages, translation, assistantLabel }) {
 }
 
 
+/* ── Takeover toggle (Auto AI / Manual) ────────────────────────── */
+
+function TakeoverToggle({ sessionId, sourceType }) {
+  const [isTakeover, setIsTakeover] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    adminApi.getSessionMode(sessionId)
+      .then(d => setIsTakeover(d.is_takeover || false))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [sessionId])
+
+  const toggle = async () => {
+    const next = !isTakeover
+    setIsTakeover(next)
+    try {
+      await adminApi.toggleTakeover(sessionId, next, sourceType)
+    } catch (e) {
+      setIsTakeover(!next)
+    }
+  }
+
+  if (loading) return null
+
+  return (
+    <button
+      onClick={toggle}
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+        isTakeover
+          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+          : 'bg-green-500/15 text-green-400 border border-green-500/25'
+      }`}
+    >
+      <div className={`w-1.5 h-1.5 rounded-full ${isTakeover ? 'bg-amber-400' : 'bg-green-400'}`} />
+      {isTakeover ? 'Manual' : 'Auto AI'}
+    </button>
+  )
+}
+
+
 /* ── Chat search bar ─────────────────────────────────────────────── */
 
 function ChatSearchBar({ query, setQuery, locale, setLocale, onSearch }) {
@@ -281,6 +322,9 @@ function SupportChatTab() {
 
             {openSession === s.session_id && (
               <div className="border-t border-slate-800 bg-slate-950/50">
+                <div className="px-4 pt-2 flex items-center justify-end">
+                  <TakeoverToggle sessionId={s.session_id} sourceType="support" />
+                </div>
                 {msgLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -515,6 +559,9 @@ function AIChatTab() {
 
               {openSession === s.session_id && (
                 <div className="border-t border-slate-800 bg-slate-950/50">
+                  <div className="px-4 pt-2 flex items-center justify-end">
+                    <TakeoverToggle sessionId={s.session_id} sourceType="ai" />
+                  </div>
                   {msgLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -654,6 +701,9 @@ function InsightSessionCard({ sessionId, sourceType }) {
       </button>
       {open && (
         <div className="border-t border-slate-800">
+          <div className="px-3 pt-1.5 flex items-center justify-end">
+            <TakeoverToggle sessionId={sessionId} sourceType={sourceType} />
+          </div>
           {loading ? (
             <div className="flex items-center justify-center py-6">
               <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />

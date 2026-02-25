@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
 from typing import List, Optional, Union
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
@@ -243,6 +243,47 @@ async def ai_chat(
 ):
     """AI chat for football questions and analysis — with degressive limits."""
     user_id = current_user["user_id"]
+    sess_id = req.session_id or str(uuid.uuid4())[:12]
+    locale = (req.locale or "en").lower()[:2]
+
+    # Check if admin has taken over this session (manual mode)
+    takeover_row = (await db.execute(
+        text("SELECT is_takeover FROM admin_session_overrides WHERE session_id = :sid AND is_takeover = TRUE"),
+        {"sid": sess_id},
+    )).first()
+
+    if takeover_row:
+        _TAKEOVER_RESPONSES = {
+            "en": "Your message has been received. Our team will reply shortly.",
+            "ru": "Ваше сообщение получено. Наша команда скоро ответит.",
+            "es": "Tu mensaje ha sido recibido. Nuestro equipo responderá pronto.",
+            "de": "Ihre Nachricht wurde empfangen. Unser Team wird in Kürze antworten.",
+            "fr": "Votre message a été reçu. Notre équipe vous répondra bientôt.",
+            "it": "Il tuo messaggio è stato ricevuto. Il nostro team risponderà a breve.",
+            "pt": "Sua mensagem foi recebida. Nossa equipe responderá em breve.",
+        }
+        wait_msg = _TAKEOVER_RESPONSES.get(locale, _TAKEOVER_RESPONSES["en"])
+        # Save user message to DB (so admin sees it)
+        try:
+            user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+            is_pro = bool(user_obj and user_obj.is_premium)
+            db.add(AIChatMessage(
+                user_id=user_id, session_id=sess_id, role="user",
+                content=req.message, locale=locale,
+                match_context=req.match_context, was_pro=is_pro,
+            ))
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to save takeover message: {e}")
+
+        limits = await check_and_update_limits(user_id, db)
+        return ChatResponse(
+            response=wait_msg,
+            remaining=limits["remaining"],
+            limit=limits["limit"],
+            day_number=limits["day_number"],
+            resets_at=limits.get("resets_at"),
+        )
 
     # Check limits BEFORE calling Claude (saves API costs)
     limits = await check_and_update_limits(user_id, db)
@@ -273,7 +314,6 @@ async def ai_chat(
     # Call Claude AI
     analyzer = MatchAnalyzer()
     history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
-    locale = (req.locale or "en").lower()[:2]
     response = await analyzer.ai_chat(enriched_message, req.match_context or "", history, locale)
 
     # Increment counter AFTER successful response
@@ -281,7 +321,6 @@ async def ai_chat(
 
     # Save chat messages to DB for admin viewing
     try:
-        sess_id = req.session_id or str(uuid.uuid4())[:12]
         user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
         is_pro = bool(user_obj and user_obj.is_premium)
         # Save user message

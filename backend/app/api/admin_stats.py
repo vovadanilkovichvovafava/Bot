@@ -1303,6 +1303,58 @@ async def admin_reply_to_ai_chat(
     }
 
 
+@router.post("/chats/sessions/{session_id}/takeover")
+async def toggle_session_takeover(
+    session_id: str,
+    payload: dict = Body(...),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Toggle admin takeover mode for a chat session (AI auto vs manual)."""
+    is_takeover = bool(payload.get("is_takeover", True))
+    source_type = payload.get("source_type", "support")
+
+    # Upsert into admin_session_overrides
+    existing = (await db.execute(
+        text("SELECT session_id FROM admin_session_overrides WHERE session_id = :sid"),
+        {"sid": session_id},
+    )).first()
+
+    if existing:
+        await db.execute(
+            text("UPDATE admin_session_overrides SET is_takeover = :tk, admin_email = :email WHERE session_id = :sid"),
+            {"tk": is_takeover, "email": admin.get("email"), "sid": session_id},
+        )
+    else:
+        await db.execute(
+            text("INSERT INTO admin_session_overrides (session_id, source_type, is_takeover, admin_email) VALUES (:sid, :src, :tk, :email)"),
+            {"sid": session_id, "src": source_type, "tk": is_takeover, "email": admin.get("email")},
+        )
+    await db.commit()
+
+    mode = "manual" if is_takeover else "auto"
+    logger.info(f"Session takeover: {mode}, session={session_id[:8]}, admin={admin.get('email')}")
+
+    return {"session_id": session_id, "is_takeover": is_takeover, "mode": mode}
+
+
+@router.get("/chats/sessions/{session_id}/mode")
+async def get_session_mode(
+    session_id: str,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if a session is in admin takeover mode."""
+    row = (await db.execute(
+        text("SELECT is_takeover, admin_email FROM admin_session_overrides WHERE session_id = :sid"),
+        {"sid": session_id},
+    )).first()
+
+    if row:
+        return {"session_id": session_id, "is_takeover": row[0], "admin_email": row[1]}
+    return {"session_id": session_id, "is_takeover": False, "admin_email": None}
+
+
 @router.post("/chats/translate")
 async def translate_messages(
     payload: dict = Body(...),
