@@ -18,9 +18,9 @@ import {
   getNotificationTeams,
 } from './notificationStore';
 
-// VAPID public key - should be moved to env in production
-// This is a placeholder - generate your own keys
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+import { ENV } from '../config/env';
+
+const VAPID_PUBLIC_KEY = ENV.VAPID_PUBLIC_KEY;
 
 /**
  * Check if push notifications are supported

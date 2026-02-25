@@ -3,8 +3,9 @@
  * Handles geo detection and provides appropriate bookmaker links
  */
 
-// Server URL (change this in production)
-const GEO_SERVER_URL = import.meta.env.VITE_GEO_SERVER_URL || 'http://localhost:3001';
+import { ENV } from '../config/env';
+
+const GEO_SERVER_URL = ENV.GEO_SERVER_URL;
 
 class GeoService {
   constructor() {

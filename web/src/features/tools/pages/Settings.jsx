@@ -6,6 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import SupportChat from '../../../shared/components/SupportChat';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import { ENV } from '../../../shared/config/env';
 
 const ODDS_VALUES = [1.3, 1.5, 1.7, 2.0, 2.5, 3.0, 4.0, 5.0];
 
@@ -91,7 +92,7 @@ export default function Settings() {
     if (!verificationId.trim()) return;
     setVerificationSubmitting(true);
     try {
-      const geoUrl = import.meta.env.VITE_GEO_SERVER_URL || 'http://localhost:3001';
+      const geoUrl = ENV.GEO_SERVER_URL;
       await fetch(`${geoUrl}/api/verification/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

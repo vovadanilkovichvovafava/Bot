@@ -7,9 +7,11 @@
  * Fallback to direct API-Football calls if backend is unavailable.
  */
 
-const BACKEND_BASE = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
+import { ENV } from '../../../shared/config/env';
+
+const BACKEND_BASE = ENV.API_URL;
 const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
-const API_KEY = import.meta.env.VITE_API_FOOTBALL_KEY || '';
+const API_KEY = ENV.API_FOOTBALL_KEY;
 
 // Local cache for fallback mode (when backend is down)
 const localCache = new Map();

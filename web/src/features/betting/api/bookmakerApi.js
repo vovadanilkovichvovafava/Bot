@@ -3,7 +3,9 @@
  * Uses existing bkproxy-production.up.railway.app
  */
 
-const BKPROXY_URL = import.meta.env.VITE_BKPROXY_URL || 'https://bkproxy-production.up.railway.app';
+import { ENV } from '../../../shared/config/env';
+
+const BKPROXY_URL = ENV.BKPROXY_URL;
 
 class BookmakerApi {
   constructor() {

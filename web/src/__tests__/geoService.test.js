@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { geoService } from '../shared/services/geoService';
+import { ENV } from '../shared/config/env';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const GEO_SERVER_URL =
-  import.meta.env.VITE_GEO_SERVER_URL || 'http://localhost:3001';
+const GEO_SERVER_URL = ENV.GEO_SERVER_URL;
 
 function mockFetchOnce(data, ok = true) {
   globalThis.fetch = vi.fn(() =>

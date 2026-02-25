@@ -1,4 +1,6 @@
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1') + '/admin'
+import { ENV } from '../../shared/config/env';
+
+const API_BASE = ENV.API_URL + '/admin'
 
 function getToken() {
   try { return localStorage.getItem('admin_token') } catch { return null }

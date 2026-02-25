@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
+import { ENV } from '../config/env';
+
+const API_BASE = ENV.API_URL;
 
 class ApiService {
   constructor() {

@@ -3,17 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useBookmaker } from '../context/BookmakerContext';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import { ENV } from '../../../shared/config/env';
 
-// Bookmaker config - loaded from env or defaults (no brand names shown to user)
+// Bookmaker config - loaded from runtime config or defaults
 export const BOOKMAKER = {
-  // Internal name (not shown to users)
-  name: import.meta.env.VITE_BOOKMAKER_NAME || 'Partner',
-  // Registration link (configured per offer/geo)
-  link: import.meta.env.VITE_BOOKMAKER_LINK || '#',
-  // Bonus text (generic)
-  bonus: import.meta.env.VITE_BOOKMAKER_BONUS || 'Welcome Bonus',
-  // Promo code (optional)
-  promoCode: import.meta.env.VITE_BOOKMAKER_PROMO || '',
+  name: ENV.BOOKMAKER_NAME,
+  link: ENV.BOOKMAKER_LINK,
+  bonus: ENV.BOOKMAKER_BONUS,
+  promoCode: ENV.BOOKMAKER_PROMO,
 };
 
 export default function BookmakerConnect({ isOpen, onClose, onSuccess }) {
