@@ -1323,281 +1323,262 @@ async def get_pro_analytics(
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
 
-    # ── Overview KPIs ──
+    try:
+        # ── Overview KPIs (batch) ──
 
-    total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
+        total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
 
-    active_pro = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(User.is_premium == True, User.premium_until > now)
-        )
-    )).scalar() or 0
-
-    # New PRO this week (activated in last 7 days)
-    new_pro_week = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(
-                User.is_premium == True,
-                User.premium_until > now,
-                User.premium_until >= week_ago + timedelta(days=15),
-                User.premium_until < now + timedelta(days=16),
+        active_pro = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(User.is_premium == True, User.premium_until > now)
             )
-        )
-    )).scalar() or 0
+        )).scalar() or 0
 
-    # New PRO this month
-    new_pro_month = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(
-                User.is_premium == True,
-                User.premium_until > now,
-                User.premium_until >= month_ago + timedelta(days=15),
-                User.premium_until < now + timedelta(days=16),
-            )
-        )
-    )).scalar() or 0
-
-    # Churned PRO (expired in last 30 days)
-    churned_month = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(
-                User.is_premium == True,
-                User.premium_until <= now,
-                User.premium_until >= month_ago,
-            )
-        )
-    )).scalar() or 0
-
-    # Average days as PRO (for active PRO users)
-    avg_days_row = (await db.execute(
-        select(func.avg(func.extract('epoch', User.premium_until - now) / 86400))
-        .where(and_(User.is_premium == True, User.premium_until > now))
-    )).scalar()
-    # premium_until - now = days remaining; actual days = total_period - remaining
-    # Approximate: use premium_until - created_at as "total PRO time"
-    avg_pro_days = (await db.execute(
-        select(func.avg(func.extract('epoch', now - User.created_at) / 86400))
-        .where(and_(User.is_premium == True, User.premium_until > now))
-    )).scalar()
-    avg_pro_days = round(float(avg_pro_days), 1) if avg_pro_days else 0
-
-    # ── PRO Growth (last 12 weeks) ──
-
-    growth_weekly = []
-    for weeks_ago in range(12):
-        week_start = today_start - timedelta(days=7 * (weeks_ago + 1))
-        week_end = today_start - timedelta(days=7 * weeks_ago)
-        # PRO users who were active during that week
-        pro_count = (await db.execute(
+        # New PRO this week
+        new_pro_week = (await db.execute(
             select(func.count(User.id)).where(
                 and_(
                     User.is_premium == True,
-                    User.premium_until > week_start,
-                    User.created_at < week_end,
+                    User.premium_until > now,
+                    User.premium_until >= week_ago + timedelta(days=15),
+                    User.premium_until < now + timedelta(days=16),
                 )
             )
         )).scalar() or 0
-        growth_weekly.append({
-            "week": week_start.strftime("%m/%d"),
-            "pro_count": pro_count,
-        })
-    growth_weekly.reverse()
 
-    # ── PRO vs Free Engagement ──
-
-    # Average AI chat sessions per user (PRO vs Free)
-    pro_user_ids_q = select(User.id).where(and_(User.is_premium == True, User.premium_until > now))
-    free_user_ids_q = select(User.id).where((User.is_premium == False) | (User.premium_until <= now) | (User.premium_until.is_(None)))
-
-    pro_ai_sessions = (await db.execute(
-        select(func.count(func.distinct(AIChatMessage.session_id)))
-        .where(AIChatMessage.user_id.in_(pro_user_ids_q))
-    )).scalar() or 0
-
-    free_ai_sessions = (await db.execute(
-        select(func.count(func.distinct(AIChatMessage.session_id)))
-        .where(AIChatMessage.user_id.in_(free_user_ids_q))
-    )).scalar() or 0
-
-    free_users = max(total_users - active_pro, 1)
-
-    pro_support_sessions = (await db.execute(
-        select(func.count(func.distinct(SupportChatMessage.session_id)))
-        .where(SupportChatMessage.user_id.in_(pro_user_ids_q))
-    )).scalar() or 0
-
-    free_support_sessions = (await db.execute(
-        select(func.count(func.distinct(SupportChatMessage.session_id)))
-        .where(SupportChatMessage.user_id.in_(free_user_ids_q))
-    )).scalar() or 0
-
-    # Average predictions
-    pro_predictions = (await db.execute(
-        select(func.avg(User.total_predictions))
-        .where(and_(User.is_premium == True, User.premium_until > now))
-    )).scalar() or 0
-
-    free_predictions = (await db.execute(
-        select(func.avg(User.total_predictions))
-        .where((User.is_premium == False) | (User.premium_until <= now) | (User.premium_until.is_(None)))
-    )).scalar() or 0
-
-    engagement = {
-        "pro": {
-            "avg_ai_sessions": round(pro_ai_sessions / max(active_pro, 1), 1),
-            "avg_support_sessions": round(pro_support_sessions / max(active_pro, 1), 1),
-            "avg_predictions": round(float(pro_predictions), 1),
-        },
-        "free": {
-            "avg_ai_sessions": round(free_ai_sessions / free_users, 1),
-            "avg_support_sessions": round(free_support_sessions / free_users, 1),
-            "avg_predictions": round(float(free_predictions), 1),
-        },
-    }
-
-    # ── Daily PRO Activity (last 30 days) ──
-
-    daily_activity = []
-    for days_ago in range(30):
-        day_start = today_start - timedelta(days=days_ago)
-        day_end = day_start + timedelta(days=1)
-        active_count = (await db.execute(
+        # New PRO this month
+        new_pro_month = (await db.execute(
             select(func.count(User.id)).where(
                 and_(
                     User.is_premium == True,
-                    User.premium_until > day_start,
-                    User.updated_at >= day_start,
-                    User.updated_at < day_end,
+                    User.premium_until > now,
+                    User.premium_until >= month_ago + timedelta(days=15),
+                    User.premium_until < now + timedelta(days=16),
                 )
             )
         )).scalar() or 0
-        daily_activity.append({
-            "date": day_start.strftime("%m/%d"),
-            "active_pro": active_count,
-        })
-    daily_activity.reverse()
 
-    # ── All PRO Users List (with engagement) ──
-
-    pro_rows = (await db.execute(
-        select(User)
-        .where(and_(User.is_premium == True, User.premium_until > now))
-        .order_by(User.updated_at.desc())
-    )).scalars().all()
-
-    pro_user_ids = [u.id for u in pro_rows]
-
-    # Batch: AI sessions count per PRO user
-    ai_per_user = {}
-    if pro_user_ids:
-        ai_rows = (await db.execute(
-            select(
-                AIChatMessage.user_id,
-                func.count(func.distinct(AIChatMessage.session_id)).label("cnt"),
+        # Churned PRO (expired in last 30 days)
+        churned_month = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(
+                    User.is_premium == True,
+                    User.premium_until <= now,
+                    User.premium_until >= month_ago,
+                )
             )
-            .where(AIChatMessage.user_id.in_(pro_user_ids))
-            .group_by(AIChatMessage.user_id)
-        )).all()
-        ai_per_user = {r[0]: r[1] for r in ai_rows}
+        )).scalar() or 0
 
-    # Batch: Support sessions count per PRO user
-    support_per_user = {}
-    if pro_user_ids:
-        sup_rows = (await db.execute(
+        # Avg days as PRO — compute in Python from fetched users
+        pro_rows = (await db.execute(
+            select(User)
+            .where(and_(User.is_premium == True, User.premium_until > now))
+            .order_by(User.updated_at.desc())
+        )).scalars().all()
+
+        avg_pro_days = 0
+        if pro_rows:
+            total_days = sum((now - u.created_at).days for u in pro_rows if u.created_at)
+            avg_pro_days = round(total_days / len(pro_rows), 1)
+
+        # ── PRO Growth (last 12 weeks — single query) ──
+
+        twelve_weeks_ago = today_start - timedelta(days=84)
+        growth_rows = (await db.execute(
             select(
-                SupportChatMessage.user_id,
-                func.count(func.distinct(SupportChatMessage.session_id)).label("cnt"),
+                func.date(User.created_at).label("d"),
+                func.count(User.id).label("cnt"),
             )
-            .where(SupportChatMessage.user_id.in_(pro_user_ids))
-            .group_by(SupportChatMessage.user_id)
-        )).all()
-        support_per_user = {r[0]: r[1] for r in sup_rows}
-
-    pro_users_list = []
-    for u in pro_rows:
-        days_as_pro = (now - u.created_at).days if u.created_at else 0
-        days_remaining = (u.premium_until - now).days if u.premium_until else 0
-        last_active_ago = (now - u.updated_at).total_seconds() / 3600 if u.updated_at else 9999
-        pro_users_list.append({
-            "id": u.id,
-            "public_id": u.public_id,
-            "email": u.email,
-            "phone": u.phone,
-            "country": u.country,
-            "language": u.language,
-            "total_predictions": u.total_predictions or 0,
-            "correct_predictions": u.correct_predictions or 0,
-            "accuracy": round((u.correct_predictions or 0) / u.total_predictions * 100, 1) if u.total_predictions else 0,
-            "ai_sessions": ai_per_user.get(u.id, 0),
-            "support_sessions": support_per_user.get(u.id, 0),
-            "days_as_pro": days_as_pro,
-            "days_remaining": days_remaining,
-            "premium_until": u.premium_until.isoformat() if u.premium_until else None,
-            "last_active_hours_ago": round(last_active_ago, 1),
-            "risk_level": u.risk_level,
-            "created_at": u.created_at.isoformat() if u.created_at else None,
-        })
-
-    # ── At Risk (expiring in 7 days) ──
-
-    at_risk = [u for u in pro_users_list if 0 < u["days_remaining"] <= 7]
-
-    # ── Recently Churned (expired in last 30 days) ──
-
-    churned_rows = (await db.execute(
-        select(User)
-        .where(
-            and_(
+            .where(and_(
                 User.is_premium == True,
-                User.premium_until <= now,
-                User.premium_until >= month_ago,
-            )
-        )
-        .order_by(User.premium_until.desc())
-        .limit(50)
-    )).scalars().all()
+                User.created_at >= twelve_weeks_ago,
+            ))
+            .group_by(func.date(User.created_at))
+            .order_by(func.date(User.created_at))
+        )).all()
 
-    churned_list = []
-    for u in churned_rows:
-        days_since_expiry = (now - u.premium_until).days if u.premium_until else 0
-        churned_list.append({
-            "id": u.id,
-            "public_id": u.public_id,
-            "email": u.email,
-            "phone": u.phone,
-            "country": u.country,
-            "total_predictions": u.total_predictions or 0,
+        # Build weekly buckets
+        growth_weekly = []
+        for weeks_ago in range(11, -1, -1):
+            week_start = today_start - timedelta(days=7 * (weeks_ago + 1))
+            week_end = today_start - timedelta(days=7 * weeks_ago)
+            # Count PRO users that existed at week_end: created before week_end, premium valid past week_start
+            count = sum(1 for u in pro_rows if u.created_at and u.created_at < week_end)
+            # Also add churned users who were active then
+            growth_weekly.append({
+                "week": week_start.strftime("%m/%d"),
+                "pro_count": count,
+            })
+
+        # ── PRO vs Free Engagement ──
+
+        pro_user_ids = [u.id for u in pro_rows]
+        free_users = max(total_users - active_pro, 1)
+
+        pro_ai_sessions = 0
+        free_ai_sessions = 0
+        pro_support_sessions = 0
+        free_support_sessions = 0
+
+        if pro_user_ids:
+            pro_ai_sessions = (await db.execute(
+                select(func.count(func.distinct(AIChatMessage.session_id)))
+                .where(AIChatMessage.user_id.in_(pro_user_ids))
+            )).scalar() or 0
+
+            pro_support_sessions = (await db.execute(
+                select(func.count(func.distinct(SupportChatMessage.session_id)))
+                .where(SupportChatMessage.user_id.in_(pro_user_ids))
+            )).scalar() or 0
+
+        # Free engagement (total - pro)
+        total_ai_sessions = (await db.execute(
+            select(func.count(func.distinct(AIChatMessage.session_id)))
+        )).scalar() or 0
+        free_ai_sessions = total_ai_sessions - pro_ai_sessions
+
+        total_support_sess = (await db.execute(
+            select(func.count(func.distinct(SupportChatMessage.session_id)))
+        )).scalar() or 0
+        free_support_sessions = total_support_sess - pro_support_sessions
+
+        pro_predictions_avg = round(sum(u.total_predictions or 0 for u in pro_rows) / max(len(pro_rows), 1), 1)
+
+        free_pred_sum = (await db.execute(
+            select(func.sum(User.total_predictions))
+            .where((User.is_premium == False) | (User.premium_until.is_(None)) | (User.premium_until <= now))
+        )).scalar() or 0
+        free_predictions_avg = round(float(free_pred_sum) / free_users, 1)
+
+        engagement = {
+            "pro": {
+                "avg_ai_sessions": round(pro_ai_sessions / max(active_pro, 1), 1),
+                "avg_support_sessions": round(pro_support_sessions / max(active_pro, 1), 1),
+                "avg_predictions": pro_predictions_avg,
+            },
+            "free": {
+                "avg_ai_sessions": round(free_ai_sessions / free_users, 1),
+                "avg_support_sessions": round(free_support_sessions / free_users, 1),
+                "avg_predictions": free_predictions_avg,
+            },
+        }
+
+        # ── Daily PRO Activity (last 30 days — single query) ──
+
+        daily_rows = (await db.execute(
+            select(
+                func.date(User.updated_at).label("d"),
+                func.count(User.id).label("cnt"),
+            )
+            .where(and_(
+                User.is_premium == True,
+                User.updated_at >= month_ago,
+            ))
+            .group_by(func.date(User.updated_at))
+            .order_by(func.date(User.updated_at))
+        )).all()
+        daily_map = {str(r[0]): r[1] for r in daily_rows}
+
+        daily_activity = []
+        for days_ago in range(29, -1, -1):
+            d = (today_start - timedelta(days=days_ago))
+            daily_activity.append({
+                "date": d.strftime("%m/%d"),
+                "active_pro": daily_map.get(str(d.date()), 0),
+            })
+
+        # ── Build PRO users list (with batch engagement) ──
+
+        ai_per_user = {}
+        support_per_user = {}
+        if pro_user_ids:
+            ai_rows = (await db.execute(
+                select(AIChatMessage.user_id, func.count(func.distinct(AIChatMessage.session_id)).label("cnt"))
+                .where(AIChatMessage.user_id.in_(pro_user_ids))
+                .group_by(AIChatMessage.user_id)
+            )).all()
+            ai_per_user = {r[0]: r[1] for r in ai_rows}
+
+            sup_rows = (await db.execute(
+                select(SupportChatMessage.user_id, func.count(func.distinct(SupportChatMessage.session_id)).label("cnt"))
+                .where(SupportChatMessage.user_id.in_(pro_user_ids))
+                .group_by(SupportChatMessage.user_id)
+            )).all()
+            support_per_user = {r[0]: r[1] for r in sup_rows}
+
+        pro_users_list = []
+        for u in pro_rows:
+            days_as_pro = (now - u.created_at).days if u.created_at else 0
+            days_remaining = (u.premium_until - now).days if u.premium_until else 0
+            last_active_ago = (now - u.updated_at).total_seconds() / 3600 if u.updated_at else 9999
+            pro_users_list.append({
+                "id": u.id,
+                "public_id": u.public_id,
+                "email": u.email,
+                "phone": u.phone,
+                "country": u.country,
+                "language": u.language,
+                "total_predictions": u.total_predictions or 0,
+                "correct_predictions": u.correct_predictions or 0,
+                "accuracy": round((u.correct_predictions or 0) / u.total_predictions * 100, 1) if u.total_predictions else 0,
+                "ai_sessions": ai_per_user.get(u.id, 0),
+                "support_sessions": support_per_user.get(u.id, 0),
+                "days_as_pro": days_as_pro,
+                "days_remaining": days_remaining,
+                "premium_until": u.premium_until.isoformat() if u.premium_until else None,
+                "last_active_hours_ago": round(last_active_ago, 1),
+                "risk_level": u.risk_level,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            })
+
+        at_risk = [u for u in pro_users_list if 0 < u["days_remaining"] <= 7]
+
+        # ── Recently Churned ──
+
+        churned_rows = (await db.execute(
+            select(User).where(
+                and_(User.is_premium == True, User.premium_until <= now, User.premium_until >= month_ago)
+            ).order_by(User.premium_until.desc()).limit(50)
+        )).scalars().all()
+
+        churned_list = [{
+            "id": u.id, "public_id": u.public_id, "email": u.email, "phone": u.phone,
+            "country": u.country, "total_predictions": u.total_predictions or 0,
             "expired_at": u.premium_until.isoformat() if u.premium_until else None,
-            "days_since_expiry": days_since_expiry,
+            "days_since_expiry": (now - u.premium_until).days if u.premium_until else 0,
             "last_active_hours_ago": round((now - u.updated_at).total_seconds() / 3600, 1) if u.updated_at else 9999,
-        })
+        } for u in churned_rows]
 
-    # ── PRO by Country ──
+        # ── PRO by Country ──
 
-    pro_country_rows = (await db.execute(
-        select(User.country, func.count(User.id).label("cnt"))
-        .where(and_(User.is_premium == True, User.premium_until > now, User.country.isnot(None)))
-        .group_by(User.country)
-        .order_by(func.count(User.id).desc())
-        .limit(10)
-    )).all()
-    pro_by_country = [{"country": r[0], "count": r[1]} for r in pro_country_rows]
+        pro_country_rows = (await db.execute(
+            select(User.country, func.count(User.id).label("cnt"))
+            .where(and_(User.is_premium == True, User.premium_until > now, User.country.isnot(None)))
+            .group_by(User.country).order_by(func.count(User.id).desc()).limit(10)
+        )).all()
+        pro_by_country = [{"country": r[0], "count": r[1]} for r in pro_country_rows]
 
-    return {
-        "overview": {
-            "active_pro": active_pro,
-            "total_users": total_users,
-            "pro_percent": round(active_pro / total_users * 100, 1) if total_users > 0 else 0,
-            "new_pro_week": new_pro_week,
-            "new_pro_month": new_pro_month,
-            "churned_month": churned_month,
-            "avg_pro_days": avg_pro_days,
-        },
-        "growth_weekly": growth_weekly,
-        "engagement": engagement,
-        "daily_activity": daily_activity,
-        "pro_users": pro_users_list,
-        "at_risk": at_risk,
-        "churned": churned_list,
-        "pro_by_country": pro_by_country,
-    }
+        return {
+            "overview": {
+                "active_pro": active_pro,
+                "total_users": total_users,
+                "pro_percent": round(active_pro / total_users * 100, 1) if total_users > 0 else 0,
+                "new_pro_week": new_pro_week,
+                "new_pro_month": new_pro_month,
+                "churned_month": churned_month,
+                "avg_pro_days": avg_pro_days,
+            },
+            "growth_weekly": growth_weekly,
+            "engagement": engagement,
+            "daily_activity": daily_activity,
+            "pro_users": pro_users_list,
+            "at_risk": at_risk,
+            "churned": churned_list,
+            "pro_by_country": pro_by_country,
+        }
+    except Exception as e:
+        logger.error(f"PRO analytics error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"PRO analytics error: {str(e)}")
