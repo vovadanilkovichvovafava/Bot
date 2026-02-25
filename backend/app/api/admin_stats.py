@@ -1652,19 +1652,17 @@ async def get_traffic_analytics(
     month_ago = now - timedelta(days=30)
 
     try:
-        # ── Overview: users by source ──
-        source_rows = (await db.execute(
-            select(
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                func.count(User.id).label("total"),
-                func.count(case((
-                    and_(User.is_premium == True, User.premium_until > now), 1
-                ))).label("pro"),
-                func.count(case((User.total_predictions > 0, 1))).label("activated"),
-            )
-            .group_by(func.coalesce(User.traffic_source, "direct"))
-            .order_by(func.count(User.id).desc())
-        )).all()
+        # ── Overview: users by source (raw SQL to avoid PG GROUP BY issues) ──
+        source_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(traffic_source, 'direct') AS src,
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro,
+                COUNT(*) FILTER (WHERE total_predictions > 0) AS activated
+            FROM users
+            GROUP BY COALESCE(traffic_source, 'direct')
+            ORDER BY COUNT(*) DESC
+        """), {"now": now})).all()
 
         total_all = sum(r[1] for r in source_rows) or 1
 
@@ -1682,16 +1680,16 @@ async def get_traffic_analytics(
         ]
 
         # ── Daily registrations by source (last 30 days) ──
-        daily_rows = (await db.execute(
-            select(
-                func.date(User.created_at).label("day"),
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                func.count(User.id).label("cnt"),
-            )
-            .where(User.created_at >= month_ago)
-            .group_by(func.date(User.created_at), func.coalesce(User.traffic_source, "direct"))
-            .order_by(func.date(User.created_at))
-        )).all()
+        daily_rows = (await db.execute(text("""
+            SELECT
+                created_at::date AS day,
+                COALESCE(traffic_source, 'direct') AS src,
+                COUNT(*) AS cnt
+            FROM users
+            WHERE created_at >= :since
+            GROUP BY created_at::date, COALESCE(traffic_source, 'direct')
+            ORDER BY created_at::date
+        """), {"since": month_ago})).all()
 
         daily_by_source = [
             {"date": str(r[0]), "source": r[1], "count": r[2]}
@@ -1699,43 +1697,35 @@ async def get_traffic_analytics(
         ]
 
         # ── New this week / month per source ──
-        week_rows = (await db.execute(
-            select(
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                func.count(User.id).label("cnt"),
-            )
-            .where(User.created_at >= week_ago)
-            .group_by(func.coalesce(User.traffic_source, "direct"))
-            .order_by(func.count(User.id).desc())
-        )).all()
+        week_rows = (await db.execute(text("""
+            SELECT COALESCE(traffic_source, 'direct') AS src, COUNT(*) AS cnt
+            FROM users WHERE created_at >= :since
+            GROUP BY COALESCE(traffic_source, 'direct')
+            ORDER BY cnt DESC
+        """), {"since": week_ago})).all()
         new_week = [{"source": r[0], "count": r[1]} for r in week_rows]
 
-        month_rows = (await db.execute(
-            select(
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                func.count(User.id).label("cnt"),
-            )
-            .where(User.created_at >= month_ago)
-            .group_by(func.coalesce(User.traffic_source, "direct"))
-            .order_by(func.count(User.id).desc())
-        )).all()
+        month_rows = (await db.execute(text("""
+            SELECT COALESCE(traffic_source, 'direct') AS src, COUNT(*) AS cnt
+            FROM users WHERE created_at >= :since
+            GROUP BY COALESCE(traffic_source, 'direct')
+            ORDER BY cnt DESC
+        """), {"since": month_ago})).all()
         new_month = [{"source": r[0], "count": r[1]} for r in month_rows]
 
         # ── Retention by source (week-1 return rate) ──
-        retention_by_source = []
-        # Look at users registered 7-14 days ago, check if they came back
         cohort_start = today_start - timedelta(days=14)
         cohort_end = today_start - timedelta(days=7)
 
-        ret_rows = (await db.execute(
-            select(
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                func.count(User.id).label("registered"),
-                func.count(case((User.updated_at >= cohort_end, 1))).label("returned"),
-            )
-            .where(and_(User.created_at >= cohort_start, User.created_at < cohort_end))
-            .group_by(func.coalesce(User.traffic_source, "direct"))
-        )).all()
+        ret_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(traffic_source, 'direct') AS src,
+                COUNT(*) AS registered,
+                COUNT(*) FILTER (WHERE updated_at >= :cohort_end) AS returned
+            FROM users
+            WHERE created_at >= :cohort_start AND created_at < :cohort_end
+            GROUP BY COALESCE(traffic_source, 'direct')
+        """), {"cohort_start": cohort_start, "cohort_end": cohort_end})).all()
 
         retention_by_source = [
             {
@@ -1748,17 +1738,17 @@ async def get_traffic_analytics(
         ]
 
         # ── Country breakdown per source ──
-        country_rows = (await db.execute(
-            select(
-                func.coalesce(User.traffic_source, "direct").label("source"),
-                User.country,
-                func.count(User.id).label("cnt"),
-            )
-            .where(User.country.isnot(None))
-            .group_by(func.coalesce(User.traffic_source, "direct"), User.country)
-            .order_by(func.count(User.id).desc())
-            .limit(30)
-        )).all()
+        country_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(traffic_source, 'direct') AS src,
+                country,
+                COUNT(*) AS cnt
+            FROM users
+            WHERE country IS NOT NULL
+            GROUP BY COALESCE(traffic_source, 'direct'), country
+            ORDER BY cnt DESC
+            LIMIT 30
+        """))).all()
 
         by_source_country = [
             {"source": r[0], "country": r[1], "count": r[2]}
