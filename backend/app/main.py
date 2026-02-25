@@ -119,7 +119,10 @@ app.add_middleware(InjectionDetectionMiddleware)
 CORS_ORIGINS = [
     "https://sportscoreai.com",
     "https://www.sportscoreai.com",
+    "https://prescoreai.vip",
+    "https://www.prescoreai.vip",
     "https://pwa-production-20b5.up.railway.app",
+    "https://pwa-2-production.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
     "http://localhost:3000",
     "http://localhost:5173",
