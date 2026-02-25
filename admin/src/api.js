@@ -68,5 +68,6 @@ export const api = {
   getInvites: () => request('/auth/invites'),
 
   // ── Stats ────────────────────────────
+  getOverview: () => request('/stats/overview'),
   getTrafficStats: () => request('/stats/traffic'),
 }
