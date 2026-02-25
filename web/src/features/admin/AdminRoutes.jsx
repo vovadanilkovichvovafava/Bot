@@ -1,16 +1,19 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext'
 import AdminLayout from './components/AdminLayout'
-import AdminLogin from './pages/AdminLogin'
-import AdminRegister from './pages/AdminRegister'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminUsers from './pages/AdminUsers'
-import AdminPredictions from './pages/AdminPredictions'
-import AdminChats from './pages/AdminChats'
-import AdminML from './pages/AdminML'
-import AdminPro from './pages/AdminPro'
-import AdminTraffic from './pages/AdminTraffic'
-import AdminTeam from './pages/AdminTeam'
+
+// Lazy load all admin pages — each becomes a separate chunk
+const AdminLogin = lazy(() => import('./pages/AdminLogin'))
+const AdminRegister = lazy(() => import('./pages/AdminRegister'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminPredictions = lazy(() => import('./pages/AdminPredictions'))
+const AdminChats = lazy(() => import('./pages/AdminChats'))
+const AdminML = lazy(() => import('./pages/AdminML'))
+const AdminPro = lazy(() => import('./pages/AdminPro'))
+const AdminTraffic = lazy(() => import('./pages/AdminTraffic'))
+const AdminTeam = lazy(() => import('./pages/AdminTeam'))
 
 function AdminProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAdminAuth()
@@ -37,21 +40,23 @@ function AdminSplash() {
 export default function AdminRoutes() {
   return (
     <AdminAuthProvider>
-      <Routes>
-        <Route path="login" element={<AdminGuestRoute><AdminLogin /></AdminGuestRoute>} />
-        <Route path="registration" element={<AdminRegister />} />
-        <Route path="" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="predictions" element={<AdminPredictions />} />
-          <Route path="chats" element={<AdminChats />} />
-          <Route path="ml" element={<AdminML />} />
-          <Route path="pro" element={<AdminPro />} />
-          <Route path="traffic" element={<AdminTraffic />} />
-          <Route path="team" element={<AdminTeam />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
+      <Suspense fallback={<AdminSplash />}>
+        <Routes>
+          <Route path="login" element={<AdminGuestRoute><AdminLogin /></AdminGuestRoute>} />
+          <Route path="registration" element={<AdminRegister />} />
+          <Route path="" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="predictions" element={<AdminPredictions />} />
+            <Route path="chats" element={<AdminChats />} />
+            <Route path="ml" element={<AdminML />} />
+            <Route path="pro" element={<AdminPro />} />
+            <Route path="traffic" element={<AdminTraffic />} />
+            <Route path="team" element={<AdminTeam />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </Suspense>
     </AdminAuthProvider>
   )
 }

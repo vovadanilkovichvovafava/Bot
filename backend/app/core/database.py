@@ -23,7 +23,9 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
-    pool_recycle=300,
+    pool_size=20,
+    max_overflow=10,
+    pool_recycle=1800,
 )
 
 async_session_maker = async_sessionmaker(
@@ -89,6 +91,15 @@ async def init_db():
             "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
             # Admin reply flag for AI chat messages
             "ALTER TABLE ai_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
+            # ── Performance indexes ──────────────────────────────────
+            "CREATE INDEX IF NOT EXISTS ix_predictions_user_created ON predictions(user_id, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_predictions_bet_accuracy ON predictions(bet_type, is_correct)",
+            "CREATE INDEX IF NOT EXISTS ix_predictions_league_accuracy ON predictions(league, is_correct)",
+            "CREATE INDEX IF NOT EXISTS ix_predictions_verified ON predictions(is_correct, verified_at)",
+            "CREATE INDEX IF NOT EXISTS ix_users_premium_status ON users(is_premium, premium_until)",
+            "CREATE INDEX IF NOT EXISTS ix_users_cohort ON users(created_at, country)",
+            "CREATE INDEX IF NOT EXISTS ix_users_created ON users(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_support_user_created ON support_chat_messages(user_id, created_at DESC)",
         ]
 
         for migration in migrations:

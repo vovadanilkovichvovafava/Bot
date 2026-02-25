@@ -7,6 +7,7 @@ Security middleware for FastAPI
 
 import os
 import time
+import asyncio
 import logging
 import re
 from collections import defaultdict
@@ -20,17 +21,37 @@ logging.basicConfig(level=logging.INFO)
 # Rate limiting storage (in-memory, use Redis in production)
 rate_limit_storage: dict[str, list[float]] = defaultdict(list)
 
-# Suspicious patterns for injection detection
+# Suspicious patterns for injection detection — PRE-COMPILED for performance
 INJECTION_PATTERNS = [
-    r"<script[^>]*>",
-    r"javascript:",
-    r"on\w+\s*=",
-    r"['\"]\s*or\s*['\"]?\s*\d+\s*=\s*\d+",
-    r"union\s+select",
-    r"drop\s+table",
-    r"insert\s+into",
-    r";\s*delete\s+from",
+    re.compile(r"<script[^>]*>", re.IGNORECASE),
+    re.compile(r"javascript:", re.IGNORECASE),
+    re.compile(r"on\w+\s*=", re.IGNORECASE),
+    re.compile(r"['\"]\s*or\s*['\"]?\s*\d+\s*=\s*\d+", re.IGNORECASE),
+    re.compile(r"union\s+select", re.IGNORECASE),
+    re.compile(r"drop\s+table", re.IGNORECASE),
+    re.compile(r"insert\s+into", re.IGNORECASE),
+    re.compile(r";\s*delete\s+from", re.IGNORECASE),
 ]
+
+# Pre-computed security headers (avoid re-creating strings on every request)
+_SECURITY_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mc.yandex.ru; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data:; "
+        "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org https://mc.yandex.ru; "
+        "frame-ancestors https://webvisor.com https://*.webvisor.com https://metrika.yandex.ru https://*.metrika.yandex.ru; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "ALLOW-FROM https://webvisor.com",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+}
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -38,30 +59,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
-
-        # Content Security Policy
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mc.yandex.ru; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: https:; "
-            "font-src 'self' data:; "
-            "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org https://mc.yandex.ru; "
-            "frame-ancestors https://webvisor.com https://*.webvisor.com https://metrika.yandex.ru https://*.metrika.yandex.ru; "
-            "base-uri 'self'; "
-            "form-action 'self';"
-        )
-
-        # Other security headers
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        # Allow Yandex Metrika webvisor to embed pages in iframe
-        response.headers["X-Frame-Options"] = "ALLOW-FROM https://webvisor.com"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
-        )
-
+        response.headers.update(_SECURITY_HEADERS)
         return response
 
 
@@ -90,6 +88,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     if _extra:
         CORS_ORIGINS.update(o.strip() for o in _extra.split(",") if o.strip())
 
+    _cleanup_started = False
+
     def _cors_headers(self, request: Request) -> dict:
         """Add CORS headers so browser doesn't mask 429 as CORS error"""
         origin = request.headers.get("origin", "")
@@ -100,7 +100,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             }
         return {}
 
+    @staticmethod
+    async def _cleanup_loop():
+        """Periodically remove stale IP entries to prevent memory leak."""
+        while True:
+            await asyncio.sleep(3600)  # every hour
+            now = time.time()
+            stale_keys = [
+                k for k, v in rate_limit_storage.items()
+                if not v or now - max(v) > 300  # no activity for 5 min
+            ]
+            for k in stale_keys:
+                del rate_limit_storage[k]
+            if stale_keys:
+                logger.debug(f"Rate limit cleanup: removed {len(stale_keys)} stale keys")
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Start cleanup task once
+        if not RateLimitMiddleware._cleanup_started:
+            RateLimitMiddleware._cleanup_started = True
+            asyncio.create_task(self._cleanup_loop())
+
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
         forwarded = request.headers.get("X-Forwarded-For")
@@ -123,9 +143,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             key = f"general:{client_ip}"
 
         # Clean old entries
+        cutoff = now - self.WINDOW_SECONDS
         rate_limit_storage[key] = [
             t for t in rate_limit_storage[key]
-            if now - t < self.WINDOW_SECONDS
+            if t > cutoff
         ]
 
         # Check limit
@@ -164,21 +185,21 @@ class InjectionDetectionMiddleware(BaseHTTPMiddleware):
         query_string = str(request.url.query)
         path = request.url.path
 
-        # Check for injection patterns
+        # Check for injection patterns (pre-compiled regex)
         for pattern in INJECTION_PATTERNS:
-            if re.search(pattern, query_string, re.IGNORECASE):
+            if pattern.search(query_string):
                 client_ip = request.client.host if request.client else "unknown"
                 logger.warning(
                     f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
-                    f"Path: {path} | Pattern: {pattern} | Query: {query_string[:200]}"
+                    f"Path: {path} | Pattern: {pattern.pattern} | Query: {query_string[:200]}"
                 )
                 break
 
-            if re.search(pattern, path, re.IGNORECASE):
+            if pattern.search(path):
                 client_ip = request.client.host if request.client else "unknown"
                 logger.warning(
                     f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
-                    f"Path: {path} | Pattern: {pattern}"
+                    f"Path: {path} | Pattern: {pattern.pattern}"
                 )
                 break
 
