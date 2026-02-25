@@ -4,6 +4,7 @@ All endpoints require admin authentication.
 """
 
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -22,6 +23,49 @@ from app.models.ml_models import MLModel, ROIAnalytics, LearningLog
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+LOCALE_NAMES = {
+    "en": "English", "ru": "Russian", "es": "Spanish", "de": "German",
+    "fr": "French", "pt": "Portuguese", "it": "Italian", "tr": "Turkish",
+    "uk": "Ukrainian", "pl": "Polish", "ar": "Arabic", "zh": "Chinese",
+    "ja": "Japanese", "ko": "Korean", "hi": "Hindi",
+}
+
+
+async def _translate_admin_reply(text: str, target_locale: str) -> str:
+    """Translate admin reply to the user's language using Claude Haiku."""
+    if not text.strip() or target_locale in ("ru", ""):
+        return text  # admin writes in Russian, no translation needed
+
+    api_key = os.getenv("CLAUDE_API_KEY")
+    if not api_key:
+        logger.warning("CLAUDE_API_KEY not set — skipping reply translation")
+        return text
+
+    lang = LOCALE_NAMES.get(target_locale, target_locale)
+    try:
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        resp = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Translate the following message to {lang}. "
+                    f"Keep the same tone, do not add anything extra. "
+                    f"Return ONLY the translated text, nothing else.\n\n"
+                    f"{text}"
+                ),
+            }],
+        )
+        translated = resp.content[0].text.strip()
+        if translated:
+            return translated
+    except Exception as e:
+        logger.error(f"Reply translation failed ({target_locale}): {e}")
+
+    return text  # fallback: send original
 
 
 async def _get_football_api_status() -> dict:
@@ -1039,12 +1083,15 @@ async def admin_reply_to_support(
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Save admin reply as assistant message
+    # Auto-translate admin reply to user's language
+    translated = await _translate_admin_reply(message, first_msg.locale)
+
+    # Save admin reply as assistant message (translated for user)
     admin_msg = SupportChatMessage(
         user_id=first_msg.user_id,
         session_id=session_id,
         role="assistant",
-        content=message,
+        content=translated,
         locale=first_msg.locale,
         agent_name=first_msg.agent_name or "Alex",
         was_pro=first_msg.was_pro,
@@ -1054,13 +1101,16 @@ async def admin_reply_to_support(
     await db.commit()
     await db.refresh(admin_msg)
 
-    logger.info(f"Admin reply: admin={admin.get('email')}, session={session_id[:8]}, user={first_msg.user_id}")
+    was_translated = translated != message
+    logger.info(f"Admin reply: admin={admin.get('email')}, session={session_id[:8]}, user={first_msg.user_id}, translated={was_translated}")
 
     return {
         "id": admin_msg.id,
         "session_id": session_id,
         "user_id": first_msg.user_id,
-        "content": message,
+        "content": translated,
+        "original_text": message if was_translated else None,
+        "translated": was_translated,
         "created_at": admin_msg.created_at.isoformat() if admin_msg.created_at else None,
     }
 
@@ -1223,11 +1273,14 @@ async def admin_reply_to_ai_chat(
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Auto-translate admin reply to user's language
+    translated = await _translate_admin_reply(message, first_msg.locale)
+
     admin_msg = AIChatMessage(
         user_id=first_msg.user_id,
         session_id=session_id,
         role="assistant",
-        content=message,
+        content=translated,
         locale=first_msg.locale,
         was_pro=first_msg.was_pro,
         is_admin_reply=True,
@@ -1236,13 +1289,16 @@ async def admin_reply_to_ai_chat(
     await db.commit()
     await db.refresh(admin_msg)
 
-    logger.info(f"Admin AI reply: admin={admin.get('email')}, session={session_id[:8]}, user={first_msg.user_id}")
+    was_translated = translated != message
+    logger.info(f"Admin AI reply: admin={admin.get('email')}, session={session_id[:8]}, user={first_msg.user_id}, translated={was_translated}")
 
     return {
         "id": admin_msg.id,
         "session_id": session_id,
         "user_id": first_msg.user_id,
-        "content": message,
+        "content": translated,
+        "original_text": message if was_translated else None,
+        "translated": was_translated,
         "created_at": admin_msg.created_at.isoformat() if admin_msg.created_at else None,
     }
 

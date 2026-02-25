@@ -55,6 +55,9 @@ function ChatMessages({ messages, translation, assistantLabel }) {
               {m.is_admin_reply && (
                 <span className="text-[9px] px-1 py-0.5 bg-amber-500/20 text-amber-400 rounded font-medium">REPLY</span>
               )}
+              {m.is_admin_reply && m.original_text && (
+                <span className="text-[9px] px-1 py-0.5 bg-cyan-500/15 text-cyan-400 rounded font-medium">TRANSLATED</span>
+              )}
               <span className="text-[9px] text-slate-600">
                 {m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}
               </span>
@@ -65,6 +68,11 @@ function ChatMessages({ messages, translation, assistantLabel }) {
             {translation?.translated?.[idx] && (
               <p className="text-[10px] text-slate-600 mt-1.5 leading-relaxed whitespace-pre-wrap break-words border-t border-slate-700/30 pt-1.5">
                 {m.content}
+              </p>
+            )}
+            {m.is_admin_reply && m.original_text && (
+              <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed whitespace-pre-wrap break-words border-t border-slate-700/30 pt-1.5 italic">
+                Original: {m.original_text}
               </p>
             )}
           </div>
@@ -166,7 +174,8 @@ function SupportChatTab() {
       setMessages(prev => [...prev, {
         id: result.id,
         role: 'assistant',
-        content: replyText.trim(),
+        content: result.content,
+        original_text: result.original_text || null,
         is_admin_reply: true,
         created_at: result.created_at || new Date().toISOString(),
       }])
@@ -393,7 +402,8 @@ function AIChatTab() {
       setMessages(prev => [...prev, {
         id: result.id,
         role: 'assistant',
-        content: replyText.trim(),
+        content: result.content,
+        original_text: result.original_text || null,
         is_admin_reply: true,
         created_at: result.created_at || new Date().toISOString(),
       }])
@@ -614,7 +624,8 @@ function InsightSessionCard({ sessionId, sourceType }) {
       setMessages(prev => [...prev, {
         id: result.id,
         role: 'assistant',
-        content: replyText.trim(),
+        content: result.content,
+        original_text: result.original_text || null,
         is_admin_reply: true,
         created_at: result.created_at || new Date().toISOString(),
       }])
