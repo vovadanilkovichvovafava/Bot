@@ -4,7 +4,6 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import TrafficSources from './pages/TrafficSources'
-import SupportChats from './pages/SupportChats'
 import Layout from './components/Layout'
 
 function ProtectedRoute({ children }) {
@@ -37,7 +36,6 @@ export default function App() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="traffic" element={<TrafficSources />} />
-        <Route path="support" element={<SupportChats />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -42,14 +42,19 @@ function ChatMessages({ messages, translation, assistantLabel }) {
           <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
             m.role === 'user'
               ? 'bg-blue-600/20 border border-blue-500/20 text-slate-200'
-              : 'bg-slate-800/70 border border-slate-700/50 text-slate-300'
+              : m.is_admin_reply
+                ? 'bg-amber-600/15 border border-amber-500/25 text-slate-200'
+                : 'bg-slate-800/70 border border-slate-700/50 text-slate-300'
           }`}>
             <div className="flex items-center gap-2 mb-1">
               <span className={`text-[10px] font-semibold ${
-                m.role === 'user' ? 'text-blue-400' : 'text-cyan-400'
+                m.role === 'user' ? 'text-blue-400' : m.is_admin_reply ? 'text-amber-400' : 'text-cyan-400'
               }`}>
-                {m.role === 'user' ? 'User' : (assistantLabel || m.agent_name || 'Assistant')}
+                {m.role === 'user' ? 'User' : m.is_admin_reply ? 'Admin' : (assistantLabel || m.agent_name || 'Assistant')}
               </span>
+              {m.is_admin_reply && (
+                <span className="text-[9px] px-1 py-0.5 bg-amber-500/20 text-amber-400 rounded font-medium">REPLY</span>
+              )}
               <span className="text-[9px] text-slate-600">
                 {m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''}
               </span>
@@ -122,6 +127,8 @@ function SupportChatTab() {
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
   const PAGE_SIZE = 20
 
   const load = useCallback(() => {
@@ -151,10 +158,31 @@ function SupportChatTab() {
     }
   }, [translations])
 
+  const sendReply = async (sessionId) => {
+    if (!replyText.trim() || sending) return
+    setSending(true)
+    try {
+      const result = await adminApi.replyToSupport(sessionId, replyText.trim())
+      setMessages(prev => [...prev, {
+        id: result.id,
+        role: 'assistant',
+        content: replyText.trim(),
+        is_admin_reply: true,
+        created_at: result.created_at || new Date().toISOString(),
+      }])
+      setReplyText('')
+    } catch (e) {
+      alert('Failed to send: ' + (e.message || e))
+    } finally {
+      setSending(false)
+    }
+  }
+
   const openChat = (sessionId) => {
     if (openSession === sessionId) { setOpenSession(null); return }
     setOpenSession(sessionId)
     setMessages([])
+    setReplyText('')
     setMsgLoading(true)
     adminApi.getSupportSessionMessages(sessionId)
       .then(d => {
@@ -257,6 +285,24 @@ function SupportChatTab() {
                       </div>
                     )}
                     <ChatMessages messages={messages} translation={tr} assistantLabel={null} />
+                    {/* Admin reply input */}
+                    <div className="px-4 py-3 border-t border-slate-800 flex gap-2">
+                      <input
+                        type="text"
+                        value={replyText}
+                        onChange={e => setReplyText(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply(s.session_id)}
+                        placeholder="Reply to user..."
+                        className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        onClick={() => sendReply(s.session_id)}
+                        disabled={!replyText.trim() || sending}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+                      >
+                        {sending ? '...' : 'Send'}
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
