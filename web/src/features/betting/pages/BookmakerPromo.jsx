@@ -72,11 +72,17 @@ export default function BookmakerPromo() {
   const [bookmakerLink, setBookmakerLink] = useState(null);
 
   const banner = searchParams.get('banner') || '';
+  const fonbetDeeplink = searchParams.get('fonbet_deeplink') || '';
 
   useEffect(() => {
     if (!user?.id) return; // Wait for auth — never build link with anon ID
-    setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page'));
-  }, [user?.id, banner]);
+    // If we have a Fonbet deeplink from the referring page, prefer it
+    if (fonbetDeeplink) {
+      setBookmakerLink(fonbetDeeplink);
+    } else {
+      setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page'));
+    }
+  }, [user?.id, banner, fonbetDeeplink]);
 
   const next = () => { if (step < TOTAL) setStep(step + 1); };
   const prev = () => { if (step > 1) setStep(step - 1); else navigate(-1); };

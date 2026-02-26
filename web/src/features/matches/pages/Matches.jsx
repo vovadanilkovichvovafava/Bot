@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import footballApi from '../api/footballApi';
 import MatchCard from '../components/MatchCard';
+import fonbetApi from '../../../services/fonbetApi';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { useAuth } from '../../auth/context/AuthContext';
 import {
@@ -57,6 +58,7 @@ export default function Matches() {
   const [liveLoading, setLiveLoading] = useState(true);
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
+  const [fonbetMap, setFonbetMap] = useState({}); // team1_team2 → fonbet event
   const [favouriteTeamIds, setFavouriteTeamIds] = useState([]);
   const [favouriteLeagueIds, setFavouriteLeagueIds] = useState([]);
   const navigate = useNavigate();
@@ -93,6 +95,19 @@ export default function Matches() {
     } finally {
       setLoading(false);
     }
+
+    // Load Fonbet odds in background (never blocks, never crashes)
+    try {
+      const fbData = await fonbetApi.getTopLeaguesEvents('en');
+      if (fbData?.events) {
+        const map = {};
+        fbData.events.forEach(ev => {
+          const key = `${(ev.team1 || '').toLowerCase()}_${(ev.team2 || '').toLowerCase()}`;
+          map[key] = ev;
+        });
+        setFonbetMap(map);
+      }
+    } catch (_) { /* Fonbet unavailable — app works fine without it */ }
   };
 
   const loadLive = async () => {
@@ -261,6 +276,7 @@ export default function Matches() {
                     navigate={navigate}
                     isLive={false}
                     isPopular={true}
+                    fonbetMap={fonbetMap}
                   />
                 )}
 
@@ -272,6 +288,7 @@ export default function Matches() {
                     isLive={false}
                     isPopular={false}
                     collapsed
+                    fonbetMap={fonbetMap}
                   />
                 )}
               </>
@@ -456,7 +473,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
   );
 }
 
-function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular }) {
+function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular, fonbetMap }) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(!collapsed);
   const leagueList = Object.values(leagues);
@@ -511,6 +528,7 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular 
                       key={f.fixture.id}
                       fixture={f}
                       onClick={() => navigate(`/match/${f.fixture.id}`)}
+                      fonbetMap={fonbetMap}
                     />
                   )
                 ))}
@@ -523,11 +541,25 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular 
   );
 }
 
-function FixtureCard({ fixture, onClick }) {
+function FixtureCard({ fixture, onClick, fonbetMap }) {
   const f = fixture;
   const date = new Date(f.fixture.date);
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const status = f.fixture.status.short;
+
+  // Try to find Fonbet odds for this fixture (safe — never crashes)
+  let fbOdds = null;
+  let fbDeeplink = null;
+  try {
+    if (fonbetMap && f.teams?.home?.name && f.teams?.away?.name) {
+      const key = `${f.teams.home.name.toLowerCase()}_${f.teams.away.name.toLowerCase()}`;
+      const fbEvent = fonbetMap[key];
+      if (fbEvent?.odds?.['1']) {
+        fbOdds = fbEvent.odds;
+        fbDeeplink = fbEvent.deeplink;
+      }
+    }
+  } catch (_) { /* safe fallback */ }
 
   return (
     <div
@@ -558,6 +590,29 @@ function FixtureCard({ fixture, onClick }) {
             <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
           </div>
         </div>
+
+        {/* Fonbet odds 1/X/2 — only if available */}
+        {fbOdds && status === 'NS' && (
+          <div className="flex gap-1 mr-2 flex-shrink-0">
+            {[
+              { label: '1', val: fbOdds['1'] },
+              { label: 'X', val: fbOdds['X'] },
+              { label: '2', val: fbOdds['2'] },
+            ].map(o => o.val ? (
+              <div
+                key={o.label}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (fbDeeplink) window.open(fbDeeplink, '_blank', 'noopener,noreferrer');
+                }}
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-1.5 py-1 text-center cursor-pointer transition-colors min-w-[36px]"
+              >
+                <span className="text-[9px] text-blue-400 font-medium block leading-tight">{o.label}</span>
+                <span className="text-[11px] text-blue-700 font-bold block leading-tight">{o.val}</span>
+              </div>
+            ) : null)}
+          </div>
+        )}
 
         {/* Time/Score column */}
         <div className="flex-shrink-0 text-right ml-3">

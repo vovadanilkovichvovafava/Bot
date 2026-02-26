@@ -6,6 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import fonbetApi from '../../../services/fonbetApi';
 
 const TAB_KEYS = ['overview', 'stats', 'events', 'lineups'];
 
@@ -38,6 +39,7 @@ export default function LiveMatchDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [fonbetMatch, setFonbetMatch] = useState(null);
 
   const loadMatchData = useCallback(async () => {
     try {
@@ -50,6 +52,16 @@ export default function LiveMatchDetail() {
 
       if (fixtureData.status === 'fulfilled' && fixtureData.value) {
         setFixture(fixtureData.value);
+        // Load Fonbet odds in background (non-blocking, safe)
+        try {
+          const fd = fixtureData.value;
+          const fb = await fonbetApi.findMatch(
+            fd.teams?.home?.name,
+            fd.teams?.away?.name,
+            fd.fixture?.date
+          );
+          if (fb) setFonbetMatch(fb);
+        } catch (_) { /* Fonbet unavailable — no problem */ }
       }
       if (statsData.status === 'fulfilled' && statsData.value) {
         setStats(statsData.value);
@@ -311,6 +323,7 @@ export default function LiveMatchDetail() {
               trackClick={trackClick}
               navigate={navigate}
               t={t}
+              fonbetMatch={fonbetMatch}
             />
           )}
           {activeTab === 'stats' && (
@@ -368,7 +381,7 @@ function QuickStats({ stats, t }) {
 }
 
 // Overview Tab
-function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t }) {
+function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t, fonbetMatch }) {
   const recentEvents = events.slice(-5).reverse();
 
   // Parse AI recommended bet from analysis
@@ -416,8 +429,10 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => {
-                    const isPremium = user?.is_premium;
-                    if (isPremium && advertiser?.link) {
+                    if (fonbetMatch?.deeplink) {
+                      trackClick(user?.id, 'live_ai_bet');
+                      window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+                    } else if (user?.is_premium && advertiser?.link) {
                       trackClick(user?.id, 'live_ai_bet');
                       window.open(advertiser.link, '_blank', 'noopener,noreferrer');
                     } else {

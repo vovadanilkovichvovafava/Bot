@@ -4,6 +4,7 @@
  * to provide Claude with actual statistics instead of guessing.
  */
 import footballApi from '../../matches/api/footballApi';
+import fonbetApi from '../../../services/fonbetApi';
 
 // Get possible seasons — different leagues start at different times
 // European leagues: Aug-May (2025/2026 season = 2025)
@@ -1101,6 +1102,25 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
       }
     }
   }
+
+  // Fonbet real odds (non-blocking, safe)
+  try {
+    const fbMatch = await fonbetApi.findMatch(
+      fixture.teams.home.name,
+      fixture.teams.away.name,
+      fixture.fixture?.date
+    );
+    if (fbMatch?.odds) {
+      const fo = fbMatch.odds;
+      parts.push('');
+      parts.push('--- Fonbet Real Odds (live bookmaker) ---');
+      if (fo['1']) parts.push(`Match Winner: 1=${fo['1']}, X=${fo['X']}, 2=${fo['2']}`);
+      if (fo['over_2.5']) parts.push(`Total: Over 2.5=${fo['over_2.5']}, Under 2.5=${fo['under_2.5']}`);
+      if (fo['btts_yes']) parts.push(`BTTS: Yes=${fo['btts_yes']}, No=${fo['btts_no']}`);
+      if (fo['1X']) parts.push(`Double Chance: 1X=${fo['1X']}, 12=${fo['12']}, X2=${fo['X2']}`);
+      if (fbMatch.deeplink) parts.push(`Fonbet link: ${fbMatch.deeplink}`);
+    }
+  } catch (_) { /* Fonbet unavailable — no problem, AI works without it */ }
 
   // Match statistics (if live/finished)
   if (enriched.stats?.length >= 2) {

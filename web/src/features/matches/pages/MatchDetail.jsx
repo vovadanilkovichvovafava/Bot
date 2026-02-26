@@ -10,6 +10,7 @@ import ShareButton from '../../predictions/components/ShareButton';
 import { generateMatchShareText } from '../../predictions/services/shareUtils';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import fonbetApi from '../../../services/fonbetApi';
 
 const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -73,6 +74,7 @@ export default function MatchDetail() {
   const [predicting, setPredicting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [aiRemaining, setAiRemaining] = useState(null);
+  const [fonbetMatch, setFonbetMatch] = useState(null); // Fonbet real odds + deeplink
 
   useEffect(() => {
     loadMatch();
@@ -111,6 +113,16 @@ export default function MatchDetail() {
           };
           setMatch(converted);
           setLoading(false);
+
+          // Load Fonbet odds (non-blocking, never crashes main flow)
+          try {
+            const fbMatch = await fonbetApi.findMatch(
+              fixture.teams?.home?.name,
+              fixture.teams?.away?.name,
+              fixture.fixture?.date
+            );
+            if (fbMatch) setFonbetMatch(fbMatch);
+          } catch (_) { /* Fonbet unavailable — app works as before */ }
 
           // Extract IDs for standings/H2H — load ALL enriched data in ONE parallel batch
           const leagueId = fixture.league?.id;
@@ -290,6 +302,18 @@ export default function MatchDetail() {
           prompt += `\nDouble Chance: ${dc}`;
         }
       }
+    }
+
+    // Fonbet real odds (if available)
+    if (fonbetMatch?.odds) {
+      const fo = fonbetMatch.odds;
+      prompt += `\n\n--- Fonbet Real Odds (live from bookmaker) ---`;
+      if (fo['1']) prompt += `\nMatch Winner: Home ${fo['1']}, Draw ${fo['X']}, Away ${fo['2']}`;
+      if (fo['over_2.5']) prompt += `\nTotal: Over 2.5 = ${fo['over_2.5']}, Under 2.5 = ${fo['under_2.5']}`;
+      if (fo['btts_yes']) prompt += `\nBTTS: Yes = ${fo['btts_yes']}, No = ${fo['btts_no']}`;
+      if (fo['1X']) prompt += `\nDouble Chance: 1X = ${fo['1X']}, 12 = ${fo['12']}, X2 = ${fo['X2']}`;
+      if (fo['handicap_1']) prompt += `\nHandicap: Home = ${fo['handicap_1']}, Away = ${fo['handicap_2']}`;
+      if (fonbetMatch.deeplink) prompt += `\nFonbet deeplink: ${fonbetMatch.deeplink}`;
     }
 
     // Standings (league positions)
@@ -539,8 +563,12 @@ export default function MatchDetail() {
   const odds1x2 = getOdds1x2();
 
   // PRO users go directly to bookmaker, free users go to promo page
+  // If Fonbet deeplink is available — use it (direct to specific match)
   const handlePromoClick = (source) => {
-    if (user?.is_premium && advertiser?.link) {
+    if (fonbetMatch?.deeplink) {
+      trackClick(user?.id, source);
+      window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+    } else if (user?.is_premium && advertiser?.link) {
       trackClick(user.id, source);
       window.open(advertiser.link, '_blank', 'noopener,noreferrer');
     } else {
@@ -657,6 +685,7 @@ export default function MatchDetail() {
             trackClick={trackClick}
             navigate={navigate}
             t={t}
+            fonbetMatch={fonbetMatch}
           />
         )}
         {activeTab === 'stats' && (
@@ -674,7 +703,7 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -790,7 +819,10 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
             <div className="mt-4 pt-4 border-t border-gray-100">
               <button
                 onClick={() => {
-                  if (isPremium && advertiser?.link) {
+                  if (fonbetMatch?.deeplink) {
+                    trackClick(user?.id, 'match_ai_bet');
+                    window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+                  } else if (isPremium && advertiser?.link) {
                     trackClick(user?.id, 'match_ai_bet');
                     window.open(advertiser.link, '_blank', 'noopener,noreferrer');
                   } else {

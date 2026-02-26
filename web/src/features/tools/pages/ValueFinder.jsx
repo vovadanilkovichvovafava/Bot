@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import footballApi from '../../matches/api/footballApi';
+import fonbetApi from '../../../services/fonbetApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 
 const VALUE_BET_USED_KEY = 'value_bet_used';
@@ -47,6 +48,7 @@ export default function ValueFinder() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all | high | medium
   const [progress, setProgress] = useState({ current: 0, total: 0, phase: '' });
+  const [fonbetMap, setFonbetMap] = useState({}); // team key → fonbet event
 
   const isPremium = user?.is_premium;
 
@@ -160,6 +162,19 @@ export default function ValueFinder() {
         });
 
       setValueBets(valid);
+
+      // Load Fonbet odds in background for comparison (never blocks, never crashes)
+      try {
+        const fbData = await fonbetApi.getTopLeaguesEvents('en');
+        if (fbData?.events) {
+          const map = {};
+          fbData.events.forEach(ev => {
+            const key = `${(ev.team1 || '').toLowerCase()}_${(ev.team2 || '').toLowerCase()}`;
+            map[key] = ev;
+          });
+          setFonbetMap(map);
+        }
+      } catch (_) { /* Fonbet unavailable — value finder works fine without it */ }
     } catch (e) {
       console.error('Value finder error:', e);
     } finally {
@@ -284,7 +299,7 @@ export default function ValueFinder() {
                 )}
               </div>
               {filtered.map((item, idx) => (
-                <ValueBetCard key={idx} item={item} navigate={navigate} t={t} />
+                <ValueBetCard key={idx} item={item} navigate={navigate} t={t} fonbetMap={fonbetMap} />
               ))}
             </>
           )}
@@ -294,10 +309,24 @@ export default function ValueFinder() {
   );
 }
 
-function ValueBetCard({ item, navigate, t }) {
+function ValueBetCard({ item, navigate, t, fonbetMap }) {
   const { fixture, bestBet, bets, bookmaker, prediction, isTopLeague } = item;
   const time = new Date(fixture.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const league = fixture.league.name;
+
+  // Try to find Fonbet odds for comparison (safe)
+  let fbOdds = null;
+  let fbDeeplink = null;
+  try {
+    if (fonbetMap && fixture.teams?.home?.name && fixture.teams?.away?.name) {
+      const key = `${fixture.teams.home.name.toLowerCase()}_${fixture.teams.away.name.toLowerCase()}`;
+      const fbEvent = fonbetMap[key];
+      if (fbEvent?.odds?.['1']) {
+        fbOdds = fbEvent.odds;
+        fbDeeplink = fbEvent.deeplink;
+      }
+    }
+  } catch (_) {}
 
   const isHighValue = bestBet.value >= 10;
 
@@ -393,6 +422,31 @@ function ValueBetCard({ item, navigate, t }) {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
             </svg>
             <p className="text-xs text-blue-800">{prediction.predictions.advice}</p>
+          </div>
+        )}
+
+        {/* Fonbet odds comparison — only if available */}
+        {fbOdds && (
+          <div
+            className="bg-indigo-50 border border-indigo-200 rounded-lg p-2.5 mb-2 cursor-pointer hover:bg-indigo-100 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (fbDeeplink) window.open(fbDeeplink, '_blank', 'noopener,noreferrer');
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-indigo-500 font-semibold uppercase">Fonbet Odds</p>
+                <p className="text-xs text-indigo-700 font-medium mt-0.5">
+                  1: {fbOdds['1']} &middot; X: {fbOdds['X']} &middot; 2: {fbOdds['2']}
+                </p>
+              </div>
+              {fbDeeplink && (
+                <span className="text-[10px] text-indigo-600 font-bold bg-indigo-100 px-2 py-1 rounded">
+                  Bet &rarr;
+                </span>
+              )}
+            </div>
           </div>
         )}
 
