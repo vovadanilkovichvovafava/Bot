@@ -147,15 +147,19 @@ async def init_db():
         except Exception:
             pass
 
-        # Rename traffic sources: organic → sportscoreai, sportscoreai → prescoreai
-        # Order matters: rename sportscoreai first to avoid collision
+        # One-time rename: organic → sportscoreai, sportscoreai → prescoreai
+        # Only runs if there are still 'organic' or NULL traffic_source rows
         try:
-            await conn.execute(text(
-                "UPDATE users SET traffic_source = 'prescoreai' WHERE traffic_source = 'sportscoreai'"
-            ))
-            await conn.execute(text(
-                "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic' OR traffic_source IS NULL"
-            ))
+            has_organic = (await conn.execute(text(
+                "SELECT 1 FROM users WHERE traffic_source = 'organic' OR traffic_source IS NULL LIMIT 1"
+            ))).first()
+            if has_organic:
+                await conn.execute(text(
+                    "UPDATE users SET traffic_source = 'prescoreai' WHERE traffic_source = 'sportscoreai'"
+                ))
+                await conn.execute(text(
+                    "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic' OR traffic_source IS NULL"
+                ))
         except Exception:
             pass
 
