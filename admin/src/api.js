@@ -70,4 +70,18 @@ export const api = {
   // ── Stats ────────────────────────────
   getOverview: () => request('/stats/overview'),
   getTrafficStats: () => request('/stats/traffic'),
+
+  // ── Users ────────────────────────────
+  searchUsers: (q = '', status, country, page = 1) => {
+    const params = new URLSearchParams({ q, page })
+    if (status) params.set('status', status)
+    if (country) params.set('country', country)
+    return request(`/stats/users/search?${params}`)
+  },
+  getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
+  togglePremium: (userId, days = 15) =>
+    request(`/stats/users/${userId}/toggle-premium`, {
+      method: 'POST',
+      body: JSON.stringify(days),
+    }),
 }

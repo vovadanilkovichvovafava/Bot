@@ -660,6 +660,42 @@ async def get_user_profile(
     }
 
 
+@router.post("/users/{user_id}/toggle-premium")
+async def toggle_user_premium(
+    user_id: int,
+    days: int = Body(15, embed=False),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Toggle premium status for a user (admin action)."""
+    from fastapi import HTTPException
+    user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_premium and user.premium_until and user.premium_until > datetime.utcnow():
+        # Deactivate
+        user.is_premium = False
+        user.premium_until = None
+        action = "deactivated"
+    else:
+        # Activate
+        user.is_premium = True
+        user.premium_until = datetime.utcnow() + timedelta(days=days)
+        action = "activated"
+
+    await db.commit()
+
+    return {
+        "success": True,
+        "action": action,
+        "user_id": user.id,
+        "public_id": user.public_id,
+        "is_premium": user.is_premium,
+        "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+    }
+
+
 @router.get("/predictions")
 async def get_predictions_stats(
     admin: dict = Depends(get_current_admin),
