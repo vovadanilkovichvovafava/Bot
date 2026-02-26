@@ -743,19 +743,22 @@ export async function enrichMessage(message) {
     }
   }
 
+  // Helper: wrap string context into structured result (no Fonbet deeplink for non-match queries)
+  const wrapCtx = (ctx) => ctx ? { context: ctx, fonbetDeeplink: null } : null;
+
   // 3. If both day and league detected → league-specific day query (most specific)
   if (dayTarget && detectedLeagueId) {
-    return await enrichLeagueDayQuery(detectedLeagueId, detectedLeagueKeyword, dayTarget);
+    return wrapCtx(await enrichLeagueDayQuery(detectedLeagueId, detectedLeagueKeyword, dayTarget));
   }
 
   // 4. Day-only query (no specific league)
   if (dayTarget) {
-    return await enrichDayOverview(dayTarget === 'tomorrow' ? 'tomorrow' : 'today');
+    return wrapCtx(await enrichDayOverview(dayTarget === 'tomorrow' ? 'tomorrow' : 'today'));
   }
 
   // 5. League-only query (no specific day)
   if (detectedLeagueId) {
-    return await enrichLeagueQuery(detectedLeagueId, detectedLeagueKeyword);
+    return wrapCtx(await enrichLeagueQuery(detectedLeagueId, detectedLeagueKeyword));
   }
 
   // 6. Detect live match queries (all supported languages)
@@ -809,7 +812,7 @@ export async function enrichMessage(message) {
     'наживо', 'у прямому ефірі', 'зараз грають', 'лайв матчі',
   ];
   if (LIVE_KEYWORDS.some(k => lower.includes(k))) {
-    return await enrichLiveMatches();
+    return wrapCtx(await enrichLiveMatches());
   }
 
   // 7. Last resort: try to find team names in the message via API search
@@ -1104,6 +1107,7 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
   }
 
   // Fonbet real odds (non-blocking, safe)
+  let fonbetDeeplink = null;
   try {
     const fbMatch = await fonbetApi.findMatch(
       fixture.teams.home.name,
@@ -1119,6 +1123,7 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
       if (fo['btts_yes']) parts.push(`BTTS: Yes=${fo['btts_yes']}, No=${fo['btts_no']}`);
       if (fo['1X']) parts.push(`Double Chance: 1X=${fo['1X']}, 12=${fo['12']}, X2=${fo['X2']}`);
       if (fbMatch.deeplink) parts.push(`Fonbet link: ${fbMatch.deeplink}`);
+      fonbetDeeplink = fbMatch.deeplink || null;
     }
   } catch (_) { /* Fonbet unavailable — no problem, AI works without it */ }
 
@@ -1177,7 +1182,7 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
     }
   }
 
-  return parts.join('\n');
+  return { context: parts.join('\n'), fonbetDeeplink };
 }
 
 /**
@@ -1274,7 +1279,7 @@ async function enrichSingleTeam(teamName) {
       fixtures = await footballApi.getFixturesByTeam(teamId, season, 5);
       if (fixtures?.length) break;
     }
-    if (!fixtures?.length) return `No upcoming fixtures found for ${team.name}.`;
+    if (!fixtures?.length) return { context: `No upcoming fixtures found for ${team.name}.`, fonbetDeeplink: null };
 
     // Find the nearest upcoming (not started) fixture for deep enrichment
     const nearestUpcoming = fixtures.find(f => f.fixture.status.short === 'NS');
@@ -1357,7 +1362,7 @@ async function enrichSingleTeam(teamName) {
       }
     }
 
-    return parts.join('\n');
+    return { context: parts.join('\n'), fonbetDeeplink: null };
   } catch (e) {
     console.error('Single team enrichment failed:', e);
     return null;

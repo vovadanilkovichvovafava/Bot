@@ -196,10 +196,14 @@ export default function AIChat() {
       // Enrich with real-time football data from API-Football
       setEnriching(true);
       let matchContext = null;
+      let fonbetDeeplink = null;
       try {
         const enriched = await enrichMessage(text);
-        // Ensure match_context is always a string or null (prevent 422 validation errors)
-        matchContext = enriched ? String(enriched) : null;
+        if (enriched) {
+          // enrichMessage now returns { context, fonbetDeeplink } or null
+          matchContext = String(enriched.context || '');
+          fonbetDeeplink = enriched.fonbetDeeplink || null;
+        }
       } catch (e) {
         console.error('Enrichment failed:', e);
       }
@@ -228,6 +232,7 @@ export default function AIChat() {
         hasData: !!matchContext,
         showAd: newCount % 2 === 0,
         bet: parsedBet,
+        fonbetDeeplink,
       }];
       setMessages(newMessages);
       saveChatHistory(newMessages);
@@ -332,7 +337,10 @@ export default function AIChat() {
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => {
-                        if (isPremium && advertiser?.link) {
+                        if (msg.fonbetDeeplink) {
+                          trackClick(user?.id, 'aichat_bet_fonbet');
+                          window.open(msg.fonbetDeeplink, '_blank', 'noopener,noreferrer');
+                        } else if (isPremium && advertiser?.link) {
                           trackClick(user?.id, 'aichat_bet_card');
                           window.open(advertiser.link, '_blank', 'noopener,noreferrer');
                         } else {
@@ -415,7 +423,10 @@ export default function AIChat() {
                 {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
                     onClick={() => {
-                      if (isPremium && advertiser?.link) {
+                      if (msg.fonbetDeeplink) {
+                        trackClick(user?.id, 'aichat_promo_fonbet');
+                        window.open(msg.fonbetDeeplink, '_blank', 'noopener,noreferrer');
+                      } else if (isPremium && advertiser?.link) {
                         trackClick(user?.id, 'aichat_promo_link');
                         window.open(advertiser.link, '_blank', 'noopener,noreferrer');
                       } else {
@@ -436,7 +447,7 @@ export default function AIChat() {
             {msg.showAd && !(isPremium && msg.bet) && (
               isPremium ? (
                 <div
-                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); if (advertiser?.link) window.open(advertiser.link, '_blank', 'noopener,noreferrer'); }}
+                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = msg.fonbetDeeplink || advertiser?.link; if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">
