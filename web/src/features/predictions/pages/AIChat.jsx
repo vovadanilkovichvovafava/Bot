@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
+import fonbetApi from '../../../services/fonbetApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -43,6 +44,46 @@ const DEFAULT_SECONDARY = [
   { key: 'laLigaToday', emoji: '🇪🇸' },
   { key: 'serieAToday', emoji: '🇮🇹' },
 ];
+
+/**
+ * After AI responds with [BET], try to find a Fonbet deeplink for the recommended match.
+ * Searches enrichment context and AI response for "Team vs Team" lines matching the bet's team.
+ */
+async function findFonbetDeeplinkForBet(parsedBet, matchContext, aiResponse) {
+  if (!parsedBet) return null;
+  try {
+    // Extract team name from bet type (e.g., "Ferencvaros or Draw" → "Ferencvaros")
+    const betTeam = parsedBet.type
+      .replace(/\s*(or Draw|\/Draw|to Win|Win|DNB|Draw No Bet|& Draw|and Draw|Double Chance|1X|X2|12)$/i, '')
+      .replace(/^(Over|Under|BTTS|Both Teams to Score|Handicap|Double Chance)\s*/i, '')
+      .replace(/\s*[\d.]+\s*(Goals?)?$/i, '')
+      .trim();
+    if (betTeam.length < 3) return null;
+
+    const betLower = betTeam.toLowerCase();
+    const lines = ((matchContext || '') + '\n' + (aiResponse || '')).split('\n');
+
+    for (const line of lines) {
+      if (!/\bvs\.?\b/i.test(line)) continue;
+      const parts = line.split(/\s+vs\.?\s+/i);
+      if (parts.length < 2) continue;
+
+      // Clean: remove time prefixes "14:00 | ", markdown "**", score suffixes "[FT 1-0]"
+      const home = parts[0].replace(/^.*\|\s*/, '').replace(/\*+/g, '').trim();
+      const away = parts[1].replace(/\s*[\(\[\{].*$/, '').replace(/\s*\d+-\d+.*$/, '').replace(/\*+/g, '').trim();
+      if (home.length < 2 || away.length < 2) continue;
+
+      const hLow = home.toLowerCase();
+      const aLow = away.toLowerCase();
+      if (hLow.includes(betLower) || aLow.includes(betLower) ||
+          betLower.includes(hLow) || betLower.includes(aLow)) {
+        const fb = await fonbetApi.findMatch(home, away);
+        if (fb?.deeplink) return fb.deeplink;
+      }
+    }
+  } catch (_) { /* Fonbet lookup failed — app works without it */ }
+  return null;
+}
 
 export default function AIChat() {
   const navigate = useNavigate();
@@ -224,6 +265,11 @@ export default function AIChat() {
 
       // Parse bet from response
       const parsedBet = parseBetFromMessage(data.response);
+
+      // If enrichment didn't provide a Fonbet deeplink, try to find one for the recommended bet
+      if (!fonbetDeeplink && parsedBet) {
+        fonbetDeeplink = await findFonbetDeeplinkForBet(parsedBet, matchContext, data.response);
+      }
 
       const newMessages = [...messages, userMsg, {
         id: Date.now() + 1,
