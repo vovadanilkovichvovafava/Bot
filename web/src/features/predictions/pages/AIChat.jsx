@@ -189,24 +189,26 @@ export default function AIChat() {
       medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
       high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
     };
-    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT: If you recommend a bet, end with exactly this format: [BET] Bet Type @ Odds. Example: [BET] Over 2.5 Goals @ 1.85]`;
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT: If you recommend bets, end with a FINAL RECOMMENDATIONS section with 2-3 bets from different markets. Each line: [BET] Bet Type @ Odds. Example:\n**FINAL RECOMMENDATIONS**\n1. [BET] Over 2.5 Goals @ 1.85\n2. [BET] Home Win @ 2.10\n3. [BET] Both Teams to Score @ 1.75\nAll odds must be between ${minOdds} and ${maxOdds}.]`;
   };
 
-  // Parse bet from AI response
-  const parseBetFromMessage = (content) => {
-    if (!content) return null;
-    const betMatch = content.match(/\[BET\]\s*(.+?)\s*@\s*([\d.]+)/i);
-    if (betMatch) {
-      return {
-        type: betMatch[1].trim(),
-        odds: parseFloat(betMatch[2]),
+  // Parse bets from AI response (multiple [BET] tags)
+  const parseBetsFromMessage = (content) => {
+    if (!content) return [];
+    const regex = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
+    const bets = [];
+    let m;
+    while ((m = regex.exec(content)) !== null) {
+      bets.push({
+        type: m[1].trim(),
+        odds: parseFloat(m[2]),
         homeTeam: 'Match',
         awayTeam: '',
         league: '',
         date: new Date().toLocaleDateString('en-GB'),
-      };
+      });
     }
-    return null;
+    return bets;
   };
 
   const sendMessage = async (text) => {
@@ -264,12 +266,13 @@ export default function AIChat() {
       const newCount = responseCount + 1;
       setResponseCount(newCount);
 
-      // Parse bet from response
-      const parsedBet = parseBetFromMessage(data.response);
+      // Parse bets from response
+      const parsedBets = parseBetsFromMessage(data.response);
+      const firstBet = parsedBets[0] || null;
 
       // If enrichment didn't provide a Fonbet deeplink, try to find one for the recommended bet
-      if (!fonbetDeeplink && parsedBet) {
-        fonbetDeeplink = await findFonbetDeeplinkForBet(parsedBet, matchContext, data.response);
+      if (!fonbetDeeplink && firstBet) {
+        fonbetDeeplink = await findFonbetDeeplinkForBet(firstBet, matchContext, data.response);
       }
 
       const newMessages = [...messages, userMsg, {
@@ -278,7 +281,8 @@ export default function AIChat() {
         content: data.response,
         hasData: !!matchContext,
         showAd: newCount % 2 === 0,
-        bet: parsedBet,
+        bet: firstBet,
+        bets: parsedBets,
         fonbetDeeplink,
       }];
       setMessages(newMessages);
@@ -379,95 +383,96 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* AI Recommended Bet - Clean green card with shimmer */}
-                {msg.bet && msg.role === 'assistant' && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <button
-                      onClick={() => {
-                        if (msg.fonbetDeeplink) {
-                          trackClick(user?.id, 'aichat_bet_fonbet');
-                          window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
-                        } else if (isPremium) {
-                          trackClick(user?.id, 'aichat_bet_card');
-                          window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
-                        } else {
-                          navigate('/promo?banner=aichat_bet_card');
-                        }
-                      }}
-                      className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
-                      style={{ background: '#059669' }}
-                    >
-                      {/* Animated shimmer overlay */}
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
-                          animation: 'shimmer 5s infinite',
-                          backgroundSize: '200% 100%',
+                {/* AI Recommended Bets - multiple green cards */}
+                {msg.bets?.length > 0 && msg.role === 'assistant' && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                    {msg.bets.map((bet, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (msg.fonbetDeeplink) {
+                            trackClick(user?.id, 'aichat_bet_fonbet');
+                            window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
+                          } else if (isPremium) {
+                            trackClick(user?.id, 'aichat_bet_card');
+                            window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
+                          } else {
+                            navigate('/promo?banner=aichat_bet_card');
+                          }
                         }}
-                      />
-
-                      {/* Top section - Recommendation */}
-                      <div className="relative p-3 pb-2">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <svg className="w-4 h-4 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                            </svg>
-                            <span className="text-xs font-semibold text-emerald-100">{t('aiChat.recommended')}</span>
-                          </div>
-                          <span className="bg-white text-emerald-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
-                            {msg.bet.odds.toFixed(2)}
-                          </span>
-                        </div>
-                        <p className="text-sm font-semibold text-white">{msg.bet.type}</p>
-                      </div>
-
-                      {/* Bottom section - PRO: direct bet CTA / Free: bonus calculation */}
-                      <div
-                        className="relative px-3 py-3"
-                        style={{
-                          background: 'rgba(0,0,0,0.15)',
-                          borderTop: '1px solid rgba(255,255,255,0.1)',
-                        }}
+                        className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
+                        style={{ background: idx === 0 ? '#059669' : '#0f766e' }}
                       >
-                        <div className="flex items-center justify-between">
-                          {isPremium ? (
-                            <div className="flex items-center gap-3">
-                              <div>
-                                <p className="text-white font-bold text-sm">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
-                                <p className="text-emerald-200 text-xs mt-0.5">{msg.bet.type} @ {msg.bet.odds.toFixed(2)}</p>
-                              </div>
+                        {/* Animated shimmer overlay - only on first */}
+                        {idx === 0 && (
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 60%, transparent 80%)',
+                              animation: 'shimmer 5s infinite',
+                              backgroundSize: '200% 100%',
+                            }}
+                          />
+                        )}
+
+                        {/* Top section - Recommendation */}
+                        <div className="relative p-3 pb-1.5">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <svg className="w-3.5 h-3.5 text-emerald-200" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                              </svg>
+                              <span className="text-xs font-semibold text-emerald-100">
+                                {idx === 0 ? t('aiChat.recommended') : `${t('aiChat.recommended')} #${idx + 1}`}
+                              </span>
                             </div>
-                          ) : (
-                            <div>
-                              <span className="text-emerald-200 text-xs font-medium uppercase tracking-wide">{t('advertiser.freeBetLabel')}</span>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-white font-bold text-lg">{advertiser.currency}1,500</span>
-                                <span className="text-emerald-200 text-sm">×</span>
-                                <span className="text-white font-semibold">{msg.bet.odds.toFixed(2)}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-emerald-200 text-xs">=</span>
-                                <span className="font-bold text-lg" style={{ color: '#fbbf24' }}>
-                                  {advertiser.currency}{(1500 * msg.bet.odds).toLocaleString()}
-                                </span>
-                                <span className="text-emerald-200 text-xs ml-1">{t('advertiser.potentialWin')}</span>
-                              </div>
-                              <p className="text-white text-xs font-medium mt-1.5 opacity-90">{t('advertiser.betAndTakeIt')}</p>
-                            </div>
-                          )}
-                          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                          </svg>
+                            <span className="bg-white text-emerald-700 text-sm font-bold px-2.5 py-0.5 rounded-lg shadow">
+                              {bet.odds.toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-white">{bet.type}</p>
                         </div>
-                      </div>
-                    </button>
+
+                        {/* Bottom section - CTA */}
+                        <div
+                          className="relative px-3 py-2"
+                          style={{
+                            background: 'rgba(0,0,0,0.15)',
+                            borderTop: '1px solid rgba(255,255,255,0.1)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            {isPremium ? (
+                              <div>
+                                <p className="text-white font-bold text-xs">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
+                                <p className="text-emerald-200 text-[10px] mt-0.5">{bet.type} @ {bet.odds.toFixed(2)}</p>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-emerald-200 text-[10px] font-medium uppercase tracking-wide">{t('advertiser.freeBetLabel')}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-white font-bold text-sm">{advertiser.currency}1,500</span>
+                                  <span className="text-emerald-200 text-xs">×</span>
+                                  <span className="text-white font-semibold text-sm">{bet.odds.toFixed(2)}</span>
+                                  <span className="text-emerald-200 text-xs">=</span>
+                                  <span className="font-bold text-sm" style={{ color: '#fbbf24' }}>
+                                    {advertiser.currency}{(1500 * bet.odds).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <svg className="w-4 h-4 text-white/70 shrink-0 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 )}
 
                 {/* Simple promo link for messages without bet recommendation */}
-                {!msg.bet && msg.role === 'assistant' && msg.id !== 'welcome' && (
+                {!msg.bets?.length && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
                     onClick={() => {
                       if (msg.fonbetDeeplink) {
@@ -491,7 +496,7 @@ export default function AIChat() {
               </div>
             </div>
             {/* Ad block after certain responses — skip for PRO if bet card already shown */}
-            {msg.showAd && !(isPremium && msg.bet) && (
+            {msg.showAd && !(isPremium && msg.bets?.length) && (
               isPremium ? (
                 <div
                   onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = msg.fonbetDeeplink ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet') : getTrackingLink(user?.id, 'aichat_ad_place_bet'); if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}

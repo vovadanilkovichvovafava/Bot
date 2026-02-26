@@ -160,7 +160,8 @@ class MatchAnalyzer:
             "- Only say you lack data if the match data section is completely empty or missing.\n\n"
             "Guidelines:\n"
             "- When real-time data is provided, use it as the PRIMARY basis, supplemented by your knowledge.\n"
-            "- ALWAYS provide a concrete betting recommendation with [BET] tag — never refuse if a match is specified.\n"
+            "- ALWAYS provide 2-3 concrete betting recommendations from different markets, each with [BET] tag — never refuse if a match is specified.\n"
+            "- End analysis with a FINAL RECOMMENDATIONS section. Format each recommendation on its own line: [BET] Bet Type @ Odds\n"
             "- STRICTLY follow user's min/max odds range. If the obvious bet has odds outside the user's range, "
             "find alternative markets (handicap, over/under, BTTS, corners, cards, halftime result, etc.) that FIT the range.\n"
             "- Structure predictions clearly: predicted outcome, confidence level, key factors, and a specific betting recommendation.\n"
@@ -318,7 +319,8 @@ class MatchAnalyzer:
         parts.append(
             "\nConsider these ML probabilities but use your expert judgment to adjust "
             "based on qualitative factors (injuries, motivation, weather, etc.). "
-            "Provide 2-3 bet recommendations from different markets, not just one."
+            "Provide 2-3 bet recommendations from different markets in a FINAL RECOMMENDATIONS section. "
+            "Each on its own line: [BET] Bet Type @ Odds"
         )
 
         return "\n".join(parts)
