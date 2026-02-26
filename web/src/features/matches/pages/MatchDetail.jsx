@@ -1277,7 +1277,7 @@ function FormationPitch({ homeLineup, awayLineup }) {
     const maxRow = Math.max(...Object.keys(rows).map(Number));
 
     return (
-      <div className="relative" style={{ height: '200px' }}>
+      <div className="relative" style={{ height: '240px' }}>
         {/* Team label */}
         <div className={`absolute ${isHome ? 'top-1' : 'bottom-1'} left-2 z-10 flex items-center gap-1.5`}>
           <img src={lineup.team.logo} alt="" className="w-4 h-4 object-contain"/>
@@ -1286,11 +1286,11 @@ function FormationPitch({ homeLineup, awayLineup }) {
         {/* Players */}
         {Object.entries(rows).map(([rowNum, players]) => {
           const row = parseInt(rowNum);
-          // Home: GK at bottom (high Y), FWD at top (low Y)
-          // Away: GK at top (low Y), FWD at bottom (high Y)
+          // Home (top half): GK (row 1) at top (near their goal), FWD (max row) at bottom (near center)
+          // Away (bottom half): GK (row 1) at bottom (near their goal), FWD (max row) at top (near center)
           const yPct = isHome
-            ? 8 + ((maxRow - row) / Math.max(maxRow - 1, 1)) * 80
-            : 12 + ((row - 1) / Math.max(maxRow - 1, 1)) * 80;
+            ? 10 + ((row - 1) / Math.max(maxRow - 1, 1)) * 78
+            : 12 + ((maxRow - row) / Math.max(maxRow - 1, 1)) * 78;
           const numInRow = players.length;
 
           return players.map((player, i) => {
@@ -1318,26 +1318,30 @@ function FormationPitch({ homeLineup, awayLineup }) {
   };
 
   return (
-    <div className="bg-gradient-to-b from-green-700 via-green-600 to-green-700 relative">
+    <div className="bg-gradient-to-b from-green-700 via-green-600 to-green-700 relative rounded-lg overflow-hidden">
       {/* Pitch markings */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Center line */}
-        <div className="absolute top-1/2 left-[5%] right-[5%] h-px bg-white/30"/>
-        {/* Center circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white/30 rounded-full"/>
-        {/* Center dot */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/40 rounded-full"/>
-        {/* Top penalty box */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[12%] border-b border-l border-r border-white/25"/>
-        {/* Bottom penalty box */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[12%] border-t border-l border-r border-white/25"/>
         {/* Field border */}
         <div className="absolute inset-[3%] border border-white/20 rounded"/>
+        {/* Center line */}
+        <div className="absolute top-1/2 left-[3%] right-[3%] h-px bg-white/30"/>
+        {/* Center circle */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-white/25 rounded-full"/>
+        {/* Center dot */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/40 rounded-full"/>
+        {/* Top penalty box (18-yard) */}
+        <div className="absolute top-[3%] left-1/2 -translate-x-1/2 w-[44%] h-[14%] border-b border-l border-r border-white/20"/>
+        {/* Top goal box (6-yard) */}
+        <div className="absolute top-[3%] left-1/2 -translate-x-1/2 w-[20%] h-[6%] border-b border-l border-r border-white/15"/>
+        {/* Bottom penalty box (18-yard) */}
+        <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 w-[44%] h-[14%] border-t border-l border-r border-white/20"/>
+        {/* Bottom goal box (6-yard) */}
+        <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 w-[20%] h-[6%] border-t border-l border-r border-white/15"/>
       </div>
 
-      {/* Home team (top half = attacking upwards) */}
+      {/* Home team (top half — GK at top, FWD near center) */}
       {renderHalf(homeLineup, true)}
-      {/* Away team (bottom half = attacking downwards) */}
+      {/* Away team (bottom half — FWD near center, GK at bottom) */}
       {renderHalf(awayLineup, false)}
     </div>
   );
