@@ -2162,6 +2162,186 @@ async def get_traffic_analytics(
         raise HTTPException(status_code=500, detail=f"Traffic analytics error: {str(e)}")
 
 
+# ── Financial Dashboard ──────────────────────────────────────────
+
+
+@router.get("/finance")
+async def get_finance_stats(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Financial dashboard — revenue from deposits, LTV, CAC estimates."""
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    try:
+        # ── Revenue from postback deposits ──
+        total_revenue = (await db.execute(text(
+            "SELECT COALESCE(SUM(amount), 0) FROM postback_logs WHERE amount > 0"
+        ))).scalar() or 0
+
+        revenue_today = (await db.execute(text(
+            "SELECT COALESCE(SUM(amount), 0) FROM postback_logs WHERE amount > 0 AND created_at >= :since"
+        ), {"since": today_start})).scalar() or 0
+
+        revenue_week = (await db.execute(text(
+            "SELECT COALESCE(SUM(amount), 0) FROM postback_logs WHERE amount > 0 AND created_at >= :since"
+        ), {"since": week_ago})).scalar() or 0
+
+        revenue_month = (await db.execute(text(
+            "SELECT COALESCE(SUM(amount), 0) FROM postback_logs WHERE amount > 0 AND created_at >= :since"
+        ), {"since": month_ago})).scalar() or 0
+
+        # Total deposits count
+        total_deposits = (await db.execute(text(
+            "SELECT COUNT(*) FROM postback_logs WHERE amount > 0"
+        ))).scalar() or 0
+
+        deposits_today = (await db.execute(text(
+            "SELECT COUNT(*) FROM postback_logs WHERE amount > 0 AND created_at >= :since"
+        ), {"since": today_start})).scalar() or 0
+
+        # Avg deposit
+        avg_deposit = round(float(total_revenue) / total_deposits, 2) if total_deposits > 0 else 0
+
+        # ── Depositing users ──
+        depositing_users = (await db.execute(text(
+            "SELECT COUNT(DISTINCT user_db_id) FROM postback_logs WHERE user_db_id IS NOT NULL AND amount > 0"
+        ))).scalar() or 0
+
+        total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
+
+        # ── LTV (Lifetime Value) ──
+        # Revenue per depositing user
+        ltv_depositors = round(float(total_revenue) / depositing_users, 2) if depositing_users > 0 else 0
+        # Revenue per all users
+        ltv_all = round(float(total_revenue) / total_users, 2) if total_users > 0 else 0
+
+        # ── Revenue by source (traffic source) ──
+        source_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(u.traffic_source, 'unknown') AS src,
+                COUNT(DISTINCT p.user_db_id) AS users,
+                COUNT(*) AS deposits,
+                COALESCE(SUM(p.amount), 0) AS revenue
+            FROM postback_logs p
+            LEFT JOIN users u ON u.id = p.user_db_id
+            WHERE p.amount > 0
+            GROUP BY COALESCE(u.traffic_source, 'unknown')
+            ORDER BY revenue DESC
+        """))).all()
+
+        by_source = [
+            {"source": r[0], "users": r[1], "deposits": r[2], "revenue": round(float(r[3]), 2)}
+            for r in source_rows
+        ]
+
+        # ── Revenue by country ──
+        country_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(u.country, 'Unknown') AS country,
+                COUNT(DISTINCT p.user_db_id) AS users,
+                COALESCE(SUM(p.amount), 0) AS revenue
+            FROM postback_logs p
+            LEFT JOIN users u ON u.id = p.user_db_id
+            WHERE p.amount > 0
+            GROUP BY COALESCE(u.country, 'Unknown')
+            ORDER BY revenue DESC
+            LIMIT 15
+        """))).all()
+
+        by_country = [
+            {"country": r[0], "users": r[1], "revenue": round(float(r[2]), 2)}
+            for r in country_rows
+        ]
+
+        # ── Daily revenue (last 30 days) ──
+        daily_rows = (await db.execute(text("""
+            SELECT created_at::date AS day, COALESCE(SUM(amount), 0) AS revenue, COUNT(*) AS deposits
+            FROM postback_logs
+            WHERE amount > 0 AND created_at >= :since
+            GROUP BY created_at::date
+            ORDER BY created_at::date
+        """), {"since": month_ago})).all()
+
+        daily = [
+            {"date": str(r[0]), "revenue": round(float(r[1]), 2), "deposits": r[2]}
+            for r in daily_rows
+        ]
+
+        # ── Conversion funnel ──
+        pro_users = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(User.is_premium == True, User.premium_until > now)
+            )
+        )).scalar() or 0
+
+        active_users = (await db.execute(
+            select(func.count(User.id)).where(User.total_predictions > 0)
+        )).scalar() or 0
+
+        funnel = {
+            "total_users": total_users,
+            "active_users": active_users,
+            "pro_users": pro_users,
+            "depositing_users": depositing_users,
+            "activation_rate": round(active_users / total_users * 100, 1) if total_users > 0 else 0,
+            "pro_rate": round(pro_users / total_users * 100, 1) if total_users > 0 else 0,
+            "deposit_rate": round(depositing_users / total_users * 100, 1) if total_users > 0 else 0,
+        }
+
+        # ── Recent deposits ──
+        recent_rows = (await db.execute(text("""
+            SELECT p.user_id, p.user_db_id, p.amount, p.currency, p.source, p.created_at,
+                   u.username, u.country
+            FROM postback_logs p
+            LEFT JOIN users u ON u.id = p.user_db_id
+            WHERE p.amount > 0
+            ORDER BY p.created_at DESC
+            LIMIT 15
+        """))).all()
+
+        recent_deposits = [
+            {
+                "user_id": r[0], "user_db_id": r[1], "amount": r[2],
+                "currency": r[3], "source": r[4],
+                "created_at": r[5].isoformat() if r[5] else None,
+                "username": r[6], "country": r[7],
+            }
+            for r in recent_rows
+        ]
+
+        return {
+            "overview": {
+                "total_revenue": round(float(total_revenue), 2),
+                "revenue_today": round(float(revenue_today), 2),
+                "revenue_week": round(float(revenue_week), 2),
+                "revenue_month": round(float(revenue_month), 2),
+                "total_deposits": total_deposits,
+                "deposits_today": deposits_today,
+                "avg_deposit": avg_deposit,
+                "depositing_users": depositing_users,
+            },
+            "ltv": {
+                "per_depositor": ltv_depositors,
+                "per_user": ltv_all,
+            },
+            "by_source": by_source,
+            "by_country": by_country,
+            "daily": daily,
+            "funnel": funnel,
+            "recent_deposits": recent_deposits,
+        }
+    except Exception as e:
+        logger.error(f"Finance stats error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Finance stats error: {str(e)}")
+
+
 # ── Postback Logs ──────────────────────────────────────────────────
 
 

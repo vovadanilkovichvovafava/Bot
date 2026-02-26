@@ -114,4 +114,7 @@ export const api = {
 
   // ── Banner Clicks ────────────────────
   getBannerClicks: () => request('/stats/banner-clicks'),
+
+  // ── Finance ────────────────────────
+  getFinanceStats: () => request('/stats/finance'),
 }
