@@ -19,7 +19,7 @@ function BarChart({ data, xKey, yKey, color = '#3b82f6', height = 180 }) {
             }}
             title={`${d[xKey]}: ${d[yKey]}`}
           />
-          {data.length <= 15 && (
+          {(data.length <= 15 || i % 5 === 0) && (
             <span className="text-[9px] text-slate-500 truncate w-full text-center">{d[xKey]}</span>
           )}
         </div>
@@ -156,8 +156,8 @@ function OverviewTab({ data }) {
       <div className="grid md:grid-cols-2 gap-6">
         {/* PRO Growth Chart */}
         <div className="bg-slate-900 rounded-xl p-5 border border-slate-800">
-          <h3 className="font-semibold text-sm mb-4">PRO Growth (12 weeks)</h3>
-          <BarChart data={data.growth_weekly} xKey="week" yKey="pro_count" color="#3b82f6" />
+          <h3 className="font-semibold text-sm mb-4">PRO Growth (30 days)</h3>
+          <BarChart data={data.growth_daily} xKey="date" yKey="pro_count" color="#3b82f6" />
         </div>
 
         {/* PRO vs Free Engagement */}

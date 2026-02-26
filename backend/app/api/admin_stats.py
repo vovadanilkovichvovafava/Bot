@@ -1825,32 +1825,16 @@ async def get_pro_analytics(
             total_days = sum((now - u.created_at).days for u in pro_rows if u.created_at)
             avg_pro_days = round(total_days / len(pro_rows), 1)
 
-        # ── PRO Growth (last 12 weeks — single query) ──
+        # ── PRO Growth (last 30 days — daily) ──
 
-        twelve_weeks_ago = today_start - timedelta(days=84)
-        growth_rows = (await db.execute(
-            select(
-                func.date(User.created_at).label("d"),
-                func.count(User.id).label("cnt"),
-            )
-            .where(and_(
-                User.is_premium == True,
-                User.created_at >= twelve_weeks_ago,
-            ))
-            .group_by(func.date(User.created_at))
-            .order_by(func.date(User.created_at))
-        )).all()
-
-        # Build weekly buckets
-        growth_weekly = []
-        for weeks_ago in range(11, -1, -1):
-            week_start = today_start - timedelta(days=7 * (weeks_ago + 1))
-            week_end = today_start - timedelta(days=7 * weeks_ago)
-            # Count PRO users that existed at week_end: created before week_end, premium valid past week_start
-            count = sum(1 for u in pro_rows if u.created_at and u.created_at < week_end)
-            # Also add churned users who were active then
-            growth_weekly.append({
-                "week": week_start.strftime("%m/%d"),
+        growth_daily = []
+        for days_ago in range(29, -1, -1):
+            day = today_start - timedelta(days=days_ago)
+            day_end = day + timedelta(days=1)
+            # Count PRO users that existed at day_end: created before day_end
+            count = sum(1 for u in pro_rows if u.created_at and u.created_at < day_end)
+            growth_daily.append({
+                "date": day.strftime("%m/%d"),
                 "pro_count": count,
             })
 
@@ -2012,7 +1996,7 @@ async def get_pro_analytics(
                 "churned_month": churned_month,
                 "avg_pro_days": avg_pro_days,
             },
-            "growth_weekly": growth_weekly,
+            "growth_daily": growth_daily,
             "engagement": engagement,
             "daily_activity": daily_activity,
             "pro_users": pro_users_list,
