@@ -45,7 +45,7 @@ function ModelComparisonChart({ models }) {
               <div className="w-full relative group">
                 <div
                   className={`w-full rounded-t transition-all ${m.is_active ? 'bg-green-500/60' : 'bg-slate-600/40'}`}
-                  style={{ height: `${Math.max(pct, 3)}%`, minHeight: '4px', height: `${Math.max(pct * 1.2, 4)}px` }}
+                  style={{ height: `${Math.max(pct, 3)}%`, minHeight: '4px' }}
                 />
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-[8px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {m.name} v{m.version}

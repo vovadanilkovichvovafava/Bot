@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import { useAdvertiser } from '../context/AdvertiserContext';
-import { trackClick, getTrackingLink } from '../../features/betting/services/trackingService';
+import { getTrackingLink } from '../../features/betting/services/trackingService';
 
 const navItems = [
   {
@@ -60,7 +60,7 @@ export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { advertiser } = useAdvertiser();
+  const { advertiser, trackClick } = useAdvertiser();
   const isPremium = user?.is_premium;
 
   const handleBetClick = () => {
