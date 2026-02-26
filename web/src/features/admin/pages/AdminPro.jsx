@@ -6,24 +6,62 @@ import { adminApi } from '../api';
 function BarChart({ data, xKey, yKey, color = '#3b82f6', height = 180 }) {
   if (!data?.length) return <div className="text-slate-500 text-sm text-center py-8">No data</div>;
   const max = Math.max(...data.map(d => d[yKey] || 0), 1);
+  const chartH = height - 28; // space for X labels
+  // Y-axis ticks (4 lines)
+  const ticks = [0, 1, 2, 3, 4].map(i => Math.round((max / 4) * i));
+  // X-axis: show ~6 labels evenly
+  const step = Math.max(1, Math.floor(data.length / 6));
   return (
-    <div className="flex items-end gap-1" style={{ height }}>
-      {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <div
-            className="w-full rounded-t transition-all"
-            style={{
-              height: `${Math.max((d[yKey] || 0) / max * (height - 24), 2)}px`,
-              backgroundColor: color,
-              opacity: 0.8,
-            }}
-            title={`${d[xKey]}: ${d[yKey]}`}
-          />
-          {(data.length <= 15 || i % 5 === 0) && (
-            <span className="text-[9px] text-slate-500 truncate w-full text-center">{d[xKey]}</span>
-          )}
+    <div style={{ height }}>
+      <div className="flex" style={{ height: chartH }}>
+        {/* Y axis labels */}
+        <div className="flex flex-col-reverse justify-between pr-2 shrink-0" style={{ width: 32 }}>
+          {ticks.map((t, i) => (
+            <span key={i} className="text-[9px] text-slate-500 text-right leading-none">{t}</span>
+          ))}
         </div>
-      ))}
+        {/* Chart area */}
+        <div className="flex-1 relative">
+          {/* Grid lines */}
+          {ticks.map((t, i) => (
+            <div
+              key={i}
+              className="absolute w-full border-t border-slate-700/40"
+              style={{ bottom: `${(t / max) * 100}%` }}
+            />
+          ))}
+          {/* Bars */}
+          <div className="flex items-end gap-[2px] h-full relative z-10">
+            {data.map((d, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t transition-all min-w-0 hover:opacity-100"
+                style={{
+                  height: `${Math.max(((d[yKey] || 0) / max) * 100, 1)}%`,
+                  backgroundColor: color,
+                  opacity: 0.8,
+                }}
+                title={`${d[xKey]}: ${d[yKey]}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* X axis labels */}
+      <div className="flex" style={{ height: 28 }}>
+        <div style={{ width: 32 }} className="shrink-0" />
+        <div className="flex-1 flex">
+          {data.map((d, i) => (
+            <div key={i} className="flex-1 min-w-0 flex justify-center pt-1">
+              {(i % step === 0 || i === data.length - 1) && (
+                <span className="text-[9px] text-slate-500 -rotate-45 origin-top-left whitespace-nowrap">
+                  {d[xKey]}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
