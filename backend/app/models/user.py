@@ -32,6 +32,7 @@ class User(Base):
 
     is_premium = Column(Boolean, default=False)
     premium_until = Column(DateTime, nullable=True)
+    is_banned = Column(Boolean, default=False)
 
     daily_requests = Column(Integer, default=0)
     daily_limit = Column(Integer, default=10)

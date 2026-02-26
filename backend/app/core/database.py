@@ -121,6 +121,8 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_user_id ON postback_logs(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_created ON postback_logs(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_event ON postback_logs(event)",
+            # User ban column
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE",
             # Banner clicks table
             """CREATE TABLE IF NOT EXISTS banner_clicks (
                 id SERIAL PRIMARY KEY,

@@ -248,6 +248,12 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
             detail="Invalid credentials"
         )
 
+    if db_user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is suspended"
+        )
+
     identifier = db_user.phone or db_user.email
     access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
     refresh_token = create_access_token(
@@ -328,6 +334,12 @@ async def refresh_token_endpoint(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
+        )
+
+    if db_user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is suspended"
         )
 
     # Issue new tokens

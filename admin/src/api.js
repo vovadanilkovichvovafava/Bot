@@ -84,6 +84,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(days),
     }),
+  toggleBan: (userId) =>
+    request(`/stats/users/${userId}/toggle-ban`, { method: 'POST' }),
 
   // ── Postback Logs ────────────────────
   getPostbackLogs: (q = '', source, event, page = 1) => {

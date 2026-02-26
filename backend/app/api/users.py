@@ -71,6 +71,12 @@ async def get_current_user_info(
             detail="User not found"
         )
 
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is suspended"
+        )
+
     return UserResponse(
         id=user.public_id,  # Return public_id as 'id' for frontend compatibility
         email=user.email,

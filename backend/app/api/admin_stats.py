@@ -553,6 +553,7 @@ async def search_users(
             "daily_requests": u.daily_requests,
             "daily_limit": u.daily_limit,
             "referral_code": u.referral_code,
+            "is_banned": u.is_banned,
             "created_at": u.created_at.isoformat() if u.created_at else None,
         }
         for u in rows
@@ -645,6 +646,7 @@ async def get_user_profile(
             "risk_level": user.risk_level,
             "min_odds": user.min_odds,
             "max_odds": user.max_odds,
+            "is_banned": user.is_banned,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "updated_at": user.updated_at.isoformat() if user.updated_at else None,
         },
@@ -695,6 +697,32 @@ async def toggle_user_premium(
         "public_id": user.public_id,
         "is_premium": user.is_premium,
         "premium_until": user.premium_until.isoformat() if user.premium_until else None,
+    }
+
+
+@router.post("/users/{user_id}/toggle-ban")
+async def toggle_user_ban(
+    user_id: int,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Toggle ban status for a user (admin action)."""
+    from fastapi import HTTPException
+    user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_banned = not user.is_banned
+    action = "banned" if user.is_banned else "unbanned"
+
+    await db.commit()
+
+    return {
+        "success": True,
+        "action": action,
+        "user_id": user.id,
+        "public_id": user.public_id,
+        "is_banned": user.is_banned,
     }
 
 
