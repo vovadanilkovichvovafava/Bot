@@ -1,68 +1,39 @@
 import { useState, useEffect } from 'react';
+import { BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { adminApi } from '../api';
 
-// ── Tiny bar chart component ──
+// ── Bar chart (recharts) ──
 
-function BarChart({ data, xKey, yKey, color = '#3b82f6', height = 180 }) {
+function BarChart({ data, xKey, yKey, color = '#3b82f6', height = 200 }) {
   if (!data?.length) return <div className="text-slate-500 text-sm text-center py-8">No data</div>;
-  const max = Math.max(...data.map(d => d[yKey] || 0), 1);
-  const chartH = height - 28; // space for X labels
-  // Y-axis ticks (4 lines)
-  const ticks = [0, 1, 2, 3, 4].map(i => Math.round((max / 4) * i));
-  // X-axis: show ~6 labels evenly
+  // Show ~6 X-axis labels evenly
   const step = Math.max(1, Math.floor(data.length / 6));
   return (
-    <div style={{ height }}>
-      <div className="flex" style={{ height: chartH }}>
-        {/* Y axis labels */}
-        <div className="flex flex-col-reverse justify-between pr-2 shrink-0" style={{ width: 32 }}>
-          {ticks.map((t, i) => (
-            <span key={i} className="text-[9px] text-slate-500 text-right leading-none">{t}</span>
-          ))}
-        </div>
-        {/* Chart area */}
-        <div className="flex-1 relative">
-          {/* Grid lines */}
-          {ticks.map((t, i) => (
-            <div
-              key={i}
-              className="absolute w-full border-t border-slate-700/40"
-              style={{ bottom: `${(t / max) * 100}%` }}
-            />
-          ))}
-          {/* Bars */}
-          <div className="flex items-end gap-[2px] h-full relative z-10">
-            {data.map((d, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-t transition-all min-w-0 hover:opacity-100"
-                style={{
-                  height: `${Math.max(((d[yKey] || 0) / max) * 100, 1)}%`,
-                  backgroundColor: color,
-                  opacity: 0.8,
-                }}
-                title={`${d[xKey]}: ${d[yKey]}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* X axis labels */}
-      <div className="flex" style={{ height: 28 }}>
-        <div style={{ width: 32 }} className="shrink-0" />
-        <div className="flex-1 flex">
-          {data.map((d, i) => (
-            <div key={i} className="flex-1 min-w-0 flex justify-center pt-1">
-              {(i % step === 0 || i === data.length - 1) && (
-                <span className="text-[9px] text-slate-500 -rotate-45 origin-top-left whitespace-nowrap">
-                  {d[xKey]}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={height}>
+      <ReBarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+        <XAxis
+          dataKey={xKey}
+          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tickLine={false}
+          axisLine={{ stroke: '#334155' }}
+          interval={step - 1}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 12 }}
+          labelStyle={{ color: '#94a3b8' }}
+          itemStyle={{ color: '#e2e8f0' }}
+          cursor={{ fill: 'rgba(148,163,184,0.08)' }}
+        />
+        <Bar dataKey={yKey} fill={color} radius={[4, 4, 0, 0]} maxBarSize={24} />
+      </ReBarChart>
+    </ResponsiveContainer>
   );
 }
 
