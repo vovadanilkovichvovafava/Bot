@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { getTrackingLink } from '../services/trackingService';
+import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
 const TOTAL = 5;
@@ -78,7 +78,7 @@ export default function BookmakerPromo() {
     if (!user?.id) return; // Wait for auth — never build link with anon ID
     // If we have a Fonbet deeplink from the referring page, prefer it
     if (fonbetDeeplink) {
-      setBookmakerLink(fonbetDeeplink);
+      setBookmakerLink(addTrackingToUrl(fonbetDeeplink, user.id, banner || 'promo_fonbet'));
     } else {
       setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page'));
     }

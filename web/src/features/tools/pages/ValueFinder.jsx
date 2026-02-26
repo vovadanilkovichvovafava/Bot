@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import footballApi from '../../matches/api/footballApi';
 import fonbetApi from '../../../services/fonbetApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import { addTrackingToUrl } from '../../betting/services/trackingService';
 
 const VALUE_BET_USED_KEY = 'value_bet_used';
 
@@ -299,7 +300,7 @@ export default function ValueFinder() {
                 )}
               </div>
               {filtered.map((item, idx) => (
-                <ValueBetCard key={idx} item={item} navigate={navigate} t={t} fonbetMap={fonbetMap} />
+                <ValueBetCard key={idx} item={item} navigate={navigate} t={t} fonbetMap={fonbetMap} userId={user?.id} />
               ))}
             </>
           )}
@@ -309,7 +310,7 @@ export default function ValueFinder() {
   );
 }
 
-function ValueBetCard({ item, navigate, t, fonbetMap }) {
+function ValueBetCard({ item, navigate, t, fonbetMap, userId }) {
   const { fixture, bestBet, bets, bookmaker, prediction, isTopLeague } = item;
   const time = new Date(fixture.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const league = fixture.league.name;
@@ -431,7 +432,7 @@ function ValueBetCard({ item, navigate, t, fonbetMap }) {
             className="bg-indigo-50 border border-indigo-200 rounded-lg p-2.5 mb-2 cursor-pointer hover:bg-indigo-100 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
-              if (fbDeeplink) window.open(fbDeeplink, '_blank', 'noopener,noreferrer');
+              if (fbDeeplink) window.open(addTrackingToUrl(fbDeeplink, userId, 'value_finder_fonbet'), '_blank', 'noopener,noreferrer');
             }}
           >
             <div className="flex items-center justify-between">

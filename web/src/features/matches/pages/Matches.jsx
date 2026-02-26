@@ -12,6 +12,7 @@ import {
   toggleFavouriteTeam,
   isTeamFavourite,
 } from '../services/favouritesStore';
+import { addTrackingToUrl } from '../../betting/services/trackingService';
 
 // Popular league IDs for API-Football
 const POPULAR_LEAGUE_IDS = [
@@ -277,6 +278,7 @@ export default function Matches() {
                     isLive={false}
                     isPopular={true}
                     fonbetMap={fonbetMap}
+                    userId={user?.id}
                   />
                 )}
 
@@ -289,6 +291,7 @@ export default function Matches() {
                     isPopular={false}
                     collapsed
                     fonbetMap={fonbetMap}
+                    userId={user?.id}
                   />
                 )}
               </>
@@ -473,7 +476,7 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
   );
 }
 
-function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular, fonbetMap }) {
+function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular, fonbetMap, userId }) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(!collapsed);
   const leagueList = Object.values(leagues);
@@ -529,6 +532,7 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular,
                       fixture={f}
                       onClick={() => navigate(`/match/${f.fixture.id}`)}
                       fonbetMap={fonbetMap}
+                      userId={userId}
                     />
                   )
                 ))}
@@ -541,7 +545,7 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular,
   );
 }
 
-function FixtureCard({ fixture, onClick, fonbetMap }) {
+function FixtureCard({ fixture, onClick, fonbetMap, userId }) {
   const f = fixture;
   const date = new Date(f.fixture.date);
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -603,7 +607,7 @@ function FixtureCard({ fixture, onClick, fonbetMap }) {
                 key={o.label}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (fbDeeplink) window.open(fbDeeplink, '_blank', 'noopener,noreferrer');
+                  if (fbDeeplink) window.open(addTrackingToUrl(fbDeeplink, userId, 'matches_fonbet_odds'), '_blank', 'noopener,noreferrer');
                 }}
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-1.5 py-1 text-center cursor-pointer transition-colors min-w-[36px]"
               >

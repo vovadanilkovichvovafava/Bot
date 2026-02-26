@@ -11,6 +11,7 @@ import { generateMatchShareText } from '../../predictions/services/shareUtils';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
+import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 
 const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -567,10 +568,10 @@ export default function MatchDetail() {
   const handlePromoClick = (source) => {
     if (fonbetMatch?.deeplink) {
       trackClick(user?.id, source);
-      window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+      window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, source), '_blank', 'noopener,noreferrer');
     } else if (user?.is_premium && advertiser?.link) {
       trackClick(user.id, source);
-      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+      window.open(getTrackingLink(user?.id, source) || advertiser.link, '_blank', 'noopener,noreferrer');
     } else {
       navigate(`/promo?banner=${source}`);
     }
@@ -821,10 +822,10 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
                 onClick={() => {
                   if (fonbetMatch?.deeplink) {
                     trackClick(user?.id, 'match_ai_bet');
-                    window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+                    window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'match_ai_bet'), '_blank', 'noopener,noreferrer');
                   } else if (isPremium && advertiser?.link) {
                     trackClick(user?.id, 'match_ai_bet');
-                    window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                    window.open(getTrackingLink(user?.id, 'match_ai_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                   } else {
                     navigate('/promo?banner=match_ai_bet');
                   }
@@ -1533,7 +1534,7 @@ function MatchBonusCard({ match, enriched, advertiser, user, trackClick, adTexts
       onClick={() => {
         if (user?.is_premium && advertiser?.link) {
           trackClick(user.id, 'match_promo_banner');
-          window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+          window.open(getTrackingLink(user?.id, 'match_promo_banner') || advertiser.link, '_blank', 'noopener,noreferrer');
         } else {
           navigate('/promo?banner=match_promo_banner');
         }

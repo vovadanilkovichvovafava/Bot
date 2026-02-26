@@ -11,6 +11,7 @@ import FootballSpinner from '../../../shared/components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
+import { getTrackingLink } from '../../betting/services/trackingService';
 
 
 
@@ -536,7 +537,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
   const handleClick = () => {
     if (isPremium && advertiser?.link) {
       if (userId) trackClick(userId, smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match');
-      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+      window.open(getTrackingLink(userId, smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match') || advertiser.link, '_blank', 'noopener,noreferrer');
     } else {
       navigate('/promo?banner=home_featured_match');
     }
@@ -702,7 +703,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
   // Fallback: Simple banner without match (similar to old design)
   return (
     <div
-      onClick={isPremium && advertiser?.link ? () => { if (userId) trackClick(userId, 'pro_fallback_banner'); window.open(advertiser.link, '_blank', 'noopener,noreferrer'); } : () => navigate('/promo?banner=home_fallback_banner')}
+      onClick={isPremium && advertiser?.link ? () => { if (userId) trackClick(userId, 'pro_fallback_banner'); window.open(getTrackingLink(userId, 'pro_fallback_banner') || advertiser.link, '_blank', 'noopener,noreferrer'); } : () => navigate('/promo?banner=home_fallback_banner')}
       className="block relative overflow-hidden rounded-2xl p-4 text-white bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] cursor-pointer"
     >
       {/* Animated shine effect */}

@@ -7,6 +7,7 @@ import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
+import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 
 const TAB_KEYS = ['overview', 'stats', 'events', 'lineups'];
 
@@ -431,10 +432,10 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                   onClick={() => {
                     if (fonbetMatch?.deeplink) {
                       trackClick(user?.id, 'live_ai_bet');
-                      window.open(fonbetMatch.deeplink, '_blank', 'noopener,noreferrer');
+                      window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'live_ai_bet'), '_blank', 'noopener,noreferrer');
                     } else if (user?.is_premium && advertiser?.link) {
                       trackClick(user?.id, 'live_ai_bet');
-                      window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                      window.open(getTrackingLink(user?.id, 'live_ai_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                     } else {
                       navigate('/promo?banner=live_ai_bet');
                     }

@@ -6,6 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
 import fonbetApi from '../../../services/fonbetApi';
+import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -385,10 +386,10 @@ export default function AIChat() {
                       onClick={() => {
                         if (msg.fonbetDeeplink) {
                           trackClick(user?.id, 'aichat_bet_fonbet');
-                          window.open(msg.fonbetDeeplink, '_blank', 'noopener,noreferrer');
-                        } else if (isPremium && advertiser?.link) {
+                          window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
+                        } else if (isPremium) {
                           trackClick(user?.id, 'aichat_bet_card');
-                          window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                          window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
                         } else {
                           navigate('/promo?banner=aichat_bet_card');
                         }
@@ -471,10 +472,10 @@ export default function AIChat() {
                     onClick={() => {
                       if (msg.fonbetDeeplink) {
                         trackClick(user?.id, 'aichat_promo_fonbet');
-                        window.open(msg.fonbetDeeplink, '_blank', 'noopener,noreferrer');
-                      } else if (isPremium && advertiser?.link) {
+                        window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_promo_fonbet'), '_blank', 'noopener,noreferrer');
+                      } else if (isPremium) {
                         trackClick(user?.id, 'aichat_promo_link');
-                        window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                        window.open(getTrackingLink(user?.id, 'aichat_promo_link') || advertiser?.link, '_blank', 'noopener,noreferrer');
                       } else {
                         navigate('/promo?banner=aichat_promo_link');
                       }
@@ -493,7 +494,7 @@ export default function AIChat() {
             {msg.showAd && !(isPremium && msg.bet) && (
               isPremium ? (
                 <div
-                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = msg.fonbetDeeplink || advertiser?.link; if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
+                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = msg.fonbetDeeplink ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet') : getTrackingLink(user?.id, 'aichat_ad_place_bet'); if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">

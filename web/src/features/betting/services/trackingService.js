@@ -171,3 +171,46 @@ export function getTrackingLink(userId, banner = '') {
     return `${OFFER_BASE_URL}?external_id=${userId}`;
   }
 }
+
+/**
+ * Добавить tracking-параметры к ЛЮБОМУ URL (Fonbet deeplink, партнёрский и т.д.).
+ * Для постбэков: external_id, sub_id_10 (userId), sub_id_11 (banner), sub_id_1..9 из клоачной.
+ * Используем когда ссылка идёт НЕ через OFFER_BASE_URL (Keitaro), а напрямую на букмекера.
+ */
+export function addTrackingToUrl(url, userId, banner = '') {
+  if (!url) return url;
+  if (!userId) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('external_id', String(userId));
+    u.searchParams.set('sub_id_10', String(userId));
+    if (banner) u.searchParams.set('sub_id_11', banner);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';
+
+    // sub_id_1..9 из клоачной ссылки (as-is)
+    for (let i = 1; i <= 9; i++) {
+      const val = getParam(`sub_id_${i}`);
+      if (val) u.searchParams.set(`sub_id_${i}`, val);
+    }
+
+    // fbclid
+    const fbclid = getParam('fbclid');
+    if (fbclid) {
+      u.searchParams.set('fbclid', fbclid);
+      u.searchParams.set('sub_id_16', fbclid);
+    }
+
+    // UTM
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+      const val = getParam(key);
+      if (val) u.searchParams.set(key, val);
+    }
+
+    return u.toString();
+  } catch {
+    // URL невалидный — вернуть как есть
+    return url;
+  }
+}

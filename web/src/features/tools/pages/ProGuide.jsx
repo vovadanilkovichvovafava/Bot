@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import footballApi from '../../matches/api/footballApi';
+import { getTrackingLink } from '../../../features/betting/services/trackingService';
 
 const BANKROLL_PRESETS = [100, 300, 500];
 const STAKE_PERCENT = 10;
@@ -265,7 +266,7 @@ export default function ProGuide() {
                     onClick={() => {
                       if (advertiser?.link) {
                         if (user?.id) trackClick(user.id, 'pro_guide_value_bet');
-                        window.open(advertiser.link, '_blank', 'noopener,noreferrer');
+                        window.open(getTrackingLink(user?.id, 'pro_guide_value_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                       }
                     }}
                     className="relative w-full bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-xl flex items-center justify-center gap-2"
