@@ -101,6 +101,27 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_users_created ON users(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_support_user_created ON support_chat_messages(user_id, created_at DESC)",
             # Admin session takeover table (auto/manual mode per session)
+            # Postback logs table
+            """CREATE TABLE IF NOT EXISTS postback_logs (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR,
+                user_db_id INTEGER,
+                source VARCHAR NOT NULL,
+                click_id VARCHAR,
+                transaction_id VARCHAR,
+                event VARCHAR,
+                amount FLOAT,
+                currency VARCHAR,
+                country VARCHAR,
+                premium_activated BOOLEAN DEFAULT FALSE,
+                error TEXT,
+                raw_params TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_postback_logs_user_id ON postback_logs(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_postback_logs_created ON postback_logs(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_postback_logs_event ON postback_logs(event)",
+            # Admin session takeover table
             """CREATE TABLE IF NOT EXISTS admin_session_overrides (
                 session_id VARCHAR PRIMARY KEY,
                 source_type VARCHAR NOT NULL DEFAULT 'support',

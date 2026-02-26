@@ -228,6 +228,18 @@ app.get('/api/postback', async (req, res) => {
     }
   }
 
+  // Log postback to database
+  logPostback({
+    user_id: userId,
+    source: 'generic',
+    click_id: actualClickId,
+    event: actualStatus,
+    amount: actualAmount,
+    currency: currency || 'USD',
+    premium_activated: clickRecord?.premiumActivated || false,
+    raw_params: JSON.stringify(req.query),
+  });
+
   // Respond with OK (bookmaker expects simple response)
   res.status(200).send('OK');
 });
@@ -327,6 +339,20 @@ app.get('/api/1win/postback', async (req, res) => {
     }
   }
 
+  // Log postback to database
+  logPostback({
+    user_id: userId,
+    source: '1win',
+    transaction_id: transaction_id,
+    event,
+    amount,
+    currency: 'USD',
+    country,
+    premium_activated: postbackRecord.premiumActivated || false,
+    error: postbackRecord.error,
+    raw_params: JSON.stringify(req.query),
+  });
+
   // Always respond with OK to the affiliate network
   res.status(200).send('OK');
 });
@@ -347,6 +373,24 @@ app.post('/api/1win/postback', async (req, res) => {
   // Forward to GET handler
   return app._router.handle({ ...req, method: 'GET' }, res, () => {});
 });
+
+/**
+ * Log postback event to main API database for debugging
+ */
+async function logPostback(data) {
+  try {
+    await fetch(`${CONFIG.MAIN_API_URL.replace('/users', '').replace('/api/v1', '/api/v1/postbacks')}/log`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Secret': CONFIG.POSTBACK_SECRET,
+      },
+      body: JSON.stringify(data),
+    });
+  } catch (err) {
+    console.error('[LOG] Failed to log postback:', err.message);
+  }
+}
 
 /**
  * Activate Premium for user
@@ -697,6 +741,19 @@ app.get('/api/keitaro/postback', async (req, res) => {
   } else {
     console.log(`[KEITARO POSTBACK] Non-qualifying status (${status}) - no premium activation`);
   }
+
+  // Log postback to database
+  logPostback({
+    user_id: userId,
+    source: 'keitaro',
+    click_id: subid,
+    event: status,
+    amount: payout,
+    currency: currency || 'EUR',
+    premium_activated: postbackRecord.premiumActivated || false,
+    error: postbackRecord.error,
+    raw_params: JSON.stringify(req.query),
+  });
 
   // Always respond with OK to Keitaro
   res.status(200).send('OK');

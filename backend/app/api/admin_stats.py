@@ -19,6 +19,7 @@ from app.models.prediction import Prediction
 from app.models.support_chat import SupportChatMessage
 from app.models.ai_chat import AIChatMessage
 from app.models.ml_models import MLModel, ROIAnalytics, LearningLog
+from app.models.postback_log import PostbackLog
 
 logger = logging.getLogger(__name__)
 
@@ -2073,3 +2074,83 @@ async def get_traffic_analytics(
         logger.error(traceback.format_exc())
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Traffic analytics error: {str(e)}")
+
+
+# ── Postback Logs ──────────────────────────────────────────────────
+
+
+@router.get("/postback-logs")
+async def get_postback_logs(
+    q: str = Query("", max_length=100),
+    source: Optional[str] = Query(None),
+    event: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(30, ge=1, le=100),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get postback logs for admin dashboard."""
+    from sqlalchemy import desc
+
+    query = select(PostbackLog)
+    count_q = select(func.count(PostbackLog.id))
+
+    if q.strip():
+        s = f"%{q.strip()}%"
+        f = PostbackLog.user_id.ilike(s) | PostbackLog.click_id.ilike(s) | PostbackLog.transaction_id.ilike(s)
+        query = query.where(f)
+        count_q = count_q.where(f)
+
+    if source:
+        query = query.where(PostbackLog.source == source)
+        count_q = count_q.where(PostbackLog.source == source)
+
+    if event:
+        query = query.where(PostbackLog.event == event)
+        count_q = count_q.where(PostbackLog.event == event)
+
+    total = (await db.execute(count_q)).scalar() or 0
+    offset = (page - 1) * per_page
+    rows = (await db.execute(
+        query.order_by(desc(PostbackLog.created_at)).limit(per_page).offset(offset)
+    )).scalars().all()
+
+    logs = [
+        {
+            "id": l.id,
+            "user_id": l.user_id,
+            "user_db_id": l.user_db_id,
+            "source": l.source,
+            "click_id": l.click_id,
+            "transaction_id": l.transaction_id,
+            "event": l.event,
+            "amount": l.amount,
+            "currency": l.currency,
+            "country": l.country,
+            "premium_activated": l.premium_activated,
+            "error": l.error,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        }
+        for l in rows
+    ]
+
+    now = datetime.utcnow()
+    day_ago = now - timedelta(days=1)
+    today_count = (await db.execute(
+        select(func.count(PostbackLog.id)).where(PostbackLog.created_at >= day_ago)
+    )).scalar() or 0
+    activated_count = (await db.execute(
+        select(func.count(PostbackLog.id)).where(PostbackLog.premium_activated == True)
+    )).scalar() or 0
+
+    return {
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "logs": logs,
+        "summary": {
+            "total_all_time": (await db.execute(select(func.count(PostbackLog.id)))).scalar() or 0,
+            "last_24h": today_count,
+            "total_activated": activated_count,
+        },
+    }
