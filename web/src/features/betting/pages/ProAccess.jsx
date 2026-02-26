@@ -98,9 +98,9 @@ export default function ProAccess() {
   const feature = searchParams.get('feature');
 
   useEffect(() => {
-    const userId = user?.id || `anon_${Date.now()}`;
+    if (!user?.id) return; // Wait for auth — never build link with anon ID
     const bannerName = feature ? `pro_access_${feature}` : 'pro_access_page';
-    setBookmakerLink(getTrackingLink(userId, bannerName));
+    setBookmakerLink(getTrackingLink(user.id, bannerName));
   }, [user?.id, feature]);
 
   const next = () => { if (step < TOTAL) setStep(step + 1); };

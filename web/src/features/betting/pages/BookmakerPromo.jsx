@@ -74,8 +74,8 @@ export default function BookmakerPromo() {
   const banner = searchParams.get('banner') || '';
 
   useEffect(() => {
-    const userId = user?.id || `anon_${Date.now()}`;
-    setBookmakerLink(getTrackingLink(userId, banner || 'promo_page'));
+    if (!user?.id) return; // Wait for auth — never build link with anon ID
+    setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page'));
   }, [user?.id, banner]);
 
   const next = () => { if (step < TOTAL) setStep(step + 1); };
