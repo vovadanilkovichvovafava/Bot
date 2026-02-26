@@ -86,6 +86,23 @@ export const api = {
     }),
   toggleBan: (userId) =>
     request(`/stats/users/${userId}/toggle-ban`, { method: 'POST' }),
+  exportUsersCSV: async (status, country) => {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (country) params.set('country', country)
+    const token = getToken()
+    const res = await fetch(`${API_BASE}/stats/users/export-csv?${params}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) throw new Error('Export failed')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = res.headers.get('content-disposition')?.split('filename=')[1] || 'users.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  },
 
   // ── Postback Logs ────────────────────
   getPostbackLogs: (q = '', source, event, page = 1) => {

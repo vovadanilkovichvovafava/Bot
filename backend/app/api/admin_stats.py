@@ -489,6 +489,63 @@ async def get_retention_stats(
     }
 
 
+@router.get("/users/export-csv")
+async def export_users_csv(
+    status: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export users as CSV file."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    now = datetime.utcnow()
+    query = select(User).order_by(User.created_at.desc())
+
+    if status == "pro":
+        query = query.where(and_(User.is_premium == True, User.premium_until > now))
+    elif status == "free":
+        query = query.where((User.is_premium == False) | (User.premium_until <= now) | (User.premium_until.is_(None)))
+    elif status == "banned":
+        query = query.where(User.is_banned == True)
+
+    if country:
+        query = query.where(User.country == country)
+
+    rows = (await db.execute(query)).scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Public ID", "Email", "Phone", "Username", "Country", "Language",
+        "Traffic Source", "PRO", "Premium Until", "Banned",
+        "Predictions", "Correct", "Accuracy %",
+        "Referral Code", "Registered",
+    ])
+    for u in rows:
+        is_pro = u.is_premium and u.premium_until and u.premium_until > now
+        accuracy = round(u.correct_predictions / u.total_predictions * 100, 1) if u.total_predictions else 0
+        writer.writerow([
+            u.id, u.public_id, u.email, u.phone or "", u.username or "",
+            u.country or "", u.language or "",
+            u.traffic_source or "", "Yes" if is_pro else "No",
+            u.premium_until.isoformat() if u.premium_until else "",
+            "Yes" if u.is_banned else "No",
+            u.total_predictions, u.correct_predictions, accuracy,
+            u.referral_code or "",
+            u.created_at.isoformat() if u.created_at else "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=users_export_{now.strftime('%Y%m%d_%H%M')}.csv"},
+    )
+
+
 @router.get("/users/search")
 async def search_users(
     q: str = Query("", max_length=100),

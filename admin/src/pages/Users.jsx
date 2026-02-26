@@ -20,6 +20,7 @@ export default function Users() {
   const [profileLoading, setProfileLoading] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [banning, setBanning] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const search = useCallback(async (q, status, p) => {
     setLoading(true)
@@ -93,6 +94,16 @@ export default function Users() {
     setBanning(false)
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await api.exportUsersCSV(statusFilter || undefined)
+    } catch (err) {
+      alert(err.message)
+    }
+    setExporting(false)
+  }
+
   const isPro = (u) => u.is_premium && u.premium_until && new Date(u.premium_until) > new Date()
   const totalPages = Math.ceil(total / 20)
 
@@ -122,6 +133,14 @@ export default function Users() {
           className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           Search
+        </button>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          className="bg-dark-700 hover:bg-dark-600 text-dark-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-dark-600 disabled:opacity-50"
+        >
+          {exporting ? '...' : 'CSV'}
         </button>
       </form>
 
