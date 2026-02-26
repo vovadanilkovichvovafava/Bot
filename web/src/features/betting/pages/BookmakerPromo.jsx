@@ -233,7 +233,7 @@ export default function BookmakerPromo() {
             href={bookmakerLink}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => track('promo_cta_click', { banner })}
+            onClick={() => { track('promo_cta_click', { banner }); trackClick(user?.id, banner || 'promo_page'); }}
             className="q-btn gold"
             style={{ textDecoration: 'none' }}
           >

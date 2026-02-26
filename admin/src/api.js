@@ -92,4 +92,7 @@ export const api = {
     if (event) params.set('event', event)
     return request(`/stats/postback-logs?${params}`)
   },
+
+  // ── Banner Clicks ────────────────────
+  getBannerClicks: () => request('/stats/banner-clicks'),
 }

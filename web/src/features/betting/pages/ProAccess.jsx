@@ -280,7 +280,7 @@ export default function ProAccess() {
             href={bookmakerLink}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => track('pro_access_cta_click', { feature })}
+            onClick={() => { track('pro_access_cta_click', { feature }); trackClick(user?.id, feature ? `pro_access_${feature}` : 'pro_access_page'); }}
             className="q-btn gold"
             style={{ textDecoration: 'none' }}
           >

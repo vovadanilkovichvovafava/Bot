@@ -61,3 +61,26 @@ async def track_event(
         logger.warning(f"Analytics event failed: {e}")
 
     return {"ok": True}
+
+
+class BannerClickEvent(BaseModel):
+    user_id: str
+    banner: str
+
+
+@router.post("/banner-click")
+async def track_banner_click(
+    event: BannerClickEvent,
+    db: AsyncSession = Depends(get_db),
+):
+    """Record a banner click for tracking which banners convert."""
+    try:
+        await db.execute(
+            text("INSERT INTO banner_clicks (user_id, banner) VALUES (:user_id, :banner)"),
+            {"user_id": event.user_id, "banner": event.banner},
+        )
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"Banner click tracking failed: {e}")
+
+    return {"ok": True}

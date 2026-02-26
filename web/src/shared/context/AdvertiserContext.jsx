@@ -110,9 +110,19 @@ export function AdvertiserProvider({ children }) {
     safeSetItem('advertiser', JSON.stringify(adv));
   }
 
-  // Track click with user ID for postback matching
+  // Track click with user ID — send to backend for analytics
   function trackClick(userId, source = 'app') {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
+    if (userId && source) {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
+        fetch(`${apiUrl}/analytics/banner-click`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: String(userId), banner: source }),
+        }).catch(() => {});
+      } catch {}
+    }
   }
 
   return (

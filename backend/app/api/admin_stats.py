@@ -20,6 +20,7 @@ from app.models.support_chat import SupportChatMessage
 from app.models.ai_chat import AIChatMessage
 from app.models.ml_models import MLModel, ROIAnalytics, LearningLog
 from app.models.postback_log import PostbackLog
+from app.models.banner_click import BannerClick
 
 logger = logging.getLogger(__name__)
 
@@ -2154,3 +2155,77 @@ async def get_postback_logs(
             "total_activated": activated_count,
         },
     }
+
+
+# ── Banner Click Analytics ──────────────────────────────────────────
+
+
+@router.get("/banner-clicks")
+async def get_banner_clicks_stats(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Banner click analytics — clicks by banner, daily trends."""
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    try:
+        # Clicks per banner (all time)
+        banner_rows = (await db.execute(text("""
+            SELECT banner, COUNT(*) AS clicks, COUNT(DISTINCT user_id) AS unique_users
+            FROM banner_clicks
+            GROUP BY banner
+            ORDER BY clicks DESC
+        """))).all()
+
+        by_banner = [
+            {"banner": r[0], "clicks": r[1], "unique_users": r[2]}
+            for r in banner_rows
+        ]
+
+        # Clicks per banner (last 7 days)
+        week_rows = (await db.execute(text("""
+            SELECT banner, COUNT(*) AS clicks
+            FROM banner_clicks
+            WHERE created_at >= :since
+            GROUP BY banner
+            ORDER BY clicks DESC
+        """), {"since": week_ago})).all()
+
+        week_by_banner = [{"banner": r[0], "clicks": r[1]} for r in week_rows]
+
+        # Daily clicks (last 30 days)
+        daily_rows = (await db.execute(text("""
+            SELECT created_at::date AS day, COUNT(*) AS clicks
+            FROM banner_clicks
+            WHERE created_at >= :since
+            GROUP BY created_at::date
+            ORDER BY created_at::date
+        """), {"since": month_ago})).all()
+
+        daily = [{"date": str(r[0]), "clicks": r[1]} for r in daily_rows]
+
+        # Total stats
+        total_clicks = (await db.execute(
+            select(func.count(BannerClick.id))
+        )).scalar() or 0
+        total_today = (await db.execute(
+            select(func.count(BannerClick.id)).where(
+                BannerClick.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0)
+            )
+        )).scalar() or 0
+
+        return {
+            "by_banner": by_banner,
+            "week_by_banner": week_by_banner,
+            "daily": daily,
+            "total_clicks": total_clicks,
+            "total_today": total_today,
+        }
+    except Exception as e:
+        logger.error(f"Banner clicks analytics error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Banner analytics error: {str(e)}")

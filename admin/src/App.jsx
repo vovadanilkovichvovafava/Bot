@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import TrafficSources from './pages/TrafficSources'
 import Users from './pages/Users'
 import Postbacks from './pages/Postbacks'
+import Banners from './pages/Banners'
 import Layout from './components/Layout'
 
 function ProtectedRoute({ children }) {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="traffic" element={<TrafficSources />} />
         <Route path="users" element={<Users />} />
         <Route path="postbacks" element={<Postbacks />} />
+        <Route path="banners" element={<Banners />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

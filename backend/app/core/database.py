@@ -121,6 +121,15 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_user_id ON postback_logs(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_created ON postback_logs(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_event ON postback_logs(event)",
+            # Banner clicks table
+            """CREATE TABLE IF NOT EXISTS banner_clicks (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR,
+                banner VARCHAR NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_banner_clicks_banner ON banner_clicks(banner)",
+            "CREATE INDEX IF NOT EXISTS ix_banner_clicks_created ON banner_clicks(created_at DESC)",
             # Admin session takeover table
             """CREATE TABLE IF NOT EXISTS admin_session_overrides (
                 session_id VARCHAR PRIMARY KEY,
