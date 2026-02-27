@@ -222,6 +222,8 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState('')
   const [countryFilter, setCountryFilter] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
+  const [domainFilter, setDomainFilter] = useState('')
+  const [domains, setDomains] = useState([])
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [page, setPage] = useState(1)
@@ -234,16 +236,19 @@ export default function AdminUsers() {
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoading(false))
+    adminApi.getEmailDomains()
+      .then(data => setDomains(data.domains || []))
+      .catch(() => {})
   }, [])
 
   const doSearch = useCallback((p = 1) => {
     setSearchLoading(true)
     setPage(p)
-    adminApi.searchUsers(query, statusFilter, countryFilter, sortBy, p)
+    adminApi.searchUsers(query, statusFilter, countryFilter, sortBy, p, domainFilter)
       .then(setSearchResults)
       .catch(() => setSearchResults(null))
       .finally(() => setSearchLoading(false))
-  }, [query, statusFilter, countryFilter, sortBy])
+  }, [query, statusFilter, countryFilter, sortBy, domainFilter])
 
   // Load initial search results when switching to search tab
   useEffect(() => {
@@ -399,6 +404,19 @@ export default function AdminUsers() {
                 >
                   <option value="created_at">Newest</option>
                   <option value="total_predictions">Most Predictions</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Domain</label>
+                <select
+                  value={domainFilter}
+                  onChange={e => setDomainFilter(e.target.value)}
+                  className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none"
+                >
+                  <option value="">All</option>
+                  {domains.map(d => (
+                    <option key={d.domain} value={d.domain}>{d.domain} ({d.count})</option>
+                  ))}
                 </select>
               </div>
               <button

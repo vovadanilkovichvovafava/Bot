@@ -69,8 +69,9 @@ export const adminApi = {
   getOverview: () => request('/stats/overview'),
   getOnlineHistory: () => request('/stats/online-history'),
   getUsersStats: () => request('/stats/users'),
-  searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1) =>
-    request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}`),
+  searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1, domain = '') =>
+    request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}&domain=${encodeURIComponent(domain)}`),
+  getEmailDomains: () => request('/stats/users/email-domains'),
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
