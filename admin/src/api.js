@@ -73,11 +73,12 @@ export const api = {
 
   // ── Users ────────────────────────────
   getEmailDomains: () => request('/stats/users/email-domains'),
-  searchUsers: (q = '', status, country, page = 1, domain) => {
+  searchUsers: (q = '', status, country, page = 1, domain, sort) => {
     const params = new URLSearchParams({ q, page })
     if (status) params.set('status', status)
     if (country) params.set('country', country)
     if (domain) params.set('domain', domain)
+    if (sort) params.set('sort', sort)
     return request(`/stats/users/search?${params}`)
   },
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),

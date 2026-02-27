@@ -9,10 +9,15 @@ const FLAG = {
   AE: '\u{1F1E6}\u{1F1EA}', IN: '\u{1F1EE}\u{1F1F3}', BR: '\u{1F1E7}\u{1F1F7}',
 }
 
+const COUNTRIES = ['IT','PL','DE','FR','ES','GB','PT','UA','RU','BY','KZ','AT','CH','SE','NO','DK','AE','IN','BR']
+
 export default function Users() {
+  const [tab, setTab] = useState('search')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [countryFilter, setCountryFilter] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
+  const [sortBy, setSortBy] = useState('created_at')
   const [domains, setDomains] = useState([])
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
@@ -23,11 +28,12 @@ export default function Users() {
   const [toggling, setToggling] = useState(false)
   const [banning, setBanning] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [analytics, setAnalytics] = useState(null)
 
-  const search = useCallback(async (q, status, p, domain) => {
+  const search = useCallback(async (q, status, p, domain, country, sort) => {
     setLoading(true)
     try {
-      const data = await api.searchUsers(q, status || undefined, undefined, p, domain || undefined)
+      const data = await api.searchUsers(q, status || undefined, country || undefined, p, domain || undefined, sort || undefined)
       setUsers(data.users)
       setTotal(data.total)
     } catch { }
@@ -39,13 +45,21 @@ export default function Users() {
   }, [])
 
   useEffect(() => {
-    search(query, statusFilter, page, domainFilter)
-  }, [page, statusFilter, domainFilter])
+    if (tab === 'search') {
+      search(query, statusFilter, page, domainFilter, countryFilter, sortBy)
+    }
+  }, [page, statusFilter, domainFilter, countryFilter, sortBy, tab])
+
+  useEffect(() => {
+    if (tab === 'analytics') {
+      api.getOverview().then(setAnalytics).catch(() => {})
+    }
+  }, [tab])
 
   const handleSearch = (e) => {
     e.preventDefault()
     setPage(1)
-    search(query, statusFilter, 1, domainFilter)
+    search(query, statusFilter, 1, domainFilter, countryFilter, sortBy)
   }
 
   const openProfile = async (userId) => {
@@ -70,12 +84,10 @@ export default function Users() {
 
     setToggling(true)
     try {
-      const result = await api.togglePremium(u.id)
-      // Refresh profile
+      await api.togglePremium(u.id)
       const data = await api.getUserProfile(u.id)
       setProfile(data)
-      // Refresh list
-      search(query, statusFilter, page, domainFilter)
+      search(query, statusFilter, page, domainFilter, countryFilter, sortBy)
     } catch (err) {
       alert(err.message)
     }
@@ -93,7 +105,7 @@ export default function Users() {
       await api.toggleBan(u.id)
       const data = await api.getUserProfile(u.id)
       setProfile(data)
-      search(query, statusFilter, page, domainFilter)
+      search(query, statusFilter, page, domainFilter, countryFilter, sortBy)
     } catch (err) {
       alert(err.message)
     }
@@ -103,7 +115,7 @@ export default function Users() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      await api.exportUsersCSV(statusFilter || undefined, undefined, domainFilter || undefined)
+      await api.exportUsersCSV(statusFilter || undefined, countryFilter || undefined, domainFilter || undefined)
     } catch (err) {
       alert(err.message)
     }
@@ -117,124 +129,231 @@ export default function Users() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Users</h1>
 
-      {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search by email, phone, username, public_id..."
-          className="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-        />
-        <select
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-          className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">All</option>
-          <option value="pro">PRO</option>
-          <option value="free">Free</option>
-        </select>
-        <select
-          value={domainFilter}
-          onChange={e => { setDomainFilter(e.target.value); setPage(1) }}
-          className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">All domains</option>
-          {domains.map(d => (
-            <option key={d.domain} value={d.domain}>{d.domain} ({d.count})</option>
-          ))}
-        </select>
+      {/* Tabs */}
+      <div className="flex gap-1 bg-dark-800 rounded-lg p-1 w-fit border border-dark-700">
         <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          onClick={() => setTab('analytics')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            tab === 'analytics' ? 'bg-blue-600 text-white' : 'text-dark-400 hover:text-dark-200'
+          }`}
         >
-          Search
+          Analytics
         </button>
         <button
-          type="button"
-          onClick={handleExport}
-          disabled={exporting}
-          className="bg-dark-700 hover:bg-dark-600 text-dark-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-dark-600 disabled:opacity-50"
+          onClick={() => setTab('search')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            tab === 'search' ? 'bg-blue-600 text-white' : 'text-dark-400 hover:text-dark-200'
+          }`}
         >
-          {exporting ? '...' : 'CSV'}
+          Search & Browse
         </button>
-      </form>
-
-      {/* Results count */}
-      <p className="text-xs text-dark-400">{total} users found</p>
-
-      {/* Users table */}
-      <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-dark-700 text-dark-400 text-xs">
-              <th className="text-left px-4 py-3 font-medium">User</th>
-              <th className="text-left px-4 py-3 font-medium">Email</th>
-              <th className="text-center px-4 py-3 font-medium">Country</th>
-              <th className="text-center px-4 py-3 font-medium">Status</th>
-              <th className="text-right px-4 py-3 font-medium">Predictions</th>
-              <th className="text-right px-4 py-3 font-medium">Registered</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-dark-700">
-            {loading ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">Loading...</td></tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">No users found</td></tr>
-            ) : users.map(u => (
-              <tr
-                key={u.id}
-                onClick={() => openProfile(u.id)}
-                className="hover:bg-dark-700/50 cursor-pointer transition-colors"
-              >
-                <td className="px-4 py-3">
-                  <div>
-                    <p className="font-medium">{u.username || `#${u.id}`}</p>
-                    <p className="text-[10px] text-dark-500 font-mono">{u.public_id}</p>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-dark-300 text-xs">{u.email}</td>
-                <td className="px-4 py-3 text-center">
-                  <span title={u.country}>{FLAG[u.country] || u.country || '—'}</span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {u.is_banned ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-red-500/20 text-red-400">Banned</span>
-                  ) : isPro(u) ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400">PRO</span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-dark-600 text-dark-400">Free</span>
-                  )}
-                </td>
-                <td className="text-right px-4 py-3 font-mono text-dark-300">{u.total_predictions}</td>
-                <td className="text-right px-4 py-3 text-xs text-dark-400">
-                  {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
-          >
-            Prev
-          </button>
-          <span className="text-xs text-dark-400">{page} / {totalPages}</span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
-          >
-            Next
-          </button>
+      {/* Analytics Tab */}
+      {tab === 'analytics' && (
+        <div className="space-y-4">
+          {analytics ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Users', value: analytics.total_users ?? '—' },
+                { label: 'PRO Users', value: analytics.pro_users ?? '—' },
+                { label: 'Today Registrations', value: analytics.today_registrations ?? '—' },
+                { label: 'Active Today', value: analytics.active_today ?? '—' },
+              ].map(s => (
+                <div key={s.label} className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs text-dark-400 mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-dark-500 py-8">Loading analytics...</div>
+          )}
         </div>
+      )}
+
+      {/* Search & Browse Tab */}
+      {tab === 'search' && (
+        <>
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Phone, email, public_id, username..."
+                className="flex-1 bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Search
+              </button>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={exporting}
+                className="bg-dark-700 hover:bg-dark-600 text-dark-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-dark-600 disabled:opacity-50"
+              >
+                {exporting ? '...' : 'CSV'}
+              </button>
+            </div>
+
+            {/* Filters row */}
+            <div className="flex gap-3 flex-wrap">
+              <div>
+                <p className="text-[10px] text-dark-500 uppercase mb-1">Status</p>
+                <select
+                  value={statusFilter}
+                  onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All</option>
+                  <option value="pro">PRO</option>
+                  <option value="free">Free</option>
+                </select>
+              </div>
+              <div>
+                <p className="text-[10px] text-dark-500 uppercase mb-1">Country</p>
+                <select
+                  value={countryFilter}
+                  onChange={e => { setCountryFilter(e.target.value); setPage(1) }}
+                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c} value={c}>{FLAG[c] || ''} {c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-[10px] text-dark-500 uppercase mb-1">Domain</p>
+                <select
+                  value={domainFilter}
+                  onChange={e => { setDomainFilter(e.target.value); setPage(1) }}
+                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All</option>
+                  {domains.map(d => (
+                    <option key={d.domain} value={d.domain}>{d.domain} ({d.count})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-[10px] text-dark-500 uppercase mb-1">Sort</p>
+                <select
+                  value={sortBy}
+                  onChange={e => { setSortBy(e.target.value); setPage(1) }}
+                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="created_at">Newest</option>
+                  <option value="total_predictions">Most predictions</option>
+                </select>
+              </div>
+            </div>
+          </form>
+
+          {/* Results count + pagination */}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-dark-400">{total} users found</p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
+                >
+                  Prev
+                </button>
+                <span className="text-xs text-dark-400">{page} / {totalPages}</span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Users table */}
+          <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-dark-700 text-dark-400 text-xs">
+                  <th className="text-left px-4 py-3 font-medium">User</th>
+                  <th className="text-center px-4 py-3 font-medium">Country</th>
+                  <th className="text-center px-4 py-3 font-medium">Lang</th>
+                  <th className="text-center px-4 py-3 font-medium">Status</th>
+                  <th className="text-right px-4 py-3 font-medium">Predictions</th>
+                  <th className="text-right px-4 py-3 font-medium">Registered</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-700">
+                {loading ? (
+                  <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">Loading...</td></tr>
+                ) : users.length === 0 ? (
+                  <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">No users found</td></tr>
+                ) : users.map(u => (
+                  <tr
+                    key={u.id}
+                    onClick={() => openProfile(u.id)}
+                    className="hover:bg-dark-700/50 cursor-pointer transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium">{u.username || `#${u.id}`}</p>
+                        <p className="text-[10px] text-dark-500 font-mono">{u.public_id}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span title={u.country}>{FLAG[u.country] || u.country || '—'}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center text-xs text-dark-300">
+                      {u.language || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {u.is_banned ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-red-500/20 text-red-400">Banned</span>
+                      ) : isPro(u) ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400">PRO</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-dark-600 text-dark-400">Free</span>
+                      )}
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono text-dark-300">{u.total_predictions}</td>
+                    <td className="text-right px-4 py-3 text-xs text-dark-400">
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Bottom pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
+              >
+                Prev
+              </button>
+              <span className="text-xs text-dark-400">{page} / {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1 text-xs rounded bg-dark-800 border border-dark-700 disabled:opacity-30 hover:bg-dark-700"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* User Profile Modal */}
