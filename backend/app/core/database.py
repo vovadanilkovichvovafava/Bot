@@ -179,13 +179,12 @@ async def init_db():
         except Exception:
             pass
 
-        # Normalise legacy traffic_source values → 'prescoreai' (default source)
-        # New deployments use dedicated sources: prescoreai_com, prescore_vip, etc.
+        # Set a default traffic_source for users that have none (one-time backfill).
+        # Keeps existing non-NULL values intact so different sources stay visible.
         try:
             await conn.execute(text(
-                "UPDATE users SET traffic_source = 'prescoreai' "
-                "WHERE traffic_source IN ('organic', 'sportscoreai') "
-                "   OR traffic_source IS NULL"
+                "UPDATE users SET traffic_source = 'direct' "
+                "WHERE traffic_source IS NULL"
             ))
         except Exception:
             pass
