@@ -1910,7 +1910,7 @@ async def get_pro_analytics(
 
         growth_rows = (await db.execute(text("""
             SELECT d::date AS day, COUNT(*) AS cnt
-            FROM generate_series(:start::date, :end::date, '1 day') AS d
+            FROM generate_series(CAST(:start AS date), CAST(:end AS date), '1 day') AS d
             LEFT JOIN LATERAL (
                 SELECT id FROM users
                 WHERE is_premium = true
