@@ -179,19 +179,14 @@ async def init_db():
         except Exception:
             pass
 
-        # One-time rename: organic → sportscoreai, sportscoreai → prescoreai
-        # Only runs if there are still 'organic' or NULL traffic_source rows
+        # Normalise legacy traffic_source values → 'prescoreai' (default source)
+        # New deployments use dedicated sources: prescoreai_com, prescore_vip, etc.
         try:
-            has_organic = (await conn.execute(text(
-                "SELECT 1 FROM users WHERE traffic_source = 'organic' OR traffic_source IS NULL LIMIT 1"
-            ))).first()
-            if has_organic:
-                await conn.execute(text(
-                    "UPDATE users SET traffic_source = 'prescoreai' WHERE traffic_source = 'sportscoreai'"
-                ))
-                await conn.execute(text(
-                    "UPDATE users SET traffic_source = 'sportscoreai' WHERE traffic_source = 'organic' OR traffic_source IS NULL"
-                ))
+            await conn.execute(text(
+                "UPDATE users SET traffic_source = 'prescoreai' "
+                "WHERE traffic_source IN ('organic', 'sportscoreai') "
+                "   OR traffic_source IS NULL"
+            ))
         except Exception:
             pass
 

@@ -76,9 +76,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     # Allowed CORS origins — must match main.py CORS config
     CORS_ORIGINS = {
-        "https://sportscoreai.com",
-        "https://www.sportscoreai.com",
+        "https://prescoreai.com",
+        "https://www.prescoreai.com",
+        "https://prescore.vip",
+        "https://www.prescore.vip",
+        "https://prescoreai.vip",
+        "https://www.prescoreai.vip",
         "https://pwa-production-20b5.up.railway.app",
+        "https://pwa-2-production.up.railway.app",
         "http://localhost:3000",
         "http://localhost:5173",
     }

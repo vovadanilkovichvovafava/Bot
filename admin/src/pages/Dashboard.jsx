@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 
 const SOURCE_COLORS = {
-  sportscoreai: { bg: 'bg-blue-500', text: 'text-blue-400', light: 'bg-blue-500/20' },
-  prescoreai: { bg: 'bg-purple-500', text: 'text-purple-400', light: 'bg-purple-500/20' },
-  organic: { bg: 'bg-green-500', text: 'text-green-400', light: 'bg-green-500/20' },
+  prescoreai: { bg: 'bg-blue-500', text: 'text-blue-400', light: 'bg-blue-500/20' },
+  prescoreai_com: { bg: 'bg-purple-500', text: 'text-purple-400', light: 'bg-purple-500/20' },
+  prescore_vip: { bg: 'bg-green-500', text: 'text-green-400', light: 'bg-green-500/20' },
 }
 
 function getSourceColor(source) {
