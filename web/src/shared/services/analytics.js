@@ -15,7 +15,8 @@ function getUserId() {
     const token = localStorage.getItem('access_token');
     if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.user_id ? `usr_${payload.user_id}` : null;
+    // Use public_id from JWT (e.g. "usr_a7f3k9x2m5p8") instead of constructing from integer user_id
+    return payload.public_id || null;
   } catch {
     return null;
   }

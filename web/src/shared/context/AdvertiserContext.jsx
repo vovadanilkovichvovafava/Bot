@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getAdvertiser, DEFAULT_ADVERTISER } from '../config/advertisers';
+import { ENV } from '../config/env';
 
 const AdvertiserContext = createContext(null);
 
@@ -115,8 +116,7 @@ export function AdvertiserProvider({ children }) {
     safeSetItem('lastClickId', `${userId}_${Date.now()}`);
     if (userId && source) {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1';
-        fetch(`${apiUrl}/analytics/banner-click`, {
+        fetch(`${ENV.API_URL}/analytics/banner-click`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: String(userId), banner: source }),

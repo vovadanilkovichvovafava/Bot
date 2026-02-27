@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
 from typing import Optional, List
@@ -10,6 +11,8 @@ import json
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 # Internal secret for server-to-server calls
 # Falls back to default for development, but should be set in production
@@ -208,13 +211,16 @@ async def activate_premium(
 
     # Search by public_id (new format: usr_xxxx) or fall back to integer id for backwards compatibility
     if user_id.startswith("usr_"):
+        logger.info("Premium activation: looking up user by public_id=%s, source=%s", user_id, activation.source)
         result = await db.execute(select(User).where(User.public_id == user_id))
     else:
         # Backwards compatibility: try to parse as integer id
         try:
             int_id = int(user_id)
+            logger.info("Premium activation: looking up user by integer id=%s, source=%s", int_id, activation.source)
             result = await db.execute(select(User).where(User.id == int_id))
         except ValueError:
+            logger.warning("Premium activation: invalid user_id format '%s'", user_id)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user_id format"
@@ -223,6 +229,7 @@ async def activate_premium(
     user = result.scalar_one_or_none()
 
     if not user:
+        logger.warning("Premium activation: user not found for user_id=%s, source=%s", user_id, activation.source)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"

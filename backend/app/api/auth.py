@@ -209,10 +209,10 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
-    # Use phone as JWT subject identifier
-    access_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id})
+    # Use phone as JWT subject identifier, include both internal id and public_id
+    access_token = create_access_token({"sub": new_user.phone, "user_id": new_user.id, "public_id": new_user.public_id})
     refresh_token = create_access_token(
-        {"sub": new_user.phone, "user_id": new_user.id, "refresh": True},
+        {"sub": new_user.phone, "user_id": new_user.id, "public_id": new_user.public_id, "refresh": True},
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     )
 
@@ -255,9 +255,9 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
         )
 
     identifier = db_user.phone or db_user.email
-    access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
+    access_token = create_access_token({"sub": identifier, "user_id": db_user.id, "public_id": db_user.public_id})
     refresh_token = create_access_token(
-        {"sub": identifier, "user_id": db_user.id, "refresh": True},
+        {"sub": identifier, "user_id": db_user.id, "public_id": db_user.public_id, "refresh": True},
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     )
 
@@ -344,9 +344,9 @@ async def refresh_token_endpoint(
 
     # Issue new tokens
     identifier = db_user.phone or db_user.email
-    new_access_token = create_access_token({"sub": identifier, "user_id": db_user.id})
+    new_access_token = create_access_token({"sub": identifier, "user_id": db_user.id, "public_id": db_user.public_id})
     new_refresh_token = create_access_token(
-        {"sub": identifier, "user_id": db_user.id, "refresh": True},
+        {"sub": identifier, "user_id": db_user.id, "public_id": db_user.public_id, "refresh": True},
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     )
 

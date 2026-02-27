@@ -44,11 +44,21 @@ async def record_postback(
             row = (await db.execute(select(User.id).where(User.public_id == user_id))).first()
             if row:
                 user_db_id = row[0]
+            else:
+                logger.warning("Postback user_id=%s (public_id) not found in DB", user_id)
         else:
             try:
-                user_db_id = int(user_id)
+                int_id = int(user_id)
+                # Verify the integer ID actually exists
+                row = (await db.execute(select(User.id).where(User.id == int_id))).first()
+                if row:
+                    user_db_id = int_id
+                else:
+                    logger.warning("Postback user_id=%s (integer) not found in DB", user_id)
             except (ValueError, TypeError):
-                pass
+                logger.warning("Postback user_id=%s is not a valid public_id or integer", user_id)
+    else:
+        logger.warning("Postback received without user_id, event=%s source=%s", data.get("event"), data.get("source"))
 
     log = PostbackLog(
         user_id=str(user_id) if user_id else None,
