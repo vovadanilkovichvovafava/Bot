@@ -284,6 +284,7 @@ export default function Users() {
               <thead>
                 <tr className="border-b border-dark-700 text-dark-400 text-xs">
                   <th className="text-left px-4 py-3 font-medium">User</th>
+                  <th className="text-center px-4 py-3 font-medium">Domain</th>
                   <th className="text-center px-4 py-3 font-medium">Country</th>
                   <th className="text-center px-4 py-3 font-medium">Lang</th>
                   <th className="text-center px-4 py-3 font-medium">Status</th>
@@ -293,9 +294,9 @@ export default function Users() {
               </thead>
               <tbody className="divide-y divide-dark-700">
                 {loading ? (
-                  <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">Loading...</td></tr>
+                  <tr><td colSpan="7" className="px-4 py-8 text-center text-dark-500">Loading...</td></tr>
                 ) : users.length === 0 ? (
-                  <tr><td colSpan="6" className="px-4 py-8 text-center text-dark-500">No users found</td></tr>
+                  <tr><td colSpan="7" className="px-4 py-8 text-center text-dark-500">No users found</td></tr>
                 ) : users.map(u => (
                   <tr
                     key={u.id}
@@ -307,6 +308,9 @@ export default function Users() {
                         <p className="font-medium">{u.username || `#${u.id}`}</p>
                         <p className="text-[10px] text-dark-500 font-mono">{u.public_id}</p>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center text-xs text-dark-300">
+                      {u.domain || '—'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span title={u.country}>{FLAG[u.country] || u.country || '—'}</span>

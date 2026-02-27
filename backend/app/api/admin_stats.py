@@ -631,6 +631,7 @@ async def search_users(
             "public_id": u.public_id,
             "phone": u.phone,
             "email": u.email,
+            "domain": u.email.split("@")[1] if u.email and "@" in u.email else None,
             "username": u.username,
             "country": u.country,
             "language": u.language,
