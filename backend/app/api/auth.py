@@ -189,7 +189,7 @@ async def register(
     await db.refresh(new_user)
 
     # Generate unique referral code for new user
-    new_user.referral_code = f"PVA{new_user.id:04X}{int(new_user.created_at.timestamp()) % 10000:04X}"
+    new_user.referral_code = f"PS{new_user.id:04X}{int(new_user.created_at.timestamp()) % 10000:04X}"
 
     # Award referrer with bonus
     if referrer:

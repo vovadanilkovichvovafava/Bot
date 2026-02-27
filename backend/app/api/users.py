@@ -315,7 +315,7 @@ async def get_referral_stats(
 
     # Generate referral code if user doesn't have one
     if not user.referral_code:
-        user.referral_code = f"PVA{user.id:04X}{int(user.created_at.timestamp()) % 10000:04X}"
+        user.referral_code = f"PS{user.id:04X}{int(user.created_at.timestamp()) % 10000:04X}"
         await db.commit()
         await db.refresh(user)
 

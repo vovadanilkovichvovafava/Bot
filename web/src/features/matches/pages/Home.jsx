@@ -72,7 +72,7 @@ export default function Home() {
       } catch { promises.push(fetchSmartBet()); }
     }
 
-    Promise.all(promises);
+    Promise.all(promises).catch(() => {});
 
     // Show welcome modal for new registrations
     try {
