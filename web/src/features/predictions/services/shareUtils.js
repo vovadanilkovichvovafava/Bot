@@ -22,7 +22,7 @@ export function generatePredictionShareText(prediction) {
     text += `Advice: ${pred.advice}\n`;
   }
 
-  text += `\nGet AI predictions at PVA Betting App`;
+  text += `\nGet AI predictions at PreScore AI`;
 
   return text;
 }
@@ -45,7 +45,7 @@ export function generateMatchShareText({ homeTeam, awayTeam, league, date, predi
     text += `Advice: ${prediction.predictions.advice}\n`;
   }
 
-  text += `\nPowered by PVA AI Betting`;
+  text += `\nPowered by PreScore AI`;
 
   return text;
 }

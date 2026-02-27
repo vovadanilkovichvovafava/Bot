@@ -89,7 +89,7 @@ self.addEventListener('fetch', event => {
 // Receive push notification
 self.addEventListener('push', event => {
   let data = {
-    title: 'PVA Betting',
+    title: 'PreScore AI',
     body: 'You have a new notification',
     icon: '/icon.svg',
     badge: '/icon.svg',
