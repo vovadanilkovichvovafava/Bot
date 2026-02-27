@@ -157,21 +157,21 @@ async def get_overview(
 
     # AI chats today
     ai_chats_today = (await db.execute(
-        select(func.count(SupportChatMessage.id)).where(
+        select(func.count(AIChatMessage.id)).where(
             and_(
-                SupportChatMessage.created_at >= today_start,
-                SupportChatMessage.role == "user",
+                AIChatMessage.created_at >= today_start,
+                AIChatMessage.role == "user",
             )
         )
     )).scalar() or 0
 
     # AI chats yesterday (for comparison)
     ai_chats_yesterday = (await db.execute(
-        select(func.count(SupportChatMessage.id)).where(
+        select(func.count(AIChatMessage.id)).where(
             and_(
-                SupportChatMessage.created_at >= yesterday_start,
-                SupportChatMessage.created_at < today_start,
-                SupportChatMessage.role == "user",
+                AIChatMessage.created_at >= yesterday_start,
+                AIChatMessage.created_at < today_start,
+                AIChatMessage.role == "user",
             )
         )
     )).scalar() or 0

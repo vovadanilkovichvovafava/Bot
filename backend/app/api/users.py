@@ -80,14 +80,22 @@ async def get_current_user_info(
             detail="Account is suspended"
         )
 
+    # Check if premium has expired
+    is_premium = user.is_premium
+    premium_until = user.premium_until
+    if is_premium and premium_until and premium_until < datetime.utcnow():
+        is_premium = False
+        user.is_premium = False
+        await db.commit()
+
     return UserResponse(
         id=user.public_id,  # Return public_id as 'id' for frontend compatibility
         email=user.email,
         username=user.username,
         language=user.language,
         timezone=user.timezone,
-        is_premium=user.is_premium,
-        premium_until=user.premium_until,
+        is_premium=is_premium,
+        premium_until=premium_until,
         daily_requests=user.daily_requests,
         daily_limit=user.daily_limit,
         bonus_predictions=user.bonus_predictions,

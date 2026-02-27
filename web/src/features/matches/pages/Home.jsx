@@ -27,7 +27,7 @@ const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
 
 export default function Home() {
   const { t } = useTranslation();
-  const { user, isDemo } = useAuth();
+  const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
