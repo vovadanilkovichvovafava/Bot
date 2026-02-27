@@ -270,9 +270,19 @@ export default function AIChat() {
       const parsedBets = parseBetsFromMessage(data.response);
       const firstBet = parsedBets[0] || null;
 
-      // If enrichment didn't provide a Fonbet deeplink, try to find one for the recommended bet
-      if (!fonbetDeeplink && firstBet) {
-        fonbetDeeplink = await findFonbetDeeplinkForBet(firstBet, matchContext, data.response);
+      // Find Fonbet deeplinks for each parsed bet individually
+      if (parsedBets.length > 0) {
+        const deeplinkResults = await Promise.allSettled(
+          parsedBets.map(bet => findFonbetDeeplinkForBet(bet, matchContext, data.response))
+        );
+        for (let i = 0; i < parsedBets.length; i++) {
+          const result = deeplinkResults[i];
+          parsedBets[i].fonbetDeeplink = (result.status === 'fulfilled' ? result.value : null) || fonbetDeeplink || null;
+        }
+        // Keep message-level deeplink for backwards compat (promo links, ad blocks)
+        if (!fonbetDeeplink && firstBet) {
+          fonbetDeeplink = parsedBets[0].fonbetDeeplink || null;
+        }
       }
 
       const newMessages = [...messages, userMsg, {
@@ -390,9 +400,10 @@ export default function AIChat() {
                       <button
                         key={idx}
                         onClick={() => {
-                          if (msg.fonbetDeeplink) {
+                          const deeplink = bet.fonbetDeeplink || msg.fonbetDeeplink;
+                          if (deeplink) {
                             trackClick(user?.id, 'aichat_bet_fonbet');
-                            window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
+                            window.open(addTrackingToUrl(deeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
                           } else if (isPremium) {
                             trackClick(user?.id, 'aichat_bet_card');
                             window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
