@@ -493,6 +493,7 @@ async def get_retention_stats(
 async def export_users_csv(
     status: Optional[str] = Query(None),
     country: Optional[str] = Query(None),
+    domain: Optional[str] = Query(None),
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -513,6 +514,9 @@ async def export_users_csv(
 
     if country:
         query = query.where(User.country == country)
+
+    if domain:
+        query = query.where(User.email.ilike(f"%@{domain}"))
 
     rows = (await db.execute(query)).scalars().all()
 
@@ -546,11 +550,32 @@ async def export_users_csv(
     )
 
 
+@router.get("/users/email-domains")
+async def get_email_domains(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get list of unique email domains for filtering."""
+    domain_expr = func.split_part(User.email, '@', 2).label("domain")
+    result = await db.execute(
+        select(
+            domain_expr,
+            func.count(User.id).label("cnt"),
+        )
+        .where(User.email.isnot(None))
+        .group_by(text("domain"))
+        .order_by(text("cnt DESC"))
+    )
+    rows = result.all()
+    return {"domains": [{"domain": r.domain, "count": r.cnt} for r in rows if r.domain]}
+
+
 @router.get("/users/search")
 async def search_users(
     q: str = Query("", max_length=100),
     status: Optional[str] = Query(None),  # pro, free
     country: Optional[str] = Query(None),
+    domain: Optional[str] = Query(None),  # email domain filter (e.g. gmail.com)
     sort: str = Query("created_at"),  # created_at, total_predictions
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
@@ -583,6 +608,12 @@ async def search_users(
     if country:
         query = query.where(User.country == country)
         count_query = count_query.where(User.country == country)
+
+    # Email domain filter
+    if domain:
+        domain_filter = User.email.ilike(f"%@{domain}")
+        query = query.where(domain_filter)
+        count_query = count_query.where(domain_filter)
 
     # Sorting
     if sort == "total_predictions":

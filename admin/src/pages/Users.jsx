@@ -12,6 +12,8 @@ const FLAG = {
 export default function Users() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [domainFilter, setDomainFilter] = useState('')
+  const [domains, setDomains] = useState([])
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -22,10 +24,10 @@ export default function Users() {
   const [banning, setBanning] = useState(false)
   const [exporting, setExporting] = useState(false)
 
-  const search = useCallback(async (q, status, p) => {
+  const search = useCallback(async (q, status, p, domain) => {
     setLoading(true)
     try {
-      const data = await api.searchUsers(q, status || undefined, undefined, p)
+      const data = await api.searchUsers(q, status || undefined, undefined, p, domain || undefined)
       setUsers(data.users)
       setTotal(data.total)
     } catch { }
@@ -33,13 +35,17 @@ export default function Users() {
   }, [])
 
   useEffect(() => {
-    search(query, statusFilter, page)
-  }, [page, statusFilter])
+    api.getEmailDomains().then(data => setDomains(data.domains || [])).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    search(query, statusFilter, page, domainFilter)
+  }, [page, statusFilter, domainFilter])
 
   const handleSearch = (e) => {
     e.preventDefault()
     setPage(1)
-    search(query, statusFilter, 1)
+    search(query, statusFilter, 1, domainFilter)
   }
 
   const openProfile = async (userId) => {
@@ -69,7 +75,7 @@ export default function Users() {
       const data = await api.getUserProfile(u.id)
       setProfile(data)
       // Refresh list
-      search(query, statusFilter, page)
+      search(query, statusFilter, page, domainFilter)
     } catch (err) {
       alert(err.message)
     }
@@ -87,7 +93,7 @@ export default function Users() {
       await api.toggleBan(u.id)
       const data = await api.getUserProfile(u.id)
       setProfile(data)
-      search(query, statusFilter, page)
+      search(query, statusFilter, page, domainFilter)
     } catch (err) {
       alert(err.message)
     }
@@ -97,7 +103,7 @@ export default function Users() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      await api.exportUsersCSV(statusFilter || undefined)
+      await api.exportUsersCSV(statusFilter || undefined, undefined, domainFilter || undefined)
     } catch (err) {
       alert(err.message)
     }
@@ -127,6 +133,16 @@ export default function Users() {
           <option value="">All</option>
           <option value="pro">PRO</option>
           <option value="free">Free</option>
+        </select>
+        <select
+          value={domainFilter}
+          onChange={e => { setDomainFilter(e.target.value); setPage(1) }}
+          className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">All domains</option>
+          {domains.map(d => (
+            <option key={d.domain} value={d.domain}>{d.domain} ({d.count})</option>
+          ))}
         </select>
         <button
           type="submit"

@@ -72,10 +72,12 @@ export const api = {
   getTrafficStats: () => request('/stats/traffic'),
 
   // ── Users ────────────────────────────
-  searchUsers: (q = '', status, country, page = 1) => {
+  getEmailDomains: () => request('/stats/users/email-domains'),
+  searchUsers: (q = '', status, country, page = 1, domain) => {
     const params = new URLSearchParams({ q, page })
     if (status) params.set('status', status)
     if (country) params.set('country', country)
+    if (domain) params.set('domain', domain)
     return request(`/stats/users/search?${params}`)
   },
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
@@ -86,10 +88,11 @@ export const api = {
     }),
   toggleBan: (userId) =>
     request(`/stats/users/${userId}/toggle-ban`, { method: 'POST' }),
-  exportUsersCSV: async (status, country) => {
+  exportUsersCSV: async (status, country, domain) => {
     const params = new URLSearchParams()
     if (status) params.set('status', status)
     if (country) params.set('country', country)
+    if (domain) params.set('domain', domain)
     const token = getToken()
     const res = await fetch(`${API_BASE}/stats/users/export-csv?${params}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
