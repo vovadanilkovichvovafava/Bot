@@ -145,6 +145,8 @@ app.get('/api/postback', async (req, res) => {
     payout, // Keitaro alias for amount
     currency,
     user_id,
+    external_id, // our tracking links set external_id = userId
+    sub_id_10,   // our tracking links also set sub_id_10 = userId
     secret
   } = req.query;
 
@@ -152,7 +154,7 @@ app.get('/api/postback', async (req, res) => {
   const actualStatus = status || event; // Support both status and event params
   const actualAmount = amount || payout; // Support both amount and payout params
 
-  console.log(`[POSTBACK] Received: click_id=${actualClickId}, user_id=${user_id}, status=${actualStatus}, amount=${actualAmount}`);
+  console.log(`[POSTBACK] Received: click_id=${actualClickId}, user_id=${user_id}, external_id=${external_id}, sub_id_10=${sub_id_10}, status=${actualStatus}, amount=${actualAmount}`);
 
   // Verify postback secret (optional but recommended)
   if (secret && secret !== CONFIG.POSTBACK_SECRET) {
@@ -163,8 +165,8 @@ app.get('/api/postback', async (req, res) => {
   // Find the click record by click_id
   const clickRecord = actualClickId ? postbackStore.get(actualClickId) : null;
 
-  // Determine userId: from click record or directly from user_id param (Keitaro sub_id_10 format)
-  const userId = clickRecord?.userId || user_id;
+  // Determine userId: from click record, or from tracking params (external_id, sub_id_10, user_id)
+  const userId = clickRecord?.userId || external_id || sub_id_10 || user_id;
 
   if (!userId) {
     console.log(`[POSTBACK] No userId found (click_id=${actualClickId}, user_id=${user_id}) - ignoring`);
@@ -248,10 +250,10 @@ app.get('/api/postback', async (req, res) => {
  * Alternative POST endpoint for postbacks
  */
 app.post('/api/postback', express.json(), async (req, res) => {
-  const { click_id, clickId, status, event, amount, payout, currency, user_id, secret } = req.body;
+  const { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret } = req.body;
 
   // Reuse GET logic - support both original and Keitaro param names
-  req.query = { click_id, clickId, status, event, amount, payout, currency, user_id, secret };
+  req.query = { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret };
   return app._router.handle(req, res, () => {});
 });
 
@@ -272,12 +274,12 @@ app.post('/api/postback', express.json(), async (req, res) => {
  * - country: User's country code
  */
 app.get('/api/1win/postback', async (req, res) => {
-  const { event, amount, sub1, transaction_id, country } = req.query;
+  const { event, amount, sub1, sub_id_10, external_id, transaction_id, country } = req.query;
 
-  console.log(`[1WIN POSTBACK] Received: event=${event}, amount=${amount}, sub1=${sub1}, transaction_id=${transaction_id}, country=${country}`);
+  console.log(`[1WIN POSTBACK] Received: event=${event}, amount=${amount}, sub1=${sub1}, external_id=${external_id}, sub_id_10=${sub_id_10}, transaction_id=${transaction_id}, country=${country}`);
 
-  // sub1 is our user ID
-  const userId = sub1;
+  // userId: prefer sub1 (1win config), fallback to external_id/sub_id_10 (our tracking links)
+  const userId = sub1 || external_id || sub_id_10;
 
   if (!userId) {
     console.log('[1WIN POSTBACK] Missing sub1 (userId)');
@@ -365,10 +367,12 @@ app.post('/api/1win/postback', async (req, res) => {
   const event = req.query.event || req.body.event;
   const amount = req.query.amount || req.body.amount;
   const sub1 = req.query.sub1 || req.body.sub1;
+  const sub_id_10 = req.query.sub_id_10 || req.body.sub_id_10;
+  const external_id = req.query.external_id || req.body.external_id;
   const transaction_id = req.query.transaction_id || req.body.transaction_id;
   const country = req.query.country || req.body.country;
 
-  req.query = { event, amount, sub1, transaction_id, country };
+  req.query = { event, amount, sub1, sub_id_10, external_id, transaction_id, country };
 
   // Forward to GET handler
   return app._router.handle({ ...req, method: 'GET' }, res, () => {});
@@ -674,12 +678,13 @@ app.all('/api/proxy/*', async (req, res) => {
  * Postback URL: https://your-server.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
  */
 app.get('/api/keitaro/postback', async (req, res) => {
-  const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5 } = req.query;
+  const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id } = req.query;
 
-  console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub2=${sub2}`);
+  console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub2=${sub2}, sub10=${sub10}, external_id=${external_id}`);
 
-  // sub2 is our user ID
-  const userId = sub2;
+  // userId: our tracking links set external_id and sub_id_10 (Keitaro sends as sub10)
+  // sub2 kept for backwards compatibility
+  const userId = sub10 || external_id || sub2;
 
   if (!userId) {
     console.log('[KEITARO POSTBACK] Missing sub2 (userId) - ignoring postback');
@@ -773,8 +778,10 @@ app.post('/api/keitaro/postback', async (req, res) => {
   const sub3 = req.query.sub3 || req.body.sub3;
   const sub4 = req.query.sub4 || req.body.sub4;
   const sub5 = req.query.sub5 || req.body.sub5;
+  const sub10 = req.query.sub10 || req.body.sub10;
+  const external_id = req.query.external_id || req.body.external_id;
 
-  req.query = { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5 };
+  req.query = { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id };
 
   // Forward to GET handler
   return app._router.handle({ ...req, method: 'GET' }, res, () => {});
@@ -910,8 +917,8 @@ const server = app.listen(PORT, () => {
   1WIN Postback URL:
   https://your-domain.com/api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
 
-  KEITARO Postback URL:
-  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
+  KEITARO Postback URL (use sub10 or external_id for userId):
+  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}
 
   Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
 
