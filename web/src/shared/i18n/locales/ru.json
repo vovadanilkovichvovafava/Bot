@@ -485,7 +485,17 @@
     "unlockUnlimitedAI": "Разблокировать безлимитный AI",
     "depositForUnlimited": "Сделайте депозит в {{name}} → Безлимитные AI-запросы",
     "depositAndUnlock": "Депозит и разблокировка",
-    "maybeLater": "Позже"
+    "maybeLater": "Позже",
+    "history": "История",
+    "chatHistory": "История чатов",
+    "noHistory": "Нет предыдущих разговоров",
+    "loadSession": "Загрузить разговор",
+    "reanalyze": "Переанализ",
+    "reanalyzeCost": "Стоит 1 AI-запрос",
+    "reanalyzing": "Переанализ...",
+    "newAnalysis": "Новый анализ",
+    "messagesCount": "{{count}} сообщений",
+    "backToChat": "Вернуться в чат"
   },
   "proTools": {
     "getPro": "Получить PRO",
@@ -1073,7 +1083,10 @@
     "time": "Время",
     "unlockPro": "Разблокировать PRO",
     "vs": "—",
-    "winProbability": "Вероятность победы"
+    "winProbability": "Вероятность победы",
+    "reanalyze": "Переанализировать",
+    "reanalyzeCost": "стоит 1 запрос",
+    "reanalyzing": "Переанализ..."
   },
   "liveMatch": {
     "tabOverview": "Обзор",

@@ -285,6 +285,27 @@ class ApiService {
     return this.request('/predictions/chat/limit');
   }
 
+  // AI Chat history — list of past sessions
+  async getChatHistory(limit = 20, offset = 0) {
+    return this.request(`/predictions/chat/history?limit=${limit}&offset=${offset}`);
+  }
+
+  // AI Chat session — get all messages from a session
+  async getChatSession(sessionId) {
+    return this.request(`/predictions/chat/history/${encodeURIComponent(sessionId)}`);
+  }
+
+  // Re-analyze a match (costs 1 token, fresh analysis)
+  async reanalyzeChat(message, matchContext = null, originalSessionId = null, locale = 'en') {
+    const body = { message, locale };
+    if (matchContext) body.match_context = matchContext;
+    if (originalSessionId) body.original_session_id = originalSessionId;
+    return this.request('/predictions/chat/reanalyze', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
   // Support Chat (AI-powered, no limits)
   async supportChat(message, history = [], locale = 'en', sessionId = '') {
     return this.request('/support/chat', {

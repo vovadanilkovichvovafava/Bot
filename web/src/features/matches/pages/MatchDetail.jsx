@@ -5,7 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
-import { savePrediction } from '../../predictions/services/predictionStore';
+import { savePrediction, getSavedAnalysis, updatePredictionAnalysis } from '../../predictions/services/predictionStore';
 import ShareButton from '../../predictions/components/ShareButton';
 import { generateMatchShareText } from '../../predictions/services/shareUtils';
 import { getMatchColors } from '../../../shared/utils/teamColors';
@@ -73,6 +73,7 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true);
   const [enrichedLoading, setEnrichedLoading] = useState(true);
   const [predicting, setPredicting] = useState(false);
+  const [isRestoredAnalysis, setIsRestoredAnalysis] = useState(false); // true if loaded from saved history
   const [activeTab, setActiveTab] = useState('overview');
   const [aiRemaining, setAiRemaining] = useState(null);
   const [fonbetMatch, setFonbetMatch] = useState(null); // Fonbet real odds + deeplink
@@ -84,6 +85,15 @@ export default function MatchDetail() {
       api.getChatLimit()
         .then(data => setAiRemaining(data.remaining ?? FREE_AI_LIMIT))
         .catch(() => setAiRemaining(FREE_AI_LIMIT));
+    }
+    // Restore saved analysis from prediction store (persists across sessions)
+    const saved = getSavedAnalysis(id);
+    if (saved?.claudeAnalysis) {
+      setPrediction({
+        apiPrediction: saved.apiPrediction || null,
+        claudeAnalysis: saved.claudeAnalysis,
+      });
+      setIsRestoredAnalysis(true);
     }
   }, [id]);
 
@@ -419,7 +429,7 @@ export default function MatchDetail() {
     return prompt;
   };
 
-  const getAnalysis = async () => {
+  const getAnalysis = async (forceReanalyze = false) => {
     // Check free limit for non-premium users BEFORE making request
     const isPremium = user?.is_premium;
     if (!isPremium && aiRemaining !== null && aiRemaining <= 0) {
@@ -427,12 +437,14 @@ export default function MatchDetail() {
       return;
     }
 
-    // Check cache first
-    const cached = getCachedPrediction(id);
-    if (cached) {
-      console.log('Using cached prediction for match:', id);
-      setPrediction(cached);
-      return;
+    // Check cache first (skip on reanalyze)
+    if (!forceReanalyze) {
+      const cached = getCachedPrediction(id);
+      if (cached) {
+        console.log('Using cached prediction for match:', id);
+        setPrediction(cached);
+        return;
+      }
     }
 
     setPredicting(true);
@@ -449,7 +461,15 @@ export default function MatchDetail() {
       // Split: match data goes as match_context, question as message
       const matchContext = prompt;
       const userMessage = `Analyze the match ${match.home_team?.name} vs ${match.away_team?.name} and provide a detailed prediction with betting recommendation.`;
-      const data = await api.aiChat(userMessage, [], matchContext);
+
+      let data;
+      if (forceReanalyze) {
+        // Re-analyze via dedicated endpoint (costs 1 token, fresh analysis)
+        const locale = navigator.language?.slice(0, 2) || 'en';
+        data = await api.reanalyzeChat(userMessage, matchContext, null, locale);
+      } else {
+        data = await api.aiChat(userMessage, [], matchContext);
+      }
 
       // Refresh AI remaining counter from server (AFTER successful response)
       if (!user?.is_premium) {
@@ -460,6 +480,7 @@ export default function MatchDetail() {
 
       const result = { apiPrediction: apiPred, claudeAnalysis: data.response };
       setPrediction(result);
+      setIsRestoredAnalysis(false);
 
       // Cache only if AI returned a real analysis with a bet recommendation
       const hasRealBet = data.response && data.response.includes('[BET]');
@@ -474,20 +495,30 @@ export default function MatchDetail() {
         saveCachedPrediction(id, result);
       }
 
-      // Auto-save prediction for history tracking
+      // Save prediction for history tracking
       try {
         const matchDate = match.match_date || enriched?.fixture?.fixture?.date || new Date().toISOString();
-        const saved = savePrediction({
-          matchId: id,
-          homeTeam: match.home_team || { name: 'Home' },
-          awayTeam: match.away_team || { name: 'Away' },
-          league: match.league || enriched?.fixture?.league?.name || '',
-          matchDate,
-          apiPrediction: apiPred,
-          claudeAnalysis: data.response,
-          odds: getOdds1x2(),
-        });
-        console.log('Prediction saved:', saved);
+        if (forceReanalyze) {
+          // Update existing prediction entry with new analysis
+          updatePredictionAnalysis(id, {
+            claudeAnalysis: data.response,
+            apiPrediction: apiPred,
+          });
+          console.log('Prediction updated (reanalyzed):', id);
+        } else {
+          // First analysis — save new entry
+          const saved = savePrediction({
+            matchId: id,
+            homeTeam: match.home_team || { name: 'Home' },
+            awayTeam: match.away_team || { name: 'Away' },
+            league: match.league || enriched?.fixture?.league?.name || '',
+            matchDate,
+            apiPrediction: apiPred,
+            claudeAnalysis: data.response,
+            odds: getOdds1x2(),
+          });
+          console.log('Prediction saved:', saved);
+        }
       } catch (e) {
         console.error('Failed to save prediction:', e);
       }
@@ -682,6 +713,7 @@ export default function MatchDetail() {
             prediction={prediction}
             predicting={predicting}
             getAnalysis={getAnalysis}
+            isRestoredAnalysis={isRestoredAnalysis}
             user={user}
             aiRemaining={aiRemaining}
             formatDate={formatDate}
@@ -710,7 +742,7 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
+function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, isRestoredAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -908,6 +940,32 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* Re-analyze button — shown when user returns to a previously analyzed match */}
+          {isRestoredAnalysis && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => getAnalysis(true)}
+                disabled={predicting}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {predicting ? (
+                  <>
+                    <FootballSpinner size="xs" />
+                    {t('matchDetail.reanalyzing')}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>
+                    </svg>
+                    {t('matchDetail.reanalyze')}
+                    <span className="text-xs text-gray-400">({t('matchDetail.reanalyzeCost')})</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
 

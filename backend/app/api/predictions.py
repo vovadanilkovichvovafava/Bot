@@ -351,6 +351,200 @@ async def ai_chat(
     )
 
 
+class ChatSessionResponse(BaseModel):
+    session_id: str
+    last_message: str
+    last_message_at: str
+    message_count: int
+    match_context: Optional[str] = None
+
+
+class ChatSessionDetailResponse(BaseModel):
+    session_id: str
+    messages: list
+
+
+class ReanalyzeRequest(BaseModel):
+    message: str
+    match_context: Optional[str] = None
+    original_session_id: Optional[str] = None
+    locale: Optional[str] = "en"
+
+
+class ReanalyzeResponse(BaseModel):
+    response: str
+    session_id: str
+    remaining: Optional[int] = None
+    limit: Optional[int] = None
+    day_number: Optional[int] = None
+    resets_at: Optional[str] = None
+
+
+@router.get("/chat/history")
+async def get_chat_history(
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get user's AI chat sessions with last message preview."""
+    user_id = current_user["user_id"]
+
+    # Get distinct sessions with their latest message
+    result = await db.execute(
+        text("""
+            SELECT DISTINCT ON (session_id)
+                session_id,
+                content,
+                created_at,
+                match_context
+            FROM ai_chat_messages
+            WHERE user_id = :uid AND role = 'assistant' AND is_admin_reply = FALSE
+            ORDER BY session_id, created_at DESC
+        """),
+        {"uid": user_id},
+    )
+    rows = result.fetchall()
+
+    # Get message counts per session
+    count_result = await db.execute(
+        text("""
+            SELECT session_id, COUNT(*) as cnt
+            FROM ai_chat_messages
+            WHERE user_id = :uid
+            GROUP BY session_id
+        """),
+        {"uid": user_id},
+    )
+    counts = {r.session_id: r.cnt for r in count_result.fetchall()}
+
+    sessions = []
+    for row in rows:
+        sessions.append({
+            "session_id": row.session_id,
+            "last_message": (row.content or "")[:200],
+            "last_message_at": row.created_at.isoformat() + "Z" if row.created_at else None,
+            "message_count": counts.get(row.session_id, 0),
+            "match_context": (row.match_context or "")[:100] if row.match_context else None,
+        })
+
+    # Sort by last message time descending
+    sessions.sort(key=lambda s: s["last_message_at"] or "", reverse=True)
+
+    return sessions[offset:offset + limit]
+
+
+@router.get("/chat/history/{session_id}")
+async def get_chat_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all messages from a specific chat session."""
+    user_id = current_user["user_id"]
+
+    result = await db.execute(
+        select(AIChatMessage)
+        .where(AIChatMessage.user_id == user_id, AIChatMessage.session_id == session_id)
+        .order_by(AIChatMessage.created_at)
+    )
+    messages = result.scalars().all()
+
+    if not messages:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "session_id": session_id,
+        "messages": [
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "match_context": msg.match_context,
+                "created_at": msg.created_at.isoformat() + "Z" if msg.created_at else None,
+                "is_admin_reply": msg.is_admin_reply,
+            }
+            for msg in messages
+        ],
+    }
+
+
+@router.post("/chat/reanalyze", response_model=ReanalyzeResponse)
+async def reanalyze_chat(
+    req: ReanalyzeRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-analyze a match — costs 1 token. Creates a new session with fresh analysis."""
+    user_id = current_user["user_id"]
+    locale = (req.locale or "en").lower()[:2]
+
+    # Check limits (costs a token, same as normal chat)
+    limits = await check_and_update_limits(user_id, db)
+    if not limits["is_premium"] and limits["remaining"] <= 0:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "daily_limit_reached",
+                "message": "You've used all your free AI requests for today",
+                "remaining": 0,
+                "limit": limits["limit"],
+                "day_number": limits["day_number"],
+                "resets_at": limits["resets_at"],
+            }
+        )
+
+    # Create new session for re-analysis
+    new_sess_id = "re_" + str(uuid.uuid4())[:10]
+
+    # Enrich with learning context
+    learning_ctx = ""
+    try:
+        learning_ctx = await get_learning_context(db)
+    except Exception:
+        pass
+
+    enriched_message = req.message
+    if learning_ctx:
+        enriched_message = req.message + learning_ctx
+
+    # Call Claude AI with fresh context (no history — forces new analysis)
+    analyzer = MatchAnalyzer()
+    response = await analyzer.ai_chat(enriched_message, req.match_context or "", [], locale)
+
+    # Increment counter
+    await increment_chat_usage(user_id, db)
+
+    # Save to DB
+    try:
+        user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        is_pro = bool(user_obj and user_obj.is_premium)
+        db.add(AIChatMessage(
+            user_id=user_id, session_id=new_sess_id, role="user",
+            content=req.message, locale=locale,
+            match_context=req.match_context, was_pro=is_pro,
+        ))
+        db.add(AIChatMessage(
+            user_id=user_id, session_id=new_sess_id, role="assistant",
+            content=response, locale=locale,
+            match_context=req.match_context, was_pro=is_pro,
+        ))
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to save reanalyze chat: {e}")
+
+    updated_limits = await check_and_update_limits(user_id, db)
+
+    return ReanalyzeResponse(
+        response=response,
+        session_id=new_sess_id,
+        remaining=updated_limits["remaining"],
+        limit=updated_limits["limit"],
+        day_number=updated_limits["day_number"],
+        resets_at=updated_limits.get("resets_at"),
+    )
+
+
 class SavePredictionRequest(BaseModel):
     match_id: Union[int, str]
     home_team: str

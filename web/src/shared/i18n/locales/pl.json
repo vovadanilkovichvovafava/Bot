@@ -577,7 +577,17 @@
     "unlockUnlimitedAI": "Odblokuj nielimitowane AI",
     "depositForUnlimited": "Wpłać depozyt w {{name}} → Nielimitowane zapytania AI",
     "depositAndUnlock": "Wpłać i odblokuj",
-    "maybeLater": "Może później"
+    "maybeLater": "Może później",
+    "history": "Historia",
+    "chatHistory": "Historia czatów",
+    "noHistory": "Brak poprzednich rozmów",
+    "loadSession": "Załaduj rozmowę",
+    "reanalyze": "Ponowna analiza",
+    "reanalyzeCost": "Kosztuje 1 zapytanie AI",
+    "reanalyzing": "Ponowna analiza...",
+    "newAnalysis": "Nowa analiza",
+    "messagesCount": "{{count}} wiadomości",
+    "backToChat": "Powrót do czatu"
   },
   "proTools": {
     "getPro": "Zdobądź PRO",
@@ -1165,7 +1175,10 @@
     "time": "Czas",
     "unlockPro": "Odblokuj PRO",
     "vs": "vs",
-    "winProbability": "Prawdopodobieństwo wygranej"
+    "winProbability": "Prawdopodobieństwo wygranej",
+    "reanalyze": "Ponowna analiza",
+    "reanalyzeCost": "kosztuje 1 zapytanie",
+    "reanalyzing": "Ponowna analiza..."
   },
   "liveMatch": {
     "tabOverview": "Przegląd",

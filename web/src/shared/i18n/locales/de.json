@@ -478,7 +478,17 @@
     "unlockUnlimitedAI": "Unbegrenztes AI freischalten",
     "depositForUnlimited": "Einzahlung bei {{name}} → Unbegrenzte AI-Anfragen",
     "depositAndUnlock": "Einzahlen & Freischalten",
-    "maybeLater": "Vielleicht später"
+    "maybeLater": "Vielleicht später",
+    "history": "Verlauf",
+    "chatHistory": "Chat-Verlauf",
+    "noHistory": "Keine vorherigen Gespräche",
+    "loadSession": "Gespräch laden",
+    "reanalyze": "Neu analysieren",
+    "reanalyzeCost": "Kostet 1 AI-Anfrage",
+    "reanalyzing": "Neu analysieren...",
+    "newAnalysis": "Neue Analyse",
+    "messagesCount": "{{count}} Nachrichten",
+    "backToChat": "Zurück zum Chat"
   },
   "proTools": {
     "getPro": "PRO holen",
@@ -1066,7 +1076,10 @@
     "time": "Zeit",
     "unlockPro": "PRO freischalten",
     "vs": "vs",
-    "winProbability": "Gewinnwahrscheinlichkeit"
+    "winProbability": "Gewinnwahrscheinlichkeit",
+    "reanalyze": "Neu analysieren",
+    "reanalyzeCost": "kostet 1 Anfrage",
+    "reanalyzing": "Neu analysieren..."
   },
   "liveMatch": {
     "tabOverview": "Übersicht",

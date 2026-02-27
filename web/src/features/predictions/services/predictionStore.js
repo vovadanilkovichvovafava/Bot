@@ -133,6 +133,8 @@ export function savePrediction({
       drawPct: parseInt(percent?.draw) || 0,
       awayPct: parseInt(percent?.away) || 0,
     },
+    claudeAnalysis: claudeAnalysis || null,
+    apiPrediction: apiPrediction || null,
     odds: odds || null,
     result: null,
     createdAt: new Date().toISOString(),
@@ -185,6 +187,36 @@ function syncToDB(entry) {
   } catch {
     // ignore — DB sync is best-effort
   }
+}
+
+/**
+ * Get a saved prediction by matchId (for restoring on match detail page).
+ */
+export function getSavedAnalysis(matchId) {
+  if (!matchId) return null;
+  const predictions = getAll();
+  return predictions.find(p => String(p.matchId) === String(matchId)) || null;
+}
+
+/**
+ * Update an existing prediction's analysis (used by re-analyze).
+ * Replaces the claudeAnalysis and apiPrediction fields, keeps result/verification intact.
+ */
+export function updatePredictionAnalysis(matchId, { claudeAnalysis, apiPrediction }) {
+  if (!matchId) return null;
+  const predictions = getAll();
+  const idx = predictions.findIndex(p => String(p.matchId) === String(matchId));
+  if (idx === -1) return null;
+
+  predictions[idx].claudeAnalysis = claudeAnalysis || predictions[idx].claudeAnalysis;
+  if (apiPrediction !== undefined) {
+    predictions[idx].apiPrediction = apiPrediction;
+  }
+  predictions[idx].reanalyzedAt = new Date().toISOString();
+
+  saveAll(predictions);
+  syncToBackend();
+  return predictions[idx];
 }
 
 /**
