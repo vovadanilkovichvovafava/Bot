@@ -228,6 +228,17 @@ export default function Users() {
                 </select>
               </div>
               <div>
+                <p className="text-[10px] text-dark-500 uppercase mb-1">Sort</p>
+                <select
+                  value={sortBy}
+                  onChange={e => { setSortBy(e.target.value); setPage(1) }}
+                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="created_at">Newest</option>
+                  <option value="total_predictions">Most predictions</option>
+                </select>
+              </div>
+              <div>
                 <p className="text-[10px] text-dark-500 uppercase mb-1">Domain</p>
                 <select
                   value={domainFilter}
@@ -238,17 +249,6 @@ export default function Users() {
                   {domains.map(d => (
                     <option key={d.domain} value={d.domain}>{d.domain} ({d.count})</option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <p className="text-[10px] text-dark-500 uppercase mb-1">Sort</p>
-                <select
-                  value={sortBy}
-                  onChange={e => { setSortBy(e.target.value); setPage(1) }}
-                  className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="created_at">Newest</option>
-                  <option value="total_predictions">Most predictions</option>
                 </select>
               </div>
             </div>
