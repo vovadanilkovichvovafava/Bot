@@ -257,127 +257,6 @@ app.post('/api/postback', express.json(), async (req, res) => {
   return app._router.handle(req, res, () => {});
 });
 
-// ============================================
-// 1WIN POSTBACK ENDPOINT
-// ============================================
-
-/**
- * 1win Postback endpoint
- *
- * URL format: /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
- *
- * Parameters:
- * - event: Event type (registration, deposit, first_deposit, withdrawal, etc.)
- * - amount: Transaction amount
- * - sub1: User ID (our tracking parameter)
- * - transaction_id: Unique transaction ID from 1win
- * - country: User's country code
- */
-app.get('/api/1win/postback', async (req, res) => {
-  const { event, amount, sub1, sub_id_10, external_id, transaction_id, country } = req.query;
-
-  console.log(`[1WIN POSTBACK] Received: event=${event}, amount=${amount}, sub1=${sub1}, external_id=${external_id}, sub_id_10=${sub_id_10}, transaction_id=${transaction_id}, country=${country}`);
-
-  // userId: prefer sub1 (1win config), fallback to external_id/sub_id_10 (our tracking links)
-  const userId = sub1 || external_id || sub_id_10;
-
-  if (!userId) {
-    console.log('[1WIN POSTBACK] Missing sub1 (userId)');
-    return res.status(200).send('OK'); // Always return OK to the affiliate network
-  }
-
-  // Store postback record
-  const postbackRecord = {
-    userId,
-    event,
-    amount: amount ? parseFloat(amount) : null,
-    transactionId: transaction_id,
-    country,
-    timestamp: new Date().toISOString(),
-    source: '1win',
-  };
-
-  // Store with transaction_id as key for deduplication
-  const recordKey = transaction_id || `${userId}_${event}_${Date.now()}`;
-  postbackStore.set(`1win_${recordKey}`, postbackRecord);
-
-  console.log(`[1WIN POSTBACK] Stored record: ${recordKey}`);
-
-  // Check if this is a qualifying action for Premium activation
-  // 1win events: registration, first_deposit (FTD), deposit, qualified_deposit, etc.
-  const qualifyingEvents = ['deposit', 'first_deposit', 'ftd', 'qualified', 'qualified_deposit'];
-  const MIN_DEPOSIT_FOR_PRO = 0; // Minimum deposit disabled for testing
-
-  if (qualifyingEvents.includes(event?.toLowerCase())) {
-    const depositAmount = parseFloat(amount) || 0;
-
-    // Check minimum deposit requirement
-    if (depositAmount < MIN_DEPOSIT_FOR_PRO) {
-      console.log(`[1WIN POSTBACK] Deposit $${depositAmount} below minimum $${MIN_DEPOSIT_FOR_PRO} - PRO not activated for user: ${userId}`);
-      postbackRecord.premiumActivated = false;
-      postbackRecord.reason = `Deposit below minimum ($${MIN_DEPOSIT_FOR_PRO} required)`;
-      postbackStore.set(`1win_${recordKey}`, postbackRecord);
-    } else {
-      console.log(`[1WIN POSTBACK] Qualifying deposit $${depositAmount}! Activating Premium for user: ${userId}`);
-
-      try {
-        // Activate Premium for the user
-        await activatePremium(userId, {
-          source: '1win',
-          transactionId: transaction_id,
-          depositAmount: amount,
-          country,
-          event,
-        });
-
-        postbackRecord.premiumActivated = true;
-        postbackRecord.premiumActivatedAt = new Date().toISOString();
-        postbackStore.set(`1win_${recordKey}`, postbackRecord);
-
-        console.log(`[1WIN POSTBACK] Premium activated for user: ${userId}`);
-      } catch (error) {
-        console.error('[1WIN POSTBACK] Failed to activate Premium:', error.message);
-      }
-    }
-  }
-
-  // Log postback to database
-  logPostback({
-    user_id: userId,
-    source: '1win',
-    transaction_id: transaction_id,
-    event,
-    amount,
-    currency: 'USD',
-    country,
-    premium_activated: postbackRecord.premiumActivated || false,
-    error: postbackRecord.error,
-    raw_params: JSON.stringify(req.query),
-  });
-
-  // Always respond with OK to the affiliate network
-  res.status(200).send('OK');
-});
-
-/**
- * 1win Postback POST endpoint (alternative)
- */
-app.post('/api/1win/postback', async (req, res) => {
-  // Support both query params and body
-  const event = req.query.event || req.body.event;
-  const amount = req.query.amount || req.body.amount;
-  const sub1 = req.query.sub1 || req.body.sub1;
-  const sub_id_10 = req.query.sub_id_10 || req.body.sub_id_10;
-  const external_id = req.query.external_id || req.body.external_id;
-  const transaction_id = req.query.transaction_id || req.body.transaction_id;
-  const country = req.query.country || req.body.country;
-
-  req.query = { event, amount, sub1, sub_id_10, external_id, transaction_id, country };
-
-  // Forward to GET handler
-  return app._router.handle({ ...req, method: 'GET' }, res, () => {});
-});
-
 /**
  * Log postback event to main API database for debugging
  */
@@ -480,7 +359,7 @@ app.post('/api/verification/request', (req, res) => {
     userId,
     email,
     bookmakerId,
-    bookmaker: bookmaker || '1win',
+    bookmaker: bookmaker || 'unknown',
     status: 'pending',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -895,8 +774,7 @@ app.get('/', (req, res) => {
       geo: 'GET /api/geo - Get geo info for current IP',
       click: 'GET /api/click?userId=xxx - Generate affiliate click ID',
       postback: 'GET/POST /api/postback - Bookmaker postback endpoint',
-      '1winPostback': 'GET/POST /api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}',
-      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}',
+      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}',
       premiumCheck: 'GET /api/premium/check/:userId - Check premium status',
       bookmakerLink: 'GET /api/bookmaker/link?userId=xxx - Get bookmaker link with cloaking',
       proxy: 'ALL /api/proxy/* - Proxy requests to bookmaker',
@@ -913,9 +791,6 @@ const server = app.listen(PORT, () => {
 
   Postback URL for bookmaker:
   https://your-domain.com/api/postback?click_id={click_id}&status={status}&amount={amount}&currency={currency}
-
-  1WIN Postback URL:
-  https://your-domain.com/api/1win/postback?event={event}&amount={amount}&sub1={sub1}&transaction_id={transaction_id}&country={country}
 
   KEITARO Postback URL (use sub10 or external_id for userId):
   https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}
