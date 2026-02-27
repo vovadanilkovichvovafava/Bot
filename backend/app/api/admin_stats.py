@@ -190,10 +190,11 @@ async def get_overview(
 
     accuracy = round((correct / verified * 100), 1) if verified > 0 else 0.0
 
-    # Online users (active in last 15 minutes)
+    # Online users (active in last 15 minutes) — from analytics_events for accuracy
     online_cutoff = now - timedelta(minutes=15)
     online_users = (await db.execute(
-        select(func.count(User.id)).where(User.updated_at >= online_cutoff)
+        text("SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :cutoff AND user_id IS NOT NULL"),
+        {"cutoff": online_cutoff},
     )).scalar() or 0
 
     # Football API usage today
@@ -269,7 +270,8 @@ async def get_online_history(
             "peak_users": peak_users,
             "peak_hour": peak_hour,
             "current_online": (await db.execute(
-                select(func.count(User.id)).where(User.updated_at >= now - timedelta(minutes=15))
+                text("SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :cutoff AND user_id IS NOT NULL"),
+                {"cutoff": now - timedelta(minutes=15)},
             )).scalar() or 0,
         }
     except Exception as e:
@@ -1889,22 +1891,44 @@ async def get_pro_analytics(
             .order_by(User.updated_at.desc())
         )).scalars().all()
 
+        # Avg days as PRO: approximate activation date as premium_until - 15 days
+        PRO_DURATION_DAYS = 15
         avg_pro_days = 0
         if pro_rows:
-            total_days = sum((now - u.created_at).days for u in pro_rows if u.created_at)
+            total_days = 0
+            for u in pro_rows:
+                if u.premium_until:
+                    pro_start = u.premium_until - timedelta(days=PRO_DURATION_DAYS)
+                    total_days += (now - pro_start).days
+                elif u.created_at:
+                    total_days += (now - u.created_at).days
             avg_pro_days = round(total_days / len(pro_rows), 1)
 
         # ── PRO Growth (last 30 days — daily) ──
+        # Count ALL users who had active PRO on each day (including now-expired).
+        # A user was PRO on a day if: is_premium=True AND premium_until >= that day.
+
+        growth_rows = (await db.execute(text("""
+            SELECT d::date AS day, COUNT(*) AS cnt
+            FROM generate_series(:start::date, :end::date, '1 day') AS d
+            LEFT JOIN LATERAL (
+                SELECT id FROM users
+                WHERE is_premium = true
+                  AND premium_until >= d::date
+                  AND created_at < d::date + interval '1 day'
+            ) u ON true
+            WHERE u.id IS NOT NULL
+            GROUP BY d::date
+            ORDER BY d::date
+        """), {"start": (today_start - timedelta(days=29)).date(), "end": today_start.date()})).all()
+        growth_map = {str(r[0]): r[1] for r in growth_rows}
 
         growth_daily = []
         for days_ago in range(29, -1, -1):
             day = today_start - timedelta(days=days_ago)
-            day_end = day + timedelta(days=1)
-            # Count PRO users that existed at day_end: created before day_end
-            count = sum(1 for u in pro_rows if u.created_at and u.created_at < day_end)
             growth_daily.append({
                 "date": day.strftime("%m/%d"),
-                "pro_count": count,
+                "pro_count": growth_map.get(str(day.date()), 0),
             })
 
         # ── PRO vs Free Engagement ──
@@ -1960,20 +1984,23 @@ async def get_pro_analytics(
             },
         }
 
-        # ── Daily PRO Activity (last 30 days — single query) ──
+        # ── Daily PRO Activity (last 30 days) ──
+        # Use analytics_events joined with users to count truly active PRO users per day.
+        # analytics_events.user_id stores public_id (e.g. "usr_abc123").
 
-        daily_rows = (await db.execute(
-            select(
-                func.date(User.updated_at).label("d"),
-                func.count(User.id).label("cnt"),
-            )
-            .where(and_(
-                User.is_premium == True,
-                User.updated_at >= month_ago,
-            ))
-            .group_by(func.date(User.updated_at))
-            .order_by(func.date(User.updated_at))
-        )).all()
+        daily_rows = (await db.execute(text("""
+            SELECT
+                ae.created_at::date AS d,
+                COUNT(DISTINCT ae.user_id) AS cnt
+            FROM analytics_events ae
+            JOIN users u ON u.public_id = ae.user_id
+            WHERE ae.created_at >= :since
+              AND ae.user_id IS NOT NULL
+              AND u.is_premium = true
+              AND u.premium_until >= ae.created_at::date
+            GROUP BY ae.created_at::date
+            ORDER BY ae.created_at::date
+        """), {"since": month_ago})).all()
         daily_map = {str(r[0]): r[1] for r in daily_rows}
 
         daily_activity = []
@@ -2005,7 +2032,8 @@ async def get_pro_analytics(
 
         pro_users_list = []
         for u in pro_rows:
-            days_as_pro = (now - u.created_at).days if u.created_at else 0
+            pro_start = (u.premium_until - timedelta(days=PRO_DURATION_DAYS)) if u.premium_until else u.created_at
+            days_as_pro = (now - pro_start).days if pro_start else 0
             days_remaining = (u.premium_until - now).days if u.premium_until else 0
             last_active_ago = (now - u.updated_at).total_seconds() / 3600 if u.updated_at else 9999
             pro_users_list.append({
