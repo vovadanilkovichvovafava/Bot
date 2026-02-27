@@ -98,12 +98,65 @@ export default function AdminML() {
 
   const activeModel = (stats?.models || []).find(m => m.is_active)
   const td = stats?.training_data || {}
+  const ps = stats?.pipeline_status || {}
+
+  // Helper: format relative time
+  const timeAgo = (isoStr) => {
+    if (!isoStr) return 'never'
+    const diff = Date.now() - new Date(isoStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">ML Pipeline</h1>
         <p className="text-sm text-slate-500 mt-1">Model versions, training data, feature importance, and performance</p>
+      </div>
+
+      {/* Pipeline Status */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`w-2 h-2 rounded-full ${ps.has_active_model ? 'bg-green-400 animate-pulse' : ps.training_possible ? 'bg-yellow-400 animate-pulse' : 'bg-slate-600'}`} />
+          <h3 className="text-sm font-semibold">Pipeline Status</h3>
+          <span className={`text-[10px] px-2 py-0.5 rounded ${ps.has_active_model ? 'bg-green-500/20 text-green-400' : ps.training_possible ? 'bg-yellow-500/20 text-yellow-400' : 'bg-slate-700 text-slate-400'}`}>
+            {ps.has_active_model ? 'Active' : ps.training_possible ? 'Ready to train' : 'Collecting data'}
+          </span>
+        </div>
+
+        {/* Steps indicator */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[
+            { label: 'Data Collection', ok: ps.data_ready, detail: ps.last_events?.data_collect ? timeAgo(ps.last_events.data_collect) : 'waiting' },
+            { label: 'Results Verified', ok: ps.has_verified, detail: td.verified_matches ? `${td.verified_matches} matches` : 'waiting' },
+            { label: 'Feature Enrichment', ok: ps.has_enriched, detail: ps.pending_enrichment > 0 ? `${ps.pending_enrichment} pending` : td.enriched_matches ? `${td.enriched_matches} ready` : 'waiting' },
+            { label: 'Model Training', ok: ps.has_active_model, detail: ps.last_events?.train_complete ? timeAgo(ps.last_events.train_complete) : td.enriched_matches >= 50 ? 'scheduled' : `need ${50 - (td.enriched_matches || 0)} more` },
+            { label: 'Predictions Active', ok: ps.has_active_model, detail: ps.has_active_model ? 'online' : 'waiting for model' },
+          ].map((step, i) => (
+            <div key={step.label} className={`rounded-lg p-3 border ${step.ok ? 'border-green-500/20 bg-green-500/5' : 'border-slate-700 bg-slate-800/30'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`text-xs ${step.ok ? 'text-green-400' : 'text-slate-500'}`}>
+                  {step.ok ? '\u2713' : '\u25CB'}
+                </span>
+                <span className="text-[10px] text-slate-400">{step.label}</span>
+              </div>
+              <p className={`text-xs font-mono ${step.ok ? 'text-green-300' : 'text-slate-500'}`}>{step.detail}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Unverified info */}
+        {ps.unverified_matches > 0 && (
+          <p className="text-[10px] text-slate-500 mt-3">
+            {ps.unverified_matches} match{ps.unverified_matches !== 1 ? 'es' : ''} awaiting final results (scheduled/live)
+          </p>
+        )}
       </div>
 
       {/* Active model highlight */}
@@ -149,16 +202,18 @@ export default function AdminML() {
       )}
 
       {/* Training Data Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: 'Total Matches', value: td.total_matches?.toLocaleString() || '0', color: 'text-slate-100' },
-          { label: 'Verified', value: td.verified_matches?.toLocaleString() || '0', color: 'text-blue-400' },
-          { label: 'Enriched (with features)', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-green-400' },
-          { label: 'Ready for Training', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-purple-400' },
+          { label: 'Total Matches', value: td.total_matches?.toLocaleString() || '0', color: 'text-slate-100', sub: null },
+          { label: 'Awaiting Results', value: ps.unverified_matches?.toLocaleString() || '0', color: 'text-amber-400', sub: 'scheduled/live' },
+          { label: 'Verified', value: td.verified_matches?.toLocaleString() || '0', color: 'text-blue-400', sub: 'with final score' },
+          { label: 'Enriched', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-green-400', sub: ps.pending_enrichment > 0 ? `${ps.pending_enrichment} pending` : 'Elo + features' },
+          { label: 'Ready for Training', value: td.enriched_matches?.toLocaleString() || '0', color: 'text-purple-400', sub: td.enriched_matches >= 50 ? 'min. 50 reached' : `need ${50 - (td.enriched_matches || 0)} more` },
         ].map(s => (
           <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
             <p className="text-[10px] text-slate-500">{s.label}</p>
             <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+            {s.sub && <p className="text-[10px] text-slate-600 mt-0.5">{s.sub}</p>}
           </div>
         ))}
       </div>
@@ -287,13 +342,63 @@ export default function AdminML() {
               elo_update: 'bg-rose-500/20 text-rose-400',
             }
             const color = colors[l.event] || 'bg-slate-700 text-slate-400'
+
+            // Parse details for better display
+            let parsed = null
+            try {
+              parsed = typeof l.details === 'string' ? JSON.parse(l.details) : l.details
+            } catch { /* ignore */ }
+
+            // Format data_collect events nicely
+            const formatDetails = () => {
+              if (!parsed) return typeof l.details === 'string' ? l.details : JSON.stringify(l.details)?.slice(0, 120)
+
+              if (l.event === 'data_collect') {
+                const parts = []
+                if (parsed.date) parts.push(parsed.date)
+                // Support both old format (collected) and new format (new/updated)
+                if (parsed.new !== undefined) {
+                  parts.push(`+${parsed.new} new`)
+                  if (parsed.updated > 0) parts.push(`${parsed.updated} verified`)
+                  if (parsed.unchanged > 0) parts.push(`${parsed.unchanged} unchanged`)
+                } else if (parsed.collected !== undefined) {
+                  parts.push(`+${parsed.collected} new`)
+                }
+                const total = parsed.total || parsed.total_available
+                if (total) parts.push(`/ ${total} total`)
+                return parts.join(' \u00b7 ')
+              }
+
+              if (l.event === 'train_complete') {
+                const parts = []
+                if (parsed.model) parts.push(parsed.model)
+                if (parsed.accuracy) parts.push(`acc: ${(parsed.accuracy * 100).toFixed(1)}%`)
+                if (parsed.samples) parts.push(`${parsed.samples} samples`)
+                if (parsed.duration) parts.push(`${parsed.duration}s`)
+                return parts.join(' \u00b7 ') || JSON.stringify(parsed).slice(0, 120)
+              }
+
+              if (l.event === 'elo_update') {
+                const parts = []
+                if (parsed.matches) parts.push(`${parsed.matches} matches`)
+                if (parsed.teams) parts.push(`${parsed.teams} teams`)
+                return parts.join(' \u00b7 ') || JSON.stringify(parsed).slice(0, 120)
+              }
+
+              return JSON.stringify(parsed).slice(0, 120)
+            }
+
+            // Color indicator for data_collect: green if something happened, dim if nothing
+            const isActiveCollect = l.event === 'data_collect' && parsed &&
+              ((parsed.new > 0) || (parsed.updated > 0) || (parsed.collected > 0))
+
             return (
               <div key={i} className="px-5 py-3 flex items-start gap-3 hover:bg-slate-800/30 transition-colors">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap mt-0.5 ${color}`}>
                   {l.event}
                 </span>
-                <p className="text-xs text-slate-400 flex-1 truncate font-mono">
-                  {typeof l.details === 'string' ? l.details : JSON.stringify(l.details)?.slice(0, 120)}
+                <p className={`text-xs flex-1 truncate font-mono ${isActiveCollect ? 'text-cyan-300' : l.event === 'data_collect' && !isActiveCollect ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {formatDetails()}
                 </p>
                 <span className="text-[10px] text-slate-600 whitespace-nowrap">
                   {l.created_at ? new Date(l.created_at).toLocaleString() : ''}

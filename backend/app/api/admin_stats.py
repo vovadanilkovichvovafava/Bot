@@ -981,6 +981,42 @@ async def get_ml_stats(
     )).all()
     training_by_league = [{"league": r[0], "count": r[1]} for r in league_rows]
 
+    # Pipeline status — help user understand if ML pipeline is healthy
+    pipeline_status = {
+        "data_ready": total_matches > 0,
+        "has_verified": verified_matches > 0,
+        "has_enriched": enriched_matches > 0,
+        "training_possible": enriched_matches >= 50,
+        "has_active_model": any(m.get("is_active") for m in models),
+    }
+
+    # Pending enrichment: verified but not yet enriched with Elo
+    pending_enrichment = (await db.execute(
+        select(func.count(MatchFeature.id)).where(
+            and_(
+                MatchFeature.is_verified == True,
+                MatchFeature.home_elo.is_(None),
+                MatchFeature.home_goals.isnot(None),
+            )
+        )
+    )).scalar() or 0
+
+    # Unverified: collected but no results yet (scheduled/live matches)
+    unverified_matches = total_matches - verified_matches
+
+    # Last events by type
+    last_events = {}
+    for evt_type in ("data_collect", "train_complete", "elo_update"):
+        row = (await db.execute(
+            select(LearningLog.created_at).where(LearningLog.event_type == evt_type)
+            .order_by(LearningLog.created_at.desc()).limit(1)
+        )).scalar()
+        last_events[evt_type] = row.isoformat() if row else None
+
+    pipeline_status["last_events"] = last_events
+    pipeline_status["pending_enrichment"] = pending_enrichment
+    pipeline_status["unverified_matches"] = unverified_matches
+
     return {
         "models": models,
         "feature_importance": active_feature_importance,
@@ -991,6 +1027,7 @@ async def get_ml_stats(
             "enriched_matches": enriched_matches,
             "by_league": training_by_league,
         },
+        "pipeline_status": pipeline_status,
     }
 
 

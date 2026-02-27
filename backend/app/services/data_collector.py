@@ -4,6 +4,7 @@ Collects match data from API-Football for training ML models.
 Runs hourly as a background task.
 """
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -94,6 +95,8 @@ async def collect_daily_fixtures(date_str: str = None):
     logger.info(f"Found {len(league_fixtures)} fixtures in top-15 leagues (out of {len(all_fixtures)} total)")
 
     collected = 0
+    updated = 0
+    already_done = 0
     for fixture in league_fixtures:
         try:
             fixture_id = fixture.get("fixture", {}).get("id")
@@ -107,8 +110,12 @@ async def collect_daily_fixtures(date_str: str = None):
                 )
                 if existing.scalar_one_or_none():
                     # Update results if match finished
-                    await _update_results(db, fixture)
+                    was_updated = await _update_results(db, fixture)
                     await db.commit()
+                    if was_updated:
+                        updated += 1
+                    else:
+                        already_done += 1
                     continue
 
                 # Extract base data
@@ -182,15 +189,21 @@ async def collect_daily_fixtures(date_str: str = None):
             logger.error(f"Error processing fixture {fixture.get('fixture', {}).get('id')}: {e}")
             continue
 
-    if collected > 0:
-        logger.info(f"Collected {collected} new fixtures for {date_str}")
+    if collected > 0 or updated > 0:
+        logger.info(f"Fixtures for {date_str}: {collected} new, {updated} results updated, {already_done} unchanged")
 
     # Log the collection event
     try:
         async with async_session_maker() as db:
             log_entry = LearningLog(
                 event_type="data_collect",
-                details_json=f'{{"date": "{date_str}", "collected": {collected}, "total_available": {len(league_fixtures)}}}'
+                details_json=json.dumps({
+                    "date": date_str,
+                    "new": collected,
+                    "updated": updated,
+                    "unchanged": already_done,
+                    "total": len(league_fixtures),
+                })
             )
             db.add(log_entry)
             await db.commit()
@@ -200,27 +213,28 @@ async def collect_daily_fixtures(date_str: str = None):
     return collected
 
 
-async def _update_results(db, fixture: dict):
-    """Update an existing fixture with match results if now finished."""
+async def _update_results(db, fixture: dict) -> bool:
+    """Update an existing fixture with match results if now finished.
+    Returns True if results were actually updated (newly verified)."""
     fixture_id = fixture.get("fixture", {}).get("id")
     status = fixture.get("fixture", {}).get("status", {}).get("short", "")
 
     if status not in ("FT", "AET", "PEN"):
-        return
+        return False
 
     goals = fixture.get("goals", {})
     home_goals = goals.get("home")
     away_goals = goals.get("away")
 
     if home_goals is None or away_goals is None:
-        return
+        return False
 
     result = await db.execute(
         select(MatchFeature).where(MatchFeature.fixture_id == fixture_id)
     )
     feature = result.scalar_one_or_none()
     if not feature or feature.is_verified:
-        return
+        return False
 
     feature.home_goals = home_goals
     feature.away_goals = away_goals
@@ -251,6 +265,7 @@ async def _update_results(db, fixture: dict):
     feature.verified_at = datetime.utcnow()
 
     logger.info(f"Updated results for fixture {fixture_id}: {home_goals}-{away_goals}")
+    return True
 
 
 async def enrich_fixture_data(fixture_id: int):
