@@ -39,14 +39,25 @@ export async function loadFromBackend() {
 
     if (remote && remote.length > 0) {
       // Merge: use remote as base, add any local-only predictions
+      // For predictions that exist in both, prefer the version that has claudeAnalysis
+      const localByMatchId = {};
+      for (const p of local) {
+        if (p.matchId) localByMatchId[p.matchId] = p;
+      }
       const remoteIds = new Set(remote.map(p => p.matchId));
       const localOnly = local.filter(p => !remoteIds.has(p.matchId));
-      const merged = [...localOnly, ...remote]
+      const mergedRemote = remote.map(rp => {
+        const lp = localByMatchId[rp.matchId];
+        // If local has claudeAnalysis but remote doesn't, preserve local version
+        if (lp?.claudeAnalysis && !rp.claudeAnalysis) return lp;
+        return rp;
+      });
+      const merged = [...localOnly, ...mergedRemote]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 100);
       saveAll(merged);
-      // Push merged result back if we added local-only predictions
-      if (localOnly.length > 0) {
+      // Push merged result back if we added local-only predictions or fixed missing analyses
+      if (localOnly.length > 0 || merged.some((m, i) => m !== remote[i])) {
         api.saveMyPredictions(merged).catch(() => {});
       }
     } else if (local.length > 0) {

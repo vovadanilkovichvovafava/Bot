@@ -31,14 +31,11 @@ const getCachedPrediction = (matchId) => {
       localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
       return null;
     }
-    // Invalidate cached entries that have no real bet (broken/generic responses)
-    const analysis = entry.data?.claudeAnalysis || '';
-    if (!analysis.includes('[BET]')) {
-      delete cache[matchId];
-      localStorage.setItem(PREDICTION_CACHE_KEY, JSON.stringify(cache));
-      return null;
+    // Return cached data if it has any analysis content
+    if (entry.data?.claudeAnalysis) {
+      return entry.data;
     }
-    return entry.data;
+    return null;
   } catch {
     return null;
   }
@@ -86,14 +83,24 @@ export default function MatchDetail() {
         .then(data => setAiRemaining(data.remaining ?? FREE_AI_LIMIT))
         .catch(() => setAiRemaining(FREE_AI_LIMIT));
     }
-    // Restore saved analysis from prediction store (persists across sessions)
+    // Restore saved analysis — check prediction store first, then short-term cache
     const saved = getSavedAnalysis(id);
     if (saved?.claudeAnalysis) {
-      setPrediction({
+      const restored = {
         apiPrediction: saved.apiPrediction || null,
         claudeAnalysis: saved.claudeAnalysis,
-      });
+      };
+      setPrediction(restored);
       setIsRestoredAnalysis(true);
+      // Also populate short-term cache so getAnalysis() finds it quickly
+      saveCachedPrediction(id, restored);
+    } else {
+      // Fallback: check short-term cache
+      const cached = getCachedPrediction(id);
+      if (cached?.claudeAnalysis) {
+        setPrediction(cached);
+        setIsRestoredAnalysis(true);
+      }
     }
   }, [id]);
 
@@ -439,10 +446,25 @@ export default function MatchDetail() {
 
     // Check cache first (skip on reanalyze)
     if (!forceReanalyze) {
+      // 1. Check short-term cache (2h TTL)
       const cached = getCachedPrediction(id);
       if (cached) {
         console.log('Using cached prediction for match:', id);
         setPrediction(cached);
+        return;
+      }
+      // 2. Fallback: check prediction store (persists across sessions)
+      const saved = getSavedAnalysis(id);
+      if (saved?.claudeAnalysis) {
+        console.log('Using saved prediction from store for match:', id);
+        const restored = {
+          apiPrediction: saved.apiPrediction || null,
+          claudeAnalysis: saved.claudeAnalysis,
+        };
+        setPrediction(restored);
+        setIsRestoredAnalysis(true);
+        // Repopulate short-term cache
+        saveCachedPrediction(id, restored);
         return;
       }
     }
@@ -482,8 +504,7 @@ export default function MatchDetail() {
       setPrediction(result);
       setIsRestoredAnalysis(false);
 
-      // Cache only if AI returned a real analysis with a bet recommendation
-      const hasRealBet = data.response && data.response.includes('[BET]');
+      // Cache any non-empty analysis so it persists across navigation
       const isGeneric = !data.response ||
         data.response.includes("I don't have real-time") ||
         data.response.includes("cannot provide") ||
@@ -491,7 +512,7 @@ export default function MatchDetail() {
         data.response.includes("no real-time") ||
         data.response.includes("don't have access") ||
         (data.response.includes("I need") && data.response.includes("Confirmation"));
-      if (hasRealBet && !isGeneric) {
+      if (data.response && !isGeneric) {
         saveCachedPrediction(id, result);
       }
 
