@@ -123,6 +123,8 @@ CORS_ORIGINS = [
     "https://www.prescoreai.vip",
     "https://prescore.vip",
     "https://www.prescore.vip",
+    "https://sportscoreai.com",
+    "https://www.sportscoreai.com",
     "https://pwa-production-20b5.up.railway.app",
     "https://pwa-2-production.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
