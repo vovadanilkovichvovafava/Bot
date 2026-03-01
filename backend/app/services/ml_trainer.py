@@ -241,10 +241,21 @@ async def train_all_models():
     logger.info("Starting model training for all markets")
     start_time = datetime.utcnow()
 
+    # Verify ML dependencies are available before loading data
+    try:
+        from xgboost import XGBClassifier  # noqa: F401
+        from sklearn.calibration import CalibratedClassifierCV  # noqa: F401
+        import joblib  # noqa: F401
+        import numpy as np  # noqa: F401
+        logger.info("ML dependencies (xgboost, sklearn, joblib, numpy) OK")
+    except ImportError as e:
+        logger.error(f"ML dependencies NOT available: {e}. Training cannot proceed.")
+        return 0
+
     features, targets = await get_training_data()
     if not features:
-        logger.info("No training data available, skipping")
-        return
+        logger.warning("No training data available (0 usable matches after filtering). Skipping training.")
+        return 0
 
     # Models to train: (name, target_key, is_multiclass)
     models_config = [
@@ -325,6 +336,12 @@ async def train_all_models():
             except Exception as e:
                 logger.error(f"DB error: {e}")
                 await db.rollback()
+        else:
+            logger.warning(
+                f"Training finished but 0 models were produced from {len(features)} samples. "
+                f"Possible causes: too few valid samples per market, splits too small, "
+                f"or ML dependencies failed."
+            )
 
     return trained_count
 
@@ -361,13 +378,16 @@ async def load_active_model(model_name: str):
 async def training_loop():
     """
     Background training loop.
-    First 2 weeks: train daily (building up data).
-    After: train weekly (Sunday 3:00 UTC).
+    - Waits for data enrichment before first attempt (up to 30 min).
+    - Retries every 30 min until first successful training.
+    - After first success: daily (< 500 samples) or weekly (Sunday 3:00 UTC).
     """
     logger.info("ML training worker started")
 
-    # Wait 5 minutes after startup to let data collection run first
-    await asyncio.sleep(300)
+    # Wait 10 minutes after startup to let data collection + enrichment run first
+    await asyncio.sleep(600)
+
+    has_ever_trained = False
 
     while True:
         try:
@@ -380,14 +400,59 @@ async def training_loop():
                 )
                 total_verified = result.scalar() or 0
 
-            if total_verified >= MIN_TRAINING_SAMPLES:
-                await train_all_models()
+                # Also check how many are actually usable for training
+                # (verified + enriched with Elo + have results)
+                usable_result = await db.execute(
+                    select(func.count(MatchFeature.id)).where(
+                        and_(
+                            MatchFeature.is_verified == True,
+                            MatchFeature.home_elo.isnot(None),
+                            MatchFeature.home_goals.isnot(None),
+                        )
+                    )
+                )
+                usable_count = usable_result.scalar() or 0
+
+                # Check if we already have active models
+                if not has_ever_trained:
+                    from app.models.ml_models import MLModel
+                    active_result = await db.execute(
+                        select(func.count(MLModel.id)).where(MLModel.is_active == True)
+                    )
+                    has_ever_trained = (active_result.scalar() or 0) > 0
+
+            logger.info(
+                f"Training check: {total_verified} verified, "
+                f"{usable_count} usable (enriched+verified), "
+                f"min_required={MIN_TRAINING_SAMPLES}, "
+                f"has_trained_before={has_ever_trained}"
+            )
+
+            trained_count = 0
+            if usable_count >= MIN_TRAINING_SAMPLES:
+                trained_count = await train_all_models() or 0
+                if trained_count and trained_count > 0:
+                    has_ever_trained = True
+                    logger.info(f"Training successful: {trained_count} models trained")
+                else:
+                    logger.warning(
+                        f"Training produced 0 models despite {usable_count} usable samples. "
+                        f"Check ML dependencies (xgboost, sklearn) and data quality."
+                    )
+            elif total_verified >= MIN_TRAINING_SAMPLES and usable_count < MIN_TRAINING_SAMPLES:
+                logger.warning(
+                    f"Have {total_verified} verified matches but only {usable_count} are enriched. "
+                    f"Waiting for feature enrichment (Elo computation) to catch up."
+                )
             else:
                 logger.info(f"Waiting for more data: {total_verified}/{MIN_TRAINING_SAMPLES} verified matches")
 
             # Determine next training time
             now = datetime.utcnow()
-            if total_verified < 500:
+            if not has_ever_trained:
+                # No model yet: retry every 30 minutes until first success
+                sleep_hours = 0.5
+            elif total_verified < 500:
                 # Early phase: train daily
                 sleep_hours = 24
             else:
@@ -402,5 +467,5 @@ async def training_loop():
             await asyncio.sleep(sleep_hours * 3600)
 
         except Exception as e:
-            logger.error(f"Training loop error: {e}")
-            await asyncio.sleep(3600)  # Retry in 1 hour
+            logger.error(f"Training loop error: {e}", exc_info=True)
+            await asyncio.sleep(1800)  # Retry in 30 min on error

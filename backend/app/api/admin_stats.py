@@ -1033,6 +1033,32 @@ async def get_ml_stats(
     }
 
 
+@router.post("/ml/train")
+async def trigger_ml_training(
+    admin: dict = Depends(get_current_admin),
+):
+    """Manually trigger ML model training."""
+    import asyncio
+    from app.services.ml_trainer import train_all_models
+
+    logger.info(f"Manual training triggered by admin")
+
+    # Run training in background so the request doesn't timeout
+    async def _run_training():
+        try:
+            count = await train_all_models()
+            logger.info(f"Manual training finished: {count} models trained")
+        except Exception as e:
+            logger.error(f"Manual training error: {e}", exc_info=True)
+
+    asyncio.create_task(_run_training())
+
+    return {
+        "status": "training_started",
+        "message": "ML training has been triggered. Check /admin/stats/ml for results.",
+    }
+
+
 @router.get("/support")
 async def get_support_stats(
     admin: dict = Depends(get_current_admin),
