@@ -1385,6 +1385,7 @@
   },
   "communityPick": {
     "title": "Elección de la Comunidad",
+    "chooseWinner": "¿Quién ganará?",
     "votes": "votos",
     "win1": "1",
     "draw": "X",

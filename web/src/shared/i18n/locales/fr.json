@@ -1385,6 +1385,7 @@
   },
   "communityPick": {
     "title": "Vote Communautaire",
+    "chooseWinner": "Qui va gagner ?",
     "votes": "votes",
     "win1": "1",
     "draw": "N",

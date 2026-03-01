@@ -304,6 +304,7 @@
   },
   "communityPick": {
     "title": "社区投票",
+    "chooseWinner": "谁会赢？",
     "votes": "票",
     "win1": "1",
     "draw": "X",

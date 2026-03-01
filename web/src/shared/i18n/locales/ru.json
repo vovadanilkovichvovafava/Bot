@@ -1295,6 +1295,7 @@
   },
   "communityPick": {
     "title": "Мнение сообщества",
+    "chooseWinner": "Выбери кто победит!",
     "votes": "голосов",
     "win1": "П1",
     "draw": "X",

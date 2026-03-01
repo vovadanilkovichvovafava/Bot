@@ -1327,6 +1327,7 @@
   },
   "communityPick": {
     "title": "Community-Tipp",
+    "chooseWinner": "Wer gewinnt?",
     "votes": "Stimmen",
     "win1": "1",
     "draw": "X",

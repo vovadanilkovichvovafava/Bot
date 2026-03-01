@@ -1426,6 +1426,7 @@
   },
   "communityPick": {
     "title": "Głos Społeczności",
+    "chooseWinner": "Kto wygra?",
     "votes": "głosów",
     "win1": "1",
     "draw": "X",

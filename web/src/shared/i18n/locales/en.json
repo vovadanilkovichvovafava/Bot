@@ -1384,6 +1384,7 @@
   },
   "communityPick": {
     "title": "Community Pick",
+    "chooseWinner": "Pick the winner!",
     "votes": "votes",
     "win1": "W1",
     "draw": "Draw",

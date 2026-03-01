@@ -304,6 +304,7 @@
   },
   "communityPick": {
     "title": "Alegerea Comunității",
+    "chooseWinner": "Cine va câștiga?",
     "votes": "voturi",
     "win1": "1",
     "draw": "X",
