@@ -15,7 +15,7 @@ import { getTrackingLink, addTrackingToUrl } from '../../betting/services/tracki
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'stats', 'lineups', 'fans'];
+const TAB_KEYS = ['overview', 'fans', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 

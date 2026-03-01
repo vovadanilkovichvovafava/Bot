@@ -11,7 +11,7 @@ import { getTrackingLink, addTrackingToUrl } from '../../betting/services/tracki
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'stats', 'events', 'lineups', 'fans'];
+const TAB_KEYS = ['overview', 'fans', 'stats', 'events', 'lineups'];
 
 // AI request tracking
 const AI_REQUESTS_KEY = 'ai_requests_count';
