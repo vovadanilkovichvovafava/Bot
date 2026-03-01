@@ -94,6 +94,7 @@ const BankrollTracker = lazy(() => import('./features/tools/pages/BankrollTracke
 const BetSlipBuilder = lazy(() => import('./features/betting/pages/BetSlipBuilder'));
 const KellyCalculator = lazy(() => import('./features/tools/pages/KellyCalculator'));
 const NotFound = lazy(() => import('./shared/components/NotFound'));
+const DebugMLPipeline = lazy(() => import('./shared/pages/DebugMLPipeline'));
 
 function hasAccountFlag() {
   try { return localStorage.getItem('hasAccount') === 'true'; } catch { return false; }
@@ -199,6 +200,7 @@ export default function App() {
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
         <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route path="/debug/ml-pipeline" element={<DebugMLPipeline />} />
         <Route path="/" element={
           <ProtectedRoute><Layout /></ProtectedRoute>
         }>

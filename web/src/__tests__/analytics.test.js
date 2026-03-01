@@ -89,13 +89,22 @@ describe('analytics — track()', () => {
     expect(body.page).toBe('/dashboard');
   });
 
-  it('extracts user_id from JWT and formats as usr_<id>', async () => {
-    store['access_token'] = fakeJwt({ user_id: '99' });
+  it('extracts public_id from JWT as user_id', async () => {
+    store['access_token'] = fakeJwt({ user_id: 99, public_id: 'usr_a7f3k9x2m5p8' });
 
     await track('login');
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.user_id).toBe('usr_99');
+    expect(body.user_id).toBe('usr_a7f3k9x2m5p8');
+  });
+
+  it('returns null user_id when JWT has no public_id', async () => {
+    store['access_token'] = fakeJwt({ user_id: 99 });
+
+    await track('login');
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.user_id).toBeNull();
   });
 
   it('handles missing access_token gracefully (user_id is null/undefined)', async () => {
