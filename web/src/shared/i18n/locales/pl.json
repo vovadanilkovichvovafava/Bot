@@ -1421,5 +1421,12 @@
   },
   "proAccess": {
     "oneClickBet": "Zakład 1 kliknięciem"
+  },
+  "communityPick": {
+    "title": "Głos Społeczności",
+    "votes": "głosów",
+    "win1": "1",
+    "draw": "X",
+    "win2": "2"
   }
 }

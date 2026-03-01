@@ -1379,5 +1379,12 @@
       "desc": "Your PRO access is just one step away! Make a deposit to unlock unlimited AI predictions and value bets.",
       "cta": "Unlock PRO"
     }
+  },
+  "communityPick": {
+    "title": "Community Pick",
+    "votes": "votes",
+    "win1": "W1",
+    "draw": "Draw",
+    "win2": "W2"
   }
 }

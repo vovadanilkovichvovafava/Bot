@@ -1380,5 +1380,12 @@
       "desc": "¡Tu acceso PRO está a un solo paso! Haz un depósito para desbloquear pronósticos IA ilimitados y value bets.",
       "cta": "Desbloquear PRO"
     }
+  },
+  "communityPick": {
+    "title": "Elección de la Comunidad",
+    "votes": "votos",
+    "win1": "1",
+    "draw": "X",
+    "win2": "2"
   }
 }

@@ -301,5 +301,12 @@
       "desc": "PRO erişimin sadece bir adım uzakta! Sınırsız AI tahminleri ve value bets'i açmak için depozito yap.",
       "cta": "PRO'yu aç"
     }
+  },
+  "communityPick": {
+    "title": "Topluluk Tahmini",
+    "votes": "oy",
+    "win1": "1",
+    "draw": "X",
+    "win2": "2"
   }
 }

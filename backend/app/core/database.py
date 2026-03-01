@@ -43,6 +43,7 @@ async def init_db():
     import app.models.ml_models  # noqa: F401
     import app.models.admin  # noqa: F401
     import app.models.ai_chat  # noqa: F401
+    import app.models.community_pick  # noqa: F401
 
     async with engine.begin() as conn:
         # Create all tables (will not modify existing ones — that's fine,
@@ -140,6 +141,18 @@ async def init_db():
                 admin_email VARCHAR,
                 created_at TIMESTAMP DEFAULT NOW()
             )""",
+            # Community picks table
+            """CREATE TABLE IF NOT EXISTS community_picks (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                match_id VARCHAR NOT NULL,
+                pick VARCHAR NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                CONSTRAINT uq_user_match_pick UNIQUE (user_id, match_id)
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_community_picks_match ON community_picks(match_id)",
+            "CREATE INDEX IF NOT EXISTS ix_community_picks_user ON community_picks(user_id)",
         ]
 
         for migration in migrations:

@@ -301,5 +301,12 @@
       "desc": "您的PRO访问权限仅一步之遥！存款以解锁无限AI预测。",
       "cta": "解锁PRO"
     }
+  },
+  "communityPick": {
+    "title": "社区投票",
+    "votes": "票",
+    "win1": "1",
+    "draw": "X",
+    "win2": "2"
   }
 }

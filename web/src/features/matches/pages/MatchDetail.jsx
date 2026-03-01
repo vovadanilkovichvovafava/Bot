@@ -12,6 +12,7 @@ import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
 import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import CommunityPick from '../components/CommunityPick';
 
 const TAB_KEYS = ['overview', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
@@ -728,6 +729,7 @@ export default function MatchDetail() {
       <div className="px-5 mt-4 space-y-4 pb-8">
         {activeTab === 'overview' && (
           <OverviewTab
+            matchId={id}
             match={match}
             enriched={enriched}
             enrichedLoading={enrichedLoading}
@@ -763,7 +765,7 @@ export default function MatchDetail() {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting, getAnalysis, isRestoredAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
+function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, predicting, getAnalysis, isRestoredAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -812,6 +814,9 @@ function OverviewTab({ match, enriched, enrichedLoading, prediction, predicting,
 
   return (
     <>
+      {/* Community Pick */}
+      <CommunityPick matchId={matchId} homeTeam={match.home_team} awayTeam={match.away_team} />
+
       {/* Combined AI Analysis - shown only after button click */}
       {prediction ? (
         <div className="card border border-gray-100">

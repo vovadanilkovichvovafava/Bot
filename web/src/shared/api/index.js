@@ -347,6 +347,18 @@ class ApiService {
       }
     }
   }
+
+  // Community Picks
+  async getCommunityPick(matchId) {
+    return this.request(`/community-picks/${matchId}`);
+  }
+
+  async voteCommunityPick(matchId, pick) {
+    return this.request(`/community-picks/${matchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ pick }),
+    });
+  }
 }
 
 export const api = new ApiService();

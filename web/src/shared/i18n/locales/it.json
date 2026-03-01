@@ -1392,5 +1392,12 @@
       "desc": "Il tuo accesso PRO è a un solo passo! Fai un deposito per sbloccare previsioni AI illimitate e value bets.",
       "cta": "Sblocca PRO"
     }
+  },
+  "communityPick": {
+    "title": "Voto della Community",
+    "votes": "voti",
+    "win1": "1",
+    "draw": "X",
+    "win2": "2"
   }
 }
