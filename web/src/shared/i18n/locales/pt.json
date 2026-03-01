@@ -308,5 +308,12 @@
     "win1": "1",
     "draw": "X",
     "win2": "2"
+  },
+  "matchChat": {
+    "title": "Chat do jogo",
+    "messages": "mensagens",
+    "empty": "Nenhuma mensagem ainda",
+    "beFirst": "Seja o primeiro a comentar este jogo!",
+    "placeholder": "Escreva uma mensagem..."
   }
 }

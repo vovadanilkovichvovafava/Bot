@@ -359,6 +359,19 @@ class ApiService {
       body: JSON.stringify({ pick }),
     });
   }
+
+  // Match Chat
+  async getMatchChat(matchId, afterId = null) {
+    const params = afterId ? `?after_id=${afterId}` : '';
+    return this.request(`/match-chat/${matchId}${params}`);
+  }
+
+  async sendMatchChat(matchId, message) {
+    return this.request(`/match-chat/${matchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
 }
 
 export const api = new ApiService();

@@ -308,5 +308,12 @@
     "win1": "1",
     "draw": "X",
     "win2": "2"
+  },
+  "matchChat": {
+    "title": "Maç Sohbeti",
+    "messages": "mesaj",
+    "empty": "Henüz mesaj yok",
+    "beFirst": "Bu maç hakkında ilk yorumu siz yapın!",
+    "placeholder": "Mesaj yazın..."
   }
 }

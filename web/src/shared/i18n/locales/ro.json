@@ -308,5 +308,12 @@
     "win1": "1",
     "draw": "X",
     "win2": "2"
+  },
+  "matchChat": {
+    "title": "Chat meci",
+    "messages": "mesaje",
+    "empty": "Niciun mesaj încă",
+    "beFirst": "Fii primul care comentează acest meci!",
+    "placeholder": "Scrie un mesaj..."
   }
 }

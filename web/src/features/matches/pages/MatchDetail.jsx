@@ -13,8 +13,9 @@ import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
 import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 import CommunityPick from '../components/CommunityPick';
+import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'stats', 'lineups'];
+const TAB_KEYS = ['overview', 'stats', 'lineups', 'fans'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
@@ -709,12 +710,12 @@ export default function MatchDetail() {
         </div>
 
         {/* Tabs */}
-        <div className="flex mt-4 border-b border-gray-200">
+        <div className="flex mt-4 border-b border-gray-200 overflow-x-auto scrollbar-none">
           {TAB_KEYS.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 min-w-0 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${
                 activeTab === tab
                   ? 'text-primary-600 border-primary-600'
                   : 'text-gray-400 border-transparent'
@@ -756,9 +757,24 @@ export default function MatchDetail() {
         {activeTab === 'lineups' && (
           <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
         )}
+        {activeTab === 'fans' && (
+          <FansAreaTab matchId={id} match={match} t={t} />
+        )}
       </div>
      </div>
     </div>
+  );
+}
+
+// ============================
+// Fans Area Tab
+// ============================
+function FansAreaTab({ matchId, match, t }) {
+  return (
+    <>
+      <CommunityPick matchId={matchId} homeTeam={match.home_team} awayTeam={match.away_team} />
+      <MatchChat matchId={matchId} />
+    </>
   );
 }
 
@@ -814,9 +830,6 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
 
   return (
     <>
-      {/* Community Pick */}
-      <CommunityPick matchId={matchId} homeTeam={match.home_team} awayTeam={match.away_team} />
-
       {/* Combined AI Analysis - shown only after button click */}
       {prediction ? (
         <div className="card border border-gray-100">

@@ -44,6 +44,7 @@ async def init_db():
     import app.models.admin  # noqa: F401
     import app.models.ai_chat  # noqa: F401
     import app.models.community_pick  # noqa: F401
+    import app.models.match_chat  # noqa: F401
 
     async with engine.begin() as conn:
         # Create all tables (will not modify existing ones — that's fine,
@@ -153,6 +154,18 @@ async def init_db():
             )""",
             "CREATE INDEX IF NOT EXISTS ix_community_picks_match ON community_picks(match_id)",
             "CREATE INDEX IF NOT EXISTS ix_community_picks_user ON community_picks(user_id)",
+            # Match chat messages table
+            """CREATE TABLE IF NOT EXISTS match_chat_messages (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                match_id VARCHAR NOT NULL,
+                username VARCHAR NOT NULL,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_match_chat_match ON match_chat_messages(match_id)",
+            "CREATE INDEX IF NOT EXISTS ix_match_chat_user ON match_chat_messages(user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_match_chat_created ON match_chat_messages(created_at DESC)",
         ]
 
         for migration in migrations:

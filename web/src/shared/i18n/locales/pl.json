@@ -1072,6 +1072,7 @@
     "tabOverview": "Przegląd",
     "tabStats": "Statystyki",
     "tabLineups": "Składy",
+    "tabFans": "Kibice",
     "overview": "Przegląd",
     "h2h": "Bezpośrednie",
     "standings": "Tabela",
@@ -1185,6 +1186,7 @@
     "tabStats": "Statystyki",
     "tabEvents": "Zdarzenia",
     "tabLineups": "Składy",
+    "tabFans": "Kibice",
     "overview": "Przegląd",
     "events": "Zdarzenia",
     "stats": "Statystyki",
@@ -1428,5 +1430,12 @@
     "win1": "1",
     "draw": "X",
     "win2": "2"
+  },
+  "matchChat": {
+    "title": "Czat meczu",
+    "messages": "wiadomości",
+    "empty": "Brak wiadomości",
+    "beFirst": "Bądź pierwszy, który skomentuje ten mecz!",
+    "placeholder": "Napisz wiadomość..."
   }
 }

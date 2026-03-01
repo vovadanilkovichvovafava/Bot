@@ -1069,6 +1069,7 @@
     "tabOverview": "Overview",
     "tabStats": "Stats",
     "tabLineups": "Lineups",
+    "tabFans": "Fans Area",
     "overview": "Overview",
     "h2h": "H2H",
     "standings": "Standings",
@@ -1182,6 +1183,7 @@
     "tabStats": "Stats",
     "tabEvents": "Events",
     "tabLineups": "Lineups",
+    "tabFans": "Fans Area",
     "overview": "Overview",
     "events": "Events",
     "stats": "Stats",
@@ -1386,5 +1388,12 @@
     "win1": "W1",
     "draw": "Draw",
     "win2": "W2"
+  },
+  "matchChat": {
+    "title": "Match Chat",
+    "messages": "messages",
+    "empty": "No messages yet",
+    "beFirst": "Be the first to comment on this match!",
+    "placeholder": "Write a message..."
   }
 }

@@ -8,8 +8,10 @@ import footballApi from '../api/footballApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
 import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import CommunityPick from '../components/CommunityPick';
+import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'stats', 'events', 'lineups'];
+const TAB_KEYS = ['overview', 'stats', 'events', 'lineups', 'fans'];
 
 // AI request tracking
 const AI_REQUESTS_KEY = 'ai_requests_count';
@@ -290,18 +292,18 @@ export default function LiveMatchDetail() {
 
         {/* Tabs */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-          <div className="flex">
+          <div className="flex overflow-x-auto scrollbar-none">
             {TAB_KEYS.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3.5 text-sm font-semibold transition-all relative ${
+                className={`flex-1 min-w-0 py-3 text-xs font-semibold transition-all relative whitespace-nowrap px-1 ${
                   activeTab === tab ? 'text-primary-600' : 'text-gray-400'
                 }`}
               >
                 {t(`liveMatch.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
                 {activeTab === tab && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary-600 rounded-full"/>
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary-600 rounded-full"/>
                 )}
               </button>
             ))}
@@ -336,9 +338,24 @@ export default function LiveMatchDetail() {
           {activeTab === 'lineups' && (
             <LineupsTab lineups={lineups} t={t} />
           )}
+          {activeTab === 'fans' && (
+            <LiveFansAreaTab matchId={id} home={home} away={away} t={t} />
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Fans Area Tab for Live Matches
+function LiveFansAreaTab({ matchId, home, away, t }) {
+  const homeTeam = home ? { name: home.name, logo: home.logo } : null;
+  const awayTeam = away ? { name: away.name, logo: away.logo } : null;
+  return (
+    <>
+      <CommunityPick matchId={matchId} homeTeam={homeTeam} awayTeam={awayTeam} />
+      <MatchChat matchId={matchId} />
+    </>
   );
 }
 

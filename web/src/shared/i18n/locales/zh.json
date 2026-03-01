@@ -308,5 +308,12 @@
     "win1": "1",
     "draw": "X",
     "win2": "2"
+  },
+  "matchChat": {
+    "title": "比赛聊天",
+    "messages": "条消息",
+    "empty": "暂无消息",
+    "beFirst": "成为第一个评论这场比赛的人！",
+    "placeholder": "写消息..."
   }
 }
