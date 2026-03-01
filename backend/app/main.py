@@ -49,6 +49,46 @@ def check_security_config():
     return len([w for w in warnings if "CRITICAL" in w]) == 0
 
 
+async def _reset_default_elo_values():
+    """
+    One-time fix: reset home_elo/away_elo/elo_diff from the old default=1500.0
+    back to NULL for matches that were never truly enriched.
+    This lets process_verified_matches() detect and enrich them properly.
+    Only affects matches where home_elo=1500 AND no EloRating records exist for the team.
+    """
+    from app.core.database import async_session_maker
+    from app.models.ml_models import MatchFeature, EloRating
+    from sqlalchemy import select, update, func, and_
+
+    try:
+        async with async_session_maker() as db:
+            # Check if EloRating table is empty (enrichment never ran)
+            elo_count = (await db.execute(select(func.count(EloRating.id)))).scalar() or 0
+
+            if elo_count == 0:
+                # No real enrichment has happened — reset all default Elo values to NULL
+                result = await db.execute(
+                    update(MatchFeature).where(
+                        and_(
+                            MatchFeature.home_elo == 1500.0,
+                            MatchFeature.away_elo == 1500.0,
+                        )
+                    ).values(home_elo=None, away_elo=None, elo_diff=None)
+                )
+                if result.rowcount > 0:
+                    await db.commit()
+                    logger.info(
+                        f"Reset {result.rowcount} matches with default Elo=1500 to NULL "
+                        f"for proper enrichment"
+                    )
+                else:
+                    logger.info("No matches with default Elo values to reset")
+            else:
+                logger.info(f"EloRating table has {elo_count} records — skipping Elo reset")
+    except Exception as e:
+        logger.error(f"Error resetting default Elo values: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Security checks
@@ -58,6 +98,10 @@ async def lifespan(app: FastAPI):
 
     # Initialize database tables
     await init_db()
+
+    # Fix: reset fake default Elo values (1500.0) to NULL
+    # so that process_verified_matches() can detect and enrich them properly
+    await _reset_default_elo_values()
 
     # Start background workers with error isolation
     # Each task is wrapped so one failure doesn't kill the others

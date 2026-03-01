@@ -31,10 +31,10 @@ class MatchFeature(Base):
     away_team_name = Column(String(150), nullable=False)
 
     # Pre-match features (computed before kick-off)
-    # Elo ratings
-    home_elo = Column(Float, nullable=True, default=1500.0)
-    away_elo = Column(Float, nullable=True, default=1500.0)
-    elo_diff = Column(Float, nullable=True, default=0.0)
+    # Elo ratings (NULL = not yet enriched, set by process_verified_matches)
+    home_elo = Column(Float, nullable=True)
+    away_elo = Column(Float, nullable=True)
+    elo_diff = Column(Float, nullable=True)
 
     # Form (last 5 matches)
     home_form_points = Column(Float, nullable=True)   # 0-15 scale
