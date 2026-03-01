@@ -349,8 +349,8 @@ async def monitoring_loop():
     """
     logger.info("ML monitoring worker started")
 
-    # Wait 10 minutes after startup
-    await asyncio.sleep(600)
+    # Wait 5 minutes after startup
+    await asyncio.sleep(300)
 
     while True:
         try:

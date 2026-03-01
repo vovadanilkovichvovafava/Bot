@@ -618,63 +618,82 @@ async def enrich_all_unenriched(limit: int = 100):
         return enriched
 
 
-async def process_verified_matches():
+async def process_verified_matches(batch_size: int = 500):
     """
     Process newly verified matches:
-    1. Update Elo ratings
-    2. Enrich features
-    Called after prediction verification.
+    1. Record PRE-MATCH Elo ratings (before updating)
+    2. Update Elo ratings based on match result
+    3. Enrich all features (form, H2H, stats, etc.)
+
+    IMPORTANT: Elo is recorded BEFORE update to avoid data leakage.
+    Called after prediction verification and after data backfill.
+    Processes ALL unenriched matches in batches (not just one batch).
     """
-    async with async_session_maker() as db:
-        # Find verified matches that haven't had Elo updated
-        # (have results but Elo is still default or null)
-        result = await db.execute(
-            select(MatchFeature).where(
-                and_(
-                    MatchFeature.is_verified == True,
-                    MatchFeature.home_elo.is_(None),
-                    MatchFeature.home_goals.isnot(None),
-                )
-            ).order_by(MatchFeature.match_date.asc()).limit(200)
-        )
-        matches = result.scalars().all()
+    total_processed = 0
 
-        if not matches:
-            return 0
-
-        processed = 0
-        for match in matches:
-            try:
-                # Update Elo
-                await update_elo_after_match(
-                    db,
-                    match.home_team_id, match.away_team_id,
-                    match.home_team_name, match.away_team_name,
-                    match.league_id, match.league_name,
-                    match.home_goals, match.away_goals,
-                )
-
-                # Enrich features
-                await enrich_features_for_match(db, match)
-                processed += 1
-
-            except Exception as e:
-                logger.error(f"Error processing match {match.fixture_id}: {e}")
-
-        try:
-            await db.commit()
-
-            # Log event
-            log = LearningLog(
-                event_type="elo_update",
-                details_json=f'{{"processed": {processed}, "matches": {len(matches)}}}'
+    while True:
+        async with async_session_maker() as db:
+            # Find verified matches that haven't had Elo/features computed yet
+            result = await db.execute(
+                select(MatchFeature).where(
+                    and_(
+                        MatchFeature.is_verified == True,
+                        MatchFeature.home_elo.is_(None),
+                        MatchFeature.home_goals.isnot(None),
+                    )
+                ).order_by(MatchFeature.match_date.asc()).limit(batch_size)
             )
-            db.add(log)
-            await db.commit()
+            matches = result.scalars().all()
 
-            logger.info(f"Processed {processed} verified matches (Elo + features)")
-        except Exception as e:
-            logger.error(f"DB error: {e}")
-            await db.rollback()
+            if not matches:
+                break
 
-        return processed
+            processed = 0
+            for match in matches:
+                try:
+                    # Step 1: Record PRE-MATCH Elo (before this match's result)
+                    # This avoids data leakage — training features must reflect
+                    # what was known BEFORE the match, not after.
+                    await enrich_features_for_match(db, match)
+
+                    # Step 2: NOW update Elo ratings with this match's result
+                    # Future matches will see the updated Elo
+                    await update_elo_after_match(
+                        db,
+                        match.home_team_id, match.away_team_id,
+                        match.home_team_name, match.away_team_name,
+                        match.league_id, match.league_name,
+                        match.home_goals, match.away_goals,
+                    )
+
+                    processed += 1
+
+                except Exception as e:
+                    logger.error(f"Error processing match {match.fixture_id}: {e}")
+
+            try:
+                await db.commit()
+
+                # Log event
+                log = LearningLog(
+                    event_type="elo_update",
+                    details_json=f'{{"processed": {processed}, "batch": {len(matches)}, "total_so_far": {total_processed + processed}}}'
+                )
+                db.add(log)
+                await db.commit()
+
+                logger.info(f"Enriched batch: {processed}/{len(matches)} matches (total: {total_processed + processed})")
+            except Exception as e:
+                logger.error(f"DB error committing enrichment batch: {e}")
+                await db.rollback()
+                break  # Don't loop forever on DB errors
+
+            total_processed += processed
+
+            # If we got fewer than batch_size, we're done
+            if len(matches) < batch_size:
+                break
+
+    if total_processed > 0:
+        logger.info(f"Feature enrichment complete: {total_processed} matches processed")
+    return total_processed

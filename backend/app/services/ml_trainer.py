@@ -378,14 +378,15 @@ async def load_active_model(model_name: str):
 async def training_loop():
     """
     Background training loop.
-    - Waits for data enrichment before first attempt (up to 30 min).
-    - Retries every 30 min until first successful training.
+    - Waits for data enrichment before first attempt.
+    - Retries every 15 min until first successful training.
     - After first success: daily (< 500 samples) or weekly (Sunday 3:00 UTC).
     """
     logger.info("ML training worker started")
 
-    # Wait 10 minutes after startup to let data collection + enrichment run first
-    await asyncio.sleep(600)
+    # Wait 2 minutes after startup to let DB init complete
+    # Data collection + enrichment run in parallel and will populate data
+    await asyncio.sleep(120)
 
     has_ever_trained = False
 
@@ -450,8 +451,8 @@ async def training_loop():
             # Determine next training time
             now = datetime.utcnow()
             if not has_ever_trained:
-                # No model yet: retry every 30 minutes until first success
-                sleep_hours = 0.5
+                # No model yet: retry every 15 minutes until first success
+                sleep_hours = 0.25
             elif total_verified < 500:
                 # Early phase: train daily
                 sleep_hours = 24

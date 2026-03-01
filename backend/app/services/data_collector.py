@@ -590,8 +590,8 @@ async def data_collection_loop():
     """
     logger.info("Data collection worker started")
 
-    # Wait for DB init to complete (tables may be recreated on startup)
-    await asyncio.sleep(30)
+    # Wait for DB init to complete (tables created on startup)
+    await asyncio.sleep(10)
 
     # Check if we need initial backfill
     try:
@@ -603,14 +603,27 @@ async def data_collection_loop():
         count = 0
 
     if count < 100:
-        logger.info("Less than 100 training samples, starting 30-day backfill")
+        logger.info("Less than 100 training samples, starting 90-day backfill for robust initial training")
         try:
-            await backfill_historical(days=30)
-            # Enrich all backfilled matches with Elo/form/H2H features
-            enriched = await process_verified_matches()
-            logger.info(f"Post-backfill: enriched {enriched} matches with ML features")
+            await backfill_historical(days=90)
         except Exception as e:
             logger.error(f"Backfill error: {e}")
+
+        # Enrich ALL backfilled matches — process_verified_matches now loops
+        # until all unenriched matches are processed (no more 200-match limit)
+        try:
+            enriched = await process_verified_matches()
+            logger.info(f"Post-backfill enrichment complete: {enriched} matches with ML features")
+        except Exception as e:
+            logger.error(f"Post-backfill enrichment error: {e}")
+    else:
+        # Even if we have data, make sure enrichment is up to date
+        try:
+            enriched = await process_verified_matches()
+            if enriched:
+                logger.info(f"Startup enrichment: {enriched} matches processed")
+        except Exception as e:
+            logger.error(f"Startup enrichment error: {e}")
 
     while True:
         try:

@@ -263,6 +263,95 @@ async def debug_registrations():
     ]
 
 
+@app.get("/debug/ml-pipeline")
+async def debug_ml_pipeline():
+    """Quick ML pipeline status check — no auth required."""
+    from app.core.database import async_session_maker
+    from app.models.ml_models import MatchFeature, MLModel, EloRating, LearningLog
+    from sqlalchemy import select, func, and_
+    import os
+
+    status = {}
+
+    try:
+        async with async_session_maker() as db:
+            total = (await db.execute(select(func.count(MatchFeature.id)))).scalar() or 0
+            verified = (await db.execute(
+                select(func.count(MatchFeature.id)).where(MatchFeature.is_verified == True)
+            )).scalar() or 0
+            enriched = (await db.execute(
+                select(func.count(MatchFeature.id)).where(
+                    and_(
+                        MatchFeature.is_verified == True,
+                        MatchFeature.home_elo.isnot(None),
+                        MatchFeature.home_goals.isnot(None),
+                    )
+                )
+            )).scalar() or 0
+            pending_enrichment = (await db.execute(
+                select(func.count(MatchFeature.id)).where(
+                    and_(
+                        MatchFeature.is_verified == True,
+                        MatchFeature.home_elo.is_(None),
+                        MatchFeature.home_goals.isnot(None),
+                    )
+                )
+            )).scalar() or 0
+            active_models = (await db.execute(
+                select(func.count(MLModel.id)).where(MLModel.is_active == True)
+            )).scalar() or 0
+            teams = (await db.execute(select(func.count(EloRating.id)))).scalar() or 0
+
+            # Last training event
+            last_train = (await db.execute(
+                select(LearningLog.created_at, LearningLog.details_json)
+                .where(LearningLog.event_type == "train_complete")
+                .order_by(LearningLog.created_at.desc()).limit(1)
+            )).first()
+
+            # Last data collect
+            last_collect = (await db.execute(
+                select(LearningLog.created_at, LearningLog.details_json)
+                .where(LearningLog.event_type == "data_collect")
+                .order_by(LearningLog.created_at.desc()).limit(1)
+            )).first()
+
+        status = {
+            "pipeline": {
+                "total_matches": total,
+                "verified": verified,
+                "enriched_training_ready": enriched,
+                "pending_enrichment": pending_enrichment,
+                "active_models": active_models,
+                "teams_tracked": teams,
+                "can_train": enriched >= 50,
+            },
+            "last_events": {
+                "last_training": {
+                    "at": last_train[0].isoformat() if last_train else None,
+                    "details": last_train[1] if last_train else None,
+                },
+                "last_data_collect": {
+                    "at": last_collect[0].isoformat() if last_collect else None,
+                    "details": last_collect[1] if last_collect else None,
+                },
+            },
+            "env": {
+                "API_FOOTBALL_KEY": "set" if os.getenv("API_FOOTBALL_KEY") else "MISSING",
+                "DATABASE_URL": "set" if os.getenv("DATABASE_URL") else "localhost",
+            },
+            "health": "ready" if active_models > 0 else (
+                "enriching" if pending_enrichment > 0 else (
+                    "collecting" if total < 100 else "waiting_for_training"
+                )
+            ),
+        }
+    except Exception as e:
+        status = {"error": str(e)}
+
+    return status
+
+
 @app.get("/debug/football-api")
 async def debug_football_api():
     """Debug endpoint to test Football API connection"""

@@ -1037,26 +1037,212 @@ async def get_ml_stats(
 async def trigger_ml_training(
     admin: dict = Depends(get_current_admin),
 ):
-    """Manually trigger ML model training."""
+    """Manually trigger ML model training with full enrichment pipeline."""
     import asyncio
     from app.services.ml_trainer import train_all_models
+    from app.services.feature_engineer import process_verified_matches
 
     logger.info(f"Manual training triggered by admin")
 
-    # Run training in background so the request doesn't timeout
-    async def _run_training():
+    # Run enrichment + training in background so the request doesn't timeout
+    async def _run_full_pipeline():
         try:
+            # Step 1: Ensure all verified matches are enriched
+            enriched = await process_verified_matches()
+            logger.info(f"Pre-training enrichment: {enriched} matches enriched")
+
+            # Step 2: Train models
             count = await train_all_models()
             logger.info(f"Manual training finished: {count} models trained")
         except Exception as e:
             logger.error(f"Manual training error: {e}", exc_info=True)
 
-    asyncio.create_task(_run_training())
+    asyncio.create_task(_run_full_pipeline())
 
     return {
         "status": "training_started",
-        "message": "ML training has been triggered. Check /admin/stats/ml for results.",
+        "message": "Enrichment + ML training pipeline triggered. Check /admin/stats/ml for results.",
     }
+
+
+@router.post("/ml/backfill")
+async def trigger_backfill(
+    admin: dict = Depends(get_current_admin),
+):
+    """Manually trigger data backfill + enrichment + training."""
+    import asyncio
+    from app.services.data_collector import backfill_historical
+    from app.services.feature_engineer import process_verified_matches
+    from app.services.ml_trainer import train_all_models
+
+    logger.info("Manual backfill + train triggered by admin")
+
+    async def _run_full_backfill():
+        try:
+            # Step 1: Backfill 90 days of historical data
+            total = await backfill_historical(days=90)
+            logger.info(f"Backfill complete: {total} fixtures collected")
+
+            # Step 2: Enrich all matches
+            enriched = await process_verified_matches()
+            logger.info(f"Enrichment complete: {enriched} matches enriched")
+
+            # Step 3: Train models
+            count = await train_all_models()
+            logger.info(f"Training complete: {count} models trained")
+        except Exception as e:
+            logger.error(f"Manual backfill pipeline error: {e}", exc_info=True)
+
+    asyncio.create_task(_run_full_backfill())
+
+    return {
+        "status": "backfill_started",
+        "message": "Full pipeline (backfill → enrich → train) started. Check /admin/stats/ml/diagnostics for progress.",
+    }
+
+
+@router.get("/ml/diagnostics")
+async def get_ml_diagnostics(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Comprehensive ML pipeline diagnostics — shows exactly why training may not be working."""
+    from app.models.ml_models import MatchFeature, MLModel, EloRating, LearningLog
+    import os
+
+    diag = {
+        "environment": {},
+        "data_pipeline": {},
+        "enrichment": {},
+        "training_readiness": {},
+        "active_models": [],
+        "recent_events": [],
+        "bottlenecks": [],
+    }
+
+    # 1. Environment checks
+    api_football_key = os.getenv("API_FOOTBALL_KEY", "")
+    diag["environment"] = {
+        "API_FOOTBALL_KEY": "set" if api_football_key else "MISSING — data collection will fail!",
+        "API_FOOTBALL_KEY_length": len(api_football_key),
+        "FOOTBALL_API_KEY": "set" if os.getenv("FOOTBALL_API_KEY") else "missing",
+        "DATABASE_URL": "set" if os.getenv("DATABASE_URL") else "using default localhost",
+    }
+    if not api_football_key:
+        diag["bottlenecks"].append("CRITICAL: API_FOOTBALL_KEY not set — no data can be collected")
+
+    # 2. Data pipeline stats
+    total_matches = (await db.execute(select(func.count(MatchFeature.id)))).scalar() or 0
+    verified_matches = (await db.execute(
+        select(func.count(MatchFeature.id)).where(MatchFeature.is_verified == True)
+    )).scalar() or 0
+    enriched_matches = (await db.execute(
+        select(func.count(MatchFeature.id)).where(
+            and_(
+                MatchFeature.is_verified == True,
+                MatchFeature.home_elo.isnot(None),
+                MatchFeature.home_goals.isnot(None),
+            )
+        )
+    )).scalar() or 0
+    unenriched = (await db.execute(
+        select(func.count(MatchFeature.id)).where(
+            and_(
+                MatchFeature.is_verified == True,
+                MatchFeature.home_elo.is_(None),
+                MatchFeature.home_goals.isnot(None),
+            )
+        )
+    )).scalar() or 0
+    unverified = total_matches - verified_matches
+
+    diag["data_pipeline"] = {
+        "total_matches": total_matches,
+        "verified_with_results": verified_matches,
+        "unverified_scheduled": unverified,
+        "enriched_ready_for_training": enriched_matches,
+        "pending_enrichment": unenriched,
+    }
+
+    if total_matches == 0:
+        diag["bottlenecks"].append("No match data at all — check API_FOOTBALL_KEY and data collection logs")
+    elif verified_matches == 0:
+        diag["bottlenecks"].append(f"Have {total_matches} matches but none verified (no finished matches)")
+    elif unenriched > 0:
+        diag["bottlenecks"].append(f"{unenriched} matches need enrichment (Elo/form/H2H). Trigger /ml/train to process them.")
+
+    # 3. Enrichment details
+    elo_teams = (await db.execute(select(func.count(EloRating.id)))).scalar() or 0
+    leagues_covered = (await db.execute(
+        select(func.count(func.distinct(MatchFeature.league_id)))
+    )).scalar() or 0
+
+    diag["enrichment"] = {
+        "teams_with_elo": elo_teams,
+        "leagues_covered": leagues_covered,
+        "min_training_samples": 50,
+    }
+
+    # 4. Training readiness
+    can_train = enriched_matches >= 50
+    diag["training_readiness"] = {
+        "usable_samples": enriched_matches,
+        "minimum_required": 50,
+        "can_train": can_train,
+        "status": "READY" if can_train else f"NEED {50 - enriched_matches} MORE enriched matches",
+    }
+    if not can_train:
+        diag["bottlenecks"].append(
+            f"Only {enriched_matches}/50 usable training samples. "
+            f"Need {50 - enriched_matches} more enriched+verified matches."
+        )
+
+    # 5. Active models
+    model_rows = (await db.execute(
+        select(MLModel).where(MLModel.is_active == True)
+    )).scalars().all()
+    for m in model_rows:
+        diag["active_models"].append({
+            "name": m.model_name,
+            "version": m.version,
+            "accuracy": float(m.accuracy) if m.accuracy else None,
+            "f1_score": float(m.f1_score) if m.f1_score else None,
+            "training_samples": m.training_samples,
+            "trained_at": m.created_at.isoformat() if m.created_at else None,
+        })
+
+    if not model_rows:
+        diag["bottlenecks"].append("No active ML models — training hasn't succeeded yet")
+
+    # 6. Recent learning log events
+    log_rows = (await db.execute(
+        select(LearningLog).order_by(LearningLog.created_at.desc()).limit(20)
+    )).scalars().all()
+    for l in log_rows:
+        diag["recent_events"].append({
+            "type": l.event_type,
+            "details": l.details_json,
+            "at": l.created_at.isoformat() if l.created_at else None,
+        })
+
+    # 7. ML dependencies check
+    try:
+        from xgboost import XGBClassifier  # noqa: F401
+        from sklearn.calibration import CalibratedClassifierCV  # noqa: F401
+        import joblib  # noqa: F401
+        import numpy  # noqa: F401
+        diag["environment"]["ml_dependencies"] = "OK (xgboost, sklearn, joblib, numpy)"
+    except ImportError as e:
+        diag["environment"]["ml_dependencies"] = f"MISSING: {e}"
+        diag["bottlenecks"].append(f"ML dependency not installed: {e}")
+
+    # Summary
+    if not diag["bottlenecks"]:
+        diag["summary"] = "Pipeline is healthy. Models are active and training has succeeded."
+    else:
+        diag["summary"] = f"Found {len(diag['bottlenecks'])} issue(s) preventing training."
+
+    return diag
 
 
 @router.get("/support")
