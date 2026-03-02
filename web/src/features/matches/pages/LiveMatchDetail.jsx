@@ -33,8 +33,9 @@ export default function LiveMatchDetail() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick, countryCode } = useAdvertiser();
-  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
-  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
+  // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
+  // Everyone else must first register through the offer
+  const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -458,7 +459,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                       if (canUseDeeplink && fonbetMatch?.deeplink) {
                         trackClick(user?.id, 'live_ai_bet');
                         window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'live_ai_bet'), '_blank', 'noopener,noreferrer');
-                      } else if (user?.is_premium && advertiser?.link) {
+                      } else if (canUseDeeplink && advertiser?.link) {
                         trackClick(user?.id, 'live_ai_bet');
                         window.open(getTrackingLink(user?.id, 'live_ai_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                       } else {

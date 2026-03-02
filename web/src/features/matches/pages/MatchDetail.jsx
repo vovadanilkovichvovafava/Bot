@@ -66,8 +66,9 @@ export default function MatchDetail() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick, countryCode } = useAdvertiser();
-  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
-  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
+  // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
+  // Everyone else must first register through the offer
+  const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -625,15 +626,14 @@ export default function MatchDetail() {
 
   const odds1x2 = getOdds1x2();
 
-  // PRO users go directly to bookmaker, free users go to promo page
-  // If Fonbet deeplink is available — use it (direct to specific match)
-  // New Italian users skip deeplinks → go to offer via Keitaro tracker
+  // Registered (use_deeplink) and PRO users go directly to bookmaker match
+  // Everyone else goes to promo/offer page to register first
   const handlePromoClick = (source) => {
     if (canUseDeeplink && fonbetMatch?.deeplink) {
       trackClick(user?.id, source);
       window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, source), '_blank', 'noopener,noreferrer');
-    } else if (user?.is_premium && advertiser?.link) {
-      trackClick(user.id, source);
+    } else if (canUseDeeplink && advertiser?.link) {
+      trackClick(user?.id, source);
       window.open(getTrackingLink(user?.id, source) || advertiser.link, '_blank', 'noopener,noreferrer');
     } else {
       navigate(`/promo?banner=${source}`);

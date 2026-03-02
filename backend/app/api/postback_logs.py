@@ -60,6 +60,14 @@ async def record_postback(
     else:
         logger.warning("Postback received without user_id, event=%s source=%s", data.get("event"), data.get("source"))
 
+    # Mark user as registered on bookmaker → enables direct match deeplinks
+    # Any postback with a resolved user means they registered through our offer
+    if user_db_id:
+        user = (await db.execute(select(User).where(User.id == user_db_id))).scalar_one_or_none()
+        if user and not user.use_deeplink:
+            user.use_deeplink = True
+            logger.info("Set use_deeplink=True for user_id=%s (event=%s)", user_id, data.get("event"))
+
     log = PostbackLog(
         user_id=str(user_id) if user_id else None,
         user_db_id=user_db_id,

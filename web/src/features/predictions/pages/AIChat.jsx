@@ -91,8 +91,9 @@ export default function AIChat() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { advertiser, trackClick, countryCode } = useAdvertiser();
-  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
-  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
+  // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
+  // Everyone else must first register through the offer
+  const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -406,7 +407,7 @@ export default function AIChat() {
                           if (deeplink) {
                             trackClick(user?.id, 'aichat_bet_fonbet');
                             window.open(addTrackingToUrl(deeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
-                          } else if (isPremium) {
+                          } else if (canUseDeeplink) {
                             trackClick(user?.id, 'aichat_bet_card');
                             window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
                           } else {
@@ -491,7 +492,7 @@ export default function AIChat() {
                       if (canUseDeeplink && msg.fonbetDeeplink) {
                         trackClick(user?.id, 'aichat_promo_fonbet');
                         window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_promo_fonbet'), '_blank', 'noopener,noreferrer');
-                      } else if (isPremium) {
+                      } else if (canUseDeeplink) {
                         trackClick(user?.id, 'aichat_promo_link');
                         window.open(getTrackingLink(user?.id, 'aichat_promo_link') || advertiser?.link, '_blank', 'noopener,noreferrer');
                       } else {
@@ -508,9 +509,9 @@ export default function AIChat() {
                 )}
               </div>
             </div>
-            {/* Ad block after certain responses — skip for PRO if bet card already shown */}
-            {msg.showAd && !(isPremium && msg.bets?.length) && (
-              isPremium ? (
+            {/* Ad block after certain responses — skip for registered/PRO if bet card already shown */}
+            {msg.showAd && !(canUseDeeplink && msg.bets?.length) && (
+              canUseDeeplink ? (
                 <div
                   onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = (canUseDeeplink && msg.fonbetDeeplink) ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet') : getTrackingLink(user?.id, 'aichat_ad_place_bet'); if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"

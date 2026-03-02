@@ -248,6 +248,11 @@ async def activate_premium(
     # Activate premium
     user.is_premium = activation.premium
 
+    # Mark user as registered on bookmaker — enables direct match deeplinks
+    # (instead of redirecting to the offer page)
+    if activation.premium:
+        user.use_deeplink = True
+
     if activation.expiresAt:
         user.premium_until = datetime.fromisoformat(activation.expiresAt.replace('Z', '+00:00'))
     else:
