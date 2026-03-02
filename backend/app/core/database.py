@@ -23,9 +23,16 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=5,
+    pool_size=20,
+    max_overflow=10,
     pool_recycle=1800,
+    pool_timeout=10,          # max 10s waiting for a free connection (instead of hanging forever)
+    connect_args={
+        "server_settings": {
+            "statement_timeout": "15000",   # 15s max per SQL statement
+        },
+        "command_timeout": 20,              # 20s max for any asyncpg command
+    },
 )
 
 async_session_maker = async_sessionmaker(
@@ -169,6 +176,9 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_match_chat_match ON match_chat_messages(match_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_user ON match_chat_messages(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_created ON match_chat_messages(created_at DESC)",
+            # ── analytics_events indexes (heavily queried by admin dashboard) ──
+            "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
         ]
 
         for migration in migrations:

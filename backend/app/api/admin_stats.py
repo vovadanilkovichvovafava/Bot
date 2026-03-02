@@ -5,8 +5,9 @@ All endpoints require admin authentication.
 
 import logging
 import os
+import time
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Any, Dict, Tuple
 
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy import select, func, case, and_, text
@@ -25,6 +26,23 @@ from app.models.banner_click import BannerClick
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# ── Simple TTL cache for heavy admin queries ────────────────────────────
+# Avoids re-running 15+ expensive SQL queries every time the dashboard refreshes.
+_admin_cache: Dict[str, Tuple[float, Any]] = {}
+ADMIN_CACHE_TTL = 60  # 60 seconds — fresh enough for a dashboard
+
+
+def _cache_get(key: str) -> Any:
+    """Return cached value if still valid, else None."""
+    entry = _admin_cache.get(key)
+    if entry and time.time() - entry[0] < ADMIN_CACHE_TTL:
+        return entry[1]
+    return None
+
+
+def _cache_set(key: str, value: Any) -> None:
+    _admin_cache[key] = (time.time(), value)
 
 LOCALE_NAMES = {
     "en": "English", "ru": "Russian", "es": "Spanish", "de": "German",
@@ -100,6 +118,10 @@ async def get_overview(
     db: AsyncSession = Depends(get_db),
 ):
     """Main dashboard overview — key metrics."""
+    cached = _cache_get("overview")
+    if cached is not None:
+        return cached
+
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
@@ -200,7 +222,7 @@ async def get_overview(
     # Football API usage today
     football_api_today = await _get_football_api_status()
 
-    return {
+    result = {
         "users": {
             "total": total_users,
             "pro": pro_users,
@@ -223,6 +245,8 @@ async def get_overview(
         "support_sessions_today": support_sessions_today,
         "football_api": football_api_today,
     }
+    _cache_set("overview", result)
+    return result
 
 
 @router.get("/online-history")
@@ -231,6 +255,10 @@ async def get_online_history(
     db: AsyncSession = Depends(get_db),
 ):
     """Unique active users per hour for the last 24 hours (from analytics_events)."""
+    cached = _cache_get("online_history")
+    if cached is not None:
+        return cached
+
     now = datetime.utcnow()
     day_ago = now - timedelta(hours=24)
 
@@ -265,7 +293,7 @@ async def get_online_history(
                 peak_users = users
                 peak_hour = h.strftime("%H:%M") if h else None
 
-        return {
+        result = {
             "hours": hours,
             "peak_users": peak_users,
             "peak_hour": peak_hour,
@@ -274,6 +302,8 @@ async def get_online_history(
                 {"cutoff": now - timedelta(minutes=15)},
             )).scalar() or 0,
         }
+        _cache_set("online_history", result)
+        return result
     except Exception as e:
         logger.error(f"Online history error: {e}")
         return {"hours": [], "peak_users": 0, "peak_hour": None, "current_online": 0}
@@ -285,6 +315,10 @@ async def get_users_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Detailed user analytics."""
+    cached = _cache_get("users_stats")
+    if cached is not None:
+        return cached
+
     now = datetime.utcnow()
 
     # Users by country (top 10)
@@ -358,7 +392,7 @@ async def get_users_stats(
         for u in recent_rows
     ]
 
-    return {
+    result = {
         "by_country": by_country,
         "by_language": by_language,
         "daily_registrations": daily_registrations,
@@ -366,6 +400,8 @@ async def get_users_stats(
         "total_referred": total_referred,
         "recent_users": recent_users,
     }
+    _cache_set("users_stats", result)
+    return result
 
 
 @router.get("/users/deeplink-split")
@@ -437,6 +473,10 @@ async def get_retention_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Retention cohorts and Free->PRO conversion metrics."""
+    cached = _cache_get("retention")
+    if cached is not None:
+        return cached
+
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -538,7 +578,7 @@ async def get_retention_stats(
         )
     )).scalar() or 0
 
-    return {
+    result = {
         "cohorts": cohorts,
         "overall": {
             "total_users": total_users,
@@ -552,6 +592,8 @@ async def get_retention_stats(
             "converted_pro": pro_30d,
         },
     }
+    _cache_set("retention", result)
+    return result
 
 
 @router.get("/users/export-csv")
