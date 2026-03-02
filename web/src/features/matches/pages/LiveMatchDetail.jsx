@@ -459,11 +459,10 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                       if (canUseDeeplink && fonbetMatch?.deeplink) {
                         trackClick(user?.id, 'live_ai_bet');
                         window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'live_ai_bet'), '_blank', 'noopener,noreferrer');
-                      } else if (canUseDeeplink && advertiser?.link) {
-                        trackClick(user?.id, 'live_ai_bet');
-                        window.open(getTrackingLink(user?.id, 'live_ai_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                       } else {
-                        navigate('/promo?banner=live_ai_bet');
+                        // Not registered or no deeplink → open offer link directly
+                        trackClick(user?.id, 'live_ai_bet');
+                        window.open(getTrackingLink(user?.id, 'live_ai_bet') || advertiser?.link, '_blank', 'noopener,noreferrer');
                       }
                     }}
                     className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"

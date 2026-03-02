@@ -627,16 +627,15 @@ export default function MatchDetail() {
   const odds1x2 = getOdds1x2();
 
   // Registered (use_deeplink) and PRO users go directly to bookmaker match
-  // Everyone else goes to promo/offer page to register first
+  // Everyone else goes to offer link to register on bookmaker first
   const handlePromoClick = (source) => {
     if (canUseDeeplink && fonbetMatch?.deeplink) {
       trackClick(user?.id, source);
       window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, source), '_blank', 'noopener,noreferrer');
-    } else if (canUseDeeplink && advertiser?.link) {
-      trackClick(user?.id, source);
-      window.open(getTrackingLink(user?.id, source) || advertiser.link, '_blank', 'noopener,noreferrer');
     } else {
-      navigate(`/promo?banner=${source}`);
+      // Not registered → open offer link directly (no promo quiz)
+      trackClick(user?.id, source);
+      window.open(getTrackingLink(user?.id, source) || advertiser?.link, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -911,11 +910,9 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                       if (canUseDeeplink && fonbetMatch?.deeplink) {
                         trackClick(user?.id, 'match_ai_bet');
                         window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'match_ai_bet'), '_blank', 'noopener,noreferrer');
-                      } else if (isPremium && advertiser?.link) {
-                        trackClick(user?.id, 'match_ai_bet');
-                        window.open(getTrackingLink(user?.id, 'match_ai_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
                       } else {
-                        navigate('/promo?banner=match_ai_bet');
+                        trackClick(user?.id, 'match_ai_bet');
+                        window.open(getTrackingLink(user?.id, 'match_ai_bet') || advertiser?.link, '_blank', 'noopener,noreferrer');
                       }
                     }}
                     className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
@@ -1652,12 +1649,8 @@ function MatchBonusCard({ match, enriched, advertiser, user, trackClick, adTexts
   return (
     <div
       onClick={() => {
-        if (user?.is_premium && advertiser?.link) {
-          trackClick(user.id, 'match_promo_banner');
-          window.open(getTrackingLink(user?.id, 'match_promo_banner') || advertiser.link, '_blank', 'noopener,noreferrer');
-        } else {
-          navigate('/promo?banner=match_promo_banner');
-        }
+        trackClick(user?.id, 'match_promo_banner');
+        window.open(getTrackingLink(user?.id, 'match_promo_banner') || advertiser?.link, '_blank', 'noopener,noreferrer');
       }}
       className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
       style={{ minHeight: '120px' }}
@@ -1743,7 +1736,7 @@ function MatchBonusCard({ match, enriched, advertiser, user, trackClick, adTexts
 }
 
 // Native Ad Block with rotating ad texts
-function NativeAdBlock({ advertiser, matchId }) {
+function NativeAdBlock({ advertiser, matchId, user, trackClick }) {
   const { t } = useTranslation();
   const bonus = advertiser?.bonusAmount || '';
   // 6 ad text variants for rotation (based on match ID for consistency)
@@ -1832,7 +1825,7 @@ function NativeAdBlock({ advertiser, matchId }) {
         )}
 
         <button
-          onClick={() => navigate('/promo?banner=match_ad_cta')}
+          onClick={() => { trackClick(user?.id, 'match_ad_cta'); window.open(getTrackingLink(user?.id, 'match_ad_cta') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
           className="block w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl text-center text-sm hover:opacity-95 transition-opacity shadow-lg shadow-orange-500/20"
         >
           👉 {ad.cta}

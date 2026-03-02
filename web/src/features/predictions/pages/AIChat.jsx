@@ -407,11 +407,10 @@ export default function AIChat() {
                           if (deeplink) {
                             trackClick(user?.id, 'aichat_bet_fonbet');
                             window.open(addTrackingToUrl(deeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
-                          } else if (canUseDeeplink) {
+                          } else {
+                            // Not registered or no deeplink → open offer link directly
                             trackClick(user?.id, 'aichat_bet_card');
                             window.open(getTrackingLink(user?.id, 'aichat_bet_card') || advertiser?.link, '_blank', 'noopener,noreferrer');
-                          } else {
-                            navigate('/promo?banner=aichat_bet_card');
                           }
                         }}
                         className="w-full text-left relative overflow-hidden rounded-xl shadow-lg"
@@ -492,11 +491,10 @@ export default function AIChat() {
                       if (canUseDeeplink && msg.fonbetDeeplink) {
                         trackClick(user?.id, 'aichat_promo_fonbet');
                         window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_promo_fonbet'), '_blank', 'noopener,noreferrer');
-                      } else if (canUseDeeplink) {
+                      } else {
+                        // Not registered or no deeplink → open offer link directly
                         trackClick(user?.id, 'aichat_promo_link');
                         window.open(getTrackingLink(user?.id, 'aichat_promo_link') || advertiser?.link, '_blank', 'noopener,noreferrer');
-                      } else {
-                        navigate('/promo?banner=aichat_promo_link');
                       }
                     }}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
@@ -549,13 +547,13 @@ export default function AIChat() {
                   </div>
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => navigate('/promo?banner=aichat_ad_get_bonus')}
+                      onClick={() => { trackClick(user?.id, 'aichat_ad_get_bonus'); window.open(getTrackingLink(user?.id, 'aichat_ad_get_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
                       className="flex-1 bg-emerald-600 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center"
                     >
                       {t('aiChat.getBonus2')}
                     </button>
                     <button
-                      onClick={() => navigate('/promo?banner=aichat_ad_learn_more')}
+                      onClick={() => { trackClick(user?.id, 'aichat_ad_learn_more'); window.open(getTrackingLink(user?.id, 'aichat_ad_learn_more') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
                       className="px-3 py-2 bg-white text-gray-700 text-xs font-medium rounded-lg border border-gray-200"
                     >
                       {t('aiChat.learnMore')}
@@ -601,7 +599,7 @@ export default function AIChat() {
               </button>
             ) : (
               <button
-                onClick={() => navigate('/promo?banner=aichat_bonus_button')}
+                onClick={() => { trackClick(user?.id, 'aichat_bonus_button'); window.open(getTrackingLink(user?.id, 'aichat_bonus_button') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
                 className="flex-1 text-sm px-3 py-2.5 rounded-xl font-medium bg-emerald-600 text-white"
               >
                 {t('advertiser.bonusButton', { bonus: advertiser.bonusAmount })}
@@ -725,7 +723,7 @@ export default function AIChat() {
 
             <div className="space-y-2">
               <button
-                onClick={() => { setShowLimitModal(false); navigate('/promo?banner=aichat_limit_unlock'); }}
+                onClick={() => { setShowLimitModal(false); trackClick(user?.id, 'aichat_limit_unlock'); window.open(getTrackingLink(user?.id, 'aichat_limit_unlock') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
               >
                 {t('aiChat.depositAndUnlock')}
