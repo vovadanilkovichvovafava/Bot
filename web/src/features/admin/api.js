@@ -73,6 +73,7 @@ export const adminApi = {
     request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}&domain=${encodeURIComponent(domain)}`),
   getEmailDomains: () => request('/stats/users/email-domains'),
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
+  getDeeplinkSplit: () => request('/stats/users/deeplink-split'),
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
   getMLStats: () => request('/stats/ml'),

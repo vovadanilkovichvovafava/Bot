@@ -368,6 +368,69 @@ async def get_users_stats(
     }
 
 
+@router.get("/users/deeplink-split")
+async def get_deeplink_split(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Italian users split by use_deeplink (old vs new)."""
+
+    # Total Italian users
+    total_it = (await db.execute(
+        select(func.count(User.id)).where(User.country == "IT")
+    )).scalar() or 0
+
+    # Old Italian users (use_deeplink=True → go to match deeplinks)
+    old_it = (await db.execute(
+        select(func.count(User.id)).where(
+            User.country == "IT", User.use_deeplink == True
+        )
+    )).scalar() or 0
+
+    # New Italian users (use_deeplink=False → go to offer)
+    new_it = (await db.execute(
+        select(func.count(User.id)).where(
+            User.country == "IT", User.use_deeplink == False
+        )
+    )).scalar() or 0
+
+    # Recent old Italian users (last 20)
+    old_rows = (await db.execute(
+        select(User)
+        .where(User.country == "IT", User.use_deeplink == True)
+        .order_by(User.created_at.desc())
+        .limit(20)
+    )).scalars().all()
+
+    # Recent new Italian users (last 20)
+    new_rows = (await db.execute(
+        select(User)
+        .where(User.country == "IT", User.use_deeplink == False)
+        .order_by(User.created_at.desc())
+        .limit(20)
+    )).scalars().all()
+
+    def user_dict(u):
+        return {
+            "id": u.id,
+            "public_id": u.public_id,
+            "email": u.email,
+            "phone": u.phone,
+            "is_premium": u.is_premium,
+            "use_deeplink": u.use_deeplink,
+            "total_predictions": u.total_predictions,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        }
+
+    return {
+        "total_italian": total_it,
+        "old_users": old_it,
+        "new_users": new_it,
+        "old_users_list": [user_dict(u) for u in old_rows],
+        "new_users_list": [user_dict(u) for u in new_rows],
+    }
+
+
 @router.get("/retention")
 async def get_retention_stats(
     admin: dict = Depends(get_current_admin),

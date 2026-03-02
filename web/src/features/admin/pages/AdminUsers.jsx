@@ -215,7 +215,7 @@ function UserProfileModal({ userId, onClose }) {
 export default function AdminUsers() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('analytics') // analytics | search
+  const [tab, setTab] = useState('analytics') // analytics | search | testmode
 
   // Search state
   const [query, setQuery] = useState('')
@@ -227,6 +227,10 @@ export default function AdminUsers() {
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [page, setPage] = useState(1)
+
+  // Test Mode (deeplink split)
+  const [splitData, setSplitData] = useState(null)
+  const [splitLoading, setSplitLoading] = useState(false)
 
   // Profile modal
   const [profileUserId, setProfileUserId] = useState(null)
@@ -255,6 +259,17 @@ export default function AdminUsers() {
     if (tab === 'search' && !searchResults) doSearch(1)
   }, [tab]) // eslint-disable-line
 
+  // Load deeplink split data when switching to test mode tab
+  useEffect(() => {
+    if (tab === 'testmode' && !splitData) {
+      setSplitLoading(true)
+      adminApi.getDeeplinkSplit()
+        .then(setSplitData)
+        .catch(() => setSplitData(null))
+        .finally(() => setSplitLoading(false))
+    }
+  }, [tab]) // eslint-disable-line
+
   const totalPages = searchResults ? Math.ceil(searchResults.total / searchResults.per_page) : 0
 
   if (loading) {
@@ -279,6 +294,7 @@ export default function AdminUsers() {
         {[
           { id: 'analytics', label: 'Analytics' },
           { id: 'search', label: 'Search & Browse' },
+          { id: 'testmode', label: 'Test Mode' },
         ].map(t => (
           <button
             key={t.id}
@@ -510,6 +526,127 @@ export default function AdminUsers() {
               </div>
             )}
           </div>
+        </>
+      )}
+
+      {tab === 'testmode' && (
+        <>
+          {splitLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : !splitData ? (
+            <div className="text-center text-slate-500 py-12">Failed to load split data</div>
+          ) : (
+            <>
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider">Total Italian Users</p>
+                  <p className="text-3xl font-bold text-slate-200 mt-2">{splitData.total_italian}</p>
+                  <p className="text-xs text-slate-500 mt-1">{COUNTRY_FLAGS.IT} Italy (IT)</p>
+                </div>
+                <div className="bg-slate-900 border border-emerald-800/50 rounded-xl p-5">
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-wider">Old Users (Deeplink)</p>
+                  <p className="text-3xl font-bold text-emerald-400 mt-2">{splitData.old_users}</p>
+                  <p className="text-xs text-slate-500 mt-1">use_deeplink = true &rarr; go to match</p>
+                </div>
+                <div className="bg-slate-900 border border-amber-800/50 rounded-xl p-5">
+                  <p className="text-[10px] text-amber-400 uppercase tracking-wider">New Users (Offer)</p>
+                  <p className="text-3xl font-bold text-amber-400 mt-2">{splitData.new_users}</p>
+                  <p className="text-xs text-slate-500 mt-1">use_deeplink = false &rarr; go to offer</p>
+                </div>
+              </div>
+
+              {/* Split bar */}
+              {splitData.total_italian > 0 && (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold mb-3">Split Ratio</h3>
+                  <div className="h-6 bg-slate-800 rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-emerald-500/60 flex items-center justify-center text-[10px] font-mono text-white transition-all"
+                      style={{ width: `${Math.round(splitData.old_users / splitData.total_italian * 100)}%` }}
+                    >
+                      {Math.round(splitData.old_users / splitData.total_italian * 100)}% old
+                    </div>
+                    <div
+                      className="h-full bg-amber-500/60 flex items-center justify-center text-[10px] font-mono text-white transition-all"
+                      style={{ width: `${Math.round(splitData.new_users / splitData.total_italian * 100)}%` }}
+                    >
+                      {Math.round(splitData.new_users / splitData.total_italian * 100)}% new
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Two columns: old vs new users lists */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Old users */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-800">
+                    <h3 className="text-sm font-semibold text-emerald-400">Old Users (Deeplink &rarr; Match)</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Recent 20, use_deeplink=true</p>
+                  </div>
+                  <div className="divide-y divide-slate-800/50">
+                    {(splitData.old_users_list || []).map(u => (
+                      <div
+                        key={u.id}
+                        onClick={() => setProfileUserId(u.id)}
+                        className="px-5 py-3 hover:bg-slate-800/30 transition-colors cursor-pointer flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-mono text-xs text-slate-300">{u.public_id}</p>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{u.phone || u.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            {u.is_premium && <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">PRO</span>}
+                            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">deeplink</span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {!splitData.old_users_list?.length && (
+                      <p className="text-center text-sm text-slate-600 py-6">No old Italian users</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* New users */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-800">
+                    <h3 className="text-sm font-semibold text-amber-400">New Users (Offer &rarr; Keitaro)</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Recent 20, use_deeplink=false</p>
+                  </div>
+                  <div className="divide-y divide-slate-800/50">
+                    {(splitData.new_users_list || []).map(u => (
+                      <div
+                        key={u.id}
+                        onClick={() => setProfileUserId(u.id)}
+                        className="px-5 py-3 hover:bg-slate-800/30 transition-colors cursor-pointer flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-mono text-xs text-slate-300">{u.public_id}</p>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{u.phone || u.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            {u.is_premium && <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">PRO</span>}
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">offer</span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 mt-0.5">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {!splitData.new_users_list?.length && (
+                      <p className="text-center text-sm text-slate-600 py-6">No new Italian users yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
