@@ -90,7 +90,9 @@ export default function AIChat() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser, trackClick, countryCode } = useAdvertiser();
+  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
+  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -400,7 +402,7 @@ export default function AIChat() {
                       <button
                         key={idx}
                         onClick={() => {
-                          const deeplink = bet.fonbetDeeplink || msg.fonbetDeeplink;
+                          const deeplink = canUseDeeplink ? (bet.fonbetDeeplink || msg.fonbetDeeplink) : null;
                           if (deeplink) {
                             trackClick(user?.id, 'aichat_bet_fonbet');
                             window.open(addTrackingToUrl(deeplink, user?.id, 'aichat_bet_fonbet'), '_blank', 'noopener,noreferrer');
@@ -486,7 +488,7 @@ export default function AIChat() {
                 {!msg.bets?.length && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
                     onClick={() => {
-                      if (msg.fonbetDeeplink) {
+                      if (canUseDeeplink && msg.fonbetDeeplink) {
                         trackClick(user?.id, 'aichat_promo_fonbet');
                         window.open(addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_promo_fonbet'), '_blank', 'noopener,noreferrer');
                       } else if (isPremium) {
@@ -510,7 +512,7 @@ export default function AIChat() {
             {msg.showAd && !(isPremium && msg.bets?.length) && (
               isPremium ? (
                 <div
-                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = msg.fonbetDeeplink ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet') : getTrackingLink(user?.id, 'aichat_ad_place_bet'); if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
+                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); const link = (canUseDeeplink && msg.fonbetDeeplink) ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet') : getTrackingLink(user?.id, 'aichat_ad_place_bet'); if (link) window.open(link, '_blank', 'noopener,noreferrer'); }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">

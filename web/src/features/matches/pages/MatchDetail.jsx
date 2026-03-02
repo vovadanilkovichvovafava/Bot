@@ -65,7 +65,9 @@ export default function MatchDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser, trackClick, countryCode } = useAdvertiser();
+  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
+  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -625,8 +627,9 @@ export default function MatchDetail() {
 
   // PRO users go directly to bookmaker, free users go to promo page
   // If Fonbet deeplink is available — use it (direct to specific match)
+  // New Italian users skip deeplinks → go to offer via Keitaro tracker
   const handlePromoClick = (source) => {
-    if (fonbetMatch?.deeplink) {
+    if (canUseDeeplink && fonbetMatch?.deeplink) {
       trackClick(user?.id, source);
       window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, source), '_blank', 'noopener,noreferrer');
     } else if (user?.is_premium && advertiser?.link) {
@@ -749,6 +752,7 @@ export default function MatchDetail() {
             navigate={navigate}
             t={t}
             fonbetMatch={fonbetMatch}
+            canUseDeeplink={canUseDeeplink}
           />
         )}
         {activeTab === 'stats' && (
@@ -781,7 +785,7 @@ function FansAreaTab({ matchId, match, t }) {
 // ============================
 // Overview Tab
 // ============================
-function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, predicting, getAnalysis, isRestoredAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch }) {
+function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, predicting, getAnalysis, isRestoredAnalysis, user, aiRemaining, formatDate, formatTime, statusLabel, getOdds1x2, advertiser, trackClick, navigate, t, fonbetMatch, canUseDeeplink }) {
   const pred = prediction?.apiPrediction;
   const odds1x2 = getOdds1x2();
 
@@ -904,7 +908,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                   <button
                     key={idx}
                     onClick={() => {
-                      if (fonbetMatch?.deeplink) {
+                      if (canUseDeeplink && fonbetMatch?.deeplink) {
                         trackClick(user?.id, 'match_ai_bet');
                         window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'match_ai_bet'), '_blank', 'noopener,noreferrer');
                       } else if (isPremium && advertiser?.link) {

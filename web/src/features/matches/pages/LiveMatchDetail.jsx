@@ -32,7 +32,9 @@ export default function LiveMatchDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser, trackClick, countryCode } = useAdvertiser();
+  // New Italian users (use_deeplink=false) skip Fonbet deeplinks → go to offer via Keitaro
+  const canUseDeeplink = !(user?.use_deeplink === false && countryCode === 'IT');
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -327,6 +329,7 @@ export default function LiveMatchDetail() {
               navigate={navigate}
               t={t}
               fonbetMatch={fonbetMatch}
+              canUseDeeplink={canUseDeeplink}
             />
           )}
           {activeTab === 'stats' && (
@@ -399,7 +402,7 @@ function QuickStats({ stats, t }) {
 }
 
 // Overview Tab
-function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t, fonbetMatch }) {
+function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t, fonbetMatch, canUseDeeplink }) {
   const recentEvents = events.slice(-5).reverse();
 
   // Parse AI recommended bets from analysis (multiple [BET] tags)
@@ -452,7 +455,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                   <button
                     key={idx}
                     onClick={() => {
-                      if (fonbetMatch?.deeplink) {
+                      if (canUseDeeplink && fonbetMatch?.deeplink) {
                         trackClick(user?.id, 'live_ai_bet');
                         window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'live_ai_bet'), '_blank', 'noopener,noreferrer');
                       } else if (user?.is_premium && advertiser?.link) {

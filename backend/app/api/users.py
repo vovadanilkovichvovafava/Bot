@@ -38,6 +38,7 @@ class UserResponse(BaseModel):
     total_predictions: int = 0
     correct_predictions: int = 0
     accuracy: float = 0.0
+    use_deeplink: bool = False
     created_at: datetime
 
     class Config:
@@ -105,6 +106,7 @@ async def get_current_user_info(
         total_predictions=user.total_predictions,
         correct_predictions=user.correct_predictions,
         accuracy=user.accuracy,
+        use_deeplink=user.use_deeplink if user.use_deeplink is not None else False,
         created_at=user.created_at
     )
 

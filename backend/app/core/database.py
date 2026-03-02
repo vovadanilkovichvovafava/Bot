@@ -125,6 +125,9 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_postback_logs_event ON postback_logs(event)",
             # User ban column
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE",
+            # Deeplink split: old users go to match (True), new users go to offer (False)
+            # No DEFAULT here so existing rows get NULL — backfill below sets them to TRUE
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS use_deeplink BOOLEAN",
             # Banner clicks table
             """CREATE TABLE IF NOT EXISTS banner_clicks (
                 id SERIAL PRIMARY KEY,
@@ -211,6 +214,16 @@ async def init_db():
             await conn.execute(text(
                 "UPDATE users SET traffic_source = 'direct' "
                 "WHERE traffic_source IS NULL"
+            ))
+        except Exception:
+            pass
+
+        # Backfill use_deeplink=True for existing users (legacy users go to match).
+        # New users get use_deeplink=False from SQLAlchemy default, so they stay NULL-free.
+        try:
+            await conn.execute(text(
+                "UPDATE users SET use_deeplink = TRUE "
+                "WHERE use_deeplink IS NULL"
             ))
         except Exception:
             pass
