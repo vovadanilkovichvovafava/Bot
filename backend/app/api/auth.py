@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core.security import get_password_hash, verify_password, create_access_token, verify_token
+from app.core.security import get_password_hash, get_password_hash_async, verify_password, verify_password_async, create_access_token, verify_token
 from app.core.phone_country import detect_country_from_phone
 from app.config import settings
 from app.core.database import get_db
@@ -178,7 +178,7 @@ async def register(
         email=email,
         phone=user.phone,
         username=username,
-        password_hash=get_password_hash(user.password),
+        password_hash=await get_password_hash_async(user.password),
         registration_ip=client_ip,
         country=country,
         referred_by_id=referrer.id if referrer else None,
@@ -242,7 +242,7 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
         result = await db.execute(select(User).where(User.email == user.email))
     db_user = result.scalar_one_or_none()
 
-    if not db_user or not verify_password(user.password, db_user.password_hash):
+    if not db_user or not await verify_password_async(user.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
@@ -412,7 +412,7 @@ async def reset_password(
         )
 
     # Update password
-    db_user.password_hash = get_password_hash(req.new_password)
+    db_user.password_hash = await get_password_hash_async(req.new_password)
     await db.commit()
 
     return {"message": "Password reset successfully", "username": db_user.username}

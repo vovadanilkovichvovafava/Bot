@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -15,8 +16,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
+async def verify_password_async(plain_password: str, hashed_password: str) -> bool:
+    """Non-blocking bcrypt verification — runs in a thread pool."""
+    return await asyncio.to_thread(pwd_context.verify, plain_password, hashed_password)
+
+
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+
+async def get_password_hash_async(password: str) -> str:
+    """Non-blocking bcrypt hashing — runs in a thread pool."""
+    return await asyncio.to_thread(pwd_context.hash, password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

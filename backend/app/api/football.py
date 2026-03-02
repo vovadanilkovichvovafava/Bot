@@ -9,6 +9,7 @@ from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 from typing import List, Dict, Any, Optional
 
+import asyncio
 import anthropic
 import os
 
@@ -268,33 +269,36 @@ async def get_smart_bet() -> Dict:
 async def _compute_smart_bet() -> Dict:
     """Find the best match and use AI to pick the best market."""
 
-    # Step 1: Get LIVE fixtures (with fallback)
-    live_fixtures = []
-    try:
-        live_fixtures = await api_football.get_live_fixtures()
-        if not live_fixtures:
-            live_fixtures = await fetch_live_fallback()
-    except Exception as e:
-        logger.warning(f"Failed to fetch live fixtures: {e}")
-        try:
-            live_fixtures = await fetch_live_fallback()
-        except Exception:
-            pass
+    today = datetime.utcnow().strftime("%Y-%m-%d")
 
-    # Step 2: Get today's fixtures (with fallback)
-    today_fixtures = []
-    try:
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        today_fixtures = await api_football.get_fixtures_by_date(today)
-        if not today_fixtures:
-            today_fixtures = await fetch_fixtures_fallback(today)
-    except Exception as e:
-        logger.warning(f"Failed to fetch today fixtures: {e}")
+    # Step 1+2: Fetch live AND today's fixtures in PARALLEL
+    async def _get_live():
         try:
-            today = datetime.utcnow().strftime("%Y-%m-%d")
-            today_fixtures = await fetch_fixtures_fallback(today)
-        except Exception:
-            pass
+            result = await api_football.get_live_fixtures()
+            if result:
+                return result
+            return await fetch_live_fallback()
+        except Exception as e:
+            logger.warning(f"Failed to fetch live fixtures: {e}")
+            try:
+                return await fetch_live_fallback()
+            except Exception:
+                return []
+
+    async def _get_today():
+        try:
+            result = await api_football.get_fixtures_by_date(today)
+            if result:
+                return result
+            return await fetch_fixtures_fallback(today)
+        except Exception as e:
+            logger.warning(f"Failed to fetch today fixtures: {e}")
+            try:
+                return await fetch_fixtures_fallback(today)
+            except Exception:
+                return []
+
+    live_fixtures, today_fixtures = await asyncio.gather(_get_live(), _get_today())
 
     # Step 3: Pick the best match by priority
     chosen_fixture = None
@@ -336,15 +340,19 @@ async def _compute_smart_bet() -> Dict:
     status = chosen_fixture.get("fixture", {}).get("status", {})
     is_live = status.get("short") in ("1H", "2H", "HT")
 
-    # Step 4: Get prediction data and real odds from API-Football
+    # Step 4: Get prediction data and real odds in parallel
     prediction = None
     odds_data = []
     try:
-        prediction = await api_football.get_prediction(fixture_id)
-    except Exception:
-        pass
-    try:
-        odds_data = await api_football.get_odds(fixture_id)
+        pred_result, odds_result = await asyncio.gather(
+            api_football.get_prediction(fixture_id),
+            api_football.get_odds(fixture_id),
+            return_exceptions=True,
+        )
+        if not isinstance(pred_result, Exception):
+            prediction = pred_result
+        if not isinstance(odds_result, Exception):
+            odds_data = odds_result
     except Exception:
         pass
 
@@ -519,11 +527,14 @@ IMPORTANT: You MUST pick a market from the real bookmaker odds list above. Prefe
 Only respond with JSON."""
 
     try:
-        client = anthropic.Anthropic(api_key=claude_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}],
+        client = anthropic.AsyncAnthropic(api_key=claude_key)
+        response = await asyncio.wait_for(
+            client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}],
+            ),
+            timeout=15.0,
         )
         text = response.content[0].text
         start = text.find("{")

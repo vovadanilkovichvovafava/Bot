@@ -179,6 +179,10 @@ async def init_db():
             # ── analytics_events indexes (heavily queried by admin dashboard) ──
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
+            # ── Performance indexes for frequently queried columns ──
+            "CREATE INDEX IF NOT EXISTS ix_users_phone ON users(phone)",
+            "CREATE INDEX IF NOT EXISTS ix_users_registration_ip ON users(registration_ip)",
+            "CREATE INDEX IF NOT EXISTS ix_ai_chat_user_session ON ai_chat_messages(user_id, session_id, created_at DESC)",
         ]
 
         for migration in migrations:

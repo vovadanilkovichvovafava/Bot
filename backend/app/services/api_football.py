@@ -88,7 +88,19 @@ def clear_expired_cache():
 
 
 class ApiFootballService:
-    """API-Football service with caching"""
+    """API-Football service with caching and persistent HTTP connection pool"""
+
+    def __init__(self):
+        self._client: Optional[httpx.AsyncClient] = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Get or create a persistent httpx client with connection pooling."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=15.0,
+                limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            )
+        return self._client
 
     async def _request(self, endpoint: str, params: Dict = None, cache_type: str = "default") -> Any:
         """Make request to API-Football with caching"""
@@ -106,35 +118,34 @@ class ApiFootballService:
         if cached is not None:
             return cached
 
-        # Make API request
+        # Make API request using persistent client
         url = f"{API_FOOTBALL_BASE}{endpoint}"
         headers = {"x-apisports-key": api_key}
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    url,
-                    headers=headers,
-                    params=params,
-                    timeout=15.0
-                )
-                response.raise_for_status()
-                data = response.json()
+            client = self._get_client()
+            response = await client.get(
+                url,
+                headers=headers,
+                params=params,
+            )
+            response.raise_for_status()
+            data = response.json()
 
-                # Check for API errors (rate limit, etc.)
-                errors = data.get("errors", {})
-                if errors:
-                    error_msg = str(errors)
-                    logger.warning(f"API-Football error for {endpoint}: {error_msg}")
-                    # Do NOT cache error responses — return empty so fallback triggers
-                    return []
+            # Check for API errors (rate limit, etc.)
+            errors = data.get("errors", {})
+            if errors:
+                error_msg = str(errors)
+                logger.warning(f"API-Football error for {endpoint}: {error_msg}")
+                # Do NOT cache error responses — return empty so fallback triggers
+                return []
 
-                result = data.get("response", [])
+            result = data.get("response", [])
 
-                # Only cache non-empty results to avoid caching rate-limit empty responses
-                if result:
-                    _set_cache(cache_key, result, cache_type)
-                return result
+            # Only cache non-empty results to avoid caching rate-limit empty responses
+            if result:
+                _set_cache(cache_key, result, cache_type)
+            return result
 
         except httpx.TimeoutException:
             logger.error(f"Timeout fetching {endpoint}")

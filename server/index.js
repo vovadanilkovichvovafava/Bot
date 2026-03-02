@@ -21,8 +21,8 @@ const CONFIG = {
   // Postback secret for verification
   POSTBACK_SECRET: process.env.POSTBACK_SECRET || 'your_postback_secret_key',
 
-  // Countries where bookmaker is blocked (ISO 3166-1 alpha-2 codes)
-  BLOCKED_COUNTRIES: (process.env.BLOCKED_COUNTRIES || 'RU,BY,UA,KZ,AZ,AM,GE,MD,KG,TJ,TM,UZ').split(','),
+  // Countries where bookmaker is blocked — Set for O(1) lookups
+  BLOCKED_COUNTRIES: new Set((process.env.BLOCKED_COUNTRIES || 'RU,BY,UA,KZ,AZ,AM,GE,MD,KG,TJ,TM,UZ').split(',')),
 
   // Alternative/mirror domains for cloaking
   MIRROR_DOMAIN: process.env.MIRROR_DOMAIN || 'https://1xbet-mirror.com',
@@ -31,17 +31,40 @@ const CONFIG = {
   SAFE_LANDING: process.env.SAFE_LANDING || '/blocked',
 };
 
-// In-memory storage for demo (use Redis/DB in production)
+// In-memory storage with size limits (use Redis/DB in production)
+const MAX_MAP_SIZE = 10000;
 const postbackStore = new Map();
 const premiumActivations = new Map();
-const verificationRequests = new Map(); // Store manual verification requests
+const verificationRequests = new Map();
+
+// Evict oldest entries when Map exceeds size limit
+function limitedMapSet(map, key, value) {
+  if (map.size >= MAX_MAP_SIZE) {
+    // Delete the oldest entry (first key in insertion order)
+    const firstKey = map.keys().next().value;
+    map.delete(firstKey);
+  }
+  map.set(key, value);
+}
+
+// Periodic cleanup: remove entries older than 24 hours every hour
+setInterval(() => {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  for (const [key, val] of postbackStore) {
+    if (val.timestamp && new Date(val.timestamp).getTime() < cutoff) postbackStore.delete(key);
+  }
+  for (const [key, val] of verificationRequests) {
+    if (val.createdAt && new Date(val.createdAt).getTime() < cutoff) verificationRequests.delete(key);
+  }
+}, 60 * 60 * 1000);
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
+// Logging middleware (skip noisy health checks)
 app.use((req, res, next) => {
+  if (req.path === '/health' || req.path === '/') return next();
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${clientIp}`);
   next();
@@ -70,7 +93,7 @@ function getGeoInfo(ip) {
     region: geo.region,
     city: geo.city,
     timezone: geo.timezone,
-    isBlocked: CONFIG.BLOCKED_COUNTRIES.includes(geo.country),
+    isBlocked: CONFIG.BLOCKED_COUNTRIES.has(geo.country),
   };
 }
 
@@ -109,7 +132,7 @@ app.get('/api/click', (req, res) => {
   const timestamp = new Date().toISOString();
 
   // Store click info for later postback matching
-  postbackStore.set(clickId, {
+  limitedMapSet(postbackStore, clickId, {
     userId,
     source: source || 'direct',
     timestamp,
@@ -186,11 +209,11 @@ app.get('/api/postback', async (req, res) => {
         bookmakerId: user_id,
       });
     }
-    postbackStore.set(actualClickId, clickRecord);
+    // In-place mutation already updates Map — no need for .set() again
   } else {
     // Store a new record for direct user_id postbacks (Keitaro format)
     const recordKey = `direct_${user_id}_${Date.now()}`;
-    postbackStore.set(recordKey, {
+    limitedMapSet(postbackStore, recordKey, {
       userId: user_id,
       source: 'keitaro_direct',
       timestamp: new Date().toISOString(),
@@ -249,7 +272,7 @@ app.get('/api/postback', async (req, res) => {
 /**
  * Alternative POST endpoint for postbacks
  */
-app.post('/api/postback', express.json(), async (req, res) => {
+app.post('/api/postback', async (req, res) => {
   const { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret } = req.body;
 
   // Reuse GET logic - support both original and Keitaro param names
@@ -269,6 +292,7 @@ async function logPostback(data) {
         'X-Internal-Secret': CONFIG.POSTBACK_SECRET,
       },
       body: JSON.stringify(data),
+      signal: AbortSignal.timeout(10000), // 10s timeout
     });
   } catch (err) {
     console.error('[LOG] Failed to log postback:', err.message);
@@ -303,6 +327,7 @@ async function activatePremium(userId, depositInfo) {
         currency: depositInfo.currency,
         expiresAt: premiumActivations.get(userId).expiresAt,
       }),
+      signal: AbortSignal.timeout(10000), // 10s timeout
     });
 
     if (!response.ok) {
@@ -365,7 +390,7 @@ app.post('/api/verification/request', (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
-  verificationRequests.set(requestId, request);
+  limitedMapSet(verificationRequests, requestId, request);
   console.log(`[VERIFICATION] New request: ${requestId} for user ${userId}, bookmaker ID: ${bookmakerId}`);
 
   res.json({ success: true, requestId });
@@ -465,7 +490,7 @@ app.get('/api/bookmaker/link', (req, res) => {
   const clickId = uuidv4();
 
   if (userId) {
-    postbackStore.set(clickId, {
+    limitedMapSet(postbackStore, clickId, {
       userId,
       source: campaign || 'direct',
       timestamp: new Date().toISOString(),
@@ -518,10 +543,10 @@ app.all('/api/proxy/*', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': req.headers['user-agent'] || 'BettingBot/1.0',
-        // Forward original IP for bookmaker's geo handling
         'X-Forwarded-For': clientIp,
       },
       body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined,
+      signal: AbortSignal.timeout(15000), // 15s timeout
     });
 
     const data = await response.text();
@@ -587,7 +612,7 @@ app.get('/api/keitaro/postback', async (req, res) => {
 
   // Store with subid as key for deduplication
   const recordKey = subid || `${userId}_${status}_${Date.now()}`;
-  postbackStore.set(`keitaro_${recordKey}`, postbackRecord);
+  limitedMapSet(postbackStore, `keitaro_${recordKey}`, postbackRecord);
 
   console.log(`[KEITARO POSTBACK] Stored record: keitaro_${recordKey}`);
 
@@ -722,7 +747,7 @@ app.get('/api/admin/test-postback', async (req, res) => {
 
   // Create a test click
   const clickId = uuidv4();
-  postbackStore.set(clickId, {
+  limitedMapSet(postbackStore, clickId, {
     userId,
     source: 'test',
     timestamp: new Date().toISOString(),
@@ -760,7 +785,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     config: {
       bookmaker: CONFIG.BOOKMAKER_NAME,
-      blockedCountries: CONFIG.BLOCKED_COUNTRIES,
+      blockedCountries: [...CONFIG.BLOCKED_COUNTRIES],
     }
   });
 });
@@ -795,7 +820,7 @@ const server = app.listen(PORT, () => {
   KEITARO Postback URL (use sub10 or external_id for userId):
   https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}
 
-  Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
+  Blocked countries: ${[...CONFIG.BLOCKED_COUNTRIES].join(', ')}
 
   Admin endpoints (require secret):
   - GET /api/admin/postbacks?secret=xxx

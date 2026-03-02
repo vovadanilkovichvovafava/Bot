@@ -191,27 +191,36 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 class InjectionDetectionMiddleware(BaseHTTPMiddleware):
     """Logs suspicious requests that may be injection attempts"""
 
+    # Skip injection detection on high-frequency, low-risk paths
+    _SKIP_PATHS = frozenset(("/health", "/", "/api/v1/analytics/event"))
+    _SKIP_PREFIXES = ("/api/v1/admin/", "/api/v1/football/fixtures/")
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Check query parameters
-        query_string = str(request.url.query)
         path = request.url.path
 
-        # Check for injection patterns (pre-compiled regex)
-        for pattern in INJECTION_PATTERNS:
-            if pattern.search(query_string):
-                client_ip = request.client.host if request.client else "unknown"
-                logger.warning(
-                    f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
-                    f"Path: {path} | Pattern: {pattern.pattern} | Query: {query_string[:200]}"
-                )
-                break
+        # Skip injection checks for safe, high-frequency endpoints
+        if path in self._SKIP_PATHS or any(path.startswith(p) for p in self._SKIP_PREFIXES):
+            return await call_next(request)
 
-            if pattern.search(path):
-                client_ip = request.client.host if request.client else "unknown"
-                logger.warning(
-                    f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
-                    f"Path: {path} | Pattern: {pattern.pattern}"
-                )
-                break
+        query_string = str(request.url.query)
+
+        # Only run checks if there's actually something to check
+        if query_string or ("'" in path or '"' in path or '<' in path or ';' in path):
+            for pattern in INJECTION_PATTERNS:
+                if query_string and pattern.search(query_string):
+                    client_ip = request.client.host if request.client else "unknown"
+                    logger.warning(
+                        f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
+                        f"Path: {path} | Pattern: {pattern.pattern} | Query: {query_string[:200]}"
+                    )
+                    break
+
+                if pattern.search(path):
+                    client_ip = request.client.host if request.client else "unknown"
+                    logger.warning(
+                        f"INJECTION ATTEMPT DETECTED | IP: {client_ip} | "
+                        f"Path: {path} | Pattern: {pattern.pattern}"
+                    )
+                    break
 
         return await call_next(request)

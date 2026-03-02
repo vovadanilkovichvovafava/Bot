@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 import os
 from datetime import datetime, timedelta
@@ -5,6 +6,20 @@ from typing import List, Dict, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Shared httpx client for connection pooling (reuses TCP/TLS connections)
+_http_client: Optional[httpx.AsyncClient] = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    """Get or create the shared httpx client with connection pooling."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(
+            timeout=15.0,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _http_client
 
 
 def get_football_api_key() -> str:
@@ -106,46 +121,50 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         # Free tier: fetch from top leagues individually
         leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1"]
 
-    async with httpx.AsyncClient() as client:
-        for lg_code in leagues_to_fetch:
-            try:
-                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
-                # Use status=SCHEDULED to get upcoming matches
-                params = {"status": "SCHEDULED"}
+    client = _get_http_client()
 
-                response = await client.get(url, headers=headers, params=params, timeout=15.0)
+    async def _fetch_league(lg_code: str) -> List[Dict]:
+        """Fetch a single league's matches."""
+        matches = []
+        try:
+            url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+            params = {"status": "SCHEDULED"}
+            response = await client.get(url, headers=headers, params=params)
 
-                if response.status_code != 200:
-                    logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
+            if response.status_code != 200:
+                logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
+                return matches
+
+            data = response.json()
+            for match in data.get("matches", []):
+                try:
+                    matches.append({
+                        "id": match["id"],
+                        "home_team": {
+                            "name": match["homeTeam"]["name"],
+                            "logo": match["homeTeam"].get("crest")
+                        },
+                        "away_team": {
+                            "name": match["awayTeam"]["name"],
+                            "logo": match["awayTeam"].get("crest")
+                        },
+                        "league": match["competition"]["name"],
+                        "league_code": match["competition"].get("code", lg_code),
+                        "match_date": match["utcDate"],
+                        "status": match["status"].lower(),
+                        "home_score": match["score"]["fullTime"]["home"],
+                        "away_score": match["score"]["fullTime"]["away"],
+                    })
+                except (KeyError, TypeError):
                     continue
+        except Exception as e:
+            logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
+        return matches
 
-                data = response.json()
-
-                for match in data.get("matches", []):
-                    try:
-                        all_matches.append({
-                            "id": match["id"],
-                            "home_team": {
-                                "name": match["homeTeam"]["name"],
-                                "logo": match["homeTeam"].get("crest")
-                            },
-                            "away_team": {
-                                "name": match["awayTeam"]["name"],
-                                "logo": match["awayTeam"].get("crest")
-                            },
-                            "league": match["competition"]["name"],
-                            "league_code": match["competition"].get("code", lg_code),
-                            "match_date": match["utcDate"],
-                            "status": match["status"].lower(),
-                            "home_score": match["score"]["fullTime"]["home"],
-                            "away_score": match["score"]["fullTime"]["away"],
-                        })
-                    except (KeyError, TypeError) as e:
-                        continue
-
-            except Exception as e:
-                logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
-                continue
+    # Fetch ALL leagues in parallel instead of sequentially
+    results = await asyncio.gather(*[_fetch_league(lg) for lg in leagues_to_fetch])
+    for league_matches in results:
+        all_matches.extend(league_matches)
 
     # Sort by match date
     all_matches.sort(key=lambda x: x["match_date"])
@@ -169,25 +188,23 @@ async def fetch_match_details(match_id: int) -> Optional[Dict]:
 
     try:
         headers = {"X-Auth-Token": api_key}
+        client = _get_http_client()
 
-        async with httpx.AsyncClient() as client:
-            # Get match details
-            response = await client.get(
+        # Fetch match details and H2H in parallel
+        match_resp, h2h_resp = await asyncio.gather(
+            client.get(
                 f"{FOOTBALL_DATA_BASE_URL}/matches/{match_id}",
                 headers=headers,
-                timeout=10.0
-            )
-            response.raise_for_status()
-            match = response.json()
-
-            # Get head-to-head
-            h2h_response = await client.get(
+            ),
+            client.get(
                 f"{FOOTBALL_DATA_BASE_URL}/matches/{match_id}/head2head",
                 headers=headers,
                 params={"limit": 10},
-                timeout=10.0
-            )
-            h2h_data = h2h_response.json() if h2h_response.status_code == 200 else {}
+            ),
+        )
+        match_resp.raise_for_status()
+        match = match_resp.json()
+        h2h_data = h2h_resp.json() if h2h_resp.status_code == 200 else {}
 
         # Process head-to-head
         h2h = h2h_data.get("aggregates", {})
@@ -244,15 +261,14 @@ async def fetch_standings(league_code: str) -> List[Dict]:
     try:
         headers = {"X-Auth-Token": api_key}
         league_id = LEAGUE_IDS[league_code]
+        client = _get_http_client()
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{FOOTBALL_DATA_BASE_URL}/competitions/{league_id}/standings",
-                headers=headers,
-                timeout=10.0
-            )
-            response.raise_for_status()
-            data = response.json()
+        response = await client.get(
+            f"{FOOTBALL_DATA_BASE_URL}/competitions/{league_id}/standings",
+            headers=headers,
+        )
+        response.raise_for_status()
+        data = response.json()
 
         standings = []
         for standing in data.get("standings", []):
@@ -387,29 +403,30 @@ async def fetch_fixtures_fallback(date: str) -> List[Dict]:
     headers = {"X-Auth-Token": api_key}
     all_fixtures = []
     leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+    client = _get_http_client()
 
-    async with httpx.AsyncClient() as client:
-        for lg_code in leagues_to_fetch:
-            try:
-                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
-                params = {"dateFrom": date, "dateTo": date}
+    async def _fetch_fallback_league(lg_code: str) -> List[Dict]:
+        fixtures = []
+        try:
+            url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+            params = {"dateFrom": date, "dateTo": date}
+            response = await client.get(url, headers=headers, params=params)
+            if response.status_code != 200:
+                logger.warning(f"FDO fallback: failed to fetch {lg_code}: {response.status_code}")
+                return fixtures
+            data = response.json()
+            for match in data.get("matches", []):
+                try:
+                    fixtures.append(_convert_fdo_to_fixture(match))
+                except Exception as e:
+                    logger.debug(f"FDO fallback: skip match conversion: {e}")
+        except Exception as e:
+            logger.error(f"FDO fallback error for {lg_code}: {e}")
+        return fixtures
 
-                response = await client.get(url, headers=headers, params=params, timeout=15.0)
-                if response.status_code != 200:
-                    logger.warning(f"FDO fallback: failed to fetch {lg_code}: {response.status_code}")
-                    continue
-
-                data = response.json()
-                for match in data.get("matches", []):
-                    try:
-                        all_fixtures.append(_convert_fdo_to_fixture(match))
-                    except Exception as e:
-                        logger.debug(f"FDO fallback: skip match conversion: {e}")
-                        continue
-
-            except Exception as e:
-                logger.error(f"FDO fallback error for {lg_code}: {e}")
-                continue
+    results = await asyncio.gather(*[_fetch_fallback_league(lg) for lg in leagues_to_fetch])
+    for league_fixtures in results:
+        all_fixtures.extend(league_fixtures)
 
     all_fixtures.sort(key=lambda f: f["fixture"]["date"])
     logger.info(f"FDO fallback: {len(all_fixtures)} fixtures for {date}")
@@ -434,27 +451,29 @@ async def fetch_live_fallback() -> List[Dict]:
     headers = {"X-Auth-Token": api_key}
     live_fixtures = []
     leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+    client = _get_http_client()
 
-    async with httpx.AsyncClient() as client:
-        for lg_code in leagues_to_fetch:
-            try:
-                url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
-                params = {"status": "IN_PLAY,PAUSED"}
-
-                response = await client.get(url, headers=headers, params=params, timeout=15.0)
-                if response.status_code != 200:
+    async def _fetch_live_league(lg_code: str) -> List[Dict]:
+        fixtures = []
+        try:
+            url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+            params = {"status": "IN_PLAY,PAUSED"}
+            response = await client.get(url, headers=headers, params=params)
+            if response.status_code != 200:
+                return fixtures
+            data = response.json()
+            for match in data.get("matches", []):
+                try:
+                    fixtures.append(_convert_fdo_to_fixture(match))
+                except Exception:
                     continue
+        except Exception as e:
+            logger.error(f"FDO live fallback error for {lg_code}: {e}")
+        return fixtures
 
-                data = response.json()
-                for match in data.get("matches", []):
-                    try:
-                        live_fixtures.append(_convert_fdo_to_fixture(match))
-                    except Exception:
-                        continue
-
-            except Exception as e:
-                logger.error(f"FDO live fallback error for {lg_code}: {e}")
-                continue
+    results = await asyncio.gather(*[_fetch_live_league(lg) for lg in leagues_to_fetch])
+    for league_fixtures in results:
+        live_fixtures.extend(league_fixtures)
 
     logger.info(f"FDO live fallback: {len(live_fixtures)} live fixtures")
 

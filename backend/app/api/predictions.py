@@ -45,6 +45,50 @@ def get_daily_limit(day_number: int) -> int:
     return DEGRESSIVE_LIMITS[3]  # Day 3+ = 1 request/day
 
 
+def _compute_limits_from_user(user) -> dict:
+    """Compute chat limits from an already-loaded User object (no DB queries)."""
+    if user.is_premium:
+        return {
+            "remaining": 999,
+            "limit": 999,
+            "day_number": 0,
+            "resets_at": None,
+            "is_premium": True,
+        }
+
+    now = datetime.utcnow()
+    today = now.date()
+
+    # Check if it's a new day since last request
+    if user.last_chat_request_date is None:
+        user.account_day_number = 1
+        user.daily_chat_requests = 0
+        user.last_chat_request_date = now
+    elif user.last_chat_request_date.date() < today:
+        user.account_day_number = (user.account_day_number or 1) + 1
+        user.daily_chat_requests = 0
+        user.last_chat_request_date = now
+
+    day_number = user.account_day_number or 1
+    limit = get_daily_limit(day_number)
+    used = user.daily_chat_requests or 0
+    bonus = user.referral_bonus_requests or 0
+    total_limit = limit + bonus
+    remaining = max(0, total_limit - used)
+    tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
+
+    return {
+        "remaining": remaining,
+        "limit": total_limit,
+        "base_limit": limit,
+        "bonus": bonus,
+        "day_number": day_number,
+        "used": used,
+        "resets_at": tomorrow.isoformat() + "Z",
+        "is_premium": False,
+    }
+
+
 async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     """
     Check user's AI chat limits and update day tracking.
@@ -61,43 +105,7 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Premium users have unlimited access
-    if user.is_premium:
-        return {
-            "remaining": 999,
-            "limit": 999,
-            "day_number": 0,
-            "resets_at": None,
-            "is_premium": True,
-        }
-
-    now = datetime.utcnow()
-    today = now.date()
-
-    # Check if it's a new day since last request
-    if user.last_chat_request_date is None:
-        # First ever request — day 1
-        user.account_day_number = 1
-        user.daily_chat_requests = 0
-        user.last_chat_request_date = now
-    elif user.last_chat_request_date.date() < today:
-        # New day! Advance day_number and reset counter
-        user.account_day_number = (user.account_day_number or 1) + 1
-        user.daily_chat_requests = 0
-        user.last_chat_request_date = now
-
-    day_number = user.account_day_number or 1
-    limit = get_daily_limit(day_number)
-    used = user.daily_chat_requests or 0
-
-    # Add bonus from referrals
-    bonus = user.referral_bonus_requests or 0
-    total_limit = limit + bonus
-
-    remaining = max(0, total_limit - used)
-
-    # Calculate when the limit resets (next midnight UTC)
-    tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
+    limits = _compute_limits_from_user(user)
 
     try:
         await db.commit()
@@ -105,16 +113,7 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
         logger.error(f"DB error in check_and_update_limits (commit): {e}")
         await db.rollback()
 
-    return {
-        "remaining": remaining,
-        "limit": total_limit,
-        "base_limit": limit,
-        "bonus": bonus,
-        "day_number": day_number,
-        "used": used,
-        "resets_at": tomorrow.isoformat() + "Z",
-        "is_premium": False,
-    }
+    return limits
 
 
 async def increment_chat_usage(user_id: int, db: AsyncSession):
@@ -246,6 +245,12 @@ async def ai_chat(
     sess_id = req.session_id or str(uuid.uuid4())[:12]
     locale = (req.locale or "en").lower()[:2]
 
+    # Load user ONCE — reuse throughout the request to avoid repeated DB queries
+    user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user_obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    is_pro = bool(user_obj.is_premium)
+
     # Check if admin has taken over this session (manual mode)
     takeover_row = (await db.execute(
         text("SELECT is_takeover FROM admin_session_overrides WHERE session_id = :sid AND is_takeover = TRUE"),
@@ -263,10 +268,7 @@ async def ai_chat(
             "pt": "Sua mensagem foi recebida. Nossa equipe responderá em breve.",
         }
         wait_msg = _TAKEOVER_RESPONSES.get(locale, _TAKEOVER_RESPONSES["en"])
-        # Save user message to DB (so admin sees it)
         try:
-            user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-            is_pro = bool(user_obj and user_obj.is_premium)
             db.add(AIChatMessage(
                 user_id=user_id, session_id=sess_id, role="user",
                 content=req.message, locale=locale,
@@ -276,7 +278,7 @@ async def ai_chat(
         except Exception as e:
             logger.warning(f"Failed to save takeover message: {e}")
 
-        limits = await check_and_update_limits(user_id, db)
+        limits = _compute_limits_from_user(user_obj)
         return ChatResponse(
             response=wait_msg,
             remaining=limits["remaining"],
@@ -285,8 +287,8 @@ async def ai_chat(
             resets_at=limits.get("resets_at"),
         )
 
-    # Check limits BEFORE calling Claude (saves API costs)
-    limits = await check_and_update_limits(user_id, db)
+    # Check limits using already-loaded user (no extra DB query)
+    limits = _compute_limits_from_user(user_obj)
     if not limits["is_premium"] and limits["remaining"] <= 0:
         raise HTTPException(
             status_code=402,
@@ -305,7 +307,7 @@ async def ai_chat(
     try:
         learning_ctx = await get_learning_context(db)
     except Exception:
-        pass  # Don't block AI if stats fail
+        pass
 
     enriched_message = req.message
     if learning_ctx:
@@ -316,31 +318,35 @@ async def ai_chat(
     history = [{"role": m.role, "content": m.content} for m in (req.history or [])]
     response = await analyzer.ai_chat(enriched_message, req.match_context or "", history, locale)
 
-    # Increment counter AFTER successful response
-    await increment_chat_usage(user_id, db)
+    # Increment counter using already-loaded user object (no extra SELECT)
+    now = datetime.utcnow()
+    today = now.date()
+    if user_obj.last_chat_request_date and user_obj.last_chat_request_date.date() < today:
+        user_obj.account_day_number = (user_obj.account_day_number or 1) + 1
+        user_obj.daily_chat_requests = 1
+    else:
+        user_obj.daily_chat_requests = (user_obj.daily_chat_requests or 0) + 1
+    user_obj.last_chat_request_date = now
 
     # Save chat messages to DB for admin viewing
+    db.add(AIChatMessage(
+        user_id=user_id, session_id=sess_id, role="user",
+        content=req.message, locale=locale,
+        match_context=req.match_context, was_pro=is_pro,
+    ))
+    db.add(AIChatMessage(
+        user_id=user_id, session_id=sess_id, role="assistant",
+        content=response, locale=locale,
+        match_context=req.match_context, was_pro=is_pro,
+    ))
     try:
-        user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-        is_pro = bool(user_obj and user_obj.is_premium)
-        # Save user message
-        db.add(AIChatMessage(
-            user_id=user_id, session_id=sess_id, role="user",
-            content=req.message, locale=locale,
-            match_context=req.match_context, was_pro=is_pro,
-        ))
-        # Save assistant response
-        db.add(AIChatMessage(
-            user_id=user_id, session_id=sess_id, role="assistant",
-            content=response, locale=locale,
-            match_context=req.match_context, was_pro=is_pro,
-        ))
         await db.commit()
     except Exception as e:
         logger.warning(f"Failed to save AI chat message: {e}")
+        await db.rollback()
 
-    # Get updated limits to return to frontend
-    updated_limits = await check_and_update_limits(user_id, db)
+    # Compute updated limits from the already-modified user object
+    updated_limits = _compute_limits_from_user(user_obj)
 
     return ChatResponse(
         response=response,
@@ -390,48 +396,45 @@ async def get_chat_history(
     """Get user's AI chat sessions with last message preview."""
     user_id = current_user["user_id"]
 
-    # Get distinct sessions with their latest message
+    # Single efficient query: get sessions with counts, sorted and paginated in SQL
     result = await db.execute(
         text("""
-            SELECT DISTINCT ON (session_id)
-                session_id,
-                content,
-                created_at,
-                match_context
-            FROM ai_chat_messages
-            WHERE user_id = :uid AND role = 'assistant' AND is_admin_reply = FALSE
-            ORDER BY session_id, created_at DESC
+            WITH latest_msgs AS (
+                SELECT DISTINCT ON (session_id)
+                    session_id,
+                    content,
+                    created_at,
+                    match_context
+                FROM ai_chat_messages
+                WHERE user_id = :uid AND role = 'assistant' AND is_admin_reply = FALSE
+                ORDER BY session_id, created_at DESC
+            ),
+            session_counts AS (
+                SELECT session_id, COUNT(*) as cnt
+                FROM ai_chat_messages
+                WHERE user_id = :uid
+                GROUP BY session_id
+            )
+            SELECT l.session_id, l.content, l.created_at, l.match_context, COALESCE(c.cnt, 0) as message_count
+            FROM latest_msgs l
+            LEFT JOIN session_counts c ON l.session_id = c.session_id
+            ORDER BY l.created_at DESC
+            LIMIT :lim OFFSET :off
         """),
-        {"uid": user_id},
+        {"uid": user_id, "lim": limit, "off": offset},
     )
     rows = result.fetchall()
 
-    # Get message counts per session
-    count_result = await db.execute(
-        text("""
-            SELECT session_id, COUNT(*) as cnt
-            FROM ai_chat_messages
-            WHERE user_id = :uid
-            GROUP BY session_id
-        """),
-        {"uid": user_id},
-    )
-    counts = {r.session_id: r.cnt for r in count_result.fetchall()}
-
-    sessions = []
-    for row in rows:
-        sessions.append({
+    return [
+        {
             "session_id": row.session_id,
             "last_message": (row.content or "")[:200],
             "last_message_at": row.created_at.isoformat() + "Z" if row.created_at else None,
-            "message_count": counts.get(row.session_id, 0),
+            "message_count": row.message_count,
             "match_context": (row.match_context or "")[:100] if row.match_context else None,
-        })
-
-    # Sort by last message time descending
-    sessions.sort(key=lambda s: s["last_message_at"] or "", reverse=True)
-
-    return sessions[offset:offset + limit]
+        }
+        for row in rows
+    ]
 
 
 @router.get("/chat/history/{session_id}")
@@ -479,8 +482,13 @@ async def reanalyze_chat(
     user_id = current_user["user_id"]
     locale = (req.locale or "en").lower()[:2]
 
-    # Check limits (costs a token, same as normal chat)
-    limits = await check_and_update_limits(user_id, db)
+    # Load user once
+    user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user_obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    is_pro = bool(user_obj.is_premium)
+
+    limits = _compute_limits_from_user(user_obj)
     if not limits["is_premium"] and limits["remaining"] <= 0:
         raise HTTPException(
             status_code=402,
@@ -494,10 +502,8 @@ async def reanalyze_chat(
             }
         )
 
-    # Create new session for re-analysis
     new_sess_id = "re_" + str(uuid.uuid4())[:10]
 
-    # Enrich with learning context
     learning_ctx = ""
     try:
         learning_ctx = await get_learning_context(db)
@@ -508,32 +514,36 @@ async def reanalyze_chat(
     if learning_ctx:
         enriched_message = req.message + learning_ctx
 
-    # Call Claude AI with fresh context (no history — forces new analysis)
     analyzer = MatchAnalyzer()
     response = await analyzer.ai_chat(enriched_message, req.match_context or "", [], locale)
 
-    # Increment counter
-    await increment_chat_usage(user_id, db)
+    # Increment counter on the already-loaded user
+    now = datetime.utcnow()
+    today = now.date()
+    if user_obj.last_chat_request_date and user_obj.last_chat_request_date.date() < today:
+        user_obj.account_day_number = (user_obj.account_day_number or 1) + 1
+        user_obj.daily_chat_requests = 1
+    else:
+        user_obj.daily_chat_requests = (user_obj.daily_chat_requests or 0) + 1
+    user_obj.last_chat_request_date = now
 
-    # Save to DB
+    db.add(AIChatMessage(
+        user_id=user_id, session_id=new_sess_id, role="user",
+        content=req.message, locale=locale,
+        match_context=req.match_context, was_pro=is_pro,
+    ))
+    db.add(AIChatMessage(
+        user_id=user_id, session_id=new_sess_id, role="assistant",
+        content=response, locale=locale,
+        match_context=req.match_context, was_pro=is_pro,
+    ))
     try:
-        user_obj = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-        is_pro = bool(user_obj and user_obj.is_premium)
-        db.add(AIChatMessage(
-            user_id=user_id, session_id=new_sess_id, role="user",
-            content=req.message, locale=locale,
-            match_context=req.match_context, was_pro=is_pro,
-        ))
-        db.add(AIChatMessage(
-            user_id=user_id, session_id=new_sess_id, role="assistant",
-            content=response, locale=locale,
-            match_context=req.match_context, was_pro=is_pro,
-        ))
         await db.commit()
     except Exception as e:
         logger.warning(f"Failed to save reanalyze chat: {e}")
+        await db.rollback()
 
-    updated_limits = await check_and_update_limits(user_id, db)
+    updated_limits = _compute_limits_from_user(user_obj)
 
     return ReanalyzeResponse(
         response=response,
