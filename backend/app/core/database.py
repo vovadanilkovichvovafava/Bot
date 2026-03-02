@@ -218,12 +218,29 @@ async def init_db():
         except Exception:
             pass
 
-        # Backfill use_deeplink=True for existing users (legacy users go to match).
-        # New users get use_deeplink=False from SQLAlchemy default, so they stay NULL-free.
+        # Backfill use_deeplink=FALSE for users with NULL (safe default).
+        # use_deeplink should only become TRUE when a postback confirms
+        # the user registered on the bookmaker, or when premium is activated.
         try:
             await conn.execute(text(
-                "UPDATE users SET use_deeplink = TRUE "
+                "UPDATE users SET use_deeplink = FALSE "
                 "WHERE use_deeplink IS NULL"
+            ))
+        except Exception:
+            pass
+
+        # One-time fix: reset use_deeplink for users who were incorrectly
+        # set to TRUE by the old backfill but never actually registered
+        # on the bookmaker (no postback record) and are not premium.
+        try:
+            await conn.execute(text(
+                "UPDATE users SET use_deeplink = FALSE "
+                "WHERE use_deeplink = TRUE "
+                "AND is_premium = FALSE "
+                "AND id NOT IN ("
+                "  SELECT DISTINCT user_db_id FROM postback_logs "
+                "  WHERE user_db_id IS NOT NULL"
+                ")"
             ))
         except Exception:
             pass
