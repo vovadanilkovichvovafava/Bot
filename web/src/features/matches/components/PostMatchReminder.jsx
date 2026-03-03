@@ -49,12 +49,11 @@ export default function PostMatchReminder() {
       const data = await api.getVerifiedRecent();
       if (!data?.predictions?.length) return;
 
-      // Find first prediction not yet shown to user
+      // Find first winning prediction not yet shown to user
       const next = data.predictions.find(p => !shown.ids.includes(p.id));
       if (!next) return;
 
       setReminder(next);
-      // Small delay for smoother UX
       setTimeout(() => setVisible(true), 500);
     } catch {
       // silently fail
@@ -62,12 +61,10 @@ export default function PostMatchReminder() {
   }, [user]);
 
   useEffect(() => {
-    // Check on mount after a delay (don't block initial load)
     const timer = setTimeout(checkReminders, 5000);
     return () => clearTimeout(timer);
   }, [checkReminders]);
 
-  // Also check when user returns to tab
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -95,8 +92,6 @@ export default function PostMatchReminder() {
 
   if (!reminder) return null;
 
-  const isWin = reminder.is_correct;
-
   return (
     <div
       className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center transition-opacity duration-300 ${
@@ -111,12 +106,8 @@ export default function PostMatchReminder() {
         }`}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header gradient */}
-        <div className={`px-5 pt-5 pb-4 ${
-          isWin
-            ? 'bg-gradient-to-br from-emerald-500 to-green-600'
-            : 'bg-gradient-to-br from-slate-600 to-slate-700'
-        }`}>
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-emerald-500 to-green-600">
           <button onClick={handleDismiss} className="absolute top-3 right-3 text-white/60 hover:text-white">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -124,24 +115,13 @@ export default function PostMatchReminder() {
           </button>
 
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              isWin ? 'bg-white/20' : 'bg-white/10'
-            }`}>
-              {isWin ? (
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              )}
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/20">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+              </svg>
             </div>
             <span className="text-white/80 text-xs font-medium uppercase tracking-wide">
-              {isWin
-                ? t('postMatch.predictionCorrect', { defaultValue: 'Prediction correct!' })
-                : t('postMatch.matchEnded', { defaultValue: 'Match ended' })
-              }
+              {t('postMatch.predictionCorrect', { defaultValue: 'Prediction correct!' })}
             </span>
           </div>
 
@@ -158,9 +138,7 @@ export default function PostMatchReminder() {
         {/* Body */}
         <div className="bg-white px-5 py-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
-              isWin ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-            }`}>
+            <div className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-700">
               {reminder.bet_name || reminder.bet_type}
             </div>
             <span className="text-sm text-gray-500">
@@ -168,43 +146,28 @@ export default function PostMatchReminder() {
             </span>
           </div>
 
-          {isWin ? (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
-              <p className="text-sm text-emerald-800 font-medium mb-1">
-                {t('postMatch.youCouldHaveWon', { defaultValue: 'You could have won' })}
-              </p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-emerald-600">
-                  {advertiser?.currency}{reminder.potential_win}
-                </span>
-                <span className="text-sm text-emerald-500">
-                  {t('postMatch.fromStake', { stake: reminder.stake, currency: advertiser?.currency, defaultValue: `from ${advertiser?.currency}${reminder.stake} stake` })}
-                </span>
-              </div>
-              <p className="text-xs text-emerald-600 mt-1">
-                +{advertiser?.currency}{reminder.missed_profit} {t('postMatch.profit', { defaultValue: 'profit' })}
-              </p>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
+            <p className="text-sm text-emerald-800 font-medium mb-1">
+              {t('postMatch.youCouldHaveWon', { defaultValue: 'You could have won' })}
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-emerald-600">
+                {advertiser?.currency}{reminder.potential_win}
+              </span>
+              <span className="text-sm text-emerald-500">
+                {t('postMatch.fromStake', { stake: reminder.stake, currency: advertiser?.currency, defaultValue: `from ${advertiser?.currency}${reminder.stake} stake` })}
+              </span>
             </div>
-          ) : (
-            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-600">
-                {t('postMatch.wrongThisTime', { defaultValue: 'This one didn\'t hit, but our AI keeps learning. Next prediction could be the one!' })}
-              </p>
-            </div>
-          )}
+            <p className="text-xs text-emerald-600 mt-1">
+              +{advertiser?.currency}{reminder.missed_profit} {t('postMatch.profit', { defaultValue: 'profit' })}
+            </p>
+          </div>
 
           <button
             onClick={handlePlaceBet}
-            className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${
-              isWin
-                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white'
-                : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
-            }`}
+            className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white"
           >
-            {isWin
-              ? t('postMatch.startWinning', { defaultValue: 'Start winning — Place your bet' })
-              : t('postMatch.tryNextPrediction', { defaultValue: 'Try next prediction' })
-            }
+            {t('postMatch.startWinning', { defaultValue: 'Start winning — Place your bet' })}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
             </svg>

@@ -807,16 +807,18 @@ async def get_verified_recent(
         .where(
             Prediction.user_id == user.id,
             Prediction.verified_at >= since,
-            Prediction.is_correct.isnot(None),
+            Prediction.is_correct == True,  # only winning predictions
         )
         .order_by(desc(Prediction.verified_at))
         .limit(10)
     )).scalars().all()
 
+    stake = 50
     results = []
     for p in rows:
-        odds = p.predicted_odds or p.odds or 2.0
-        stake = 20  # default hypothetical stake
+        odds = p.predicted_odds or p.odds
+        if not odds or odds <= 1:
+            continue  # skip entries without real odds
         potential_win = round(stake * odds, 2)
 
         results.append({
@@ -828,11 +830,10 @@ async def get_verified_recent(
             "bet_type": p.bet_type,
             "bet_name": BET_NAMES.get(p.bet_type, p.bet_type),
             "odds": odds,
-            "is_correct": p.is_correct,
             "actual_score": f"{p.actual_home_score}-{p.actual_away_score}" if p.actual_home_score is not None else None,
             "stake": stake,
-            "potential_win": potential_win if p.is_correct else 0,
-            "missed_profit": round(potential_win - stake, 2) if p.is_correct else 0,
+            "potential_win": potential_win,
+            "missed_profit": round(potential_win - stake, 2),
             "verified_at": p.verified_at.isoformat() if p.verified_at else None,
         })
 
