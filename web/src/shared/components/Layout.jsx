@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import FloatingChatButton from './FloatingChatButton';
+import PostMatchReminder from '../../features/matches/components/PostMatchReminder';
 import { BottomNavProvider, useBottomNav } from '../context/BottomNavContext';
 
 function LayoutInner() {
@@ -17,6 +18,7 @@ function LayoutInner() {
       {/* FloatingChatButton always rendered — it uses fixed positioning and manages its own visibility.
           Must NOT depend on `visible` because SupportChat calls hideBottomNav() which would unmount it. */}
       {!isChat && <FloatingChatButton />}
+      <PostMatchReminder />
     </div>
   );
 }

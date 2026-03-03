@@ -784,3 +784,56 @@ async def create_prediction(
         alt_confidence=result.get("alt_confidence"),
         created_at=datetime.utcnow(),
     )
+
+
+# ── Post-match reminders (recently verified predictions) ──────────────
+
+@router.get("/verified-recent")
+async def get_verified_recent(
+    user_data: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return user's predictions verified in the last 24 hours for post-match reminders."""
+    user = (await db.execute(
+        select(User).where(User.id == user_data["user_id"])
+    )).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    since = datetime.utcnow() - timedelta(hours=24)
+
+    rows = (await db.execute(
+        select(Prediction)
+        .where(
+            Prediction.user_id == user.id,
+            Prediction.verified_at >= since,
+            Prediction.is_correct.isnot(None),
+        )
+        .order_by(desc(Prediction.verified_at))
+        .limit(10)
+    )).scalars().all()
+
+    results = []
+    for p in rows:
+        odds = p.predicted_odds or p.odds or 2.0
+        stake = 20  # default hypothetical stake
+        potential_win = round(stake * odds, 2)
+
+        results.append({
+            "id": p.id,
+            "match_id": p.match_id,
+            "home_team": p.home_team,
+            "away_team": p.away_team,
+            "league": p.league or p.league_code,
+            "bet_type": p.bet_type,
+            "bet_name": BET_NAMES.get(p.bet_type, p.bet_type),
+            "odds": odds,
+            "is_correct": p.is_correct,
+            "actual_score": f"{p.actual_home_score}-{p.actual_away_score}" if p.actual_home_score is not None else None,
+            "stake": stake,
+            "potential_win": potential_win if p.is_correct else 0,
+            "missed_profit": round(potential_win - stake, 2) if p.is_correct else 0,
+            "verified_at": p.verified_at.isoformat() if p.verified_at else None,
+        })
+
+    return {"predictions": results}

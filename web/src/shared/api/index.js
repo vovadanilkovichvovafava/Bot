@@ -285,6 +285,11 @@ class ApiService {
     return this.request('/predictions/chat/limit');
   }
 
+  // Recently verified predictions (for post-match reminders)
+  async getVerifiedRecent() {
+    return this.request('/predictions/verified-recent');
+  }
+
   // AI Chat history — list of past sessions
   async getChatHistory(limit = 20, offset = 0) {
     return this.request(`/predictions/chat/history?limit=${limit}&offset=${offset}`);
