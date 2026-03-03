@@ -443,6 +443,7 @@ export default function Home() {
             setShowWelcome(false);
             navigate('/promo');
           }}
+          hidePro={isFunnel2}
         />
       )}
 
