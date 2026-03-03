@@ -12,6 +12,7 @@ const AdminPredictions = lazy(() => import('./pages/AdminPredictions'))
 const AdminChats = lazy(() => import('./pages/AdminChats'))
 const AdminML = lazy(() => import('./pages/AdminML'))
 const AdminPro = lazy(() => import('./pages/AdminPro'))
+const AdminFunnels = lazy(() => import('./pages/AdminFunnels'))
 const AdminTraffic = lazy(() => import('./pages/AdminTraffic'))
 const AdminTeam = lazy(() => import('./pages/AdminTeam'))
 
@@ -51,6 +52,7 @@ export default function AdminRoutes() {
             <Route path="chats" element={<AdminChats />} />
             <Route path="ml" element={<AdminML />} />
             <Route path="pro" element={<AdminPro />} />
+            <Route path="funnels" element={<AdminFunnels />} />
             <Route path="traffic" element={<AdminTraffic />} />
             <Route path="team" element={<AdminTeam />} />
           </Route>

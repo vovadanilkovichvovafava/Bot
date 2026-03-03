@@ -39,6 +39,7 @@ class UserResponse(BaseModel):
     correct_predictions: int = 0
     accuracy: float = 0.0
     use_deeplink: bool = False
+    funnel: str = "funnel-1"
     created_at: datetime
 
     class Config:
@@ -89,13 +90,17 @@ async def get_current_user_info(
         user.is_premium = False
         await db.commit()
 
+    # For funnel-2 users, behave as if premium (everything free)
+    funnel = user.funnel or "funnel-1"
+    effective_premium = is_premium or funnel == "funnel-2"
+
     return UserResponse(
         id=user.public_id,  # Return public_id as 'id' for frontend compatibility
         email=user.email,
         username=user.username,
         language=user.language,
         timezone=user.timezone,
-        is_premium=is_premium,
+        is_premium=effective_premium,
         premium_until=premium_until,
         daily_requests=user.daily_requests,
         daily_limit=user.daily_limit,
@@ -107,6 +112,7 @@ async def get_current_user_info(
         correct_predictions=user.correct_predictions,
         accuracy=user.accuracy,
         use_deeplink=user.use_deeplink if user.use_deeplink is not None else False,
+        funnel=funnel,
         created_at=user.created_at
     )
 

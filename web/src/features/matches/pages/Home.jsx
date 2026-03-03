@@ -144,6 +144,7 @@ export default function Home() {
   };
 
   const isPremium = user?.is_premium;
+  const isFunnel2 = user?.funnel === 'funnel-2';
   const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
@@ -249,7 +250,7 @@ export default function Home() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className="font-bold text-white text-sm">{t('home.proGuide', { defaultValue: 'Come guadagnare' })}</p>
-                <span className="bg-white/20 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">PRO</span>
+                {!isFunnel2 && <span className="bg-white/20 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">PRO</span>}
               </div>
               <p className="text-white/80 text-xs">{t('home.proGuideDesc', { defaultValue: 'Errori del bookmaker trovati dall\'AI' })}</p>
             </div>

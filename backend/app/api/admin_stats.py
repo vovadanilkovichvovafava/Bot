@@ -385,6 +385,7 @@ async def get_users_stats(
             "country": u.country,
             "language": u.language,
             "is_premium": u.is_premium,
+            "funnel": u.funnel or "funnel-1",
             "total_predictions": u.total_predictions,
             "correct_predictions": u.correct_predictions,
             "created_at": u.created_at.isoformat() if u.created_at else None,
@@ -392,9 +393,18 @@ async def get_users_stats(
         for u in recent_rows
     ]
 
+    # Users by funnel
+    funnel_rows = (await db.execute(
+        select(User.funnel, func.count(User.id).label("cnt"))
+        .group_by(User.funnel)
+        .order_by(func.count(User.id).desc())
+    )).all()
+    by_funnel = [{"funnel": r[0] or "funnel-1", "count": r[1]} for r in funnel_rows]
+
     result = {
         "by_country": by_country,
         "by_language": by_language,
+        "by_funnel": by_funnel,
         "daily_registrations": daily_registrations,
         "daily_by_country": daily_by_country,
         "total_referred": total_referred,
@@ -683,6 +693,7 @@ async def search_users(
     status: Optional[str] = Query(None),  # pro, free
     country: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),  # email domain filter (e.g. gmail.com)
+    funnel: Optional[str] = Query(None),  # funnel-1, funnel-2, funnel-3
     sort: str = Query("created_at"),  # created_at, total_predictions
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
@@ -722,6 +733,11 @@ async def search_users(
         query = query.where(domain_filter)
         count_query = count_query.where(domain_filter)
 
+    # Funnel filter
+    if funnel:
+        query = query.where(User.funnel == funnel)
+        count_query = count_query.where(User.funnel == funnel)
+
     # Sorting
     if sort == "total_predictions":
         query = query.order_by(User.total_predictions.desc())
@@ -744,6 +760,7 @@ async def search_users(
             "language": u.language,
             "is_premium": u.is_premium,
             "premium_until": u.premium_until.isoformat() if u.premium_until else None,
+            "funnel": u.funnel or "funnel-1",
             "total_predictions": u.total_predictions,
             "correct_predictions": u.correct_predictions,
             "daily_requests": u.daily_requests,
@@ -756,6 +773,69 @@ async def search_users(
     ]
 
     return {"total": total, "page": page, "per_page": per_page, "users": users}
+
+
+@router.get("/users/funnel-stats")
+async def get_funnel_stats(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """A/B funnel comparison: user counts, engagement, and conversion per funnel."""
+    cached = _cache_get("funnel_stats")
+    if cached is not None:
+        return cached
+
+    now = datetime.utcnow()
+    funnels = ["funnel-1", "funnel-2", "funnel-3"]
+    stats = []
+
+    for f in funnels:
+        funnel_filter = User.funnel == f
+
+        total = (await db.execute(
+            select(func.count(User.id)).where(funnel_filter)
+        )).scalar() or 0
+
+        premium = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(funnel_filter, User.is_premium == True, User.premium_until > now)
+            )
+        )).scalar() or 0
+
+        active = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(funnel_filter, User.total_predictions > 0)
+            )
+        )).scalar() or 0
+
+        with_chat = (await db.execute(
+            select(func.count(User.id)).where(
+                and_(funnel_filter, User.daily_chat_requests > 0)
+            )
+        )).scalar() or 0
+
+        # Avg predictions per user in this funnel
+        avg_preds = (await db.execute(
+            select(func.avg(User.total_predictions)).where(
+                and_(funnel_filter, User.total_predictions > 0)
+            )
+        )).scalar() or 0
+
+        stats.append({
+            "funnel": f,
+            "total_users": total,
+            "premium_users": premium,
+            "active_users": active,
+            "users_with_chat": with_chat,
+            "conversion_rate": round(premium / total * 100, 1) if total > 0 else 0,
+            "activation_rate": round(active / total * 100, 1) if total > 0 else 0,
+            "chat_usage_rate": round(with_chat / total * 100, 1) if total > 0 else 0,
+            "avg_predictions": round(float(avg_preds), 1),
+        })
+
+    result = {"funnels": stats}
+    _cache_set("funnel_stats", result)
+    return result
 
 
 @router.get("/users/{user_id}/profile")
@@ -839,6 +919,7 @@ async def get_user_profile(
             "referral_code": user.referral_code,
             "referral_bonus_requests": user.referral_bonus_requests,
             "registration_ip": user.registration_ip,
+            "funnel": user.funnel or "funnel-1",
             "risk_level": user.risk_level,
             "min_odds": user.min_odds,
             "max_odds": user.max_odds,

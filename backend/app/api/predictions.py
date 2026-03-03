@@ -28,16 +28,27 @@ BET_NAMES = {
     "1X": "Home or Draw", "X2": "Away or Draw",
 }
 
-# Degressive limits: day_number -> max_requests
+# Degressive limits for funnel-1: day_number -> max_requests
 DEGRESSIVE_LIMITS = {
     1: 3,  # First day of usage: 3 free requests
     2: 2,  # Second day: 2 free requests
     3: 1,  # Third day+: 1 free request per day
 }
 
+# Fixed daily limit for funnel-3
+FUNNEL3_DAILY_LIMIT = 7
 
-def get_daily_limit(day_number: int) -> int:
-    """Get the daily limit based on which day of usage this is."""
+
+def get_daily_limit(day_number: int, funnel: str = "funnel-1") -> int:
+    """Get the daily limit based on funnel type and day of usage."""
+    if funnel == "funnel-2":
+        # All-free funnel: unlimited requests
+        return 999
+    if funnel == "funnel-3":
+        # Fixed daily limit, no degradation
+        return FUNNEL3_DAILY_LIMIT
+
+    # funnel-1 (default): degressive limits
     if day_number <= 0:
         day_number = 1
     if day_number in DEGRESSIVE_LIMITS:
@@ -61,7 +72,9 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Premium users have unlimited access
+    funnel = user.funnel or "funnel-1"
+
+    # Premium users have unlimited access (only relevant for funnel-1)
     if user.is_premium:
         return {
             "remaining": 999,
@@ -69,6 +82,18 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
             "day_number": 0,
             "resets_at": None,
             "is_premium": True,
+            "funnel": funnel,
+        }
+
+    # funnel-2: everything free, unlimited — behave like premium
+    if funnel == "funnel-2":
+        return {
+            "remaining": 999,
+            "limit": 999,
+            "day_number": 0,
+            "resets_at": None,
+            "is_premium": False,
+            "funnel": funnel,
         }
 
     now = datetime.utcnow()
@@ -87,7 +112,7 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
         user.last_chat_request_date = now
 
     day_number = user.account_day_number or 1
-    limit = get_daily_limit(day_number)
+    limit = get_daily_limit(day_number, funnel)
     used = user.daily_chat_requests or 0
 
     # Add bonus from referrals
@@ -114,6 +139,7 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
         "used": used,
         "resets_at": tomorrow.isoformat() + "Z",
         "is_premium": False,
+        "funnel": funnel,
     }
 
 
@@ -190,12 +216,13 @@ class ChatResponse(BaseModel):
 class ChatLimitResponse(BaseModel):
     remaining: int
     limit: int
-    base_limit: int
-    bonus: int
-    day_number: int
-    used: int
+    base_limit: int = 0
+    bonus: int = 0
+    day_number: int = 0
+    used: int = 0
     resets_at: Optional[str] = None
     is_premium: bool
+    funnel: str = "funnel-1"
 
 
 class MLPredictionResponse(BaseModel):
@@ -757,3 +784,57 @@ async def create_prediction(
         alt_confidence=result.get("alt_confidence"),
         created_at=datetime.utcnow(),
     )
+
+
+# ── Post-match reminders (recently verified predictions) ──────────────
+
+@router.get("/verified-recent")
+async def get_verified_recent(
+    user_data: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return user's predictions verified in the last 24 hours for post-match reminders."""
+    user = (await db.execute(
+        select(User).where(User.id == user_data["user_id"])
+    )).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    since = datetime.utcnow() - timedelta(hours=24)
+
+    rows = (await db.execute(
+        select(Prediction)
+        .where(
+            Prediction.user_id == user.id,
+            Prediction.verified_at >= since,
+            Prediction.is_correct == True,  # only winning predictions
+        )
+        .order_by(desc(Prediction.verified_at))
+        .limit(10)
+    )).scalars().all()
+
+    stake = 50
+    results = []
+    for p in rows:
+        odds = p.predicted_odds or p.odds
+        if not odds or odds <= 1:
+            continue  # skip entries without real odds
+        potential_win = round(stake * odds, 2)
+
+        results.append({
+            "id": p.id,
+            "match_id": p.match_id,
+            "home_team": p.home_team,
+            "away_team": p.away_team,
+            "league": p.league or p.league_code,
+            "bet_type": p.bet_type,
+            "bet_name": BET_NAMES.get(p.bet_type, p.bet_type),
+            "odds": odds,
+            "actual_score": f"{p.actual_home_score}-{p.actual_away_score}" if p.actual_home_score is not None else None,
+            "stake": stake,
+            "potential_win": potential_win,
+            "missed_profit": round(potential_win - stake, 2),
+            "verified_at": p.verified_at.isoformat() if p.verified_at else None,
+        })
+
+    return {"predictions": results}
