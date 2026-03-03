@@ -67,14 +67,14 @@ const quizCSS = `
 .q-bh-sub{font-size:12px;color:rgba(255,255,255,.55);line-height:1.4}
 
 .q-calc-wrap{background:#fff;border:1px solid var(--qborder);border-radius:14px;overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .15s both;margin-top:4px}
-.q-calc-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--qborder);padding-top:18px;position:relative}
+.q-calc-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--qborder);padding-top:10px;position:relative}
 .q-copt{padding:10px 4px;text-align:center;cursor:pointer;transition:all .18s;border-right:1px solid var(--qborder);position:relative}
 .q-copt:last-child{border-right:none}
 .q-copt.active{background:#FFFBF0}
 .q-copt .co-dep{font-size:13px;font-weight:900;color:var(--qprimary)}
 .q-copt.active .co-dep{color:var(--qaccent)}
 .q-copt .co-lbl{font-size:9px;color:var(--qtext3);font-weight:600;margin-top:1px}
-.q-copt .co-rec{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
+.q-copt .co-rec{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
 
 .q-calc-result{padding:14px 16px}
 .q-cr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}

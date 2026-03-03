@@ -1,4 +1,3 @@
-import asyncio
 import httpx
 import os
 from datetime import datetime, timedelta
@@ -58,10 +57,9 @@ _FDO_STATUS_MAP = {
     "AWARDED":   ("AWD", "Match Awarded"),
 }
 
-# Cache for matches (simple in-memory cache with size limit)
+# Cache for matches (simple in-memory cache)
 _cache: Dict[str, Dict] = {}
 CACHE_TTL = 300  # 5 minutes
-MAX_CACHE_SIZE = 500
 
 
 def _get_cache(key: str) -> Optional[Dict]:
@@ -73,11 +71,6 @@ def _get_cache(key: str) -> Optional[Dict]:
 
 
 def _set_cache(key: str, value: any):
-    # Evict oldest entries if cache is full
-    if len(_cache) >= MAX_CACHE_SIZE:
-        sorted_keys = sorted(_cache.keys(), key=lambda k: _cache[k]["timestamp"])
-        for k in sorted_keys[:len(sorted_keys) // 5 or 1]:
-            del _cache[k]
     _cache[key] = {
         "value": value,
         "timestamp": datetime.utcnow().timestamp()
@@ -114,19 +107,23 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1"]
 
     async with httpx.AsyncClient() as client:
-        async def _fetch_league(lg_code: str) -> List[Dict]:
+        for lg_code in leagues_to_fetch:
             try:
                 url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
+                # Use status=SCHEDULED to get upcoming matches
                 params = {"status": "SCHEDULED"}
+
                 response = await client.get(url, headers=headers, params=params, timeout=15.0)
+
                 if response.status_code != 200:
                     logger.warning(f"Failed to fetch {lg_code}: {response.status_code}")
-                    return []
+                    continue
+
                 data = response.json()
-                matches = []
+
                 for match in data.get("matches", []):
                     try:
-                        matches.append({
+                        all_matches.append({
                             "id": match["id"],
                             "home_team": {
                                 "name": match["homeTeam"]["name"],
@@ -143,16 +140,12 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
                             "home_score": match["score"]["fullTime"]["home"],
                             "away_score": match["score"]["fullTime"]["away"],
                         })
-                    except (KeyError, TypeError):
+                    except (KeyError, TypeError) as e:
                         continue
-                return matches
+
             except Exception as e:
                 logger.error(f"Error fetching {lg_code}: {type(e).__name__}: {e}")
-                return []
-
-        results = await asyncio.gather(*[_fetch_league(lg) for lg in leagues_to_fetch])
-        for matches in results:
-            all_matches.extend(matches)
+                continue
 
     # Sort by match date
     all_matches.sort(key=lambda x: x["match_date"])
@@ -396,30 +389,27 @@ async def fetch_fixtures_fallback(date: str) -> List[Dict]:
     leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
 
     async with httpx.AsyncClient() as client:
-        async def _fetch_league_fixtures(lg_code: str) -> List[Dict]:
+        for lg_code in leagues_to_fetch:
             try:
                 url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
                 params = {"dateFrom": date, "dateTo": date}
+
                 response = await client.get(url, headers=headers, params=params, timeout=15.0)
                 if response.status_code != 200:
                     logger.warning(f"FDO fallback: failed to fetch {lg_code}: {response.status_code}")
-                    return []
+                    continue
+
                 data = response.json()
-                fixtures = []
                 for match in data.get("matches", []):
                     try:
-                        fixtures.append(_convert_fdo_to_fixture(match))
+                        all_fixtures.append(_convert_fdo_to_fixture(match))
                     except Exception as e:
                         logger.debug(f"FDO fallback: skip match conversion: {e}")
                         continue
-                return fixtures
+
             except Exception as e:
                 logger.error(f"FDO fallback error for {lg_code}: {e}")
-                return []
-
-        results = await asyncio.gather(*[_fetch_league_fixtures(lg) for lg in leagues_to_fetch])
-        for fixtures in results:
-            all_fixtures.extend(fixtures)
+                continue
 
     all_fixtures.sort(key=lambda f: f["fixture"]["date"])
     logger.info(f"FDO fallback: {len(all_fixtures)} fixtures for {date}")
@@ -446,28 +436,25 @@ async def fetch_live_fallback() -> List[Dict]:
     leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
 
     async with httpx.AsyncClient() as client:
-        async def _fetch_live_league(lg_code: str) -> List[Dict]:
+        for lg_code in leagues_to_fetch:
             try:
                 url = f"{FOOTBALL_DATA_BASE_URL}/competitions/{LEAGUE_IDS[lg_code]}/matches"
                 params = {"status": "IN_PLAY,PAUSED"}
+
                 response = await client.get(url, headers=headers, params=params, timeout=15.0)
                 if response.status_code != 200:
-                    return []
+                    continue
+
                 data = response.json()
-                fixtures = []
                 for match in data.get("matches", []):
                     try:
-                        fixtures.append(_convert_fdo_to_fixture(match))
+                        live_fixtures.append(_convert_fdo_to_fixture(match))
                     except Exception:
                         continue
-                return fixtures
+
             except Exception as e:
                 logger.error(f"FDO live fallback error for {lg_code}: {e}")
-                return []
-
-        results = await asyncio.gather(*[_fetch_live_league(lg) for lg in leagues_to_fetch])
-        for fixtures in results:
-            live_fixtures.extend(fixtures)
+                continue
 
     logger.info(f"FDO live fallback: {len(live_fixtures)} live fixtures")
 
