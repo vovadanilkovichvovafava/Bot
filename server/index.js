@@ -36,6 +36,38 @@ const postbackStore = new Map();
 const premiumActivations = new Map();
 const verificationRequests = new Map(); // Store manual verification requests
 
+// Max entries per Map to prevent OOM
+const MAX_MAP_SIZE = 10000;
+const MAP_ENTRY_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// Periodic cleanup every 30 minutes — evict old entries
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [store, label] of [[postbackStore, 'postbackStore'], [premiumActivations, 'premiumActivations'], [verificationRequests, 'verificationRequests']]) {
+    // Evict entries older than MAX_AGE
+    for (const [key, val] of store) {
+      const ts = val.timestamp || val.activatedAt || val.createdAt;
+      if (ts && (now - new Date(ts).getTime()) > MAP_ENTRY_MAX_AGE_MS) {
+        store.delete(key);
+        cleaned++;
+      }
+    }
+    // Hard cap: if still over limit, remove oldest entries
+    if (store.size > MAX_MAP_SIZE) {
+      const excess = store.size - MAX_MAP_SIZE;
+      const keys = store.keys();
+      for (let i = 0; i < excess; i++) {
+        store.delete(keys.next().value);
+      }
+      cleaned += excess;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[CLEANUP] Evicted ${cleaned} stale entries from in-memory stores`);
+  }
+}, 30 * 60 * 1000);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -269,6 +301,7 @@ async function logPostback(data) {
         'X-Internal-Secret': CONFIG.POSTBACK_SECRET,
       },
       body: JSON.stringify(data),
+      signal: AbortSignal.timeout(10000),
     });
   } catch (err) {
     console.error('[LOG] Failed to log postback:', err.message);
@@ -303,6 +336,7 @@ async function activatePremium(userId, depositInfo) {
         currency: depositInfo.currency,
         expiresAt: premiumActivations.get(userId).expiresAt,
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -522,6 +556,7 @@ app.all('/api/proxy/*', async (req, res) => {
         'X-Forwarded-For': clientIp,
       },
       body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined,
+      signal: AbortSignal.timeout(15000),
     });
 
     const data = await response.text();
