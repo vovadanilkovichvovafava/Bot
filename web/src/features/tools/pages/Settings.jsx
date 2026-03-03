@@ -14,6 +14,7 @@ export default function Settings() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
+  const isFunnel2 = user?.funnel === 'funnel-2';
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
@@ -187,47 +188,49 @@ export default function Settings() {
           <p className="text-xs text-gray-500 mb-3">{t('settings.registrationStatus', { name: advertiser.name })}</p>
         </div>
 
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-lg">🎁</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              {user?.is_premium ? (
-                <>
-                  <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                    {t('settings.registered')}
-                  </p>
-                  <p className="text-xs text-gray-600">{t('settings.proAccessActive')}</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonusAmount })}</p>
-                  <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
-                </>
+        {!isFunnel2 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-lg">🎁</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                {user?.is_premium ? (
+                  <>
+                    <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                      {t('settings.registered')}
+                    </p>
+                    <p className="text-xs text-gray-600">{t('settings.proAccessActive')}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser.bonusAmount })}</p>
+                    <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
+                  </>
+                )}
+              </div>
+              {!user?.is_premium && (
+                <button
+                  onClick={() => navigate('/promo?banner=settings_get_pro')}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
+                >
+                  {t('settings.getIt')}
+                </button>
               )}
             </div>
             {!user?.is_premium && (
-              <button
-                onClick={() => navigate('/promo?banner=settings_get_pro')}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
-              >
-                {t('settings.getIt')}
-              </button>
+              <div className="mt-3 pt-3 border-t border-amber-200/50">
+                <p className="text-xs text-amber-700">
+                  <span className="font-semibold">Important:</span> {t('settings.proActivationNote', { name: advertiser.name })}
+                  {' '}<button onClick={() => setShowVerificationModal(true)} className="underline font-medium">{t('settings.manualVerification')}</button>
+                </p>
+              </div>
             )}
           </div>
-          {!user?.is_premium && (
-            <div className="mt-3 pt-3 border-t border-amber-200/50">
-              <p className="text-xs text-amber-700">
-                <span className="font-semibold">Important:</span> {t('settings.proActivationNote', { name: advertiser.name })}
-                {' '}<button onClick={() => setShowVerificationModal(true)} className="underline font-medium">{t('settings.manualVerification')}</button>
-              </p>
-            </div>
-          )}
-        </div>
+        )}
 
         <SettingsItem
           icon={<span className="text-lg">💬</span>}
@@ -243,12 +246,14 @@ export default function Settings() {
           onClick={() => navigate('/guide')}
         />
 
-        <SettingsItem
-          icon={<span className="text-lg">🎁</span>}
-          label={t('settings.promoPage')}
-          value={t('settings.bonuses', { name: advertiser.name })}
-          onClick={() => navigate('/promo?banner=settings_promo_page')}
-        />
+        {!isFunnel2 && (
+          <SettingsItem
+            icon={<span className="text-lg">🎁</span>}
+            label={t('settings.promoPage')}
+            value={t('settings.bonuses', { name: advertiser.name })}
+            onClick={() => navigate('/promo?banner=settings_promo_page')}
+          />
+        )}
 
         <div className="h-3"/>
 
@@ -279,12 +284,14 @@ export default function Settings() {
 
         <div className="h-3"/>
 
-        <SettingsItem
-          icon={<svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"/></svg>}
-          label={t('settings.upgradePremium')}
-          value={t('settings.unlimitedPredictions')}
-          onClick={() => navigate('/pro-access?reason=upgrade&feature=premium')}
-        />
+        {!isFunnel2 && (
+          <SettingsItem
+            icon={<svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"/></svg>}
+            label={t('settings.upgradePremium')}
+            value={t('settings.unlimitedPredictions')}
+            onClick={() => navigate('/pro-access?reason=upgrade&feature=premium')}
+          />
+        )}
 
         <SettingsItem
           icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>}

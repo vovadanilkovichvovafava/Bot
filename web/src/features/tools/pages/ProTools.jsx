@@ -12,6 +12,7 @@ export default function ProTools() {
   const { t } = useTranslation();
   const [showSupportChat, setShowSupportChat] = useState(false);
   const isPremium = user?.is_premium;
+  const isFunnel2 = user?.funnel === 'funnel-2';
 
   // Check if user has used free Value Bet Finder trial
   const valueBetUsed = localStorage.getItem('value_bet_used') === 'true';
@@ -48,7 +49,7 @@ export default function ProTools() {
       <div className="bg-white px-5 pt-6 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold">{t('nav.proTools')}</h1>
-          {!isPremium && (
+          {!isPremium && !isFunnel2 && (
             <button
               onClick={() => navigate('/promo?banner=protools_get_pro')}
               className="flex items-center gap-1 text-accent-gold text-sm font-semibold"
@@ -61,7 +62,7 @@ export default function ProTools() {
           )}
         </div>
 
-        {isPremium ? (
+        {isPremium && !isFunnel2 ? (
           <div className="bg-gradient-to-r from-amber-400 to-amber-500 rounded-2xl p-4 mb-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -76,7 +77,7 @@ export default function ProTools() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
-        ) : (
+        ) : !isPremium ? (
           <div className="border-2 border-amber-200 bg-amber-50 rounded-2xl p-4 mb-2">
             <div className="flex items-center justify-between">
               <div>
@@ -91,7 +92,7 @@ export default function ProTools() {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="px-5 pt-2 pb-4 space-y-4">
