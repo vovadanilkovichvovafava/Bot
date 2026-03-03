@@ -121,7 +121,7 @@ def temporal_split(features, targets, train_ratio=0.75, cal_ratio=0.10):
 async def train_model(model_name: str, features: list, targets: list, is_multiclass: bool = False) -> Optional[Dict]:
     """
     Train a single XGBoost model with calibration.
-    Returns dict with model bytes, metrics, and feature importance.
+    CPU-heavy work runs in a thread pool to avoid blocking the event loop.
     """
     try:
         from xgboost import XGBClassifier
@@ -157,83 +157,90 @@ async def train_model(model_name: str, features: list, targets: list, is_multicl
         logger.info(f"Splits too small for {model_name}")
         return None
 
-    # XGBoost parameters
-    if is_multiclass:
-        xgb = XGBClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.1,
-            subsample=0.8, colsample_bytree=0.8,
-            objective='multi:softprob', num_class=3,
-            eval_metric='mlogloss', use_label_encoder=False,
-            random_state=42,
+    # CPU-bound training work — runs in executor to not block event loop
+    def _train_sync():
+        if is_multiclass:
+            xgb = XGBClassifier(
+                n_estimators=200, max_depth=6, learning_rate=0.1,
+                subsample=0.8, colsample_bytree=0.8,
+                objective='multi:softprob', num_class=3,
+                eval_metric='mlogloss', use_label_encoder=False,
+                random_state=42,
+            )
+        else:
+            xgb = XGBClassifier(
+                n_estimators=200, max_depth=6, learning_rate=0.1,
+                subsample=0.8, colsample_bytree=0.8,
+                objective='binary:logistic',
+                eval_metric='logloss', use_label_encoder=False,
+                random_state=42,
+            )
+
+        # Train
+        xgb.fit(X_train, y_train, eval_set=[(X_cal, y_cal)], verbose=False)
+
+        # Calibrate using isotonic regression
+        try:
+            calibrated = CalibratedClassifierCV(xgb, method='isotonic', cv='prefit')
+            calibrated.fit(X_cal, y_cal)
+            model = calibrated
+        except Exception:
+            model = xgb  # fallback to uncalibrated
+
+        # Evaluate on test set
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)
+
+        accuracy = accuracy_score(y_test, y_pred)
+        try:
+            ll = log_loss(y_test, y_proba)
+        except Exception:
+            ll = None
+
+        f1 = f1_score(y_test, y_pred, average='weighted')
+
+        # Brier score (binary only)
+        brier = None
+        if not is_multiclass and y_proba.shape[1] == 2:
+            brier = brier_score_loss(y_test, y_proba[:, 1])
+
+        # Feature importance
+        importance = {}
+        try:
+            fi = xgb.feature_importances_
+            for i, name in enumerate(FEATURE_NAMES):
+                if i < len(fi):
+                    importance[name] = round(float(fi[i]), 4)
+            importance = dict(sorted(importance.items(), key=lambda x: x[1], reverse=True)[:20])
+        except Exception:
+            pass
+
+        # Serialize model to base64
+        buf = io.BytesIO()
+        joblib.dump(model, buf)
+        model_bytes = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+        return {
+            "model_binary": model_bytes,
+            "accuracy": accuracy,
+            "f1_score": f1,
+            "log_loss": ll,
+            "brier_score": brier,
+            "feature_importance": importance,
+            "training_samples": len(X_train),
+        }
+
+    # Run in thread pool so event loop stays responsive during training
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, _train_sync)
+
+    if result:
+        logger.info(
+            f"Trained {model_name}: accuracy={result['accuracy']:.3f}, f1={result['f1_score']:.3f}, "
+            f"log_loss={result['log_loss']:.3f if result['log_loss'] else 'N/A'}, samples={result['training_samples']}"
         )
-    else:
-        xgb = XGBClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.1,
-            subsample=0.8, colsample_bytree=0.8,
-            objective='binary:logistic',
-            eval_metric='logloss', use_label_encoder=False,
-            random_state=42,
-        )
 
-    # Train
-    xgb.fit(X_train, y_train, eval_set=[(X_cal, y_cal)], verbose=False)
-
-    # Calibrate using isotonic regression
-    try:
-        calibrated = CalibratedClassifierCV(xgb, method='isotonic', cv='prefit')
-        calibrated.fit(X_cal, y_cal)
-        model = calibrated
-    except Exception:
-        model = xgb  # fallback to uncalibrated
-
-    # Evaluate on test set
-    y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)
-
-    accuracy = accuracy_score(y_test, y_pred)
-    try:
-        ll = log_loss(y_test, y_proba)
-    except Exception:
-        ll = None
-
-    f1 = f1_score(y_test, y_pred, average='weighted')
-
-    # Brier score (binary only)
-    brier = None
-    if not is_multiclass and y_proba.shape[1] == 2:
-        brier = brier_score_loss(y_test, y_proba[:, 1])
-
-    # Feature importance
-    importance = {}
-    try:
-        fi = xgb.feature_importances_
-        for i, name in enumerate(FEATURE_NAMES):
-            if i < len(fi):
-                importance[name] = round(float(fi[i]), 4)
-        # Sort by importance
-        importance = dict(sorted(importance.items(), key=lambda x: x[1], reverse=True)[:20])
-    except Exception:
-        pass
-
-    # Serialize model to base64
-    buffer = io.BytesIO()
-    joblib.dump(model, buffer)
-    model_bytes = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
-    logger.info(
-        f"Trained {model_name}: accuracy={accuracy:.3f}, f1={f1:.3f}, "
-        f"log_loss={ll:.3f if ll else 'N/A'}, samples={len(X_train)}+{len(X_test)}"
-    )
-
-    return {
-        "model_binary": model_bytes,
-        "accuracy": accuracy,
-        "f1_score": f1,
-        "log_loss": ll,
-        "brier_score": brier,
-        "feature_importance": importance,
-        "training_samples": len(X_train),
-    }
+    return result
 
 
 async def train_all_models():

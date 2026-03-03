@@ -12,6 +12,7 @@ from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
 from app.services.ml_trainer import training_loop
 from app.services.ml_monitor import monitoring_loop
+from app.services.match_analyzer import prewarm_cache_loop
 from app.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
@@ -133,6 +134,10 @@ async def lifespan(app: FastAPI):
     monitor_task = asyncio.create_task(safe_task("monitor", monitoring_loop()))
     background_tasks.append(monitor_task)
     logger.info("ML monitoring worker scheduled (daily)")
+
+    prewarm_task = asyncio.create_task(safe_task("prewarm", prewarm_cache_loop()))
+    background_tasks.append(prewarm_task)
+    logger.info("Cache pre-warm worker scheduled (every 30 min)")
 
     yield
 
