@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
 
-export default function WelcomeModal({ onClose, onGoToPromo }) {
+export default function WelcomeModal({ onClose, onGoToPromo, hidePro }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const { hideBottomNav, showBottomNav } = useBottomNav();
@@ -12,10 +12,29 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
     return () => showBottomNav();
   }, [hideBottomNav, showBottomNav]);
 
-  const TOTAL_STEPS = 5;
+  // funnel-2: skip Step4 (PRO features) — 4 steps instead of 5
+  const TOTAL_STEPS = hidePro ? 4 : 5;
+  const lastStep = TOTAL_STEPS - 1;
 
   const next = () => {
-    if (step < TOTAL_STEPS - 1) setStep(step + 1);
+    if (step < lastStep) setStep(step + 1);
+  };
+
+  // Map step index to component (skip Step4Features for funnel-2)
+  const getStepContent = () => {
+    if (hidePro) {
+      if (step === 0) return <Step1Welcome t={t} />;
+      if (step === 1) return <Step2Predictions t={t} />;
+      if (step === 2) return <Step3Chat t={t} />;
+      if (step === 3) return <Step5Start t={t} onClose={onClose} onGoToPromo={onGoToPromo} hidePro />;
+    } else {
+      if (step === 0) return <Step1Welcome t={t} />;
+      if (step === 1) return <Step2Predictions t={t} />;
+      if (step === 2) return <Step3Chat t={t} />;
+      if (step === 3) return <Step4Features t={t} />;
+      if (step === 4) return <Step5Start t={t} onClose={onClose} onGoToPromo={onGoToPromo} />;
+    }
+    return null;
   };
 
   return (
@@ -35,14 +54,10 @@ export default function WelcomeModal({ onClose, onGoToPromo }) {
           </div>
         </div>
 
-        {step === 0 && <Step1Welcome t={t} />}
-        {step === 1 && <Step2Predictions t={t} />}
-        {step === 2 && <Step3Chat t={t} />}
-        {step === 3 && <Step4Features t={t} />}
-        {step === 4 && <Step5Start t={t} onClose={onClose} onGoToPromo={onGoToPromo} />}
+        {getStepContent()}
 
         {/* Actions */}
-        {step < 4 && (
+        {step < lastStep && (
           <div className="px-6 pb-6">
             <button
               onClick={next}
@@ -186,7 +201,7 @@ function Step4Features({ t }) {
 }
 
 /* Step 5 — Go! */
-function Step5Start({ t, onClose, onGoToPromo }) {
+function Step5Start({ t, onClose, onGoToPromo, hidePro }) {
   return (
     <div className="px-6 pt-6 pb-6 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center shadow-lg">
@@ -198,7 +213,10 @@ function Step5Start({ t, onClose, onGoToPromo }) {
         {t('onboarding.step5Title', { defaultValue: 'Tutto pronto! Inizia ora' })}
       </h2>
       <p className="text-gray-500 text-sm leading-relaxed mb-6">
-        {t('onboarding.step5Desc', { defaultValue: 'Hai 3 richieste AI gratuite al giorno. Scegli una partita e prova il tuo primo pronostico AI!' })}
+        {hidePro
+          ? t('onboarding.step5DescFree', { defaultValue: 'Scegli una partita e prova il tuo primo pronostico AI!' })
+          : t('onboarding.step5Desc', { defaultValue: 'Hai 3 richieste AI gratuite al giorno. Scegli una partita e prova il tuo primo pronostico AI!' })
+        }
       </p>
       <button
         onClick={onClose}
@@ -209,12 +227,14 @@ function Step5Start({ t, onClose, onGoToPromo }) {
         </svg>
         {t('onboarding.goPredict', { defaultValue: 'Vai ai pronostici' })}
       </button>
-      <button
-        onClick={onGoToPromo}
-        className="w-full text-primary-500 text-sm font-medium py-2"
-      >
-        {t('onboarding.discoverPro', { defaultValue: 'Scopri PRO (gratuito)' })}
-      </button>
+      {!hidePro && (
+        <button
+          onClick={onGoToPromo}
+          className="w-full text-primary-500 text-sm font-medium py-2"
+        >
+          {t('onboarding.discoverPro', { defaultValue: 'Scopri PRO (gratuito)' })}
+        </button>
+      )}
     </div>
   );
 }
