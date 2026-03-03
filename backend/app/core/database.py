@@ -96,6 +96,9 @@ async def init_db():
             # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
+            # A/B funnel assignment (funnel-1, funnel-2, funnel-3)
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS funnel VARCHAR DEFAULT 'funnel-1'",
+            "CREATE INDEX IF NOT EXISTS ix_users_funnel ON users(funnel)",
             # Admin reply flag for support chat messages
             "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
             # Admin reply flag for AI chat messages
@@ -251,6 +254,15 @@ async def init_db():
                 "  SELECT DISTINCT user_db_id FROM postback_logs "
                 "  WHERE user_db_id IS NOT NULL"
                 ")"
+            ))
+        except Exception:
+            pass
+
+        # Backfill funnel=funnel-1 for existing users (keep them on current flow)
+        try:
+            await conn.execute(text(
+                "UPDATE users SET funnel = 'funnel-1' "
+                "WHERE funnel IS NULL"
             ))
         except Exception:
             pass

@@ -27,6 +27,9 @@ class User(Base):
     country = Column(String, nullable=True, index=True)  # ISO 3166-1 alpha-2 (IT, PL, DE, etc.)
     traffic_source = Column(String, nullable=True, index=True)  # e.g. "pwa-1", "pwa-2", "organic"
 
+    # A/B funnel: "funnel-1" (degressive+Pro), "funnel-2" (all free), "funnel-3" (fixed 7/day)
+    funnel = Column(String, nullable=True, index=True, default="funnel-1")
+
     language = Column(String, default="en")
     timezone = Column(String, default="UTC")
 

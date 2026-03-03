@@ -1,4 +1,5 @@
 import re
+import random
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel, EmailStr, field_validator
@@ -173,6 +174,9 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
+    # Randomly assign A/B funnel
+    funnel = random.choice(["funnel-1", "funnel-2", "funnel-3"])
+
     # Create new user
     new_user = User(
         email=email,
@@ -183,6 +187,7 @@ async def register(
         country=country,
         referred_by_id=referrer.id if referrer else None,
         traffic_source=user.source,
+        funnel=funnel,
     )
     db.add(new_user)
     await db.commit()
