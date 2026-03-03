@@ -44,14 +44,14 @@ _request_count = 0
 _last_reset = datetime.utcnow()
 
 
-async def _rate_limit(count: int = 1):
+async def _rate_limit():
     """Simple rate limiter for API-Football (they allow 100/min, we use 10/min to be safe)"""
     global _request_count, _last_reset
     now = datetime.utcnow()
     if (now - _last_reset).total_seconds() > 60:
         _request_count = 0
         _last_reset = now
-    _request_count += count
+    _request_count += 1
     if _request_count > MAX_REQUESTS_PER_MINUTE:
         wait = 60 - (now - _last_reset).total_seconds()
         if wait > 0:
@@ -284,39 +284,33 @@ async def enrich_fixture_data(fixture_id: int):
             return
 
         try:
-            # Fetch odds, prediction, injuries in parallel (3-4 requests)
-            parallel_count = 4 if feature.is_verified else 3
-            await _rate_limit(count=parallel_count)
-
-            tasks = [
-                api.get_odds(fixture_id),
-                api.get_prediction(fixture_id),
-                api.get_injuries(fixture_id),
-            ]
-            if feature.is_verified:
-                tasks.append(api.get_fixture_statistics(fixture_id))
-
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            odds_data = results[0] if not isinstance(results[0], Exception) else None
-            pred_data = results[1] if not isinstance(results[1], Exception) else None
-            injuries_data = results[2] if not isinstance(results[2], Exception) else None
-
+            # Fetch odds
+            await _rate_limit()
+            odds_data = await api.get_odds(fixture_id)
             if odds_data:
                 _extract_odds(feature, odds_data)
+
+            # Fetch API prediction
+            await _rate_limit()
+            pred_data = await api.get_prediction(fixture_id)
             if pred_data:
                 _extract_prediction(feature, pred_data)
+
+            # Fetch injuries
+            await _rate_limit()
+            injuries_data = await api.get_injuries(fixture_id)
             if injuries_data:
                 _extract_injuries(feature, injuries_data)
 
-            # Statistics (if match is finished and was fetched)
-            if feature.is_verified and len(results) > 3:
-                stats_data = results[3] if not isinstance(results[3], Exception) else None
+            # Calculate rest days (days since last match for each team)
+            await _calculate_rest_days(db, feature)
+
+            # Fetch statistics (if match is finished)
+            if feature.is_verified:
+                await _rate_limit()
+                stats_data = await api.get_fixture_statistics(fixture_id)
                 if stats_data:
                     _extract_statistics(feature, stats_data)
-
-            # Calculate rest days (DB query, not API)
-            await _calculate_rest_days(db, feature)
 
             await db.commit()
             logger.debug(f"Enriched fixture {fixture_id}")

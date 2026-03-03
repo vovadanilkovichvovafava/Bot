@@ -17,9 +17,8 @@ def get_api_football_key() -> str:
     """Get API key at request time, not module load time"""
     return os.getenv("API_FOOTBALL_KEY", "")
 
-# In-memory cache shared between all users (with max size)
+# In-memory cache shared between all users
 _cache: Dict[str, Dict] = {}
-MAX_CACHE_SIZE = 1000
 
 # Different TTLs for different data types
 CACHE_TTL = {
@@ -57,19 +56,14 @@ def _get_cache(key: str) -> Optional[Any]:
 
 
 def _set_cache(key: str, data: Any, cache_type: str = "default"):
-    """Set cache with appropriate TTL and max size eviction"""
-    # Evict oldest entries if cache is full
-    if len(_cache) >= MAX_CACHE_SIZE:
-        sorted_keys = sorted(_cache.keys(), key=lambda k: _cache[k]["ts"])
-        for k in sorted_keys[:len(sorted_keys) // 5 or 1]:
-            del _cache[k]
+    """Set cache with appropriate TTL"""
     ttl = _get_ttl(cache_type)
     _cache[key] = {
         "data": data,
         "ts": datetime.utcnow().timestamp(),
         "ttl": ttl
     }
-    logger.debug(f"Cache SET: {key} (TTL: {ttl}s, entries: {len(_cache)})")
+    logger.debug(f"Cache SET: {key} (TTL: {ttl}s)")
 
 
 def get_cache_stats() -> Dict:

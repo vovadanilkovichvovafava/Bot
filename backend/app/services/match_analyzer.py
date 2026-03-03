@@ -3,7 +3,6 @@ AI Match Analyzer service using Claude API
 Restored from original bot_secure.py implementation
 With response caching to save API costs
 """
-import asyncio
 import json
 import logging
 import time
@@ -21,7 +20,6 @@ logger = logging.getLogger(__name__)
 # Key: match_id, Value: {data: analysis_result, timestamp: unix_time}
 _ai_cache: Dict[int, Dict] = {}
 AI_CACHE_TTL = 86400  # 24 hours - same analysis for all users
-MAX_AI_CACHE_SIZE = 500  # ~500 matches × ~50KB = ~25MB max
 
 
 def _get_cached_analysis(match_id: int) -> Optional[Dict]:
@@ -37,24 +35,12 @@ def _get_cached_analysis(match_id: int) -> Optional[Dict]:
 
 
 def _set_cached_analysis(match_id: int, data: Dict):
-    """Cache AI analysis result with size limit"""
-    # Evict expired + oldest entries if cache is full
-    if len(_ai_cache) >= MAX_AI_CACHE_SIZE:
-        now = time.time()
-        # First remove expired entries
-        expired = [k for k, v in _ai_cache.items() if now - v["timestamp"] >= AI_CACHE_TTL]
-        for k in expired:
-            del _ai_cache[k]
-        # Still over limit? Remove oldest 20%
-        if len(_ai_cache) >= MAX_AI_CACHE_SIZE:
-            sorted_keys = sorted(_ai_cache.keys(), key=lambda k: _ai_cache[k]["timestamp"])
-            for k in sorted_keys[:len(sorted_keys) // 5 or 1]:
-                del _ai_cache[k]
+    """Cache AI analysis result"""
     _ai_cache[match_id] = {
         "data": data,
         "timestamp": time.time()
     }
-    logger.info(f"AI Cache SET for match {match_id} (entries: {len(_ai_cache)})")
+    logger.info(f"AI Cache SET for match {match_id}")
 
 
 def get_ai_cache_stats() -> Dict:
@@ -86,20 +72,7 @@ class MatchAnalyzer:
         if cached:
             return cached
 
-        # Phase 1: Fetch match details and ML prediction in parallel
-        # (ML prediction is fully independent of match details)
-        async def _safe_ml_predict():
-            try:
-                return await ml_predict_match(match_id)
-            except Exception as e:
-                logger.debug(f"ML prediction not available for match {match_id}: {e}")
-                return None
-
-        details, ml_prediction = await asyncio.gather(
-            fetch_match_details(match_id),
-            _safe_ml_predict(),
-        )
-
+        details = await fetch_match_details(match_id)
         if not details:
             return None
 
@@ -110,7 +83,7 @@ class MatchAnalyzer:
         match_date = details.get("match_date")
         h2h = details.get("head_to_head", {})
 
-        # Phase 2: Get standings (depends on league_code from details)
+        # Get standings
         standings = await fetch_standings(league_code) if league_code else []
 
         # Build context
@@ -122,11 +95,18 @@ class MatchAnalyzer:
             standings=standings,
         )
 
+        # Get ML prediction if available
+        ml_prediction = None
+        try:
+            ml_prediction = await ml_predict_match(match_id)
+        except Exception as e:
+            logger.debug(f"ML prediction not available for match {match_id}: {e}")
+
         # Enrich context with ML data
         if ml_prediction and ml_prediction.get("markets"):
             context += self._build_ml_context(ml_prediction)
 
-        # Phase 3: AI analysis (depends on full context)
+        # Try AI analysis first
         analysis = await self._get_ai_analysis(home_team, away_team, context)
 
         if not analysis:
@@ -435,53 +415,3 @@ Be realistic with confidence - rarely above 85%. Only respond with JSON."""
                 "alt_bet_type": "ТМ2.5",
                 "alt_confidence": 60,
             }
-
-
-async def prewarm_cache_loop():
-    """Background task: pre-analyze upcoming matches to warm AI cache.
-    Users get instant responses instead of waiting 6-8s for first analysis.
-    Runs every 30 minutes, pre-warms next 20 matches.
-    """
-    from app.services.football_api import fetch_matches
-
-    logger.info("Cache pre-warm worker started")
-    await asyncio.sleep(180)  # Wait 3 min for APIs to initialize
-
-    while True:
-        try:
-            matches = await fetch_matches()
-            if not matches:
-                logger.debug("Pre-warm: no upcoming matches found")
-                await asyncio.sleep(30 * 60)
-                continue
-
-            analyzer = MatchAnalyzer()
-            warmed = 0
-            skipped = 0
-
-            # Pre-warm next 20 matches (respect API limits)
-            for match in matches[:20]:
-                match_id = match.get("id")
-                if not match_id:
-                    continue
-
-                # Skip if already cached
-                if _get_cached_analysis(match_id):
-                    skipped += 1
-                    continue
-
-                try:
-                    await analyzer.analyze_match(match_id)
-                    warmed += 1
-                    # Gentle delay between API calls
-                    await asyncio.sleep(3)
-                except Exception as e:
-                    logger.debug(f"Pre-warm failed for match {match_id}: {e}")
-
-            if warmed > 0:
-                logger.info(f"Pre-warmed cache for {warmed} upcoming matches ({skipped} already cached)")
-
-        except Exception as e:
-            logger.error(f"Cache pre-warm error: {e}")
-
-        await asyncio.sleep(30 * 60)  # Every 30 minutes
