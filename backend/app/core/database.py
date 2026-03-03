@@ -186,28 +186,33 @@ async def init_db():
 
         for migration in migrations:
             try:
+                await conn.execute(text("SAVEPOINT mig"))
                 await conn.execute(text(migration))
+                await conn.execute(text("RELEASE SAVEPOINT mig"))
             except Exception:
-                pass  # Column might already exist
+                await conn.execute(text("ROLLBACK TO SAVEPOINT mig"))
 
-        # Create index for referral_code if not exists
-        try:
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_users_referral_code ON users(referral_code)")
-            )
-        except Exception:
-            pass
+        # Helper: run a data migration with its own savepoint
+        async def safe_exec(sql, params=None):
+            try:
+                await conn.execute(text("SAVEPOINT data_mig"))
+                if params:
+                    await conn.execute(text(sql), params)
+                else:
+                    await conn.execute(text(sql))
+                await conn.execute(text("RELEASE SAVEPOINT data_mig"))
+                return True
+            except Exception:
+                await conn.execute(text("ROLLBACK TO SAVEPOINT data_mig"))
+                return False
 
-        # Create index for public_id if not exists
-        try:
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_users_public_id ON users(public_id)")
-            )
-        except Exception:
-            pass
+        # Create indexes
+        await safe_exec("CREATE INDEX IF NOT EXISTS ix_users_referral_code ON users(referral_code)")
+        await safe_exec("CREATE INDEX IF NOT EXISTS ix_users_public_id ON users(public_id)")
 
         # Generate public_id for existing users who don't have one
         try:
+            await conn.execute(text("SAVEPOINT pubid_mig"))
             result = await conn.execute(text("SELECT id FROM users WHERE public_id IS NULL"))
             rows = result.fetchall()
             for row in rows:
@@ -218,45 +223,26 @@ async def init_db():
                     text("UPDATE users SET public_id = :public_id WHERE id = :id"),
                     {"public_id": public_id, "id": row[0]}
                 )
+            await conn.execute(text("RELEASE SAVEPOINT pubid_mig"))
         except Exception:
-            pass
+            await conn.execute(text("ROLLBACK TO SAVEPOINT pubid_mig"))
 
-        # Set a default traffic_source for users that have none (one-time backfill).
-        # Keeps existing non-NULL values intact so different sources stay visible.
-        try:
-            await conn.execute(text(
-                "UPDATE users SET traffic_source = 'direct' "
-                "WHERE traffic_source IS NULL"
-            ))
-        except Exception:
-            pass
-
-        # Backfill use_deeplink=FALSE for users with NULL (safe default).
-        # use_deeplink should only become TRUE when a postback confirms
-        # the user registered on the bookmaker, or when premium is activated.
-        try:
-            await conn.execute(text(
-                "UPDATE users SET use_deeplink = FALSE "
-                "WHERE use_deeplink IS NULL"
-            ))
-        except Exception:
-            pass
-
-        # One-time fix: reset use_deeplink for users who were incorrectly
-        # set to TRUE by the old backfill but never actually registered
-        # on the bookmaker (no postback record) and are not premium.
-        try:
-            await conn.execute(text(
-                "UPDATE users SET use_deeplink = FALSE "
-                "WHERE use_deeplink = TRUE "
-                "AND is_premium = FALSE "
-                "AND id NOT IN ("
-                "  SELECT DISTINCT user_db_id FROM postback_logs "
-                "  WHERE user_db_id IS NOT NULL"
-                ")"
-            ))
-        except Exception:
-            pass
+        # Backfill defaults
+        await safe_exec(
+            "UPDATE users SET traffic_source = 'direct' WHERE traffic_source IS NULL"
+        )
+        await safe_exec(
+            "UPDATE users SET use_deeplink = FALSE WHERE use_deeplink IS NULL"
+        )
+        await safe_exec(
+            "UPDATE users SET use_deeplink = FALSE "
+            "WHERE use_deeplink = TRUE "
+            "AND is_premium = FALSE "
+            "AND id NOT IN ("
+            "  SELECT DISTINCT user_db_id FROM postback_logs "
+            "  WHERE user_db_id IS NOT NULL"
+            ")"
+        )
 
         # Backfill funnel=funnel-1 for existing users (keep them on current flow)
         try:

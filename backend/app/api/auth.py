@@ -190,7 +190,23 @@ async def register(
         funnel=funnel,
     )
     db.add(new_user)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        # Fallback: if funnel column doesn't exist yet, retry without it
+        await db.rollback()
+        new_user = User(
+            email=email,
+            phone=user.phone,
+            username=username,
+            password_hash=get_password_hash(user.password),
+            registration_ip=client_ip,
+            country=country,
+            referred_by_id=referrer.id if referrer else None,
+            traffic_source=user.source,
+        )
+        db.add(new_user)
+        await db.commit()
     await db.refresh(new_user)
 
     # Generate unique referral code for new user
