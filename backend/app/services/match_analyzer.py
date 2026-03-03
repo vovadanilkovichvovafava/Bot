@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 # Key: match_id, Value: {data: analysis_result, timestamp: unix_time}
 _ai_cache: Dict[int, Dict] = {}
 AI_CACHE_TTL = 86400  # 24 hours - same analysis for all users
+MAX_AI_CACHE_SIZE = 500  # ~500 matches × ~50KB = ~25MB max
 
 
 def _get_cached_analysis(match_id: int) -> Optional[Dict]:
@@ -35,12 +36,24 @@ def _get_cached_analysis(match_id: int) -> Optional[Dict]:
 
 
 def _set_cached_analysis(match_id: int, data: Dict):
-    """Cache AI analysis result"""
+    """Cache AI analysis result with size limit"""
+    # Evict expired + oldest entries if cache is full
+    if len(_ai_cache) >= MAX_AI_CACHE_SIZE:
+        now = time.time()
+        # First remove expired entries
+        expired = [k for k, v in _ai_cache.items() if now - v["timestamp"] >= AI_CACHE_TTL]
+        for k in expired:
+            del _ai_cache[k]
+        # Still over limit? Remove oldest 20%
+        if len(_ai_cache) >= MAX_AI_CACHE_SIZE:
+            sorted_keys = sorted(_ai_cache.keys(), key=lambda k: _ai_cache[k]["timestamp"])
+            for k in sorted_keys[:len(sorted_keys) // 5 or 1]:
+                del _ai_cache[k]
     _ai_cache[match_id] = {
         "data": data,
         "timestamp": time.time()
     }
-    logger.info(f"AI Cache SET for match {match_id}")
+    logger.info(f"AI Cache SET for match {match_id} (entries: {len(_ai_cache)})")
 
 
 def get_ai_cache_stats() -> Dict:

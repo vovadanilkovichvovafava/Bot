@@ -127,13 +127,28 @@ async def verify_pending_predictions():
                 by_date[date_str] = []
             by_date[date_str].append(pred)
 
-        for date_str, preds in by_date.items():
-            try:
-                fixtures = await api.get_fixtures_by_date(date_str)
-                if not fixtures:
-                    logger.warning(f"No fixtures returned for {date_str}")
-                    continue
+        # Fetch all dates in parallel (max 5 concurrent to respect rate limits)
+        sem = asyncio.Semaphore(5)
 
+        async def _fetch_date(date_str: str) -> tuple:
+            async with sem:
+                try:
+                    fixtures = await api.get_fixtures_by_date(date_str)
+                    return date_str, fixtures
+                except Exception as e:
+                    logger.error(f"Error fetching fixtures for {date_str}: {e}")
+                    return date_str, None
+
+        date_results = await asyncio.gather(*[_fetch_date(d) for d in by_date.keys()])
+
+        for date_str, fixtures in date_results:
+            if not fixtures:
+                if fixtures is not None:
+                    logger.warning(f"No fixtures returned for {date_str}")
+                continue
+
+            preds = by_date[date_str]
+            try:
                 for pred in preds:
                     fixture = _find_fixture(pred, fixtures)
                     if not fixture:
