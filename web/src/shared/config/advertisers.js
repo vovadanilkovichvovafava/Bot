@@ -36,8 +36,19 @@ const ADVERTISERS_CONFIG = {
     locale: 'it',
     // Quick bet amounts for calculators and bet modals
     quickAmounts: [5, 10, 25, 50, 100],
-    // Deposit step amounts for BookmakerPromo
-    depositAmounts: ['5 €', '20 €', '50 €', '100 €+'],
+    // Deposit step amounts for ProAccess deposit grid
+    depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    // Bonus amounts shown on deposit grid
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    // Bonus calculator tiers for ProAccess step 4
+    calcTiers: [
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
+    ],
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     // Example profit amounts for BookmakerPromo comparisons
     exampleAmounts: {
       ourOdds: 1.45,
@@ -85,7 +96,16 @@ const ADVERTISERS_CONFIG = {
     link: PARTNER_LINK,
     locale: 'es',
     quickAmounts: [5, 10, 25, 50, 100],
-    depositAmounts: ['5 €', '20 €', '50 €', '100 €+'],
+    depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    calcTiers: [
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
+    ],
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -132,7 +152,16 @@ const ADVERTISERS_CONFIG = {
     link: PARTNER_LINK,
     locale: 'fr',
     quickAmounts: [5, 10, 25, 50, 100],
-    depositAmounts: ['5 €', '20 €', '50 €', '100 €+'],
+    depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    calcTiers: [
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
+    ],
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -179,7 +208,16 @@ const ADVERTISERS_CONFIG = {
     link: PARTNER_LINK,
     locale: 'de',
     quickAmounts: [5, 10, 25, 50, 100],
-    depositAmounts: ['5 €', '20 €', '50 €', '100 €+'],
+    depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    calcTiers: [
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
+    ],
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -227,7 +265,16 @@ const ADVERTISERS_CONFIG = {
     locale: 'pl',
     // PLN amounts (~4x EUR equivalent)
     quickAmounts: [20, 50, 100, 200, 500],
-    depositAmounts: ['20 zł', '100 zł', '200 zł', '500 zł+'],
+    depositAmounts: ['200 zł', '400 zł', '1.200 zł', '2.000 zł'],
+    bonusAmounts: ['300 zł', '600 zł', '1.800 zł', '3.000 zł'],
+    calcTiers: [
+      { dep: '200 zł',   bonus: '300 zł',   total: '500 zł',   months: 1 },
+      { dep: '400 zł',   bonus: '600 zł',   total: '1.000 zł', months: 2 },
+      { dep: '1.200 zł', bonus: '1.800 zł', total: '3.000 zł', months: 5 },
+      { dep: '2.000 zł', bonus: '3.000 zł', total: '5.000 zł', months: 8 },
+    ],
+    calcMaxBonus: '3.000 zł',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -274,7 +321,16 @@ const ADVERTISERS_CONFIG = {
     link: PARTNER_LINK,
     locale: 'en',
     quickAmounts: [5, 10, 25, 50, 100],
-    depositAmounts: ['€5', '€20', '€50', '€100+'],
+    depositAmounts: ['€50', '€100', '€300', '€500'],
+    bonusAmounts: ['€75', '€150', '€450', '€750'],
+    calcTiers: [
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1,250', months: 8 },
+    ],
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
