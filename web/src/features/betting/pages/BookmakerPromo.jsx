@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
-const TOTAL = 6;
+const TOTAL = 5;
 
 const quizCSS = `
 :root{--qbg:#EEF1F7;--qcard:#FFF;--qprimary:#1B3A5C;--qaccent:#E8A317;--qgreen:#1DAA61;--qblue:#2B7AE8;--qpurple:#6366F1;--qred:#EF4444;--qtext:#1E293B;--qtext2:#5A6B80;--qtext3:#94A3B8;--qborder:#E2E8F0;--gold-g:linear-gradient(135deg,#F7C948 0%,#E8A317 100%);--blue-g:linear-gradient(135deg,#2B7AE8 0%,#1B6DD9 100%);--green-g:linear-gradient(135deg,#1DAA61 0%,#16894E 100%);--dark-g:linear-gradient(160deg,#0F2744 0%,#1B3A5C 40%,#2B5A8C 100%)}
@@ -22,7 +22,7 @@ const quizCSS = `
 .q-back{position:absolute;top:10px;left:10px;z-index:201;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);border:1px solid var(--qborder);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 2px 6px rgba(0,0,0,.06);transition:transform .15s}.q-back:active{transform:scale(.9)}.q-back svg{width:17px;height:17px;color:var(--qtext2)}
 .q-spill{position:absolute;top:10px;right:10px;z-index:201;font-size:11px;font-weight:700;color:var(--qtext3);background:rgba(255,255,255,.95);border:1px solid var(--qborder);padding:4px 11px;border-radius:100px;backdrop-filter:blur(8px)}
 .q-step{display:none;height:100dvh;flex-direction:column;overflow:hidden}.q-step.active{display:flex;animation:qfadeUp .35s ease}
-.q-body{flex:1;display:flex;flex-direction:column;padding:50px 14px 10px;overflow-y:auto;gap:8px}
+.q-body{flex:1;display:flex;flex-direction:column;padding:50px 14px 10px;overflow:hidden;gap:8px}
 .q-foot{padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,6px));background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border-top:1px solid var(--qborder)}
 .q-btn{width:100%;padding:14px;border:none;border-radius:13px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s}.q-btn:active{transform:scale(.97)}.q-btn svg{width:18px;height:18px;flex-shrink:0}
 .q-btn.blue{background:var(--blue-g);color:#fff;box-shadow:0 3px 14px rgba(43,122,232,.3)}.q-btn.green{background:var(--green-g);color:#fff;box-shadow:0 3px 14px rgba(29,170,97,.3)}.q-btn.gold{background:var(--gold-g);color:var(--qprimary);box-shadow:0 3px 16px rgba(232,163,23,.4);animation:qpulse 2s infinite}
@@ -38,7 +38,7 @@ const quizCSS = `
 .q-fcard{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:11px 12px;animation:qfadeUp .35s ease both;display:flex;align-items:center;gap:11px;position:relative;overflow:hidden;flex-shrink:0}.q-fcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}.q-fcard.blue::before{background:var(--blue-g)}.q-fcard.gold::before{background:var(--gold-g)}.q-fcard.green::before{background:var(--green-g)}.q-fcard.purple::before{background:linear-gradient(180deg,#6366F1,#4F46E5)}
 .q-fico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-fico svg{width:17px;height:17px}.q-fico.blue{background:#DBEAFE}.q-fico.blue svg{color:var(--qblue)}.q-fico.gold{background:#FEF3C7}.q-fico.gold svg{color:var(--qaccent)}.q-fico.green{background:#D1FAE5}.q-fico.green svg{color:var(--qgreen)}.q-fico.purple{background:#EDE9FE}.q-fico.purple svg{color:var(--qpurple)}
 .q-ftit{font-size:13px;font-weight:800;color:var(--qtext);margin-bottom:2px}.q-fdsc{font-size:11px;color:var(--qtext2);line-height:1.45}
-.q-dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}.q-dopt{border-radius:12px;padding:13px 10px;cursor:pointer;transition:all .2s;background:var(--qcard);border:2px solid var(--qborder);position:relative;text-align:center;animation:qfadeUp .35s ease both}.q-dopt:active{transform:scale(.97)}.q-dopt.sel{border-color:var(--qaccent);background:#FFFBF0}.q-dopt.rec{border-color:var(--qgreen);background:#F0FDF4}.q-dopt .rtag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;white-space:nowrap}.q-dopt .da{font-size:22px;font-weight:900;color:var(--qprimary)}.q-dopt .dl{font-size:10px;color:var(--qtext3);font-weight:600;margin-top:1px}.q-dopt .dbonus{font-size:10px;font-weight:800;color:var(--qaccent);margin-top:5px;background:#FEF3C7;border-radius:6px;padding:2px 6px;display:inline-block}.q-dopt .dbonus-green{color:var(--qgreen);background:#D1FAE5}.q-dopt.sel .dbonus{background:#FDE68A}.q-dopt.rec .dbonus{background:#D1FAE5}
+.q-dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}.q-dopt{border-radius:12px;padding:13px 10px;cursor:pointer;transition:all .2s;background:var(--qcard);border:2px solid var(--qborder);position:relative;text-align:center;animation:qfadeUp .35s ease both}.q-dopt:active{transform:scale(.97)}.q-dopt.sel{border-color:var(--qaccent);background:#FFFBF0}.q-dopt.rec{border-color:var(--qgreen);background:#F0FDF4}.q-dopt .rtag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;white-space:nowrap}.q-dopt .da{font-size:22px;font-weight:900;color:var(--qprimary)}.q-dopt .dl{font-size:10px;color:var(--qtext3);font-weight:600;margin-top:1px}
 .q-cklist{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);overflow:hidden;flex-shrink:0}.q-ckrow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--qborder);animation:qfadeUp .35s ease both}.q-ckrow:last-child{border-bottom:none}.q-ckdot{width:22px;height:22px;border-radius:50%;background:var(--green-g);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-ckdot svg{width:11px;height:11px}.q-ckrow h4{font-size:12px;font-weight:700;color:var(--qtext)}.q-ckrow p{font-size:11px;color:var(--qtext2);margin-top:1px}
 .q-abadge{display:inline-flex;align-items:center;gap:7px;background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:700;color:#991B1B}.q-adot{width:6px;height:6px;border-radius:50%;background:var(--qred);animation:qblink 1.2s infinite}
 .q-step.final .q-body{padding:0;gap:0}.q-fhd{background:var(--dark-g);padding:42px 20px 26px;text-align:center;position:relative;overflow:hidden;flex-shrink:0}.q-fhd::before{content:'';position:absolute;top:-50px;right:-30px;width:150px;height:150px;border-radius:50%;background:rgba(232,163,23,.08)}
@@ -49,43 +49,6 @@ const quizCSS = `
 .q-trow{display:flex;justify-content:center;gap:7px;padding:8px 14px 0;flex-wrap:wrap;animation:qfadeUp .35s ease .44s both;flex-shrink:0}.q-tchip{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--qtext3);background:var(--qcard);border:1px solid var(--qborder);border-radius:100px;padding:4px 10px}.q-tchip svg{width:10px;height:10px}
 .q-bet-ex{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .58s both}.q-bet-ex-head{padding:8px 13px;background:#F8FAFC;border-bottom:1px solid var(--qborder);font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px}.q-bet-ex-head svg{width:11px;height:11px}.q-bet-row{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--qborder)}.q-bet-row:last-child{border-bottom:none}.q-bet-name{font-size:12px;font-weight:600;color:var(--qtext2)}.q-bet-name.top{color:var(--qprimary);font-weight:800}.q-bet-gain{font-size:13px;font-weight:800}.q-bet-gain.top{color:var(--qgreen)}.q-bet-gain.gray{color:var(--qtext3)}.q-bet-diff{background:#F0FDF4;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;color:var(--qgreen)}
 .q-proj{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .54s both}.q-proj-title{font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}.q-proj-title svg{width:11px;height:11px}.q-prow{display:flex;align-items:center;gap:10px;margin-bottom:7px}.q-prow:last-child{margin-bottom:0}.q-plbl{font-size:11px;font-weight:700;color:var(--qtext2);width:42px;flex-shrink:0}.q-pbg{flex:1;height:22px;background:#F1F5F9;border-radius:6px;overflow:hidden}.q-pbar2{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 9px;font-size:11px;font-weight:800;color:#fff;transform-origin:left;animation:qbarGrow .8s cubic-bezier(.22,1,.36,1) both}.q-pbar2.s1{background:var(--blue-g);animation-delay:.6s}.q-pbar2.s2{background:linear-gradient(135deg,#1DAA61,#2B7AE8);animation-delay:.72s}.q-pbar2.s3{background:var(--gold-g);animation-delay:.84s;color:var(--qprimary)}
-/* bonus calculator step */
-.q-bonus-header{background:linear-gradient(135deg,#0F2744 0%,#1B3A5C 100%);border-radius:14px;padding:16px;text-align:center;flex-shrink:0;position:relative;overflow:hidden;animation:qfadeUp .35s ease both}
-.q-bonus-header::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(232,163,23,.12)}
-.q-bh-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(232,163,23,.18);border:1px solid rgba(232,163,23,.35);border-radius:100px;padding:4px 12px;font-size:10px;font-weight:800;color:#F7C948;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-.q-bh-dot{width:5px;height:5px;border-radius:50%;background:#F7C948;animation:qblink 1.2s infinite}
-.q-bh-title{font-size:18px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:4px}
-.q-bh-sub{font-size:12px;color:rgba(255,255,255,.55);line-height:1.4}
-
-.q-calc-wrap{background:#fff;border:1px solid var(--qborder);border-radius:14px;overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .15s both}
-.q-calc-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--qborder)}
-.q-copt{padding:10px 4px;text-align:center;cursor:pointer;transition:all .18s;border-right:1px solid var(--qborder);position:relative}
-.q-copt:last-child{border-right:none}
-.q-copt.active{background:#FFFBF0}
-.q-copt .co-dep{font-size:13px;font-weight:900;color:var(--qprimary)}
-.q-copt.active .co-dep{color:var(--qaccent)}
-.q-copt .co-lbl{font-size:9px;color:var(--qtext3);font-weight:600;margin-top:1px}
-.q-copt .co-rec{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
-
-.q-calc-result{padding:14px 16px}
-.q-cr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.q-cr-label{font-size:11px;color:var(--qtext3);font-weight:600}
-.q-cr-val{font-size:13px;font-weight:800;color:var(--qtext)}
-.q-cr-bonus{display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 12px;margin-bottom:10px}
-.q-cr-bonus-ico{font-size:22px;flex-shrink:0}
-.q-cr-bonus-body{flex:1}
-.q-cr-bonus-title{font-size:13px;font-weight:800;color:var(--qgreen)}
-.q-cr-bonus-sub{font-size:11px;color:var(--qtext2);margin-top:1px}
-.q-cr-total{background:var(--dark-g);border-radius:11px;padding:12px;text-align:center}
-.q-cr-total-lbl{font-size:10px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
-.q-cr-total-num{font-size:32px;font-weight:900;background:var(--gold-g);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:qshimmer 3s linear infinite;line-height:1}
-.q-cr-total-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:3px}
-
-.q-once-box{background:#FFF5F5;border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;flex-shrink:0;animation:qfadeUp .35s ease .3s both}
-.q-once-ico{font-size:20px;flex-shrink:0}
-.q-once-text{font-size:12px;color:#B91C1C;line-height:1.5;font-weight:600}
-.q-once-text strong{color:#991B1B}
-
 .q-pay-row{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .6s both}.q-pay-title{font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}.q-pay-title svg{width:11px;height:11px}.q-pay-chips{display:flex;gap:7px;flex-wrap:wrap}.q-pchip{background:#F8FAFC;border:1px solid var(--qborder);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--qtext2);display:flex;align-items:center;gap:5px}.q-pchip svg{width:13px;height:13px;color:var(--qblue)}
 .q-review{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .52s both;display:flex;align-items:flex-start;gap:10px}.q-rav{width:32px;height:32px;border-radius:50%;background:var(--dark-g);color:rgba(255,255,255,.9);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-rtext{font-size:12px;color:var(--qtext2);line-height:1.5}.q-rname{font-size:11px;font-weight:700;color:var(--qtext3);margin-top:4px;display:flex;align-items:center;gap:5px}.q-rstar{color:var(--qaccent);font-size:10px;letter-spacing:1px}
 `;
@@ -100,32 +63,16 @@ const Card = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 export default function BookmakerPromo() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser } = useAdvertiser();
   const ex = advertiser.exampleAmounts || {};
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [sel, setSel] = useState(1);
-  const [calcSel, setCalcSel] = useState(1);
   const [bookmakerLink, setBookmakerLink] = useState(null);
 
   const banner = searchParams.get('banner') || '';
   const fonbetDeeplink = searchParams.get('fonbet_deeplink') || '';
-
-  const calcTiers = advertiser.calcTiers || [
-    { dep: '\u20ac50',  bonus: '\u20ac75',   total: '\u20ac125',  months: 1 },
-    { dep: '\u20ac100', bonus: '\u20ac150',  total: '\u20ac250',  months: 2 },
-    { dep: '\u20ac300', bonus: '\u20ac450',  total: '\u20ac750',  months: 5 },
-    { dep: '\u20ac500', bonus: '\u20ac750',  total: '\u20ac1,250', months: 8 },
-  ];
-  const calcMaxBonus = advertiser.calcMaxBonus || '\u20ac750';
-  const calcBonusPercent = advertiser.calcBonusPercent || '+150%';
-  const calcLabels = [
-    t('promo.s4bLblStart', { defaultValue: 'Start' }),
-    t('promo.s4bLblPopular', { defaultValue: 'Popular' }),
-    t('promo.s4bLblBestValue', { defaultValue: 'Best value' }),
-    t('promo.s4bLblMaximum', { defaultValue: 'Maximum' }),
-  ];
 
   useEffect(() => {
     if (!user?.id) return; // Wait for auth — never build link with anon ID
@@ -222,96 +169,17 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s3Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 4 — Bonus Calculator */}
+      {/* STEP 4 — It's free */}
       <div className={`q-step${step === 4 ? ' active' : ''}`}>
-        <div className="q-body">
-          <div className="q-bonus-header">
-            <div className="q-bh-tag"><div className="q-bh-dot" />{t('promo.s4bTag', { defaultValue: 'Limited offer' })}</div>
-            <div className="q-bh-title">{t('promo.s4bTitlePre', { defaultValue: 'Get up to' })} <span style={{color:'#F7C948'}}>{calcMaxBonus}</span> {t('promo.s4bTitlePost', { defaultValue: 'bonus' })}</div>
-            <div className="q-bh-sub">{t('promo.s4bSub1', { defaultValue: 'First deposit bonus {{percent}}', percent: calcBonusPercent })}<br/>{t('promo.s4bSub2', { defaultValue: 'Credited automatically to your account' })}</div>
-          </div>
-
-          <div className="q-calc-wrap">
-            <div className="q-calc-opts">
-              {calcTiers.map((tier, i) => (
-                <div
-                  key={i}
-                  className={`q-copt${calcSel === i ? ' active' : ''}`}
-                  onClick={() => setCalcSel(i)}
-                >
-                  {i === 2 && <div className="co-rec">{t('promo.s4bRecTag', { defaultValue: 'Best value' })}</div>}
-                  <div className="co-dep">{tier.dep}</div>
-                  <div className="co-lbl">{calcLabels[i]}</div>
-                </div>
-              ))}
-            </div>
-            <div className="q-calc-result">
-              {calcTiers.map((tier, i) => calcSel === i && (
-                <div key={i}>
-                  <div className="q-cr-row">
-                    <div className="q-cr-label">{t('promo.s4bDepositLabel', { defaultValue: 'Your deposit' })}</div>
-                    <div className="q-cr-val">{tier.dep}</div>
-                  </div>
-                  <div className="q-cr-bonus">
-                    <div className="q-cr-bonus-ico">🎁</div>
-                    <div className="q-cr-bonus-body">
-                      <div className="q-cr-bonus-title">{t('promo.s4bBonusFrom', { defaultValue: 'Bonus +{{amount}}', amount: tier.bonus })}</div>
-                      <div className="q-cr-bonus-sub">{t('promo.s4bBonusAuto', { defaultValue: 'Credited automatically' })}</div>
-                    </div>
-                  </div>
-                  <div className="q-cr-total">
-                    <div className="q-cr-total-lbl">{t('promo.s4bTotalLabel', { defaultValue: 'Total on account' })}</div>
-                    <div className="q-cr-total-num">{tier.total}</div>
-                    <div className="q-cr-total-sub">{t('promo.s4bTotalSub', { defaultValue: 'Available for betting' })}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="q-once-box">
-            <div className="q-once-ico">⚠️</div>
-            <div className="q-once-text">
-              <strong>{t('promo.s4bWarningBold', { defaultValue: 'One-time offer!' })}</strong> {t('promo.s4bWarning', { defaultValue: 'Bonus is only available on first deposit. Don\'t miss it!' })}
-            </div>
-          </div>
-        </div>
-        <div className="q-foot">
-          <button className="q-btn gold" onClick={next}>
-            {t('promo.s4bBtn', { defaultValue: 'I want the bonus' })} <ArrowRight />
-          </button>
-          <div className="q-hint">{t('promo.s4bHint', { defaultValue: 'No payment to us — deposit goes to your betting account' })}</div>
-        </div>
-      </div>
-
-      {/* STEP 5 — It's free */}
-      <div className={`q-step${step === 5 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico green"><Clock /></div>
           <div className="q-stit">{t('promo.s4Title')}</div>
           <div className="q-ssub">{t('promo.s4Sub')}</div>
           <div className="q-dgrid">
-            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
-              <div className="da">{advertiser.depositAmounts?.[0] || '€50'}</div>
-              <div className="dl">{t('promo.s4Popular')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} bonus</div>
-            </div>
-            <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
-              <div className="rtag">{t('promo.s4Recommended')}</div>
-              <div className="da">{advertiser.depositAmounts?.[1] || '€100'}</div>
-              <div className="dl">{t('promo.s4MoreBonus')}</div>
-              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} bonus</div>
-            </div>
-            <div className={`q-dopt${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}>
-              <div className="da">{advertiser.depositAmounts?.[2] || '€300'}</div>
-              <div className="dl">{t('promo.s4Serious')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} bonus</div>
-            </div>
-            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}>
-              <div className="da">{advertiser.depositAmounts?.[3] || '€500'}</div>
-              <div className="dl">{t('promo.s4MoreBonus')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} bonus</div>
-            </div>
+            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">{advertiser.depositAmounts?.[0] || '5 €'}</div><div className="dl">{t('promo.s4Min')}</div></div>
+            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">{advertiser.depositAmounts?.[1] || '20 €'}</div><div className="dl">{t('promo.s4Popular')}</div></div>
+            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('promo.s4Recommended')}</div><div className="da">{advertiser.depositAmounts?.[2] || '50 €'}</div><div className="dl">{t('promo.s4MoreBonus')}</div></div>
+            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">{advertiser.depositAmounts?.[3] || '100 €+'}</div><div className="dl">{t('promo.s4Serious')}</div></div>
           </div>
           <div className="q-cklist">
             <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4FreeReg')}</h4><p>{t('promo.s4FreeRegDesc')}</p></div></div>
@@ -332,8 +200,8 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn green" onClick={next}>{t('promo.s4Btn')}<Check /></button></div>
       </div>
 
-      {/* STEP 6 — Final */}
-      <div className={`q-step final${step === 6 ? ' active' : ''}`}>
+      {/* STEP 5 — Final */}
+      <div className={`q-step final${step === 5 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-fhd">
             <div className="q-fico-big"><Download /></div>
