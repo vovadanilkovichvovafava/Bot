@@ -35,7 +35,8 @@
     "tools": "Tools",
     "settings": "Settings",
     "proTools": "Pro Tools",
-    "aiChat": "AI Chat"
+    "aiChat": "AI Chat",
+    "express": "Express"
   },
   "home": {
     "welcome": "Welcome",
@@ -1442,6 +1443,17 @@
     "proUpsellTitle": "Custom Express — PRO",
     "proUpsellDesc": "Pick your leagues, set the number of matches and target odds. AI builds the perfect accumulator for you.",
     "unlockPro": "Unlock PRO →",
+    "proFeature1": "Choose your leagues",
+    "proFeature1Desc": "Serie A, Premier League, La Liga, Bundesliga, Ligue 1 and more",
+    "proFeature2": "Set number of legs & odds",
+    "proFeature2Desc": "From 3 to 8 matches, target average odds from 1.3 to 3.0",
+    "proFeature3": "Unlimited generation",
+    "proFeature3Desc": "Generate as many custom express bets as you want, anytime",
+    "howToGetPro": "How to get PRO?",
+    "proStep1": "Register with our partner bookmaker",
+    "proStep2": "Make a deposit (any amount)",
+    "proStep3": "PRO activates automatically + deposit bonus ×2.5!",
+    "getProNow": "Get PRO — Unlock Custom Express",
     "showHistory": "Show history",
     "hideHistory": "Hide history",
     "statusPending": "Pending",
