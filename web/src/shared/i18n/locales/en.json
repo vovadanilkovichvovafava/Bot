@@ -1459,6 +1459,12 @@
     "statusPending": "Pending",
     "statusWon": "Won",
     "statusLost": "Lost",
-    "statusPartial": "Partial"
+    "statusPartial": "Partial",
+    "dailyFree": "FREE DAILY",
+    "legsPerDay": "legs/day",
+    "minOdds": "min odds",
+    "proCustomAvailable": "Custom express available",
+    "dailyFreeCustomPro": "Daily free · Custom with PRO",
+    "openExpress": "Open"
   }
 }

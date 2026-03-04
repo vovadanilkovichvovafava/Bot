@@ -55,12 +55,6 @@ const BetIcon = ({ active }) => (
   </svg>
 );
 
-// Express icon (stacked bars / accumulator)
-const ExpressIcon = ({ active }) => (
-  <svg className="w-6 h-6" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
-  </svg>
-);
 
 export default function BottomNav() {
   const { t } = useTranslation();
@@ -69,10 +63,6 @@ export default function BottomNav() {
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const isPremium = user?.is_premium;
-  const isFunnel2 = user?.funnel === 'funnel-2';
-
-  // Funnel-1/3: show Express in nav instead of Bet
-  const showExpressInNav = !isFunnel2;
 
   const handleBetClick = () => {
     if (isPremium) {
@@ -85,8 +75,6 @@ export default function BottomNav() {
       navigate('/promo?banner=bottom_nav_bet');
     }
   };
-
-  const isExpressActive = location.pathname.startsWith('/express');
 
   return (
     <nav className="bg-white border-t border-gray-100 z-50 safe-bottom shrink-0">
@@ -112,37 +100,20 @@ export default function BottomNav() {
           );
         })}
 
-        {showExpressInNav ? (
-          /* Express tab — funnel-1/3 */
-          <button
-            onClick={() => navigate('/express')}
-            className={`bottom-nav-item flex-1 py-1 ${isExpressActive ? 'active' : ''}`}
-          >
-            <div className={`p-1.5 ${isExpressActive ? 'bg-purple-50 rounded-full' : ''}`}>
-              <div className={isExpressActive ? 'text-purple-600' : 'text-gray-400'}>
-                <ExpressIcon active={isExpressActive} />
-              </div>
+        {/* Bet tab */}
+        <button
+          onClick={handleBetClick}
+          className="bottom-nav-item flex-1 py-1"
+        >
+          <div className="p-1.5 bg-emerald-50 rounded-full">
+            <div className="text-emerald-600">
+              <BetIcon active={false} />
             </div>
-            <span className={`text-[10px] font-bold ${isExpressActive ? 'text-purple-600' : 'text-gray-400'}`}>
-              {t('nav.express', { defaultValue: 'Express' })}
-            </span>
-          </button>
-        ) : (
-          /* Bet tab — funnel-2 */
-          <button
-            onClick={handleBetClick}
-            className="bottom-nav-item flex-1 py-1"
-          >
-            <div className="p-1.5 bg-emerald-50 rounded-full">
-              <div className="text-emerald-600">
-                <BetIcon active={false} />
-              </div>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-600">
-              {t('nav.bet', { defaultValue: 'Bet' })}
-            </span>
-          </button>
-        )}
+          </div>
+          <span className="text-[10px] font-bold text-emerald-600">
+            {t('nav.bet', { defaultValue: 'Bet' })}
+          </span>
+        </button>
       </div>
     </nav>
   );
