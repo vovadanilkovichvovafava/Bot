@@ -2,8 +2,9 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express
@@ -139,10 +140,13 @@ async def lifespan(app: FastAPI):
     background_tasks.append(prewarm_task)
     logger.info("Cache pre-warm worker scheduled (every 30 min)")
 
-    from app.services.express_generator import express_generation_loop
-    express_task = asyncio.create_task(safe_task("express", express_generation_loop()))
-    background_tasks.append(express_task)
-    logger.info("Express bet generation worker scheduled (daily at 15:00 London)")
+    try:
+        from app.services.express_generator import express_generation_loop
+        express_task = asyncio.create_task(safe_task("express", express_generation_loop()))
+        background_tasks.append(express_task)
+        logger.info("Express bet generation worker scheduled (daily at 15:00 London)")
+    except Exception as e:
+        logger.error(f"Failed to start express generation worker: {e}")
 
     yield
 
@@ -203,6 +207,16 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Global exception handler — ensures unhandled errors still get CORS headers
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # Routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

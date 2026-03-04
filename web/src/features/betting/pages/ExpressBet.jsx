@@ -147,6 +147,12 @@ export default function ExpressBet() {
           ) : dailyError ? (
             <div className="px-4 py-6 text-center">
               <p className="text-sm text-gray-500">{t('express.noMatches', { defaultValue: 'No matches available today. Check back later!' })}</p>
+              <button
+                onClick={() => { setDailyLoading(true); setDailyError(null); api.getDailyExpress().then(setDailyExpress).catch(e => setDailyError(e.message)).finally(() => setDailyLoading(false)); }}
+                className="mt-2 text-xs font-bold text-indigo-600"
+              >
+                {t('express.retry', { defaultValue: 'Retry' })}
+              </button>
             </div>
           ) : dailyExpress ? (
             <ExpressCard express={dailyExpress} getBetLink={getBetLink} getExpressBetLink={getExpressBetLink} t={t} trackClick={trackClick} userId={user?.id} />
