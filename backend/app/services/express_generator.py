@@ -263,7 +263,7 @@ async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: 
             "team2": ev.get("team2", ""),
             "sport_id": sport_id,
             "league_code": league_code,
-            "start_time": ev.get("start_time"),
+            "start_time": ev.get("start_timestamp"),
             "odds": odds,
             "deeplink": ev.get("deeplink"),
         })
@@ -557,12 +557,12 @@ async def _save_express(
     express = ExpressBet(
         express_type=express_type,
         user_id=user_id,
-        legs_json=json.dumps(legs),
+        legs_json=json.dumps(legs, default=str),
         total_odds=total_odds,
         leg_count=len(legs),
         avg_confidence=round(avg_confidence, 4),
         target_avg_odds=target_avg_odds,
-        selected_leagues=json.dumps(selected_leagues) if selected_leagues else None,
+        selected_leagues=json.dumps(selected_leagues, default=str) if selected_leagues else None,
         status="pending",
     )
 
