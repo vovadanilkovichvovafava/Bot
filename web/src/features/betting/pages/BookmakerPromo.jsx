@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
-const TOTAL = 5;
+const TOTAL = 6;
 
 const quizCSS = `
 :root{--qbg:#EEF1F7;--qcard:#FFF;--qprimary:#1B3A5C;--qaccent:#E8A317;--qgreen:#1DAA61;--qblue:#2B7AE8;--qpurple:#6366F1;--qred:#EF4444;--qtext:#1E293B;--qtext2:#5A6B80;--qtext3:#94A3B8;--qborder:#E2E8F0;--gold-g:linear-gradient(135deg,#F7C948 0%,#E8A317 100%);--blue-g:linear-gradient(135deg,#2B7AE8 0%,#1B6DD9 100%);--green-g:linear-gradient(135deg,#1DAA61 0%,#16894E 100%);--dark-g:linear-gradient(160deg,#0F2744 0%,#1B3A5C 40%,#2B5A8C 100%)}
@@ -51,6 +51,40 @@ const quizCSS = `
 .q-proj{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .54s both}.q-proj-title{font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}.q-proj-title svg{width:11px;height:11px}.q-prow{display:flex;align-items:center;gap:10px;margin-bottom:7px}.q-prow:last-child{margin-bottom:0}.q-plbl{font-size:11px;font-weight:700;color:var(--qtext2);width:42px;flex-shrink:0}.q-pbg{flex:1;height:22px;background:#F1F5F9;border-radius:6px;overflow:hidden}.q-pbar2{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 9px;font-size:11px;font-weight:800;color:#fff;transform-origin:left;animation:qbarGrow .8s cubic-bezier(.22,1,.36,1) both}.q-pbar2.s1{background:var(--blue-g);animation-delay:.6s}.q-pbar2.s2{background:linear-gradient(135deg,#1DAA61,#2B7AE8);animation-delay:.72s}.q-pbar2.s3{background:var(--gold-g);animation-delay:.84s;color:var(--qprimary)}
 .q-pay-row{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .6s both}.q-pay-title{font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}.q-pay-title svg{width:11px;height:11px}.q-pay-chips{display:flex;gap:7px;flex-wrap:wrap}.q-pchip{background:#F8FAFC;border:1px solid var(--qborder);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--qtext2);display:flex;align-items:center;gap:5px}.q-pchip svg{width:13px;height:13px;color:var(--qblue)}
 .q-review{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .52s both;display:flex;align-items:flex-start;gap:10px}.q-rav{width:32px;height:32px;border-radius:50%;background:var(--dark-g);color:rgba(255,255,255,.9);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-rtext{font-size:12px;color:var(--qtext2);line-height:1.5}.q-rname{font-size:11px;font-weight:700;color:var(--qtext3);margin-top:4px;display:flex;align-items:center;gap:5px}.q-rstar{color:var(--qaccent);font-size:10px;letter-spacing:1px}
+/* bonus calculator */
+.q-bonus-hd{background:linear-gradient(135deg,#0F2744 0%,#1B3A5C 100%);border-radius:14px;padding:16px;text-align:center;flex-shrink:0;position:relative;overflow:hidden;animation:qfadeUp .35s ease both}
+.q-bonus-hd::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(232,163,23,.12)}
+.q-bhtag{display:inline-flex;align-items:center;gap:6px;background:rgba(232,163,23,.18);border:1px solid rgba(232,163,23,.35);border-radius:100px;padding:4px 12px;font-size:10px;font-weight:800;color:#F7C948;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.q-bhdot{width:5px;height:5px;border-radius:50%;background:#F7C948;animation:qblink 1.2s infinite;flex-shrink:0}
+.q-bhttl{font-size:19px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:5px}
+.q-bhsub{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5}
+.q-calc{background:var(--qcard);border:1px solid var(--qborder);border-radius:14px;overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .15s both}
+.q-copts{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--qborder)}
+.q-copt{padding:11px 4px;text-align:center;cursor:pointer;transition:background .18s;border-right:1px solid var(--qborder);position:relative}
+.q-copt:last-child{border-right:none}
+.q-copt.on{background:#FFFBF0}
+.q-copt .cv{font-size:14px;font-weight:900;color:var(--qprimary)}
+.q-copt.on .cv{color:var(--qaccent)}
+.q-copt .cl{font-size:9px;color:var(--qtext3);font-weight:600;margin-top:2px}
+.q-copt .crec{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1DAA61,#16894E);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
+.q-cres{padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+.q-cres-row{display:flex;align-items:center;justify-content:space-between}
+.q-cres-lbl{font-size:11px;color:var(--qtext3);font-weight:600}
+.q-cres-val{font-size:13px;font-weight:800;color:var(--qtext)}
+.q-cbonus{display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 12px}
+.q-cbonus-ico{font-size:22px;flex-shrink:0}
+.q-cbonus-ttl{font-size:13px;font-weight:800;color:var(--qgreen)}
+.q-cbonus-sub{font-size:11px;color:var(--qtext2);margin-top:1px}
+.q-ctotal{background:var(--dark-g);border-radius:11px;padding:12px;text-align:center}
+.q-ctotal-lbl{font-size:10px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.q-ctotal-num{font-size:34px;font-weight:900;background:var(--gold-g);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:qshimmer 3s linear infinite;line-height:1}
+.q-ctotal-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:3px}
+.q-once{background:#FFF5F5;border:1px solid rgba(239,68,68,.22);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;flex-shrink:0;animation:qfadeUp .35s ease .3s both}
+.q-once-ico{font-size:20px;flex-shrink:0}
+.q-once-txt{font-size:12px;color:#B91C1C;line-height:1.5;font-weight:600}
+.q-once-txt strong{color:#991B1B}
+/* deposit grid bonus badge */
+.q-dopt .da{font-size:22px;font-weight:900;color:var(--qprimary)}.q-dopt .dl{font-size:10px;color:var(--qtext3);font-weight:600;margin-top:1px}.q-dopt .db{font-size:10px;font-weight:800;color:var(--qaccent);background:#FEF3C7;border-radius:6px;padding:2px 7px;display:inline-block;margin-top:5px}.q-dopt.rec .db{color:var(--qgreen);background:#D1FAE5}
 `;
 
 const ArrowRight = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
@@ -64,12 +98,13 @@ export default function BookmakerPromo() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isFunnel2 = user?.funnel === 'funnel-2';
-  const { advertiser } = useAdvertiser();
+  const { advertiser, trackClick } = useAdvertiser();
   const ex = advertiser.exampleAmounts || {};
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [sel, setSel] = useState(1);
+  const [calcSel, setCalcSel] = useState(1);
   const [bookmakerLink, setBookmakerLink] = useState(null);
 
   const banner = searchParams.get('banner') || '';
@@ -97,8 +132,77 @@ export default function BookmakerPromo() {
       </div>
       <div className="q-spill">{step} / {TOTAL}</div>
 
-      {/* STEP 1 — Odds comparison */}
+      {/* STEP 1 — Bonus Calculator (NEW) */}
       <div className={`q-step${step === 1 ? ' active' : ''}`}>
+        <div className="q-body">
+          <div className="q-bonus-hd">
+            <div className="q-bhtag"><div className="q-bhdot" />Solo per utenti PreScore AI</div>
+            <div className="q-bhttl">Il tuo deposito viene<br/><span style={{color:'#F7C948'}}>moltiplicato ×2,5</span></div>
+            <div className="q-bhsub">Il nostro partner aggiunge +150% al tuo primo deposito.<br/>Sono soldi tuoi — usali per scommettere con l'AI.</div>
+          </div>
+
+          {/* Calc */}
+          <div className="q-calc">
+            <div className="q-copts">
+              {[
+                { dep:'€50',  bonus:'€75',   total:'€125',  lbl:'Inizio' },
+                { dep:'€100', bonus:'€150',  total:'€250',  lbl:'Popolare', rec:true },
+                { dep:'€300', bonus:'€450',  total:'€750',  lbl:'Top' },
+                { dep:'€500', bonus:'€750',  total:'€1.250',lbl:'Massimo' },
+              ].map((o, i) => (
+                <div key={i} className={`q-copt${calcSel===i?' on':''}`} onClick={()=>setCalcSel(i)}>
+                  {o.rec && <div className="crec">🔥</div>}
+                  <div className="cv">{o.dep}</div>
+                  <div className="cl">{o.lbl}</div>
+                </div>
+              ))}
+            </div>
+            <div className="q-cres">
+              {[
+                { dep:'€50',  bonus:'€75',   total:'€125'  },
+                { dep:'€100', bonus:'€150',  total:'€250'  },
+                { dep:'€300', bonus:'€450',  total:'€750'  },
+                { dep:'€500', bonus:'€750',  total:'€1.250'},
+              ].map((o, i) => calcSel===i && (
+                <div key={i} style={{display:'contents'}}>
+                  <div className="q-cres-row">
+                    <div className="q-cres-lbl">Il tuo deposito</div>
+                    <div className="q-cres-val">{o.dep}</div>
+                  </div>
+                  <div className="q-cbonus">
+                    <div className="q-cbonus-ico">🎁</div>
+                    <div>
+                      <div className="q-cbonus-ttl">+{o.bonus} bonus gratuito</div>
+                      <div className="q-cbonus-sub">Accreditato automaticamente — nessuna azione richiesta</div>
+                    </div>
+                  </div>
+                  <div className="q-ctotal">
+                    <div className="q-ctotal-lbl">Totale bankroll disponibile</div>
+                    <div className="q-ctotal-num">{o.total}</div>
+                    <div className="q-ctotal-sub">sul conto — tuoi soldi, preleva quando vuoi</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="q-once">
+            <div className="q-once-ico">⚠️</div>
+            <div className="q-once-txt">
+              <strong>Offerta valida solo sul primo deposito.</strong> Dopo — il bonus svanisce per sempre. Hai una sola possibilità — usala al massimo.
+            </div>
+          </div>
+        </div>
+        <div className="q-foot">
+          <button className="q-btn gold" onClick={next}>
+            Voglio il bonus massimo <ArrowRight />
+          </button>
+          <div className="q-hint">Più depositi — più guadagni con l'AI</div>
+        </div>
+      </div>
+
+      {/* STEP 2 — Odds comparison (old step 1) */}
+      <div className={`q-step${step === 2 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico blue">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -126,8 +230,8 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s1Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 2 — Lost profit */}
-      <div className={`q-step${step === 2 ? ' active' : ''}`}>
+      {/* STEP 3 — Lost profit (old step 2) */}
+      <div className={`q-step${step === 3 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico red">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
@@ -154,14 +258,20 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s2Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 3 — What you get */}
-      <div className={`q-step${step === 3 ? ' active' : ''}`}>
+      {/* STEP 4 — What you get (old step 3) — updated bonus card */}
+      <div className={`q-step${step === 4 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico gold">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
           <div className="q-stit">{t('promo.s3Title')}</div>
-          <div className="q-fcard gold"><div className="q-fico gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div><div className="q-ftit">{t('promo.s3BonusTitle')}</div><div className="q-fdsc">{t('promo.s3BonusDesc')}</div></div></div>
+          <div className="q-fcard gold">
+            <div className="q-fico gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+            <div>
+              <div className="q-ftit">{t('promo.s3BonusTitle')}</div>
+              <div className="q-fdsc">Deposita qualsiasi importo — il partner lo <strong>moltiplica ×2,5</strong>. Depositi €100, ottieni €250 totali sul conto.</div>
+            </div>
+          </div>
           {!isFunnel2 && <div className="q-fcard blue"><div className="q-fico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg></div><div><div className="q-ftit">{t('promo.s3ProTitle')}</div><div className="q-fdsc">{t('promo.s3ProDesc')}</div></div></div>}
           <div className="q-fcard green"><div className="q-fico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><div className="q-ftit">{t('promo.s3ClickTitle')}</div><div className="q-fdsc">{t('promo.s3ClickDesc')}</div></div></div>
           <div className="q-fcard purple"><div className="q-fico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div><div className="q-ftit">{t('promo.s3OddsTitle')}</div><div className="q-fdsc">{t('promo.s3OddsDesc')}</div></div></div>
@@ -170,17 +280,34 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s3Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 4 — It's free */}
-      <div className={`q-step${step === 4 ? ' active' : ''}`}>
+      {/* STEP 5 — Deposit amount (old step 4) — updated amounts + bonus badges */}
+      <div className={`q-step${step === 5 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico green"><Clock /></div>
           <div className="q-stit">{t('promo.s4Title')}</div>
           <div className="q-ssub">{t('promo.s4Sub')}</div>
           <div className="q-dgrid">
-            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}><div className="da">{advertiser.depositAmounts?.[0] || '5 €'}</div><div className="dl">{t('promo.s4Min')}</div></div>
-            <div className={`q-dopt${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}><div className="da">{advertiser.depositAmounts?.[1] || '20 €'}</div><div className="dl">{t('promo.s4Popular')}</div></div>
-            <div className={`q-dopt rec${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}><div className="rtag">{t('promo.s4Recommended')}</div><div className="da">{advertiser.depositAmounts?.[2] || '50 €'}</div><div className="dl">{t('promo.s4MoreBonus')}</div></div>
-            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}><div className="da">{advertiser.depositAmounts?.[3] || '100 €+'}</div><div className="dl">{t('promo.s4Serious')}</div></div>
+            <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
+              <div className="da">{advertiser.depositAmounts?.[0] || '50 €'}</div>
+              <div className="dl">{t('promo.s4Popular')}</div>
+              <div className="db">+{advertiser.bonusAmounts?.[0] || '75 €'} bonus</div>
+            </div>
+            <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
+              <div className="rtag">{t('promo.s4Recommended')}</div>
+              <div className="da">{advertiser.depositAmounts?.[1] || '100 €'}</div>
+              <div className="dl">{t('promo.s4MoreBonus')}</div>
+              <div className="db">+{advertiser.bonusAmounts?.[1] || '150 €'} bonus</div>
+            </div>
+            <div className={`q-dopt${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}>
+              <div className="da">{advertiser.depositAmounts?.[2] || '300 €'}</div>
+              <div className="dl">{t('promo.s4Serious')}</div>
+              <div className="db">+{advertiser.bonusAmounts?.[2] || '450 €'} bonus</div>
+            </div>
+            <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}>
+              <div className="da">{advertiser.depositAmounts?.[3] || '500 €'}</div>
+              <div className="dl">Massimo</div>
+              <div className="db">+{advertiser.bonusAmounts?.[3] || '750 €'} bonus</div>
+            </div>
           </div>
           <div className="q-cklist">
             <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4FreeReg')}</h4><p>{t('promo.s4FreeRegDesc')}</p></div></div>
@@ -201,15 +328,19 @@ export default function BookmakerPromo() {
         <div className="q-foot"><button className="q-btn green" onClick={next}>{t('promo.s4Btn')}<Check /></button></div>
       </div>
 
-      {/* STEP 5 — Final */}
-      <div className={`q-step final${step === 5 ? ' active' : ''}`}>
+      {/* STEP 6 — Final (old step 5) — updated bonus display */}
+      <div className={`q-step final${step === 6 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-fhd">
             <div className="q-fico-big"><Download /></div>
             <div className="ft">{t('promo.s5Title')}</div>
             <div className="fs">{t('promo.s5Sub')}</div>
           </div>
-          <div className="q-bfloat"><div className="q-bfl">{t('promo.s5BonusLabel')}</div><div className="q-bfa">{ex.bonusDisplay}</div><div className="q-bfd">{t('promo.s5BonusDesc')}</div></div>
+          <div className="q-bfloat">
+            <div className="q-bfl">Bonus massimo disponibile</div>
+            <div className="q-bfa">€750</div>
+            <div className="q-bfd">Deposita €500 → ricevi <strong>€750 gratis</strong> sul conto. Totale: €1.250 per scommettere.</div>
+          </div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('promo.s5Install')}</div></div>
             <div className="q-marr">→</div>
