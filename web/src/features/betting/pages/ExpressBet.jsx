@@ -277,25 +277,87 @@ export default function ExpressBet() {
           </div>
         )}
 
-        {/* Not PRO — upsell */}
+        {/* Not PRO — detailed upsell */}
         {!isPro && (
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-br from-purple-600 to-indigo-700 px-5 py-5 text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
                 </svg>
+                <h3 className="font-black text-lg">{t('express.proUpsellTitle', { defaultValue: 'Custom Express — PRO' })}</h3>
               </div>
-              <div>
-                <p className="font-bold text-gray-900 text-sm">{t('express.proUpsellTitle', { defaultValue: 'Custom Express — PRO' })}</p>
-                <p className="text-xs text-gray-600 mt-1">{t('express.proUpsellDesc', { defaultValue: 'Pick your leagues, set the number of matches and target odds. AI builds the perfect accumulator for you.' })}</p>
-                <button
-                  onClick={() => navigate('/promo')}
-                  className="mt-2 text-xs font-bold text-purple-600"
-                >
-                  {t('express.unlockPro', { defaultValue: 'Unlock PRO →' })}
-                </button>
+              <p className="text-white/80 text-sm leading-relaxed">
+                {t('express.proUpsellDesc', { defaultValue: 'Pick your leagues, set the number of matches and target odds. AI builds the perfect accumulator for you.' })}
+              </p>
+            </div>
+
+            <div className="px-4 py-4 space-y-3">
+              {/* What PRO gives you */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">{t('express.proFeature1', { defaultValue: 'Choose your leagues' })}</p>
+                  <p className="text-xs text-gray-500">{t('express.proFeature1Desc', { defaultValue: 'Serie A, Premier League, La Liga, Bundesliga, Ligue 1 and more' })}</p>
+                </div>
               </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">{t('express.proFeature2', { defaultValue: 'Set number of legs & odds' })}</p>
+                  <p className="text-xs text-gray-500">{t('express.proFeature2Desc', { defaultValue: 'From 3 to 8 matches, target average odds from 1.3 to 3.0' })}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">{t('express.proFeature3', { defaultValue: 'Unlimited generation' })}</p>
+                  <p className="text-xs text-gray-500">{t('express.proFeature3Desc', { defaultValue: 'Generate as many custom express bets as you want, anytime' })}</p>
+                </div>
+              </div>
+
+              {/* How to get PRO */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2">
+                <p className="font-bold text-amber-900 text-sm mb-2">{t('express.howToGetPro', { defaultValue: 'How to get PRO?' })}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</div>
+                    <p className="text-xs text-amber-800">{t('express.proStep1', { defaultValue: 'Register with our partner bookmaker' })}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</div>
+                    <p className="text-xs text-amber-800">{t('express.proStep2', { defaultValue: 'Make a deposit (any amount)' })}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</div>
+                    <p className="text-xs text-amber-800">{t('express.proStep3', { defaultValue: 'PRO activates automatically + deposit bonus ×2.5!' })}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/promo?banner=express_unlock_pro')}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2 mt-1"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+                </svg>
+                {t('express.getProNow', { defaultValue: 'Get PRO — Unlock Custom Express' })}
+              </button>
             </div>
           </div>
         )}
