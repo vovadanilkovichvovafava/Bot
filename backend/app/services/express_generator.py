@@ -156,10 +156,12 @@ def _bet_category(bet_key: str) -> str:
     return bet_key
 
 
-def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None) -> Optional[Dict]:
+def _find_best_bets(odds: dict, min_odds: float = 1.3, target_odds: float = None,
+                     top_n: int = 3) -> List[Dict]:
     """
-    Pick the best single bet from a Fonbet event's odds.
+    Return top-N candidate bets from a Fonbet event's odds.
 
+    Returns a list of candidates sorted by score (best first).
     Supports all markets: 1X2, handicaps, totals, half-time, BTTS.
     """
     candidates = []
@@ -182,11 +184,14 @@ def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None)
             distance_penalty = abs(value - target_odds) * 0.15
             score = priority * 0.6 + implied_prob * 0.3 - distance_penalty
         else:
-            # Daily: value sweet spot 1.6-3.0 with priority weighting
-            if 1.6 <= value <= 3.0:
-                range_bonus = 0.15
+            # Daily: prefer main 1X2 and higher-odds bets for variety
+            # Boost bets in 1.8-3.5 range (more interesting for express)
+            if 1.8 <= value <= 3.5:
+                range_bonus = 0.2
             elif 1.5 <= value <= 4.0:
-                range_bonus = 0.05
+                range_bonus = 0.1
+            elif 1.3 <= value < 1.5:
+                range_bonus = 0.0
             else:
                 range_bonus = -0.1
             score = priority * 0.5 + implied_prob * 0.3 + range_bonus
@@ -200,11 +205,11 @@ def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None)
         })
 
     if not candidates:
-        return None
+        return []
 
     # Sort by score (best first)
     candidates.sort(key=lambda x: x["score"], reverse=True)
-    return candidates[0]
+    return candidates[:top_n]
 
 
 async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: bool = True) -> List[Dict]:
@@ -347,10 +352,10 @@ def _get_ml_confidence_for_match(confidence_map: Dict, team1: str, team2: str) -
 # Generation functions
 # ---------------------------------------------------------------------------
 
-async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> Optional[Dict]:
+async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.3) -> Optional[Dict]:
     """
     Generate the daily express bet from Fonbet events.
-    Picks best value bets across all top leagues.
+    Picks diverse bets across all top leagues — varied odds and bet types.
     """
     matches = await _get_fonbet_matches()
     if not matches:
@@ -360,56 +365,94 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> O
     # Try to get ML confidence (optional enrichment)
     ml_conf = await _try_get_ml_confidence(matches)
 
-    # Find best bet for each match
-    legs = []
+    # Collect multiple candidates per match for diversity
+    match_candidates = []
     for match in matches:
-        best = _find_best_bet(match["odds"], min_odds=min_odds)
-        if not best:
+        bets = _find_best_bets(match["odds"], min_odds=min_odds)
+        if not bets:
             continue
 
-        # Get ML confidence if available
         confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
-        if confidence == 0:
-            confidence = best["implied_prob"]  # fallback to implied probability
 
-        legs.append({
-            "home_team": match["team1"],
-            "away_team": match["team2"],
-            "league": match["league_code"],
-            "match_date": match.get("start_time"),
-            "bet_type": best["bet_type"],
-            "bet_name": best["bet_key"],
-            "odds": best["odds"],
-            "confidence": round(confidence, 4),
-            "fonbet_event_id": match.get("event_id"),
-            "fonbet_deeplink": match.get("deeplink"),
-            "fonbet_sport_id": match.get("sport_id"),
-        })
+        for bet in bets:
+            conf = confidence if confidence > 0 else bet["implied_prob"]
+            match_candidates.append({
+                "home_team": match["team1"],
+                "away_team": match["team2"],
+                "league": match["league_code"],
+                "match_date": match.get("start_time"),
+                "bet_type": bet["bet_type"],
+                "bet_name": bet["bet_key"],
+                "odds": bet["odds"],
+                "confidence": round(conf, 4),
+                "score": bet["score"],
+                "fonbet_event_id": match.get("event_id"),
+                "fonbet_deeplink": match.get("deeplink"),
+                "fonbet_sport_id": match.get("sport_id"),
+            })
 
-    # Sort by confidence (highest first)
-    legs.sort(key=lambda x: x["confidence"], reverse=True)
+    if len(match_candidates) < 2:
+        logger.warning(f"Not enough candidates for daily express: {len(match_candidates)}")
+        return None
 
-    # Select diverse legs — avoid repeating same bet category too much
+    # Sort by score (best first)
+    match_candidates.sort(key=lambda x: x["score"], reverse=True)
+
+    # --- Diverse selection ---
+    # Rules: max 1 match per team pair, max 2 per bet category,
+    # and spread odds across ranges for variety
     selected = []
+    used_matches = set()    # (team1, team2) pairs already picked
     bet_cat_count = {}
-    max_per_cat = 2  # max 2 legs with same bet category
+    odds_bucket_count = {}  # bucket odds into ranges: <1.5, 1.5-2.0, 2.0-3.0, 3.0+
 
-    for leg in legs:
-        cat = _bet_category(leg["bet_name"])
+    def _odds_bucket(odds: float) -> str:
+        if odds < 1.5:
+            return "low"
+        elif odds < 2.0:
+            return "mid"
+        elif odds < 3.0:
+            return "high"
+        return "very_high"
+
+    max_per_cat = 2
+    max_per_bucket = 2  # no more than 2 bets in same odds range
+
+    for cand in match_candidates:
+        match_key = (cand["home_team"], cand["away_team"])
+        if match_key in used_matches:
+            continue
+
+        cat = _bet_category(cand["bet_name"])
+        bucket = _odds_bucket(cand["odds"])
+
         if bet_cat_count.get(cat, 0) >= max_per_cat:
             continue
-        selected.append(leg)
+        if odds_bucket_count.get(bucket, 0) >= max_per_bucket:
+            continue
+
+        selected.append(cand)
+        used_matches.add(match_key)
         bet_cat_count[cat] = bet_cat_count.get(cat, 0) + 1
+        odds_bucket_count[bucket] = odds_bucket_count.get(bucket, 0) + 1
+
         if len(selected) >= leg_count:
             break
 
-    # If not enough diverse legs, fill from remaining
+    # If not enough, relax bucket constraint
     if len(selected) < leg_count:
-        for leg in legs:
-            if leg not in selected:
-                selected.append(leg)
-                if len(selected) >= leg_count:
-                    break
+        for cand in match_candidates:
+            match_key = (cand["home_team"], cand["away_team"])
+            if match_key in used_matches:
+                continue
+            selected.append(cand)
+            used_matches.add(match_key)
+            if len(selected) >= leg_count:
+                break
+
+    # Remove internal score field before saving
+    for leg in selected:
+        leg.pop("score", None)
 
     if len(selected) < 2:
         logger.warning(f"Not enough legs for daily express: {len(selected)}")
@@ -439,48 +482,56 @@ async def generate_custom_express(
 
     legs = []
     for match in matches:
-        best = _find_best_bet(match["odds"], min_odds=min_odds, target_odds=target_avg_odds)
-        if not best:
+        bets = _find_best_bets(match["odds"], min_odds=min_odds, target_odds=target_avg_odds, top_n=2)
+        if not bets:
             continue
 
         confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
-        if confidence == 0:
-            confidence = best["implied_prob"]
 
-        legs.append({
-            "home_team": match["team1"],
-            "away_team": match["team2"],
-            "league": match["league_code"],
-            "match_date": match.get("start_time"),
-            "bet_type": best["bet_type"],
-            "bet_name": best["bet_key"],
-            "odds": best["odds"],
-            "confidence": round(confidence, 4),
-            "fonbet_event_id": match.get("event_id"),
-            "fonbet_deeplink": match.get("deeplink"),
-            "fonbet_sport_id": match.get("sport_id"),
-        })
+        for best in bets:
+            conf = confidence if confidence > 0 else best["implied_prob"]
+            legs.append({
+                "home_team": match["team1"],
+                "away_team": match["team2"],
+                "league": match["league_code"],
+                "match_date": match.get("start_time"),
+                "bet_type": best["bet_type"],
+                "bet_name": best["bet_key"],
+                "odds": best["odds"],
+                "confidence": round(conf, 4),
+                "fonbet_event_id": match.get("event_id"),
+                "fonbet_deeplink": match.get("deeplink"),
+                "fonbet_sport_id": match.get("sport_id"),
+            })
 
     # Sort: prefer higher confidence, then odds closer to target
     legs.sort(key=lambda x: (-x["confidence"], abs(x["odds"] - target_avg_odds)))
 
-    # Diversity: max 2 same bet category
+    # Diversity: max 1 per match, max 2 same bet category
     selected = []
+    used_matches = set()
     cat_count = {}
     for leg in legs:
+        match_key = (leg["home_team"], leg["away_team"])
+        if match_key in used_matches:
+            continue
         cat = _bet_category(leg["bet_name"])
         if cat_count.get(cat, 0) >= 2:
             continue
         selected.append(leg)
+        used_matches.add(match_key)
         cat_count[cat] = cat_count.get(cat, 0) + 1
         if len(selected) >= leg_count:
             break
     if len(selected) < leg_count:
         for leg in legs:
-            if leg not in selected:
-                selected.append(leg)
-                if len(selected) >= leg_count:
-                    break
+            match_key = (leg["home_team"], leg["away_team"])
+            if match_key in used_matches:
+                continue
+            selected.append(leg)
+            used_matches.add(match_key)
+            if len(selected) >= leg_count:
+                break
 
     if len(selected) < 2:
         return None
