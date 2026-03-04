@@ -372,6 +372,30 @@ class ApiService {
       body: JSON.stringify({ message }),
     });
   }
+
+  // Express Bets
+  async getDailyExpress() {
+    return this.request('/express/daily');
+  }
+
+  async createCustomExpress({ leagues, legCount, targetAvgOdds }) {
+    return this.request('/express/custom', {
+      method: 'POST',
+      body: JSON.stringify({
+        leagues,
+        leg_count: legCount,
+        target_avg_odds: targetAvgOdds,
+      }),
+    });
+  }
+
+  async getExpressHistory(limit = 10) {
+    return this.request(`/express/history?limit=${limit}`);
+  }
+
+  async getExpressLeagues() {
+    return this.request('/express/leagues');
+  }
 }
 
 export const api = new ApiService();

@@ -52,6 +52,7 @@ async def init_db():
     import app.models.ai_chat  # noqa: F401
     import app.models.community_pick  # noqa: F401
     import app.models.match_chat  # noqa: F401
+    import app.models.express_bet  # noqa: F401
 
     async with engine.begin() as conn:
         # Create all tables (will not modify existing ones — that's fine,
