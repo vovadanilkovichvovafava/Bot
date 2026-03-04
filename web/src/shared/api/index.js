@@ -378,20 +378,17 @@ class ApiService {
     });
   }
 
-  // Express Bets
-  async getDailyExpress() {
-    return this.request('/express/daily');
+  // Express Bets — pre-generated menu
+  async getExpressMenu() {
+    return this.request('/express/menu');
   }
 
-  async createCustomExpress({ leagues, legCount, targetAvgOdds }) {
-    return this.request('/express/custom', {
-      method: 'POST',
-      body: JSON.stringify({
-        leagues,
-        leg_count: legCount,
-        target_avg_odds: targetAvgOdds,
-      }),
-    });
+  async getExpressPreset(presetName) {
+    return this.request(`/express/preset/${presetName}`);
+  }
+
+  async getDailyExpress() {
+    return this.request('/express/daily');
   }
 
   async getExpressHistory(limit = 10) {
