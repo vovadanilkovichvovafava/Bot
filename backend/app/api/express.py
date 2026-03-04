@@ -7,8 +7,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
+from app.core.database import get_db
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,18 @@ def _get_generator():
     }
 
 
+async def _get_user_from_token(current_user: dict, db: AsyncSession) -> User:
+    """Load full User object from JWT token payload."""
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
@@ -52,7 +67,9 @@ class CustomExpressRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 @router.get("/daily")
-async def daily_express(user: User = Depends(get_current_user)):
+async def daily_express(
+    current_user: dict = Depends(get_current_user),
+):
     """Get today's daily express bet (auto-generated at 15:00 London)."""
     try:
         gen = _get_generator()
@@ -88,10 +105,14 @@ async def daily_express(user: User = Depends(get_current_user)):
 @router.post("/custom")
 async def custom_express(
     req: CustomExpressRequest,
-    user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Generate a custom express bet (PRO only)."""
     import traceback
+
+    # Load full user from DB
+    user = await _get_user_from_token(current_user, db)
 
     # Check PRO status
     is_premium = user.is_premium or (user.funnel == "funnel-2")
@@ -108,7 +129,6 @@ async def custom_express(
         available = gen["get_leagues"]()
     except Exception as e:
         logger.error(f"get_leagues() failed: {e}\n{traceback.format_exc()}")
-        # Fallback: use requested leagues as-is
         available = req.leagues if req.leagues else []
 
     logger.info(f"Custom express request: leagues={req.leagues}, leg_count={req.leg_count}, "
@@ -152,19 +172,22 @@ async def custom_express(
 @router.get("/history")
 async def express_history(
     limit: int = 10,
-    user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get user's express bet history."""
+    user_id = current_user.get("user_id")
     try:
         gen = _get_generator()
-        return await gen["get_user"](user.id, limit=limit)
+        return await gen["get_user"](user_id, limit=limit)
     except Exception as e:
         logger.error(f"Express history failed: {e}")
         return []
 
 
 @router.get("/leagues")
-async def available_leagues(user: User = Depends(get_current_user)):
+async def available_leagues(
+    current_user: dict = Depends(get_current_user),
+):
     """Get available leagues for custom express."""
     try:
         from app.services.fonbet_api import TOP_LEAGUE_IDS
