@@ -26,14 +26,14 @@ def _get_generator():
         generate_custom_express,
         get_today_daily_express,
         get_user_expresses,
-        AVAILABLE_LEAGUES,
+        get_available_leagues,
     )
     return {
         "generate_daily": generate_daily_express,
         "generate_custom": generate_custom_express,
         "get_today": get_today_daily_express,
         "get_user": get_user_expresses,
-        "leagues": AVAILABLE_LEAGUES,
+        "get_leagues": get_available_leagues,
     }
 
 
@@ -102,7 +102,7 @@ async def custom_express(
         logger.error(f"Express generator import failed: {e}")
         raise HTTPException(status_code=503, detail="Express service temporarily unavailable")
 
-    available = gen["leagues"]
+    available = gen["get_leagues"]()
 
     # Validate leagues
     valid_leagues = [code for code in req.leagues if code in available]

@@ -2,173 +2,117 @@
 Express Bet Generator — creates multi-leg accumulator bets.
 
 Two modes:
-  1. Daily Express: 5 legs from today's matches, highest confidence, odds >= 1.5
+  1. Daily Express: 5 legs from today's matches, best value odds >= 1.5
   2. Custom Express (PRO): user picks leagues, leg count, target avg odds
 
-Uses real odds from Fonbet + ML model confidence for leg selection.
+Works directly with Fonbet API for real odds.
+Optionally uses ML predictions for smarter selection when available.
 """
 import json
 import logging
-from datetime import datetime, timedelta
+import math
+import random
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from sqlalchemy import select, and_, desc
 
 from app.core.database import async_session_maker
-from app.models.ml_models import MatchFeature, CachedPrediction
 from app.models.express_bet import ExpressBet
-from app.services.fonbet_api import get_football_events, TOP_LEAGUE_IDS
 
 logger = logging.getLogger(__name__)
 
-# Fonbet sport_id → league code mapping (reverse of TOP_LEAGUE_IDS)
-_SPORTID_TO_CODE = {v["code"]: k for k, v in TOP_LEAGUE_IDS.items()}
-_CODE_TO_SPORTID = _SPORTID_TO_CODE  # alias
 
-# All league codes available
-AVAILABLE_LEAGUES = [info["code"] for info in TOP_LEAGUE_IDS.values()]
+# ---------------------------------------------------------------------------
+# Lazy imports — avoid crashing if fonbet_api has issues at import time
+# ---------------------------------------------------------------------------
 
-
-def _bet_type_label(bet_name: str) -> str:
-    """Convert ML bet_name to user-friendly label."""
-    mapping = {
-        "home_win": "1",
-        "draw": "X",
-        "away_win": "2",
-        "home_or_draw": "1X",
-        "away_or_draw": "X2",
-        "home_or_away": "12",
-        "over_2.5": "Over 2.5",
-        "under_2.5": "Under 2.5",
-        "over_1.5": "Over 1.5",
-        "under_1.5": "Under 1.5",
-        "over_3.5": "Over 3.5",
-        "under_3.5": "Under 3.5",
-        "yes": "BTTS Yes",
-        "no": "BTTS No",
-    }
-    return mapping.get(bet_name, bet_name)
+def _get_fonbet():
+    from app.services.fonbet_api import get_football_events, TOP_LEAGUE_IDS
+    return get_football_events, TOP_LEAGUE_IDS
 
 
-def _get_fonbet_odds_for_bet(fonbet_odds: dict, bet_name: str) -> Optional[float]:
-    """Map ML bet_name to Fonbet odds key and get the value."""
-    mapping = {
-        "home_win": "1",
-        "draw": "X",
-        "away_win": "2",
-        "home_or_draw": "1X",
-        "away_or_draw": "X2",
-        "home_or_away": "12",
-        "over_2.5": "over_2.5",
-        "under_2.5": "under_2.5",
-        "over_1.5": "over_1.5",
-        "under_1.5": "under_1.5",
-        "over_3.5": "over_3.5",
-        "under_3.5": "under_3.5",
-        "yes": "btts_yes",
-        "no": "btts_no",
-    }
-    fonbet_key = mapping.get(bet_name)
-    if fonbet_key and fonbet_key in fonbet_odds:
-        return fonbet_odds[fonbet_key]
-    return None
+def _get_available_leagues():
+    _, TOP_LEAGUE_IDS = _get_fonbet()
+    return [info["code"] for info in TOP_LEAGUE_IDS.values()]
 
 
-async def _get_today_predictions() -> List[Dict]:
-    """Get all cached ML predictions for today's matches."""
-    today = datetime.utcnow().strftime("%Y-%m-%d")
-    tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
-
-    async with async_session_maker() as db:
-        # Get today's match features with cached predictions
-        result = await db.execute(
-            select(MatchFeature, CachedPrediction).outerjoin(
-                CachedPrediction,
-                MatchFeature.fixture_id == CachedPrediction.fixture_id,
-            ).where(
-                and_(
-                    MatchFeature.match_date >= today,
-                    MatchFeature.match_date < tomorrow,
-                    MatchFeature.is_verified == False,
-                )
-            )
-        )
-        rows = result.all()
-
-    predictions = []
-    for feature, cached in rows:
-        if not cached or not cached.ml_prediction_json:
-            continue
-        try:
-            pred = json.loads(cached.ml_prediction_json)
-            pred["_feature"] = feature
-            predictions.append(pred)
-        except Exception:
-            continue
-
-    return predictions
+AVAILABLE_LEAGUES = None  # populated lazily
 
 
-def _find_best_bet_for_match(prediction: Dict, min_odds: float = 1.5, fonbet_odds: dict = None) -> Optional[Dict]:
+def get_available_leagues():
+    """Get available league codes (lazy-loaded)."""
+    global AVAILABLE_LEAGUES
+    if AVAILABLE_LEAGUES is None:
+        AVAILABLE_LEAGUES = _get_available_leagues()
+    return AVAILABLE_LEAGUES
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+# Odds keys we understand and their user-friendly labels
+_BET_LABELS = {
+    "1": "1 (Home)",
+    "X": "X (Draw)",
+    "2": "2 (Away)",
+    "1X": "1X",
+    "X2": "X2",
+    "12": "12",
+    "over_1.5": "Over 1.5",
+    "under_1.5": "Under 1.5",
+    "over_2.5": "Over 2.5",
+    "under_2.5": "Under 2.5",
+    "over_3.5": "Over 3.5",
+    "under_3.5": "Under 3.5",
+    "btts_yes": "BTTS Yes",
+    "btts_no": "BTTS No",
+}
+
+
+def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None) -> Optional[Dict]:
     """
-    Find the single best bet for a match.
-    Prefers: value bets > highest confidence.
-    Filters by min_odds using real Fonbet odds when available.
-    """
-    markets = prediction.get("markets", {})
-    feature = prediction.get("_feature")
+    Pick the best single bet from a Fonbet event's odds.
 
+    Strategy:
+    - Filter by min_odds
+    - Prefer "safe" outcomes (lower odds = higher implied probability)
+    - For custom express: prefer odds closest to target_odds
+    - For daily: prefer odds in 1.5-2.5 range (value sweet spot)
+    """
     candidates = []
 
-    # Scan all markets for bets above min_odds with good confidence
-    market_bets = {
-        "1x2": ["home_win", "draw", "away_win"],
-        "over_under_25": ["over_2.5", "under_2.5"],
-        "over_under_15": ["over_1.5", "under_1.5"],
-        "btts": ["yes", "no"],
-    }
-
-    for market_name, bet_names in market_bets.items():
-        if market_name not in markets:
+    for key, value in odds.items():
+        if key not in _BET_LABELS:
             continue
-        for bet_name in bet_names:
-            prob = markets[market_name].get(bet_name, 0)
-            if prob < 0.55:
-                continue
+        if not isinstance(value, (int, float)) or value < min_odds:
+            continue
 
-            # Get real odds from Fonbet first, fallback to DB
-            real_odds = None
-            if fonbet_odds:
-                real_odds = _get_fonbet_odds_for_bet(fonbet_odds, bet_name)
+        # Implied probability from odds
+        implied_prob = 1.0 / value
 
-            if real_odds is None and feature:
-                # Fallback to DB odds
-                odds_map = {
-                    "home_win": feature.odds_home,
-                    "draw": feature.odds_draw,
-                    "away_win": feature.odds_away,
-                    "over_2.5": feature.odds_over25,
-                    "under_2.5": feature.odds_under25,
-                    "yes": feature.odds_btts_yes,
-                    "no": feature.odds_btts_no,
-                }
-                real_odds = odds_map.get(bet_name)
+        # Score: prefer higher probability (safer) bets in the value range
+        if target_odds:
+            # For custom: penalize distance from target
+            distance = abs(value - target_odds)
+            score = implied_prob - (distance * 0.1)
+        else:
+            # For daily: sweet spot 1.5-2.5, penalize very high odds
+            if 1.5 <= value <= 2.5:
+                score = implied_prob + 0.1  # bonus for value range
+            elif value <= 3.5:
+                score = implied_prob
+            else:
+                score = implied_prob - 0.1  # penalty for long shots
 
-            if real_odds is None or real_odds < min_odds:
-                continue
-
-            # Score = confidence * log(odds) — balances probability with payout
-            import math
-            score = prob * math.log(real_odds + 1)
-
-            candidates.append({
-                "bet_name": bet_name,
-                "bet_type": _bet_type_label(bet_name),
-                "market": market_name,
-                "probability": round(prob, 4),
-                "odds": round(real_odds, 2),
-                "score": score,
-            })
+        candidates.append({
+            "bet_key": key,
+            "bet_type": _BET_LABELS[key],
+            "odds": round(value, 2),
+            "implied_prob": round(implied_prob, 4),
+            "score": score,
+        })
 
     if not candidates:
         return None
@@ -178,85 +122,182 @@ def _find_best_bet_for_match(prediction: Dict, min_odds: float = 1.5, fonbet_odd
     return candidates[0]
 
 
-async def _match_fonbet_events(predictions: List[Dict]) -> Dict[int, dict]:
-    """Match ML fixtures to Fonbet events for real odds + deeplinks."""
+async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
+    """
+    Get all upcoming (non-live) Fonbet events with odds.
+    Optionally filter by league codes.
+    """
+    get_football_events, TOP_LEAGUE_IDS = _get_fonbet()
+
     try:
-        fonbet_data = await get_football_events()
-        fonbet_events = fonbet_data.get("events", [])
+        data = await get_football_events()
+        events = data.get("events", [])
     except Exception as e:
-        logger.warning(f"Could not fetch Fonbet events: {e}")
-        return {}
+        logger.error(f"Failed to fetch Fonbet events: {e}")
+        return []
 
-    # Build lookup by normalized team names
-    from app.services.fonbet_api import _teams_match
+    # Build code → sportId mapping for filtering
+    code_to_sportid = {v["code"]: k for k, v in TOP_LEAGUE_IDS.items()}
+    allowed_sportids = None
+    if league_codes:
+        allowed_sportids = {code_to_sportid[c] for c in league_codes if c in code_to_sportid}
 
-    fixture_to_fonbet = {}
-
-    for pred in predictions:
-        feature = pred.get("_feature")
-        if not feature:
+    matches = []
+    for ev in events:
+        # Skip live matches
+        if ev.get("is_live"):
             continue
 
-        home = feature.home_team_name or ""
-        away = feature.away_team_name or ""
+        # Skip if no odds
+        odds = ev.get("odds", {})
+        if not odds:
+            continue
 
-        for ev in fonbet_events:
-            if ev.get("is_live"):
+        # Filter by league
+        sport_id = ev.get("sport_id")
+        if allowed_sportids and sport_id not in allowed_sportids:
+            continue
+
+        # Find league code from sport_id
+        league_code = None
+        for sid, info in TOP_LEAGUE_IDS.items():
+            if sid == sport_id:
+                league_code = info["code"]
+                break
+
+        matches.append({
+            "event_id": ev.get("id"),
+            "team1": ev.get("team1", ""),
+            "team2": ev.get("team2", ""),
+            "sport_id": sport_id,
+            "league_code": league_code,
+            "start_time": ev.get("start_time"),
+            "odds": odds,
+            "deeplink": ev.get("deeplink"),
+        })
+
+    logger.info(f"Fonbet: {len(matches)} upcoming matches (filtered from {len(events)} events)")
+    return matches
+
+
+# ---------------------------------------------------------------------------
+# ML prediction enrichment (optional)
+# ---------------------------------------------------------------------------
+
+async def _try_get_ml_confidence(matches: List[Dict]) -> Dict[str, float]:
+    """
+    Try to get ML confidence for matches. Returns empty dict if ML unavailable.
+    Key = "team1 vs team2" normalized, Value = confidence 0-1.
+    """
+    try:
+        from app.models.ml_models import MatchFeature, CachedPrediction
+        from datetime import timedelta
+
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(MatchFeature, CachedPrediction).outerjoin(
+                    CachedPrediction,
+                    MatchFeature.fixture_id == CachedPrediction.fixture_id,
+                ).where(
+                    and_(
+                        MatchFeature.match_date >= today,
+                        MatchFeature.match_date < tomorrow,
+                    )
+                )
+            )
+            rows = result.all()
+
+        confidence_map = {}
+        for feature, cached in rows:
+            if not cached or not cached.ml_prediction_json:
                 continue
-            if _teams_match(home, ev["team1"]) and _teams_match(away, ev["team2"]):
-                fixture_to_fonbet[feature.fixture_id] = ev
-                break
-            # Check reversed
-            if _teams_match(home, ev["team2"]) and _teams_match(away, ev["team1"]):
-                fixture_to_fonbet[feature.fixture_id] = ev
-                break
+            try:
+                pred = json.loads(cached.ml_prediction_json)
+                # Get max confidence across all markets
+                max_conf = 0
+                for market_data in pred.get("markets", {}).values():
+                    if isinstance(market_data, dict):
+                        for prob in market_data.values():
+                            if isinstance(prob, (int, float)) and prob > max_conf:
+                                max_conf = prob
 
-    logger.info(f"Matched {len(fixture_to_fonbet)}/{len(predictions)} fixtures to Fonbet")
-    return fixture_to_fonbet
+                key = f"{feature.home_team_name}|{feature.away_team_name}".lower()
+                confidence_map[key] = max_conf
+            except Exception:
+                continue
 
+        if confidence_map:
+            logger.info(f"ML predictions available for {len(confidence_map)} matches")
+        return confidence_map
+
+    except Exception as e:
+        logger.debug(f"ML predictions not available: {e}")
+        return {}
+
+
+def _get_ml_confidence_for_match(confidence_map: Dict, team1: str, team2: str) -> float:
+    """Try to find ML confidence for a Fonbet match."""
+    if not confidence_map:
+        return 0.0
+
+    from app.services.fonbet_api import _teams_match
+
+    for key, conf in confidence_map.items():
+        parts = key.split("|")
+        if len(parts) != 2:
+            continue
+        ml_home, ml_away = parts
+        if (_teams_match(team1, ml_home) and _teams_match(team2, ml_away)) or \
+           (_teams_match(team1, ml_away) and _teams_match(team2, ml_home)):
+            return conf
+    return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Generation functions
+# ---------------------------------------------------------------------------
 
 async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> Optional[Dict]:
     """
-    Generate the daily express bet.
-    Picks top N matches by confidence with real Fonbet odds >= min_odds.
+    Generate the daily express bet from Fonbet events.
+    Picks best value bets across all top leagues.
     """
-    predictions = await _get_today_predictions()
-    if not predictions:
-        logger.warning("No predictions available for daily express")
+    matches = await _get_fonbet_matches()
+    if not matches:
+        logger.warning("No Fonbet matches available for daily express")
         return None
 
-    # Match to Fonbet for real odds
-    fonbet_map = await _match_fonbet_events(predictions)
+    # Try to get ML confidence (optional enrichment)
+    ml_conf = await _try_get_ml_confidence(matches)
 
     # Find best bet for each match
     legs = []
-    for pred in predictions:
-        feature = pred.get("_feature")
-        if not feature:
-            continue
-
-        fonbet_ev = fonbet_map.get(feature.fixture_id, {})
-        fonbet_odds = fonbet_ev.get("odds", {})
-
-        best = _find_best_bet_for_match(pred, min_odds=min_odds, fonbet_odds=fonbet_odds)
+    for match in matches:
+        best = _find_best_bet(match["odds"], min_odds=min_odds)
         if not best:
             continue
 
-        leg = {
-            "fixture_id": feature.fixture_id,
-            "home_team": feature.home_team_name,
-            "away_team": feature.away_team_name,
-            "league": feature.league_id,
-            "match_date": feature.match_date.isoformat() if feature.match_date else None,
+        # Get ML confidence if available
+        confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
+        if confidence == 0:
+            confidence = best["implied_prob"]  # fallback to implied probability
+
+        legs.append({
+            "home_team": match["team1"],
+            "away_team": match["team2"],
+            "league": match["league_code"],
+            "match_date": match.get("start_time"),
             "bet_type": best["bet_type"],
-            "bet_name": best["bet_name"],
+            "bet_name": best["bet_key"],
             "odds": best["odds"],
-            "confidence": best["probability"],
-            "fonbet_event_id": fonbet_ev.get("id"),
-            "fonbet_deeplink": fonbet_ev.get("deeplink"),
-            "fonbet_sport_id": fonbet_ev.get("sport_id"),
-        }
-        legs.append(leg)
+            "confidence": round(confidence, 4),
+            "fonbet_event_id": match.get("event_id"),
+            "fonbet_deeplink": match.get("deeplink"),
+            "fonbet_sport_id": match.get("sport_id"),
+        })
 
     # Sort by confidence (highest first), take top N
     legs.sort(key=lambda x: x["confidence"], reverse=True)
@@ -266,42 +307,7 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> O
         logger.warning(f"Not enough legs for daily express: {len(legs)}")
         return None
 
-    # Calculate totals
-    total_odds = 1.0
-    for leg in legs:
-        total_odds *= leg["odds"]
-    total_odds = round(total_odds, 2)
-
-    avg_confidence = sum(l["confidence"] for l in legs) / len(legs)
-
-    # Save to DB
-    express = ExpressBet(
-        express_type="daily",
-        user_id=None,
-        legs_json=json.dumps(legs),
-        total_odds=total_odds,
-        leg_count=len(legs),
-        avg_confidence=round(avg_confidence, 4),
-        status="pending",
-    )
-
-    async with async_session_maker() as db:
-        db.add(express)
-        await db.commit()
-        await db.refresh(express)
-
-    result = {
-        "id": express.id,
-        "type": "daily",
-        "legs": legs,
-        "total_odds": total_odds,
-        "leg_count": len(legs),
-        "avg_confidence": round(avg_confidence, 4),
-        "created_at": express.created_at.isoformat() if express.created_at else None,
-    }
-
-    logger.info(f"Daily express generated: {len(legs)} legs, total odds {total_odds}")
-    return result
+    return await _save_express("daily", None, legs)
 
 
 async def generate_custom_express(
@@ -314,71 +320,57 @@ async def generate_custom_express(
     Generate a custom express for PRO users.
     Filters by selected leagues and targets specific avg odds per leg.
     """
-    predictions = await _get_today_predictions()
-    if not predictions:
+    matches = await _get_fonbet_matches(league_codes=league_codes)
+    if not matches:
         return None
 
-    # Filter by leagues
-    # Map league codes to API-Football league IDs
-    league_id_map = {info["code"]: info["league_id"] for info in TOP_LEAGUE_IDS.values()}
-    selected_league_ids = set()
-    for code in league_codes:
-        if code in league_id_map:
-            selected_league_ids.add(league_id_map[code])
+    # Try ML confidence
+    ml_conf = await _try_get_ml_confidence(matches)
 
-    if selected_league_ids:
-        predictions = [
-            p for p in predictions
-            if p.get("_feature") and p["_feature"].league_id in selected_league_ids
-        ]
-
-    if not predictions:
-        return None
-
-    # Match to Fonbet
-    fonbet_map = await _match_fonbet_events(predictions)
-
-    # Find best bet for each match with target odds range
-    # Allow wider range: target_avg_odds ± 0.5
     min_odds = max(1.2, target_avg_odds - 0.5)
 
     legs = []
-    for pred in predictions:
-        feature = pred.get("_feature")
-        if not feature:
-            continue
-
-        fonbet_ev = fonbet_map.get(feature.fixture_id, {})
-        fonbet_odds = fonbet_ev.get("odds", {})
-
-        best = _find_best_bet_for_match(pred, min_odds=min_odds, fonbet_odds=fonbet_odds)
+    for match in matches:
+        best = _find_best_bet(match["odds"], min_odds=min_odds, target_odds=target_avg_odds)
         if not best:
             continue
 
-        leg = {
-            "fixture_id": feature.fixture_id,
-            "home_team": feature.home_team_name,
-            "away_team": feature.away_team_name,
-            "league": feature.league_id,
-            "match_date": feature.match_date.isoformat() if feature.match_date else None,
-            "bet_type": best["bet_type"],
-            "bet_name": best["bet_name"],
-            "odds": best["odds"],
-            "confidence": best["probability"],
-            "fonbet_event_id": fonbet_ev.get("id"),
-            "fonbet_deeplink": fonbet_ev.get("deeplink"),
-            "fonbet_sport_id": fonbet_ev.get("sport_id"),
-        }
-        legs.append(leg)
+        confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
+        if confidence == 0:
+            confidence = best["implied_prob"]
 
-    # Sort: prefer odds closer to target, then by confidence
+        legs.append({
+            "home_team": match["team1"],
+            "away_team": match["team2"],
+            "league": match["league_code"],
+            "match_date": match.get("start_time"),
+            "bet_type": best["bet_type"],
+            "bet_name": best["bet_key"],
+            "odds": best["odds"],
+            "confidence": round(confidence, 4),
+            "fonbet_event_id": match.get("event_id"),
+            "fonbet_deeplink": match.get("deeplink"),
+            "fonbet_sport_id": match.get("sport_id"),
+        })
+
+    # Sort: prefer higher confidence, then odds closer to target
     legs.sort(key=lambda x: (-x["confidence"], abs(x["odds"] - target_avg_odds)))
     legs = legs[:leg_count]
 
     if len(legs) < 2:
         return None
 
-    # Calculate totals
+    return await _save_express("custom", user_id, legs, target_avg_odds, league_codes)
+
+
+async def _save_express(
+    express_type: str,
+    user_id: Optional[int],
+    legs: List[Dict],
+    target_avg_odds: float = None,
+    selected_leagues: List[str] = None,
+) -> Dict:
+    """Save express bet to DB and return result dict."""
     total_odds = 1.0
     for leg in legs:
         total_odds *= leg["odds"]
@@ -386,54 +378,73 @@ async def generate_custom_express(
 
     avg_confidence = sum(l["confidence"] for l in legs) / len(legs)
 
-    # Save to DB
     express = ExpressBet(
-        express_type="custom",
+        express_type=express_type,
         user_id=user_id,
         legs_json=json.dumps(legs),
         total_odds=total_odds,
         leg_count=len(legs),
         avg_confidence=round(avg_confidence, 4),
         target_avg_odds=target_avg_odds,
-        selected_leagues=json.dumps(league_codes),
+        selected_leagues=json.dumps(selected_leagues) if selected_leagues else None,
         status="pending",
     )
 
-    async with async_session_maker() as db:
-        db.add(express)
-        await db.commit()
-        await db.refresh(express)
+    try:
+        async with async_session_maker() as db:
+            db.add(express)
+            await db.commit()
+            await db.refresh(express)
+
+        express_id = express.id
+        created_at = express.created_at.isoformat() if express.created_at else None
+    except Exception as e:
+        logger.error(f"Failed to save express to DB: {e}")
+        # Return result anyway even if DB save fails
+        express_id = None
+        created_at = datetime.utcnow().isoformat()
 
     result = {
-        "id": express.id,
-        "type": "custom",
+        "id": express_id,
+        "type": express_type,
         "legs": legs,
         "total_odds": total_odds,
         "leg_count": len(legs),
         "avg_confidence": round(avg_confidence, 4),
-        "target_avg_odds": target_avg_odds,
-        "selected_leagues": league_codes,
-        "created_at": express.created_at.isoformat() if express.created_at else None,
+        "created_at": created_at,
     }
 
-    logger.info(f"Custom express for user {user_id}: {len(legs)} legs, total odds {total_odds}")
+    if target_avg_odds:
+        result["target_avg_odds"] = target_avg_odds
+    if selected_leagues:
+        result["selected_leagues"] = selected_leagues
+
+    logger.info(f"{express_type.title()} express: {len(legs)} legs, total odds {total_odds}")
     return result
 
+
+# ---------------------------------------------------------------------------
+# DB queries
+# ---------------------------------------------------------------------------
 
 async def get_today_daily_express() -> Optional[Dict]:
     """Get today's daily express (or None if not yet generated)."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
 
-    async with async_session_maker() as db:
-        result = await db.execute(
-            select(ExpressBet).where(
-                and_(
-                    ExpressBet.express_type == "daily",
-                    ExpressBet.created_at >= today,
-                )
-            ).order_by(desc(ExpressBet.created_at)).limit(1)
-        )
-        express = result.scalar_one_or_none()
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(ExpressBet).where(
+                    and_(
+                        ExpressBet.express_type == "daily",
+                        ExpressBet.created_at >= today,
+                    )
+                ).order_by(desc(ExpressBet.created_at)).limit(1)
+            )
+            express = result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"Failed to query daily express: {e}")
+        return None
 
     if not express:
         return None
@@ -455,13 +466,17 @@ async def get_today_daily_express() -> Optional[Dict]:
 
 async def get_user_expresses(user_id: int, limit: int = 10) -> List[Dict]:
     """Get user's custom express history."""
-    async with async_session_maker() as db:
-        result = await db.execute(
-            select(ExpressBet).where(
-                ExpressBet.user_id == user_id,
-            ).order_by(desc(ExpressBet.created_at)).limit(limit)
-        )
-        expresses = result.scalars().all()
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(ExpressBet).where(
+                    ExpressBet.user_id == user_id,
+                ).order_by(desc(ExpressBet.created_at)).limit(limit)
+            )
+            expresses = result.scalars().all()
+    except Exception as e:
+        logger.error(f"Failed to query express history: {e}")
+        return []
 
     return [
         {
@@ -478,6 +493,10 @@ async def get_user_expresses(user_id: int, limit: int = 10) -> List[Dict]:
         for e in expresses
     ]
 
+
+# ---------------------------------------------------------------------------
+# Background worker
+# ---------------------------------------------------------------------------
 
 async def express_generation_loop():
     """
@@ -498,7 +517,6 @@ async def express_generation_loop():
 
             # Generate at 15:00 London (or shortly after)
             if now.hour == 15 and now.minute < 30:
-                # Check if already generated today
                 existing = await get_today_daily_express()
                 if not existing:
                     logger.info("Generating daily express at 15:00 London")
@@ -506,9 +524,9 @@ async def express_generation_loop():
                     if result:
                         logger.info(f"Daily express ready: {result['leg_count']} legs, odds {result['total_odds']}")
                     else:
-                        logger.warning("Failed to generate daily express")
+                        logger.warning("Failed to generate daily express — no suitable matches")
 
-            await asyncio.sleep(30 * 60)  # Check every 30 minutes
+            await asyncio.sleep(30 * 60)
         except Exception as e:
             logger.error(f"Express generation loop error: {e}")
             await asyncio.sleep(30 * 60)
