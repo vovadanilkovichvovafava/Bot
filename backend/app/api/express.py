@@ -91,6 +91,8 @@ async def custom_express(
     user: User = Depends(get_current_user),
 ):
     """Generate a custom express bet (PRO only)."""
+    import traceback
+
     # Check PRO status
     is_premium = user.is_premium or (user.funnel == "funnel-2")
     if not is_premium:
@@ -99,13 +101,25 @@ async def custom_express(
     try:
         gen = _get_generator()
     except Exception as e:
-        logger.error(f"Express generator import failed: {e}")
+        logger.error(f"Express generator import failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=503, detail="Express service temporarily unavailable")
 
-    available = gen["get_leagues"]()
+    try:
+        available = gen["get_leagues"]()
+    except Exception as e:
+        logger.error(f"get_leagues() failed: {e}\n{traceback.format_exc()}")
+        # Fallback: use requested leagues as-is
+        available = req.leagues if req.leagues else []
+
+    logger.info(f"Custom express request: leagues={req.leagues}, leg_count={req.leg_count}, "
+                f"target_odds={req.target_avg_odds}, available={available}, user_id={user.id}")
 
     # Validate leagues
-    valid_leagues = [code for code in req.leagues if code in available]
+    if available:
+        valid_leagues = [code for code in req.leagues if code in available]
+    else:
+        valid_leagues = req.leagues
+
     if not valid_leagues and req.leagues:
         raise HTTPException(status_code=400, detail=f"Invalid league codes. Available: {available}")
 
@@ -120,11 +134,10 @@ async def custom_express(
             target_avg_odds=req.target_avg_odds,
         )
     except Exception as e:
-        import traceback
         logger.error(f"Custom express generation failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to generate express: {type(e).__name__}",
+            detail=f"Failed to generate express: {type(e).__name__}: {str(e)[:200]}",
         )
 
     if not express:
