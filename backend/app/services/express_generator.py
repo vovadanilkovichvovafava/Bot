@@ -1,12 +1,18 @@
 """
-Express Bet Generator — creates multi-leg accumulator bets.
+Express Bet Generator — Pre-generated Menu approach.
 
-Two modes:
-  1. Daily Express: 5 legs from today's matches, best value odds >= 1.5
-  2. Custom Express (PRO): user picks leagues, leg count, target avg odds
+Background job generates a batch of express bets with different configurations
+every 30 minutes. Users browse and pick from ready-made expresses.
+No real-time Fonbet API calls during user requests.
 
-Works directly with Fonbet API for real odds.
-Optionally uses ML predictions for smarter selection when available.
+Menu presets:
+  - daily_safe:    5 legs, low odds (~1.3-1.6 avg), high confidence
+  - daily_value:   5 legs, mid odds (~1.6-2.2 avg), balanced
+  - daily_risky:   5 legs, high odds (~2.0-3.0 avg), higher payout
+  - custom_3:      3 legs, various odds — PRO
+  - custom_5:      5 legs, various odds — PRO
+  - custom_7:      7 legs, various odds — PRO
+  - league-specific variants for each top league — PRO
 """
 import json
 import logging
@@ -15,7 +21,7 @@ import random
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, desc, or_
 
 from app.core.database import async_session_maker
 from app.models.express_bet import ExpressBet
@@ -24,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Lazy imports — avoid crashing if fonbet_api has issues at import time
+# Lazy imports
 # ---------------------------------------------------------------------------
 
 def _get_fonbet():
@@ -37,11 +43,10 @@ def _get_available_leagues():
     return [info["code"] for info in TOP_LEAGUE_IDS.values()]
 
 
-AVAILABLE_LEAGUES = None  # populated lazily
+AVAILABLE_LEAGUES = None
 
 
 def get_available_leagues():
-    """Get available league codes (lazy-loaded)."""
     global AVAILABLE_LEAGUES
     if AVAILABLE_LEAGUES is None:
         AVAILABLE_LEAGUES = _get_available_leagues()
@@ -49,11 +54,9 @@ def get_available_leagues():
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Bet labels & priorities (unchanged logic)
 # ---------------------------------------------------------------------------
 
-# Odds keys we understand and their user-friendly labels
-# Static keys (exact match)
 _BET_LABELS = {
     "1": "1 (Home Win)",
     "X": "X (Draw)",
@@ -69,13 +72,11 @@ _BET_LABELS = {
     "under_3.5": "Total Under 3.5",
     "btts_yes": "Both Teams Score — Yes",
     "btts_no": "Both Teams Score — No",
-    # Half-time results
     "ht_1": "1st Half — Home",
     "ht_X": "1st Half — Draw",
     "ht_2": "1st Half — Away",
 }
 
-# Dynamic key prefixes (for handicaps, half-time totals, etc.)
 _DYNAMIC_PREFIXES = {
     "handicap_1_": "Handicap Home ({})",
     "handicap_2_": "Handicap Away ({})",
@@ -85,45 +86,31 @@ _DYNAMIC_PREFIXES = {
 
 
 def _get_bet_label(key: str) -> Optional[str]:
-    """Get user-friendly label for a bet key (static or dynamic)."""
     if key in _BET_LABELS:
         return _BET_LABELS[key]
     for prefix, template in _DYNAMIC_PREFIXES.items():
         if key.startswith(prefix):
-            param = key[len(prefix):]
-            return template.format(param)
+            return template.format(key[len(prefix):])
     return None
 
 
-# Priority tiers — prefer interesting, mainstream bet types
 _BET_PRIORITY = {
-    # Tier 1: Main 1X2 — most interesting for users
     "1": 1.0, "2": 1.0,
-    # Tier 2: Handicaps — professional-looking bets
     "handicap_1": 0.95, "handicap_2": 0.95,
-    # Tier 3: Over/Under 2.5 — popular and easy to understand
     "over_2.5": 0.9, "under_2.5": 0.85,
-    # Tier 4: Double chance — safe but less exciting
     "1X": 0.7, "X2": 0.7, "12": 0.65,
-    # Tier 5: Other totals
     "over_1.5": 0.6, "over_3.5": 0.6,
     "under_1.5": 0.5, "under_3.5": 0.5,
-    # Tier 6: Half-time results — interesting variety
     "ht_1": 0.55, "ht_2": 0.55,
-    # Tier 7: Half-time totals
     "ht_over": 0.5, "ht_under": 0.45,
-    # Tier 8: Draw — rare outcome, risky in express
     "X": 0.3, "ht_X": 0.25,
-    # Tier 9: BTTS — less exciting for express
     "btts_yes": 0.4, "btts_no": 0.2,
 }
 
 
 def _get_bet_priority(key: str) -> float:
-    """Get priority score for a bet key (handles dynamic keys)."""
     if key in _BET_PRIORITY:
         return _BET_PRIORITY[key]
-    # Check prefixes for dynamic keys like handicap_1_-0.5
     if key.startswith("handicap_1"):
         return _BET_PRIORITY["handicap_1"]
     if key.startswith("handicap_2"):
@@ -132,13 +119,10 @@ def _get_bet_priority(key: str) -> float:
         return _BET_PRIORITY["ht_over"]
     if key.startswith("ht_under"):
         return _BET_PRIORITY["ht_under"]
-    return 0.1  # unknown market
+    return 0.1
 
 
 def _bet_category(bet_key: str) -> str:
-    """Normalize bet key to a category for diversity checks.
-    E.g. handicap_1_-0.5 → handicap, ht_over_1.5 → ht_total, over_2.5 → total
-    """
     if bet_key.startswith("handicap"):
         return "handicap"
     if bet_key.startswith("ht_over") or bet_key.startswith("ht_under"):
@@ -156,23 +140,19 @@ def _bet_category(bet_key: str) -> str:
     return bet_key
 
 
+# ---------------------------------------------------------------------------
+# Candidate extraction
+# ---------------------------------------------------------------------------
+
 def _find_best_bets(odds: dict, min_odds: float = 1.3, target_odds: float = None,
                      top_n: int = 3) -> List[Dict]:
-    """
-    Return top-N candidate bets from a Fonbet event's odds.
-
-    Returns a list of candidates sorted by score (best first).
-    Supports all markets: 1X2, handicaps, totals, half-time, BTTS.
-    """
     candidates = []
-
     for key, value in odds.items():
         label = _get_bet_label(key)
         if not label:
             continue
         if not isinstance(value, (int, float)) or value < min_odds:
             continue
-        # Skip very high odds (long shots not suitable for express)
         if value > 5.0:
             continue
 
@@ -180,12 +160,9 @@ def _find_best_bets(odds: dict, min_odds: float = 1.3, target_odds: float = None
         priority = _get_bet_priority(key)
 
         if target_odds:
-            # Custom: balance priority with proximity to target odds
             distance_penalty = abs(value - target_odds) * 0.15
             score = priority * 0.6 + implied_prob * 0.3 - distance_penalty
         else:
-            # Daily: prefer main 1X2 and higher-odds bets for variety
-            # Boost bets in 1.8-3.5 range (more interesting for express)
             if 1.8 <= value <= 3.5:
                 range_bonus = 0.2
             elif 1.5 <= value <= 4.0:
@@ -206,17 +183,15 @@ def _find_best_bets(odds: dict, min_odds: float = 1.3, target_odds: float = None
 
     if not candidates:
         return []
-
-    # Sort by score (best first)
     candidates.sort(key=lambda x: x["score"], reverse=True)
     return candidates[:top_n]
 
 
-async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: bool = True) -> List[Dict]:
-    """
-    Get upcoming (non-live) Fonbet events with odds.
-    By default only returns matches from TOP_LEAGUE_IDS (real football).
-    """
+# ---------------------------------------------------------------------------
+# Fonbet data fetching (used only by background job)
+# ---------------------------------------------------------------------------
+
+async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
     get_football_events, TOP_LEAGUE_IDS = _get_fonbet()
 
     try:
@@ -226,34 +201,25 @@ async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: 
         logger.error(f"Failed to fetch Fonbet events: {e}")
         return []
 
-    # Build code → sportId mapping for filtering
     code_to_sportid = {v["code"]: k for k, v in TOP_LEAGUE_IDS.items()}
     top_sportids = set(TOP_LEAGUE_IDS.keys())
 
     if league_codes:
         allowed_sportids = {code_to_sportid[c] for c in league_codes if c in code_to_sportid}
-    elif top_leagues_only:
-        allowed_sportids = top_sportids
     else:
-        allowed_sportids = None
+        allowed_sportids = top_sportids
 
     matches = []
     for ev in events:
-        # Skip live matches
         if ev.get("is_live"):
             continue
-
-        # Skip if no odds
         odds = ev.get("odds", {})
         if not odds:
             continue
-
-        # Filter by league — only known top leagues by default
         sport_id = ev.get("sport_id")
         if allowed_sportids and sport_id not in allowed_sportids:
             continue
 
-        # Find league code from sport_id
         league_info = TOP_LEAGUE_IDS.get(sport_id, {})
         league_code = league_info.get("code")
 
@@ -268,19 +234,15 @@ async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: 
             "deeplink": ev.get("deeplink"),
         })
 
-    logger.info(f"Fonbet: {len(matches)} upcoming matches from top leagues (filtered from {len(events)} events)")
+    logger.info(f"Fonbet: {len(matches)} upcoming matches (from {len(events)} events)")
     return matches
 
 
 # ---------------------------------------------------------------------------
-# ML prediction enrichment (optional)
+# ML confidence (optional, unchanged)
 # ---------------------------------------------------------------------------
 
 async def _try_get_ml_confidence(matches: List[Dict]) -> Dict[str, float]:
-    """
-    Try to get ML confidence for matches. Returns empty dict if ML unavailable.
-    Key = "team1 vs team2" normalized, Value = confidence 0-1.
-    """
     try:
         from app.models.ml_models import MatchFeature, CachedPrediction
         from datetime import timedelta
@@ -308,14 +270,12 @@ async def _try_get_ml_confidence(matches: List[Dict]) -> Dict[str, float]:
                 continue
             try:
                 pred = json.loads(cached.ml_prediction_json)
-                # Get max confidence across all markets
                 max_conf = 0
                 for market_data in pred.get("markets", {}).values():
                     if isinstance(market_data, dict):
                         for prob in market_data.values():
                             if isinstance(prob, (int, float)) and prob > max_conf:
                                 max_conf = prob
-
                 key = f"{feature.home_team_name}|{feature.away_team_name}".lower()
                 confidence_map[key] = max_conf
             except Exception:
@@ -324,87 +284,36 @@ async def _try_get_ml_confidence(matches: List[Dict]) -> Dict[str, float]:
         if confidence_map:
             logger.info(f"ML predictions available for {len(confidence_map)} matches")
         return confidence_map
-
     except Exception as e:
         logger.debug(f"ML predictions not available: {e}")
         return {}
 
 
 def _get_ml_confidence_for_match(confidence_map: Dict, team1: str, team2: str) -> float:
-    """Try to find ML confidence for a Fonbet match."""
     if not confidence_map:
         return 0.0
-
-    from app.services.fonbet_api import _teams_match
-
-    for key, conf in confidence_map.items():
-        parts = key.split("|")
-        if len(parts) != 2:
-            continue
-        ml_home, ml_away = parts
-        if (_teams_match(team1, ml_home) and _teams_match(team2, ml_away)) or \
-           (_teams_match(team1, ml_away) and _teams_match(team2, ml_home)):
-            return conf
+    try:
+        from app.services.fonbet_api import _teams_match
+        for key, conf in confidence_map.items():
+            parts = key.split("|")
+            if len(parts) != 2:
+                continue
+            ml_home, ml_away = parts
+            if (_teams_match(team1, ml_home) and _teams_match(team2, ml_away)) or \
+               (_teams_match(team1, ml_away) and _teams_match(team2, ml_home)):
+                return conf
+    except Exception:
+        pass
     return 0.0
 
 
 # ---------------------------------------------------------------------------
-# Generation functions
+# Core: build one express from candidates
 # ---------------------------------------------------------------------------
 
-async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.3) -> Optional[Dict]:
-    """
-    Generate the daily express bet from Fonbet events.
-    Picks diverse bets across all top leagues — varied odds and bet types.
-    """
-    matches = await _get_fonbet_matches()
-    if not matches:
-        logger.warning("No Fonbet matches available for daily express")
-        return None
-
-    # Try to get ML confidence (optional enrichment)
-    ml_conf = await _try_get_ml_confidence(matches)
-
-    # Collect multiple candidates per match for diversity
-    match_candidates = []
-    for match in matches:
-        bets = _find_best_bets(match["odds"], min_odds=min_odds)
-        if not bets:
-            continue
-
-        confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
-
-        for bet in bets:
-            conf = confidence if confidence > 0 else bet["implied_prob"]
-            match_candidates.append({
-                "home_team": match["team1"],
-                "away_team": match["team2"],
-                "league": match["league_code"],
-                "match_date": match.get("start_time"),
-                "bet_type": bet["bet_type"],
-                "bet_name": bet["bet_key"],
-                "odds": bet["odds"],
-                "confidence": round(conf, 4),
-                "score": bet["score"],
-                "fonbet_event_id": match.get("event_id"),
-                "fonbet_deeplink": match.get("deeplink"),
-                "fonbet_sport_id": match.get("sport_id"),
-            })
-
-    if len(match_candidates) < 2:
-        logger.warning(f"Not enough candidates for daily express: {len(match_candidates)}")
-        return None
-
-    # Sort by score (best first)
-    match_candidates.sort(key=lambda x: x["score"], reverse=True)
-
-    # --- Diverse selection ---
-    # Rules: max 1 match per team pair, max 2 per bet category,
-    # and spread odds across ranges for variety
-    selected = []
-    used_matches = set()    # (team1, team2) pairs already picked
-    bet_cat_count = {}
-    odds_bucket_count = {}  # bucket odds into ranges: <1.5, 1.5-2.0, 2.0-3.0, 3.0+
+def _select_legs(candidates: List[Dict], leg_count: int,
+                 max_per_cat: int = 2, max_per_bucket: int = 2) -> List[Dict]:
+    """Select diverse legs from scored candidates."""
 
     def _odds_bucket(odds: float) -> str:
         if odds < 1.5:
@@ -415,10 +324,12 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.3) -> O
             return "high"
         return "very_high"
 
-    max_per_cat = 2
-    max_per_bucket = 2  # no more than 2 bets in same odds range
+    selected = []
+    used_matches = set()
+    bet_cat_count = {}
+    odds_bucket_count = {}
 
-    for cand in match_candidates:
+    for cand in candidates:
         match_key = (cand["home_team"], cand["away_team"])
         if match_key in used_matches:
             continue
@@ -439,9 +350,9 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.3) -> O
         if len(selected) >= leg_count:
             break
 
-    # If not enough, relax bucket constraint
+    # Relax constraints if not enough
     if len(selected) < leg_count:
-        for cand in match_candidates:
+        for cand in candidates:
             match_key = (cand["home_team"], cand["away_team"])
             if match_key in used_matches:
                 continue
@@ -450,119 +361,253 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.3) -> O
             if len(selected) >= leg_count:
                 break
 
-    # Remove internal score field before saving
-    for leg in selected:
-        leg.pop("score", None)
-
-    if len(selected) < 2:
-        logger.warning(f"Not enough legs for daily express: {len(selected)}")
-        return None
-
-    return await _save_express("daily", None, selected)
+    return selected
 
 
-async def generate_custom_express(
-    user_id: int,
-    league_codes: List[str],
-    leg_count: int = 5,
-    target_avg_odds: float = 1.8,
-) -> Optional[Dict]:
-    """
-    Generate a custom express for PRO users.
-    Filters by selected leagues and targets specific avg odds per leg.
-    """
-    matches = await _get_fonbet_matches(league_codes=league_codes)
-    if not matches:
-        return None
-
-    # Try ML confidence
-    ml_conf = await _try_get_ml_confidence(matches)
-
-    min_odds = max(1.2, target_avg_odds - 0.5)
-
-    legs = []
+def _build_express_from_matches(
+    matches: List[Dict],
+    ml_conf: Dict[str, float],
+    leg_count: int,
+    min_odds: float,
+    target_odds: float = None,
+    shuffle_seed: int = None,
+) -> Optional[List[Dict]]:
+    """Build one express from matches. Returns legs list or None."""
+    # Collect candidates
+    all_candidates = []
     for match in matches:
-        bets = _find_best_bets(match["odds"], min_odds=min_odds, target_odds=target_avg_odds, top_n=2)
+        bets = _find_best_bets(match["odds"], min_odds=min_odds,
+                                target_odds=target_odds, top_n=2)
         if not bets:
             continue
 
         confidence = _get_ml_confidence_for_match(ml_conf, match["team1"], match["team2"])
 
-        for best in bets:
-            conf = confidence if confidence > 0 else best["implied_prob"]
-            legs.append({
+        for bet in bets:
+            conf = confidence if confidence > 0 else bet["implied_prob"]
+            all_candidates.append({
                 "home_team": match["team1"],
                 "away_team": match["team2"],
                 "league": match["league_code"],
                 "match_date": match.get("start_time"),
-                "bet_type": best["bet_type"],
-                "bet_name": best["bet_key"],
-                "odds": best["odds"],
+                "bet_type": bet["bet_type"],
+                "bet_name": bet["bet_key"],
+                "odds": bet["odds"],
                 "confidence": round(conf, 4),
+                "score": bet["score"],
                 "fonbet_event_id": match.get("event_id"),
                 "fonbet_deeplink": match.get("deeplink"),
                 "fonbet_sport_id": match.get("sport_id"),
             })
 
-    # Sort: prefer higher confidence, then odds closer to target
-    legs.sort(key=lambda x: (-x["confidence"], abs(x["odds"] - target_avg_odds)))
+    if len(all_candidates) < 2:
+        return None
 
-    # Diversity: max 1 per match, max 2 same bet category
-    selected = []
-    used_matches = set()
-    cat_count = {}
-    for leg in legs:
-        match_key = (leg["home_team"], leg["away_team"])
-        if match_key in used_matches:
-            continue
-        cat = _bet_category(leg["bet_name"])
-        if cat_count.get(cat, 0) >= 2:
-            continue
-        selected.append(leg)
-        used_matches.add(match_key)
-        cat_count[cat] = cat_count.get(cat, 0) + 1
-        if len(selected) >= leg_count:
-            break
-    if len(selected) < leg_count:
-        for leg in legs:
-            match_key = (leg["home_team"], leg["away_team"])
-            if match_key in used_matches:
-                continue
-            selected.append(leg)
-            used_matches.add(match_key)
-            if len(selected) >= leg_count:
-                break
+    # Optional shuffle for variety between presets
+    if shuffle_seed is not None:
+        rng = random.Random(shuffle_seed)
+        # Group by score tier, shuffle within tiers
+        all_candidates.sort(key=lambda x: x["score"], reverse=True)
+        # Slight random perturbation to score
+        for c in all_candidates:
+            c["score"] += rng.uniform(-0.15, 0.15)
+        all_candidates.sort(key=lambda x: x["score"], reverse=True)
+    else:
+        all_candidates.sort(key=lambda x: x["score"], reverse=True)
+
+    selected = _select_legs(all_candidates, leg_count)
+
+    # Remove internal score
+    for leg in selected:
+        leg.pop("score", None)
 
     if len(selected) < 2:
         return None
 
-    return await _save_express("custom", user_id, selected, target_avg_odds, league_codes)
+    return selected
 
 
-async def _save_express(
-    express_type: str,
-    user_id: Optional[int],
-    legs: List[Dict],
-    target_avg_odds: float = None,
-    selected_leagues: List[str] = None,
-) -> Dict:
-    """Save express bet to DB and return result dict."""
+# ---------------------------------------------------------------------------
+# Menu preset definitions
+# ---------------------------------------------------------------------------
+
+MENU_PRESETS = [
+    # --- FREE daily presets ---
+    {
+        "preset": "daily_safe",
+        "label": "Safe Express",
+        "description": "Low risk, steady odds",
+        "leg_count": 5,
+        "min_odds": 1.2,
+        "target_odds": 1.4,
+        "is_pro": False,
+        "leagues": None,  # all top leagues
+    },
+    {
+        "preset": "daily_value",
+        "label": "Value Express",
+        "description": "Balanced risk and reward",
+        "leg_count": 5,
+        "min_odds": 1.3,
+        "target_odds": 1.8,
+        "is_pro": False,
+        "leagues": None,
+    },
+    {
+        "preset": "daily_risky",
+        "label": "High Odds Express",
+        "description": "Higher payout, higher risk",
+        "leg_count": 5,
+        "min_odds": 1.5,
+        "target_odds": 2.5,
+        "is_pro": False,
+        "leagues": None,
+    },
+    # --- PRO presets: different leg counts ---
+    {
+        "preset": "pro_3legs",
+        "label": "Quick 3",
+        "description": "3 matches, quick win",
+        "leg_count": 3,
+        "min_odds": 1.4,
+        "target_odds": 1.8,
+        "is_pro": True,
+        "leagues": None,
+    },
+    {
+        "preset": "pro_5legs",
+        "label": "Classic 5",
+        "description": "5 matches, balanced",
+        "leg_count": 5,
+        "min_odds": 1.3,
+        "target_odds": 1.7,
+        "is_pro": True,
+        "leagues": None,
+    },
+    {
+        "preset": "pro_7legs",
+        "label": "Big 7",
+        "description": "7 matches, big payout",
+        "leg_count": 7,
+        "min_odds": 1.3,
+        "target_odds": 1.6,
+        "is_pro": True,
+        "leagues": None,
+    },
+]
+
+# League-specific PRO presets (generated dynamically)
+_LEAGUE_PRESET_TEMPLATE = {
+    "leg_count": 3,
+    "min_odds": 1.3,
+    "target_odds": 1.7,
+    "is_pro": True,
+}
+
+
+def _get_league_presets() -> List[Dict]:
+    """Generate per-league presets dynamically."""
+    try:
+        _, TOP_LEAGUE_IDS = _get_fonbet()
+    except Exception:
+        return []
+
+    league_presets = []
+    for sport_id, info in TOP_LEAGUE_IDS.items():
+        code = info["code"]
+        name = info["name"]
+        league_presets.append({
+            **_LEAGUE_PRESET_TEMPLATE,
+            "preset": f"league_{code.lower()}",
+            "label": f"{name} Express",
+            "description": f"Best picks from {name}",
+            "leagues": [code],
+        })
+    return league_presets
+
+
+# ---------------------------------------------------------------------------
+# Batch generation (called by background job)
+# ---------------------------------------------------------------------------
+
+async def generate_menu_batch() -> Dict[str, any]:
+    """
+    Generate all menu presets at once.
+    Called by background job every 30 minutes.
+    Returns dict with stats.
+    """
+    matches = await _get_fonbet_matches()
+    if not matches:
+        logger.warning("No Fonbet matches available for menu generation")
+        return {"generated": 0, "error": "no_matches"}
+
+    ml_conf = await _try_get_ml_confidence(matches)
+
+    all_presets = MENU_PRESETS + _get_league_presets()
+    generated = 0
+    failed = 0
+    seed_base = int(datetime.utcnow().timestamp())
+
+    for i, preset in enumerate(all_presets):
+        try:
+            # Filter matches by league if specified
+            if preset.get("leagues"):
+                preset_matches = [m for m in matches if m["league_code"] in preset["leagues"]]
+            else:
+                preset_matches = matches
+
+            if not preset_matches:
+                logger.debug(f"Preset {preset['preset']}: no matches for leagues {preset.get('leagues')}")
+                failed += 1
+                continue
+
+            legs = _build_express_from_matches(
+                matches=preset_matches,
+                ml_conf=ml_conf,
+                leg_count=preset["leg_count"],
+                min_odds=preset["min_odds"],
+                target_odds=preset.get("target_odds"),
+                shuffle_seed=seed_base + i,
+            )
+
+            if not legs:
+                logger.debug(f"Preset {preset['preset']}: not enough candidates")
+                failed += 1
+                continue
+
+            await _save_menu_express(preset, legs)
+            generated += 1
+
+        except Exception as e:
+            logger.error(f"Preset {preset['preset']} failed: {e}")
+            failed += 1
+
+    logger.info(f"Menu batch done: {generated} generated, {failed} failed, {len(all_presets)} total presets")
+    return {"generated": generated, "failed": failed, "total": len(all_presets)}
+
+
+async def _save_menu_express(preset: Dict, legs: List[Dict]) -> ExpressBet:
+    """Save a pre-generated express to DB."""
     total_odds = 1.0
     for leg in legs:
         total_odds *= leg["odds"]
     total_odds = round(total_odds, 2)
 
-    avg_confidence = sum(l["confidence"] for l in legs) / len(legs)
+    avg_confidence = sum(l["confidence"] for l in legs) / len(legs) if legs else 0
 
     express = ExpressBet(
-        express_type=express_type,
-        user_id=user_id,
+        express_type="menu",
+        preset_name=preset["preset"],
+        preset_label=preset["label"],
+        preset_description=preset.get("description", ""),
+        is_pro_only=preset.get("is_pro", False),
+        user_id=None,
         legs_json=json.dumps(legs, default=str),
         total_odds=total_odds,
         leg_count=len(legs),
         avg_confidence=round(avg_confidence, 4),
-        target_avg_odds=target_avg_odds,
-        selected_leagues=json.dumps(selected_leagues, default=str) if selected_leagues else None,
+        target_avg_odds=preset.get("target_odds"),
+        selected_leagues=json.dumps(preset.get("leagues"), default=str) if preset.get("leagues") else None,
         status="pending",
     )
 
@@ -571,40 +616,43 @@ async def _save_express(
             db.add(express)
             await db.commit()
             await db.refresh(express)
-
-        express_id = express.id
-        created_at = express.created_at.isoformat() if express.created_at else None
+        return express
     except Exception as e:
-        logger.error(f"Failed to save express to DB: {e}")
-        # Return result anyway even if DB save fails
-        express_id = None
-        created_at = datetime.utcnow().isoformat()
-
-    result = {
-        "id": express_id,
-        "type": express_type,
-        "legs": legs,
-        "total_odds": total_odds,
-        "leg_count": len(legs),
-        "avg_confidence": round(avg_confidence, 4),
-        "created_at": created_at,
-    }
-
-    if target_avg_odds:
-        result["target_avg_odds"] = target_avg_odds
-    if selected_leagues:
-        result["selected_leagues"] = selected_leagues
-
-    logger.info(f"{express_type.title()} express: {len(legs)} legs, total odds {total_odds}")
-    return result
+        logger.error(f"Failed to save menu express: {e}")
+        return None
 
 
 # ---------------------------------------------------------------------------
-# DB queries
+# Query functions (used by API — fast DB reads, no Fonbet calls)
 # ---------------------------------------------------------------------------
 
-async def get_today_daily_express() -> Optional[Dict]:
-    """Get today's daily express (or None if not yet generated)."""
+async def get_menu_expresses(include_pro: bool = False) -> List[Dict]:
+    """Get today's pre-generated menu expresses."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    try:
+        async with async_session_maker() as db:
+            query = select(ExpressBet).where(
+                and_(
+                    ExpressBet.express_type == "menu",
+                    ExpressBet.created_at >= today,
+                )
+            )
+            if not include_pro:
+                query = query.where(ExpressBet.is_pro_only == False)
+
+            query = query.order_by(ExpressBet.preset_name)
+            result = await db.execute(query)
+            expresses = result.scalars().all()
+    except Exception as e:
+        logger.error(f"Failed to query menu expresses: {e}")
+        return []
+
+    return [_express_to_dict(e) for e in expresses]
+
+
+async def get_menu_express_by_preset(preset_name: str) -> Optional[Dict]:
+    """Get a specific preset express (latest today)."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
 
     try:
@@ -612,36 +660,29 @@ async def get_today_daily_express() -> Optional[Dict]:
             result = await db.execute(
                 select(ExpressBet).where(
                     and_(
-                        ExpressBet.express_type == "daily",
+                        ExpressBet.express_type == "menu",
+                        ExpressBet.preset_name == preset_name,
                         ExpressBet.created_at >= today,
                     )
                 ).order_by(desc(ExpressBet.created_at)).limit(1)
             )
             express = result.scalar_one_or_none()
     except Exception as e:
-        logger.error(f"Failed to query daily express: {e}")
+        logger.error(f"Failed to query preset {preset_name}: {e}")
         return None
 
     if not express:
         return None
+    return _express_to_dict(express)
 
-    legs = json.loads(express.legs_json) if express.legs_json else []
 
-    return {
-        "id": express.id,
-        "type": "daily",
-        "legs": legs,
-        "total_odds": express.total_odds,
-        "leg_count": express.leg_count,
-        "avg_confidence": express.avg_confidence,
-        "status": express.status,
-        "correct_legs": express.correct_legs,
-        "created_at": express.created_at.isoformat() if express.created_at else None,
-    }
+async def get_today_daily_express() -> Optional[Dict]:
+    """Get today's daily express (the 'daily_value' preset for backward compat)."""
+    return await get_menu_express_by_preset("daily_value")
 
 
 async def get_user_expresses(user_id: int, limit: int = 10) -> List[Dict]:
-    """Get user's custom express history."""
+    """Get user's saved/bookmarked expresses."""
     try:
         async with async_session_maker() as db:
             result = await db.execute(
@@ -654,55 +695,55 @@ async def get_user_expresses(user_id: int, limit: int = 10) -> List[Dict]:
         logger.error(f"Failed to query express history: {e}")
         return []
 
-    return [
-        {
-            "id": e.id,
-            "type": e.express_type,
-            "legs": json.loads(e.legs_json) if e.legs_json else [],
-            "total_odds": e.total_odds,
-            "leg_count": e.leg_count,
-            "avg_confidence": e.avg_confidence,
-            "status": e.status,
-            "correct_legs": e.correct_legs,
-            "created_at": e.created_at.isoformat() if e.created_at else None,
-        }
-        for e in expresses
-    ]
+    return [_express_to_dict(e) for e in expresses]
+
+
+def _express_to_dict(e: ExpressBet) -> Dict:
+    """Convert ExpressBet model to API dict."""
+    legs = json.loads(e.legs_json) if e.legs_json else []
+    leagues = json.loads(e.selected_leagues) if e.selected_leagues else None
+
+    return {
+        "id": e.id,
+        "type": e.express_type,
+        "preset": getattr(e, "preset_name", None),
+        "preset_label": getattr(e, "preset_label", None),
+        "preset_description": getattr(e, "preset_description", None),
+        "is_pro_only": getattr(e, "is_pro_only", False),
+        "legs": legs,
+        "total_odds": e.total_odds,
+        "leg_count": e.leg_count,
+        "avg_confidence": e.avg_confidence,
+        "target_avg_odds": e.target_avg_odds,
+        "selected_leagues": leagues,
+        "status": e.status,
+        "correct_legs": e.correct_legs,
+        "created_at": e.created_at.isoformat() if e.created_at else None,
+    }
 
 
 # ---------------------------------------------------------------------------
-# Background worker
+# Background worker — generates menu every 30 minutes
 # ---------------------------------------------------------------------------
 
 async def express_generation_loop():
     """
-    Background task: generate daily express at 15:00 London time.
-    Runs every 30 minutes, checks if it's time.
+    Background task: regenerate menu every 30 minutes.
+    First run after 60s startup delay.
     """
     import asyncio
     from zoneinfo import ZoneInfo
 
-    london_tz = ZoneInfo("Europe/London")
-
-    # Wait 2 minutes on startup
-    await asyncio.sleep(120)
+    # Wait 60s on startup
+    await asyncio.sleep(60)
 
     while True:
         try:
-            now = datetime.now(london_tz)
-
-            # Generate at 15:00 London (or shortly after)
-            if now.hour == 15 and now.minute < 30:
-                existing = await get_today_daily_express()
-                if not existing:
-                    logger.info("Generating daily express at 15:00 London")
-                    result = await generate_daily_express()
-                    if result:
-                        logger.info(f"Daily express ready: {result['leg_count']} legs, odds {result['total_odds']}")
-                    else:
-                        logger.warning("Failed to generate daily express — no suitable matches")
-
-            await asyncio.sleep(30 * 60)
+            logger.info("Starting express menu batch generation...")
+            stats = await generate_menu_batch()
+            logger.info(f"Express menu batch: {stats}")
         except Exception as e:
             logger.error(f"Express generation loop error: {e}")
-            await asyncio.sleep(30 * 60)
+
+        # Regenerate every 30 minutes
+        await asyncio.sleep(30 * 60)
