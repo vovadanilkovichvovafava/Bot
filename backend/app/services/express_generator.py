@@ -207,10 +207,10 @@ def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None)
     return candidates[0]
 
 
-async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
+async def _get_fonbet_matches(league_codes: List[str] = None, top_leagues_only: bool = True) -> List[Dict]:
     """
-    Get all upcoming (non-live) Fonbet events with odds.
-    Optionally filter by league codes.
+    Get upcoming (non-live) Fonbet events with odds.
+    By default only returns matches from TOP_LEAGUE_IDS (real football).
     """
     get_football_events, TOP_LEAGUE_IDS = _get_fonbet()
 
@@ -223,9 +223,14 @@ async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
 
     # Build code → sportId mapping for filtering
     code_to_sportid = {v["code"]: k for k, v in TOP_LEAGUE_IDS.items()}
-    allowed_sportids = None
+    top_sportids = set(TOP_LEAGUE_IDS.keys())
+
     if league_codes:
         allowed_sportids = {code_to_sportid[c] for c in league_codes if c in code_to_sportid}
+    elif top_leagues_only:
+        allowed_sportids = top_sportids
+    else:
+        allowed_sportids = None
 
     matches = []
     for ev in events:
@@ -238,17 +243,14 @@ async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
         if not odds:
             continue
 
-        # Filter by league
+        # Filter by league — only known top leagues by default
         sport_id = ev.get("sport_id")
         if allowed_sportids and sport_id not in allowed_sportids:
             continue
 
         # Find league code from sport_id
-        league_code = None
-        for sid, info in TOP_LEAGUE_IDS.items():
-            if sid == sport_id:
-                league_code = info["code"]
-                break
+        league_info = TOP_LEAGUE_IDS.get(sport_id, {})
+        league_code = league_info.get("code")
 
         matches.append({
             "event_id": ev.get("id"),
@@ -261,7 +263,7 @@ async def _get_fonbet_matches(league_codes: List[str] = None) -> List[Dict]:
             "deeplink": ev.get("deeplink"),
         })
 
-    logger.info(f"Fonbet: {len(matches)} upcoming matches (filtered from {len(events)} events)")
+    logger.info(f"Fonbet: {len(matches)} upcoming matches from top leagues (filtered from {len(events)} events)")
     return matches
 
 
