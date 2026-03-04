@@ -70,16 +70,33 @@ _BET_LABELS = {
     "btts_no": "BTTS No",
 }
 
+# Priority tiers — prefer interesting, mainstream bet types
+_BET_PRIORITY = {
+    # Tier 1: Main 1X2 markets — most interesting for users
+    "1": 1.0, "2": 1.0,
+    # Tier 2: Over/Under 2.5 — popular and easy to understand
+    "over_2.5": 0.9, "under_2.5": 0.85,
+    # Tier 3: Double chance — safe but less exciting
+    "1X": 0.7, "X2": 0.7, "12": 0.65,
+    # Tier 4: Other totals
+    "over_1.5": 0.6, "over_3.5": 0.6,
+    "under_1.5": 0.5, "under_3.5": 0.5,
+    # Tier 5: Draw — rare outcome, avoid in express
+    "X": 0.3,
+    # Tier 6: BTTS — boring for express, deprioritize
+    "btts_yes": 0.4, "btts_no": 0.2,
+}
+
 
 def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None) -> Optional[Dict]:
     """
     Pick the best single bet from a Fonbet event's odds.
 
     Strategy:
-    - Filter by min_odds
-    - Prefer "safe" outcomes (lower odds = higher implied probability)
-    - For custom express: prefer odds closest to target_odds
-    - For daily: prefer odds in 1.5-2.5 range (value sweet spot)
+    - Prioritize 1X2 and Over/Under markets (most interesting for users)
+    - Avoid boring BTTS No / Under 1.5 unless nothing else fits
+    - For daily: prefer odds in 1.5-3.0 range (value + excitement)
+    - For custom: prefer odds closest to target_odds
     """
     candidates = []
 
@@ -88,23 +105,26 @@ def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None)
             continue
         if not isinstance(value, (int, float)) or value < min_odds:
             continue
+        # Skip very high odds (long shots not suitable for express)
+        if value > 5.0:
+            continue
 
-        # Implied probability from odds
         implied_prob = 1.0 / value
+        priority = _BET_PRIORITY.get(key, 0.3)
 
-        # Score: prefer higher probability (safer) bets in the value range
         if target_odds:
-            # For custom: penalize distance from target
-            distance = abs(value - target_odds)
-            score = implied_prob - (distance * 0.1)
+            # Custom: balance priority with proximity to target odds
+            distance_penalty = abs(value - target_odds) * 0.15
+            score = priority * 0.6 + implied_prob * 0.3 - distance_penalty
         else:
-            # For daily: sweet spot 1.5-2.5, penalize very high odds
-            if 1.5 <= value <= 2.5:
-                score = implied_prob + 0.1  # bonus for value range
-            elif value <= 3.5:
-                score = implied_prob
+            # Daily: value sweet spot 1.6-3.0 with priority weighting
+            if 1.6 <= value <= 3.0:
+                range_bonus = 0.15
+            elif 1.5 <= value <= 4.0:
+                range_bonus = 0.05
             else:
-                score = implied_prob - 0.1  # penalty for long shots
+                range_bonus = -0.1
+            score = priority * 0.5 + implied_prob * 0.3 + range_bonus
 
         candidates.append({
             "bet_key": key,
@@ -299,15 +319,36 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> O
             "fonbet_sport_id": match.get("sport_id"),
         })
 
-    # Sort by confidence (highest first), take top N
+    # Sort by confidence (highest first)
     legs.sort(key=lambda x: x["confidence"], reverse=True)
-    legs = legs[:leg_count]
 
-    if len(legs) < 2:
-        logger.warning(f"Not enough legs for daily express: {len(legs)}")
+    # Select diverse legs — avoid repeating same bet type too much
+    selected = []
+    bet_type_count = {}
+    max_per_type = 2  # max 2 legs with same bet type
+
+    for leg in legs:
+        bt = leg["bet_type"]
+        if bet_type_count.get(bt, 0) >= max_per_type:
+            continue
+        selected.append(leg)
+        bet_type_count[bt] = bet_type_count.get(bt, 0) + 1
+        if len(selected) >= leg_count:
+            break
+
+    # If not enough diverse legs, fill from remaining
+    if len(selected) < leg_count:
+        for leg in legs:
+            if leg not in selected:
+                selected.append(leg)
+                if len(selected) >= leg_count:
+                    break
+
+    if len(selected) < 2:
+        logger.warning(f"Not enough legs for daily express: {len(selected)}")
         return None
 
-    return await _save_express("daily", None, legs)
+    return await _save_express("daily", None, selected)
 
 
 async def generate_custom_express(
@@ -355,12 +396,29 @@ async def generate_custom_express(
 
     # Sort: prefer higher confidence, then odds closer to target
     legs.sort(key=lambda x: (-x["confidence"], abs(x["odds"] - target_avg_odds)))
-    legs = legs[:leg_count]
 
-    if len(legs) < 2:
+    # Diversity: max 2 same bet types
+    selected = []
+    bt_count = {}
+    for leg in legs:
+        bt = leg["bet_type"]
+        if bt_count.get(bt, 0) >= 2:
+            continue
+        selected.append(leg)
+        bt_count[bt] = bt_count.get(bt, 0) + 1
+        if len(selected) >= leg_count:
+            break
+    if len(selected) < leg_count:
+        for leg in legs:
+            if leg not in selected:
+                selected.append(leg)
+                if len(selected) >= leg_count:
+                    break
+
+    if len(selected) < 2:
         return None
 
-    return await _save_express("custom", user_id, legs, target_avg_odds, league_codes)
+    return await _save_express("custom", user_id, selected, target_avg_odds, league_codes)
 
 
 async def _save_express(
