@@ -92,6 +92,7 @@ const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'))
 const ProGuide = lazy(() => import('./features/tools/pages/ProGuide'));
 const BankrollTracker = lazy(() => import('./features/tools/pages/BankrollTracker'));
 const BetSlipBuilder = lazy(() => import('./features/betting/pages/BetSlipBuilder'));
+const ExpressBet = lazy(() => import('./features/betting/pages/ExpressBet'));
 const KellyCalculator = lazy(() => import('./features/tools/pages/KellyCalculator'));
 const NotFound = lazy(() => import('./shared/components/NotFound'));
 const DebugMLPipeline = lazy(() => import('./shared/pages/DebugMLPipeline'));
@@ -252,6 +253,9 @@ export default function App() {
         } />
         <Route path="/bankroll-tracker" element={
           <ProtectedRoute><BankrollTracker /></ProtectedRoute>
+        } />
+        <Route path="/express" element={
+          <ProtectedRoute><ExpressBet /></ProtectedRoute>
         } />
         <Route path="/bet-slip-builder" element={
           <ProtectedRoute><BetSlipBuilder /></ProtectedRoute>

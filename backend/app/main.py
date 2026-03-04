@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat
+from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
@@ -139,6 +139,11 @@ async def lifespan(app: FastAPI):
     background_tasks.append(prewarm_task)
     logger.info("Cache pre-warm worker scheduled (every 30 min)")
 
+    from app.services.express_generator import express_generation_loop
+    express_task = asyncio.create_task(safe_task("express", express_generation_loop()))
+    background_tasks.append(express_task)
+    logger.info("Express bet generation worker scheduled (daily at 15:00 London)")
+
     yield
 
     # Shutdown: cancel all background tasks
@@ -213,6 +218,7 @@ app.include_router(postback_logs.router, prefix="/api/v1/postbacks", tags=["post
 app.include_router(fonbet.router, prefix="/api/v1/fonbet", tags=["fonbet"])
 app.include_router(community_picks.router, prefix="/api/v1/community-picks", tags=["community-picks"])
 app.include_router(match_chat.router, prefix="/api/v1/match-chat", tags=["match-chat"])
+app.include_router(express.router, prefix="/api/v1/express", tags=["express"])
 
 
 @app.get("/")
