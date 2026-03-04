@@ -1472,6 +1472,12 @@
     "statusPending": "In attesa",
     "statusWon": "Vinto",
     "statusLost": "Perso",
-    "statusPartial": "Parziale"
+    "statusPartial": "Parziale",
+    "dailyFree": "GRATIS OGNI GIORNO",
+    "legsPerDay": "partite/giorno",
+    "minOdds": "quota min",
+    "proCustomAvailable": "Express personalizzato disponibile",
+    "dailyFreeCustomPro": "Giornaliero gratis · Custom con PRO",
+    "openExpress": "Apri"
   }
 }

@@ -96,94 +96,124 @@ export default function ProTools() {
       </div>
 
       <div className="px-5 pt-2 pb-4 space-y-4">
-        {/* Value Bet Finder - Главный хук! */}
-        <div
-          onClick={() => handleToolClick('valueFinder')}
-          className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-              </svg>
-            </div>
-            {!isPremium && !valueBetUsed && (
-              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
-                {t('proTools.freeTry')}
-              </span>
-            )}
-            {!isPremium && valueBetUsed && (
-              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+        {/* AI Express — Main featured card (replaces Value Bet for funnel-1/3) */}
+        {!isFunnel2 ? (
+          <div
+            onClick={() => navigate('/express')}
+            className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
                 </svg>
-                PRO
+              </div>
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {t('express.dailyFree', { defaultValue: 'FREE DAILY' })}
               </span>
-            )}
-          </div>
+            </div>
 
-          <h3 className="text-xl font-bold text-white mb-2">{t('proTools.valueBetFinder')}</h3>
-          <p className="text-white/80 text-sm mb-4">
-            {t('proTools.valueBetDesc')}
-          </p>
+            <h3 className="text-xl font-bold text-white mb-2">{t('express.title', { defaultValue: 'AI Express' })}</h3>
+            <p className="text-white/80 text-sm mb-4">
+              {t('express.toolDesc', { defaultValue: 'Daily AI-generated accumulators with real odds. PRO users can customize leagues & parameters.' })}
+            </p>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">87%</p>
-              <p className="text-white/60 text-xs">{t('proTools.accuracy')}</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">5</p>
+                <p className="text-white/60 text-xs">{t('express.legsPerDay', { defaultValue: 'legs/day' })}</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">87%</p>
+                <p className="text-white/60 text-xs">{t('proTools.accuracy')}</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">1.5+</p>
+                <p className="text-white/60 text-xs">{t('express.minOdds', { defaultValue: 'min odds' })}</p>
+              </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">+12%</p>
-              <p className="text-white/60 text-xs">{t('proTools.avgEdge')}</p>
-            </div>
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">50+</p>
-              <p className="text-white/60 text-xs">{t('proTools.dailyBets')}</p>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white/70 text-sm">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {isPremium ? t('express.proCustomAvailable', { defaultValue: 'Custom express available' }) : t('express.dailyFreeCustomPro', { defaultValue: 'Daily free · Custom with PRO' })}
+              </div>
+              <div className="bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+                {t('express.openExpress', { defaultValue: 'Open' })}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
             </div>
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white/70 text-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-              </svg>
-              {isPremium ? t('proTools.unlimitedScans') : valueBetUsed ? t('proTools.depositToUnlock') : t('proTools.tryFreeNow')}
+        ) : (
+          /* Value Bet Finder — only for funnel-2 */
+          <div
+            onClick={() => handleToolClick('valueFinder')}
+            className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+              </div>
+              {!isPremium && !valueBetUsed && (
+                <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
+                  {t('proTools.freeTry')}
+                </span>
+              )}
+              {!isPremium && valueBetUsed && (
+                <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                  </svg>
+                  PRO
+                </span>
+              )}
             </div>
-            <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
-              {isPremium || !valueBetUsed ? t('proTools.findValueBets') : t('proTools.unlock')}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-              </svg>
+
+            <h3 className="text-xl font-bold text-white mb-2">{t('proTools.valueBetFinder')}</h3>
+            <p className="text-white/80 text-sm mb-4">
+              {t('proTools.valueBetDesc')}
+            </p>
+
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">87%</p>
+                <p className="text-white/60 text-xs">{t('proTools.accuracy')}</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">+12%</p>
+                <p className="text-white/60 text-xs">{t('proTools.avgEdge')}</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-white font-bold text-lg">50+</p>
+                <p className="text-white/60 text-xs">{t('proTools.dailyBets')}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white/70 text-sm">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                {isPremium ? t('proTools.unlimitedScans') : valueBetUsed ? t('proTools.depositToUnlock') : t('proTools.tryFreeNow')}
+              </div>
+              <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+                {isPremium || !valueBetUsed ? t('proTools.findValueBets') : t('proTools.unlock')}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Free Tools */}
         <h2 className="section-title">{t('proTools.freeTools')}</h2>
-
-        {/* AI Express — featured */}
-        <div
-          onClick={() => navigate('/express')}
-          className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-shadow"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-white">{t('express.title', { defaultValue: 'AI Express' })}</h3>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">NEW</span>
-              </div>
-              <p className="text-white/70 text-xs">{t('express.toolDesc', { defaultValue: 'Daily AI-generated accumulators with real odds. PRO users can customize leagues & parameters.' })}</p>
-            </div>
-            <svg className="w-5 h-5 text-white/50 flex-shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </div>
-        </div>
 
         <ToolCard
           icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
