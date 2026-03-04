@@ -120,10 +120,11 @@ async def custom_express(
             target_avg_odds=req.target_avg_odds,
         )
     except Exception as e:
-        logger.error(f"Custom express generation failed: {e}")
+        import traceback
+        logger.error(f"Custom express generation failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail="Failed to generate express. Please try again later.",
+            detail=f"Failed to generate express: {type(e).__name__}",
         )
 
     if not express:
