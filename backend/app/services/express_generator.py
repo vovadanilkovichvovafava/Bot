@@ -53,62 +53,147 @@ def get_available_leagues():
 # ---------------------------------------------------------------------------
 
 # Odds keys we understand and their user-friendly labels
+# Static keys (exact match)
 _BET_LABELS = {
-    "1": "1 (Home)",
+    "1": "1 (Home Win)",
     "X": "X (Draw)",
-    "2": "2 (Away)",
-    "1X": "1X",
-    "X2": "X2",
-    "12": "12",
-    "over_1.5": "Over 1.5",
-    "under_1.5": "Under 1.5",
-    "over_2.5": "Over 2.5",
-    "under_2.5": "Under 2.5",
-    "over_3.5": "Over 3.5",
-    "under_3.5": "Under 3.5",
-    "btts_yes": "BTTS Yes",
-    "btts_no": "BTTS No",
+    "2": "2 (Away Win)",
+    "1X": "1X (Home or Draw)",
+    "X2": "X2 (Draw or Away)",
+    "12": "12 (Home or Away)",
+    "over_1.5": "Total Over 1.5",
+    "under_1.5": "Total Under 1.5",
+    "over_2.5": "Total Over 2.5",
+    "under_2.5": "Total Under 2.5",
+    "over_3.5": "Total Over 3.5",
+    "under_3.5": "Total Under 3.5",
+    "btts_yes": "Both Teams Score — Yes",
+    "btts_no": "Both Teams Score — No",
+    # Half-time results
+    "ht_1": "1st Half — Home",
+    "ht_X": "1st Half — Draw",
+    "ht_2": "1st Half — Away",
 }
+
+# Dynamic key prefixes (for handicaps, half-time totals, etc.)
+_DYNAMIC_PREFIXES = {
+    "handicap_1_": "Handicap Home ({})",
+    "handicap_2_": "Handicap Away ({})",
+    "ht_over_": "1st Half Over {}",
+    "ht_under_": "1st Half Under {}",
+}
+
+
+def _get_bet_label(key: str) -> Optional[str]:
+    """Get user-friendly label for a bet key (static or dynamic)."""
+    if key in _BET_LABELS:
+        return _BET_LABELS[key]
+    for prefix, template in _DYNAMIC_PREFIXES.items():
+        if key.startswith(prefix):
+            param = key[len(prefix):]
+            return template.format(param)
+    return None
+
+
+# Priority tiers — prefer interesting, mainstream bet types
+_BET_PRIORITY = {
+    # Tier 1: Main 1X2 — most interesting for users
+    "1": 1.0, "2": 1.0,
+    # Tier 2: Handicaps — professional-looking bets
+    "handicap_1": 0.95, "handicap_2": 0.95,
+    # Tier 3: Over/Under 2.5 — popular and easy to understand
+    "over_2.5": 0.9, "under_2.5": 0.85,
+    # Tier 4: Double chance — safe but less exciting
+    "1X": 0.7, "X2": 0.7, "12": 0.65,
+    # Tier 5: Other totals
+    "over_1.5": 0.6, "over_3.5": 0.6,
+    "under_1.5": 0.5, "under_3.5": 0.5,
+    # Tier 6: Half-time results — interesting variety
+    "ht_1": 0.55, "ht_2": 0.55,
+    # Tier 7: Half-time totals
+    "ht_over": 0.5, "ht_under": 0.45,
+    # Tier 8: Draw — rare outcome, risky in express
+    "X": 0.3, "ht_X": 0.25,
+    # Tier 9: BTTS — less exciting for express
+    "btts_yes": 0.4, "btts_no": 0.2,
+}
+
+
+def _get_bet_priority(key: str) -> float:
+    """Get priority score for a bet key (handles dynamic keys)."""
+    if key in _BET_PRIORITY:
+        return _BET_PRIORITY[key]
+    # Check prefixes for dynamic keys like handicap_1_-0.5
+    if key.startswith("handicap_1"):
+        return _BET_PRIORITY["handicap_1"]
+    if key.startswith("handicap_2"):
+        return _BET_PRIORITY["handicap_2"]
+    if key.startswith("ht_over"):
+        return _BET_PRIORITY["ht_over"]
+    if key.startswith("ht_under"):
+        return _BET_PRIORITY["ht_under"]
+    return 0.1  # unknown market
+
+
+def _bet_category(bet_key: str) -> str:
+    """Normalize bet key to a category for diversity checks.
+    E.g. handicap_1_-0.5 → handicap, ht_over_1.5 → ht_total, over_2.5 → total
+    """
+    if bet_key.startswith("handicap"):
+        return "handicap"
+    if bet_key.startswith("ht_over") or bet_key.startswith("ht_under"):
+        return "ht_total"
+    if bet_key.startswith("ht_"):
+        return "ht_result"
+    if bet_key.startswith("over") or bet_key.startswith("under"):
+        return "total"
+    if bet_key in ("1X", "X2", "12"):
+        return "double_chance"
+    if bet_key.startswith("btts"):
+        return "btts"
+    if bet_key in ("1", "X", "2"):
+        return "result"
+    return bet_key
 
 
 def _find_best_bet(odds: dict, min_odds: float = 1.5, target_odds: float = None) -> Optional[Dict]:
     """
     Pick the best single bet from a Fonbet event's odds.
 
-    Strategy:
-    - Filter by min_odds
-    - Prefer "safe" outcomes (lower odds = higher implied probability)
-    - For custom express: prefer odds closest to target_odds
-    - For daily: prefer odds in 1.5-2.5 range (value sweet spot)
+    Supports all markets: 1X2, handicaps, totals, half-time, BTTS.
     """
     candidates = []
 
     for key, value in odds.items():
-        if key not in _BET_LABELS:
+        label = _get_bet_label(key)
+        if not label:
             continue
         if not isinstance(value, (int, float)) or value < min_odds:
             continue
+        # Skip very high odds (long shots not suitable for express)
+        if value > 5.0:
+            continue
 
-        # Implied probability from odds
         implied_prob = 1.0 / value
+        priority = _get_bet_priority(key)
 
-        # Score: prefer higher probability (safer) bets in the value range
         if target_odds:
-            # For custom: penalize distance from target
-            distance = abs(value - target_odds)
-            score = implied_prob - (distance * 0.1)
+            # Custom: balance priority with proximity to target odds
+            distance_penalty = abs(value - target_odds) * 0.15
+            score = priority * 0.6 + implied_prob * 0.3 - distance_penalty
         else:
-            # For daily: sweet spot 1.5-2.5, penalize very high odds
-            if 1.5 <= value <= 2.5:
-                score = implied_prob + 0.1  # bonus for value range
-            elif value <= 3.5:
-                score = implied_prob
+            # Daily: value sweet spot 1.6-3.0 with priority weighting
+            if 1.6 <= value <= 3.0:
+                range_bonus = 0.15
+            elif 1.5 <= value <= 4.0:
+                range_bonus = 0.05
             else:
-                score = implied_prob - 0.1  # penalty for long shots
+                range_bonus = -0.1
+            score = priority * 0.5 + implied_prob * 0.3 + range_bonus
 
         candidates.append({
             "bet_key": key,
-            "bet_type": _BET_LABELS[key],
+            "bet_type": label,
             "odds": round(value, 2),
             "implied_prob": round(implied_prob, 4),
             "score": score,
@@ -299,15 +384,36 @@ async def generate_daily_express(leg_count: int = 5, min_odds: float = 1.5) -> O
             "fonbet_sport_id": match.get("sport_id"),
         })
 
-    # Sort by confidence (highest first), take top N
+    # Sort by confidence (highest first)
     legs.sort(key=lambda x: x["confidence"], reverse=True)
-    legs = legs[:leg_count]
 
-    if len(legs) < 2:
-        logger.warning(f"Not enough legs for daily express: {len(legs)}")
+    # Select diverse legs — avoid repeating same bet category too much
+    selected = []
+    bet_cat_count = {}
+    max_per_cat = 2  # max 2 legs with same bet category
+
+    for leg in legs:
+        cat = _bet_category(leg["bet_name"])
+        if bet_cat_count.get(cat, 0) >= max_per_cat:
+            continue
+        selected.append(leg)
+        bet_cat_count[cat] = bet_cat_count.get(cat, 0) + 1
+        if len(selected) >= leg_count:
+            break
+
+    # If not enough diverse legs, fill from remaining
+    if len(selected) < leg_count:
+        for leg in legs:
+            if leg not in selected:
+                selected.append(leg)
+                if len(selected) >= leg_count:
+                    break
+
+    if len(selected) < 2:
+        logger.warning(f"Not enough legs for daily express: {len(selected)}")
         return None
 
-    return await _save_express("daily", None, legs)
+    return await _save_express("daily", None, selected)
 
 
 async def generate_custom_express(
@@ -355,12 +461,29 @@ async def generate_custom_express(
 
     # Sort: prefer higher confidence, then odds closer to target
     legs.sort(key=lambda x: (-x["confidence"], abs(x["odds"] - target_avg_odds)))
-    legs = legs[:leg_count]
 
-    if len(legs) < 2:
+    # Diversity: max 2 same bet category
+    selected = []
+    cat_count = {}
+    for leg in legs:
+        cat = _bet_category(leg["bet_name"])
+        if cat_count.get(cat, 0) >= 2:
+            continue
+        selected.append(leg)
+        cat_count[cat] = cat_count.get(cat, 0) + 1
+        if len(selected) >= leg_count:
+            break
+    if len(selected) < leg_count:
+        for leg in legs:
+            if leg not in selected:
+                selected.append(leg)
+                if len(selected) >= leg_count:
+                    break
+
+    if len(selected) < 2:
         return None
 
-    return await _save_express("custom", user_id, legs, target_avg_odds, league_codes)
+    return await _save_express("custom", user_id, selected, target_avg_odds, league_codes)
 
 
 async def _save_express(
