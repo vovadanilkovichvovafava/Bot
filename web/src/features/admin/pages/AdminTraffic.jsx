@@ -287,6 +287,103 @@ export default function AdminTraffic() {
         </section>
       </div>
 
+      {/* UTM Source Breakdown */}
+      {data.by_utm_source?.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-300 mb-3">By UTM Source (Ad Platform)</h2>
+          <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 text-xs">
+                  <th className="text-left px-4 py-3 font-medium">UTM Source</th>
+                  <th className="text-right px-4 py-3 font-medium">Users</th>
+                  <th className="text-right px-4 py-3 font-medium">PRO</th>
+                  <th className="text-right px-4 py-3 font-medium">Conv %</th>
+                  <th className="text-right px-4 py-3 font-medium">Activated</th>
+                  <th className="text-right px-4 py-3 font-medium">Act %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {data.by_utm_source.map((s, i) => (
+                  <tr key={s.source} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor(i + 4) }} />
+                        <span className="font-medium">{s.source}</span>
+                      </div>
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono">{s.total}</td>
+                    <td className="text-right px-4 py-3 font-mono">{s.pro}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        s.conversion_pct >= 5 ? 'bg-green-500/20 text-green-400' :
+                        s.conversion_pct >= 2 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>{s.conversion_pct}%</span>
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono">{s.activated}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        s.activation_pct >= 30 ? 'bg-green-500/20 text-green-400' :
+                        s.activation_pct >= 15 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>{s.activation_pct}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* UTM Campaign Breakdown */}
+      {data.by_utm_campaign?.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-300 mb-3">By UTM Campaign</h2>
+          <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 text-xs">
+                  <th className="text-left px-4 py-3 font-medium">Campaign</th>
+                  <th className="text-left px-4 py-3 font-medium">Source</th>
+                  <th className="text-right px-4 py-3 font-medium">Users</th>
+                  <th className="text-right px-4 py-3 font-medium">PRO</th>
+                  <th className="text-right px-4 py-3 font-medium">Conv %</th>
+                  <th className="text-right px-4 py-3 font-medium">Activated</th>
+                  <th className="text-right px-4 py-3 font-medium">Act %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {data.by_utm_campaign.map((c, i) => (
+                  <tr key={`${c.campaign}-${c.source}`} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-xs max-w-[200px] truncate">{c.campaign}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{c.source}</td>
+                    <td className="text-right px-4 py-3 font-mono">{c.total}</td>
+                    <td className="text-right px-4 py-3 font-mono">{c.pro}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        c.conversion_pct >= 5 ? 'bg-green-500/20 text-green-400' :
+                        c.conversion_pct >= 2 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>{c.conversion_pct}%</span>
+                    </td>
+                    <td className="text-right px-4 py-3 font-mono">{c.activated}</td>
+                    <td className="text-right px-4 py-3">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        c.activation_pct >= 30 ? 'bg-green-500/20 text-green-400' :
+                        c.activation_pct >= 15 ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>{c.activation_pct}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {/* Country breakdown */}
       {data.by_source_country.length > 0 && (
         <section>
