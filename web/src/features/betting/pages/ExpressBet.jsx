@@ -8,10 +8,28 @@ import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../s
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import api from '../../../shared/api';
 
+const PRESET_ICONS = {
+  safe: (
+    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+    </svg>
+  ),
+  value: (
+    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+    </svg>
+  ),
+  risky: (
+    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12.356 2.082a.75.75 0 00-.712 0C7.754 4.137 5.25 8.312 5.25 12.75c0 2.47.862 4.742 2.302 6.522a.75.75 0 001.142-.976A8.218 8.218 0 017 12.75c0-3.658 2.018-7.17 5-9.347 2.982 2.177 5 5.689 5 9.347a8.218 8.218 0 01-1.694 5.546.75.75 0 001.142.976A9.717 9.717 0 0018.75 12.75c0-4.438-2.504-8.613-6.394-10.668zM12 9a.75.75 0 00-.75.75c0 2.672-1.244 4.95-2.898 6.61a.75.75 0 001.048 1.074C10.88 16.007 12 13.683 12 11.25v-.008c.872 1.386 1.5 3.075 1.5 4.758 0 1.06-.293 2.05-.8 2.898a.75.75 0 001.3.75A6.233 6.233 0 0015 15.75c0-2.663-1.2-5.143-3-6.75z"/>
+    </svg>
+  ),
+};
+
 const PRESET_STYLES = {
-  safe:  { gradient: 'from-emerald-500 to-green-600', icon: '\u{1F6E1}\uFE0F', iconBg: 'bg-emerald-500' },
-  value: { gradient: 'from-blue-500 to-indigo-600',   icon: '\u{2B50}',           iconBg: 'bg-blue-500' },
-  risky: { gradient: 'from-orange-500 to-red-600',    icon: '\u{1F525}',           iconBg: 'bg-orange-500' },
+  safe:  { gradient: 'from-emerald-500 to-green-600', icon: PRESET_ICONS.safe, iconBg: 'bg-emerald-500' },
+  value: { gradient: 'from-blue-500 to-indigo-600',   icon: PRESET_ICONS.value, iconBg: 'bg-blue-500' },
+  risky: { gradient: 'from-orange-500 to-red-600',    icon: PRESET_ICONS.risky, iconBg: 'bg-orange-500' },
 };
 
 // Weekly access key for funnel-1
@@ -381,7 +399,7 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackCli
         onClick={isLocked ? () => navigate('/promo?banner=express_unlock_pro') : onToggle}
         className="w-full px-4 py-3.5 flex items-center gap-3 text-left"
       >
-        <div className={`w-11 h-11 rounded-xl ${style.iconBg} flex items-center justify-center text-xl flex-shrink-0 shadow-sm`}>
+        <div className={`w-11 h-11 rounded-xl ${style.iconBg} flex items-center justify-center flex-shrink-0 shadow-sm`}>
           {isLocked ? (
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
