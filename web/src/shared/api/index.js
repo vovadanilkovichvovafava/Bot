@@ -174,6 +174,17 @@ class ApiService {
       || new URLSearchParams(window.location.search).get('source')
       || ((() => { try { return localStorage.getItem('traffic_source'); } catch { return null; } })());
     if (source) body.source = source;
+    // Attach UTM params from cloaker link (saved in sessionStorage by App.jsx)
+    const getUtm = (key) => {
+      try {
+        return new URLSearchParams(window.location.search).get(key)
+          || sessionStorage.getItem(`tracking_${key}`) || null;
+      } catch { return null; }
+    };
+    const utmSource = getUtm('utm_source');
+    const utmCampaign = getUtm('utm_campaign');
+    if (utmSource) body.utm_source = utmSource;
+    if (utmCampaign) body.utm_campaign = utmCampaign;
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),

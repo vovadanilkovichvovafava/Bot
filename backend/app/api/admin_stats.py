@@ -2625,6 +2625,62 @@ async def get_traffic_analytics(
             for r in country_rows
         ]
 
+        # ── UTM Source breakdown ──
+        utm_source_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(utm_source, 'unknown') AS src,
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro,
+                COUNT(*) FILTER (WHERE total_predictions > 0) AS activated
+            FROM users
+            WHERE utm_source IS NOT NULL AND utm_source != ''
+            GROUP BY COALESCE(utm_source, 'unknown')
+            ORDER BY COUNT(*) DESC
+            LIMIT 20
+        """), {"now": now})).all()
+
+        total_utm = sum(r[1] for r in utm_source_rows) or 1
+        by_utm_source = [
+            {
+                "source": r[0],
+                "total": r[1],
+                "percent": round(r[1] / total_utm * 100, 1),
+                "pro": r[2],
+                "conversion_pct": round(r[2] / r[1] * 100, 1) if r[1] > 0 else 0,
+                "activated": r[3],
+                "activation_pct": round(r[3] / r[1] * 100, 1) if r[1] > 0 else 0,
+            }
+            for r in utm_source_rows
+        ]
+
+        # ── UTM Campaign breakdown ──
+        utm_campaign_rows = (await db.execute(text("""
+            SELECT
+                COALESCE(utm_campaign, 'unknown') AS camp,
+                COALESCE(utm_source, 'unknown') AS src,
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro,
+                COUNT(*) FILTER (WHERE total_predictions > 0) AS activated
+            FROM users
+            WHERE utm_campaign IS NOT NULL AND utm_campaign != ''
+            GROUP BY COALESCE(utm_campaign, 'unknown'), COALESCE(utm_source, 'unknown')
+            ORDER BY COUNT(*) DESC
+            LIMIT 30
+        """), {"now": now})).all()
+
+        by_utm_campaign = [
+            {
+                "campaign": r[0],
+                "source": r[1],
+                "total": r[2],
+                "pro": r[3],
+                "conversion_pct": round(r[3] / r[2] * 100, 1) if r[2] > 0 else 0,
+                "activated": r[4],
+                "activation_pct": round(r[4] / r[2] * 100, 1) if r[2] > 0 else 0,
+            }
+            for r in utm_campaign_rows
+        ]
+
         return {
             "by_source": by_source,
             "daily_by_source": daily_by_source,
@@ -2632,6 +2688,8 @@ async def get_traffic_analytics(
             "new_month": new_month,
             "retention_by_source": retention_by_source,
             "by_source_country": by_source_country,
+            "by_utm_source": by_utm_source,
+            "by_utm_campaign": by_utm_campaign,
         }
     except Exception as e:
         logger.error(f"Traffic analytics error: {e}")

@@ -43,7 +43,9 @@ class UserRegister(BaseModel):
     email: Optional[EmailStr] = None  # Optional, for password recovery
     username: Optional[str] = None
     referral_code: Optional[str] = None
-    source: Optional[str] = None  # Traffic source: "pwa-1", "pwa-2", etc.
+    source: Optional[str] = None  # Traffic source: "prescoreai_com", "sportscoreai_com", etc.
+    utm_source: Optional[str] = None  # Рекламный источник: google, facebook, tiktok
+    utm_campaign: Optional[str] = None  # Название рекламной кампании
 
     @field_validator("phone")
     @classmethod
@@ -187,6 +189,8 @@ async def register(
         country=country,
         referred_by_id=referrer.id if referrer else None,
         traffic_source=user.source,
+        utm_source=user.utm_source,
+        utm_campaign=user.utm_campaign,
         funnel=funnel,
     )
     db.add(new_user)

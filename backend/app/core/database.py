@@ -97,6 +97,11 @@ async def init_db():
             # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
+            # UTM tracking — сохраняем рекламный источник и кампанию при регистрации
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_source VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_utm_source ON users(utm_source)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_utm_campaign ON users(utm_campaign)",
             # A/B funnel assignment (funnel-1, funnel-2, funnel-3)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS funnel VARCHAR DEFAULT 'funnel-1'",
             "CREATE INDEX IF NOT EXISTS ix_users_funnel ON users(funnel)",
