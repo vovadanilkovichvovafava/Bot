@@ -378,15 +378,7 @@ class ApiService {
     });
   }
 
-  // Express Bets — pre-generated menu
-  async getExpressMenu() {
-    return this.request('/express/menu');
-  }
-
-  async getExpressPreset(presetName) {
-    return this.request(`/express/preset/${presetName}`);
-  }
-
+  // Express Bets (generation is now client-side via valueBetService)
   async getDailyExpress() {
     return this.request('/express/daily');
   }
