@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { addTrackingToUrl } from '../services/trackingService';
+import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import api from '../../../shared/api';
 
 const PRESET_STYLES = {
   safe:  { gradient: 'from-emerald-500 to-green-600', icon: '\u{1F6E1}\uFE0F', iconBg: 'bg-emerald-500' },
@@ -13,13 +14,45 @@ const PRESET_STYLES = {
   risky: { gradient: 'from-orange-500 to-red-600',    icon: '\u{1F525}',           iconBg: 'bg-orange-500' },
 };
 
+// Weekly access key for funnel-1
+const EXPRESS_WEEKLY_KEY = 'express_last_used_week';
+
+function getCurrentWeek() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now - start;
+  return `${now.getFullYear()}-W${Math.ceil(diff / 604800000)}`;
+}
+
+function canAccessFree(user) {
+  if (!user) return false;
+  // Premium or funnel-2 — always free
+  if (user.is_premium || user.funnel === 'funnel-2') return true;
+  // Funnel-1 — once per week
+  if (user.funnel === 'funnel-1' || !user.funnel) {
+    const lastWeek = localStorage.getItem(EXPRESS_WEEKLY_KEY);
+    const currentWeek = getCurrentWeek();
+    return lastWeek !== currentWeek;
+  }
+  // Funnel-3 — always allowed (costs tokens, checked separately)
+  if (user.funnel === 'funnel-3') return true;
+  return false;
+}
+
+function markWeeklyUsed() {
+  localStorage.setItem(EXPRESS_WEEKLY_KEY, getCurrentWeek());
+}
+
 export default function ExpressBet() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { trackClick } = useAdvertiser();
   const navigate = useNavigate();
 
   const isPro = user?.is_premium || user?.funnel === 'funnel-2';
+  const isFonbetUser = user?.is_premium; // registered on Fonbet = has deeplink access
+  const isFunnel3 = user?.funnel === 'funnel-3';
+  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPro && !isFunnel3);
 
   const [expresses, setExpresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,32 +61,80 @@ export default function ExpressBet() {
   const [expandedKey, setExpandedKey] = useState(null);
   const [fonbetMap, setFonbetMap] = useState({});
   const [isTopLeagues, setIsTopLeagues] = useState(true);
+  const [accessBlocked, setAccessBlocked] = useState(false);
+  const [tokenSpent, setTokenSpent] = useState(false);
 
   useEffect(() => {
-    loadExpresses();
+    checkAccessAndLoad();
   }, []);
+
+  const checkAccessAndLoad = async () => {
+    if (!user) {
+      setAccessBlocked(true);
+      setLoading(false);
+      return;
+    }
+
+    // PRO / funnel-2: always free
+    if (isPro) {
+      return loadExpresses();
+    }
+
+    // Funnel-1: once per week free
+    if (isFunnel1) {
+      if (!canAccessFree(user)) {
+        setAccessBlocked(true);
+        setLoading(false);
+        return;
+      }
+      markWeeklyUsed();
+      return loadExpresses();
+    }
+
+    // Funnel-3: costs 3 tokens
+    if (isFunnel3) {
+      try {
+        // Spend 3 tokens via backend
+        const result = await api.request('/express/spend-tokens', { method: 'POST' });
+        if (result?.error) {
+          setAccessBlocked(true);
+          setLoading(false);
+          return;
+        }
+        setTokenSpent(true);
+        if (refreshUser) refreshUser(); // refresh token count in UI
+      } catch (e) {
+        // If 402 = not enough tokens
+        if (e.message?.includes('402') || e.message?.includes('tokens')) {
+          setAccessBlocked(true);
+          setLoading(false);
+          return;
+        }
+      }
+      return loadExpresses();
+    }
+
+    // Default: allow
+    loadExpresses();
+  };
 
   const loadExpresses = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Load express-suitable bets (top leagues first, fallback to all)
       const { bets: expressBets, isTopLeagues: topFlag } = await loadExpressBets({
         onProgress: setProgress,
       });
 
       setIsTopLeagues(topFlag);
 
-      // Build express presets from bets
       const built = buildExpressFromBets(expressBets);
       setExpresses(built);
 
-      // Auto-expand first one
       if (built.length > 0) {
         setExpandedKey(built[0].key);
       }
 
-      // Load Fonbet deeplinks in background
       loadFonbetMap().then(setFonbetMap);
     } catch (e) {
       console.error('Express load error:', e);
@@ -63,22 +144,26 @@ export default function ExpressBet() {
     }
   };
 
-  // Find Fonbet deeplink for a leg
-  const getFonbetLink = (leg) => {
-    if (!fonbetMap) return null;
-    try {
-      const key = `${leg.home_team.toLowerCase()}_${leg.away_team.toLowerCase()}`;
-      return fonbetMap[key]?.deeplink || null;
-    } catch { return null; }
-  };
+  // Bet link logic:
+  // - PRO (is_premium / registered on Fonbet) → Fonbet deeplink to first match
+  // - Everyone else → referral offer link
+  const getBetLink = (express) => {
+    if (!express?.legs?.[0]) return null;
 
-  const getExpressLink = (express) => {
-    // Link to first leg's Fonbet deeplink, or tracking link
-    const firstLeg = express?.legs?.[0];
-    if (!firstLeg) return null;
-    const fbLink = getFonbetLink(firstLeg);
-    if (fbLink) return addTrackingToUrl(fbLink, user?.id, 'express_bet');
-    return null;
+    if (isFonbetUser) {
+      // Try Fonbet deeplink for first leg
+      const firstLeg = express.legs[0];
+      try {
+        const key = `${firstLeg.home_team.toLowerCase()}_${firstLeg.away_team.toLowerCase()}`;
+        const fbEvent = fonbetMap[key];
+        if (fbEvent?.deeplink) {
+          return addTrackingToUrl(fbEvent.deeplink, user?.id, 'express_bet_fonbet');
+        }
+      } catch {}
+    }
+
+    // Fallback: referral offer link for all non-Fonbet users
+    return getTrackingLink(user?.id, 'express_bet');
   };
 
   return (
@@ -95,11 +180,65 @@ export default function ExpressBet() {
         <p className="text-white/70 text-sm">
           {t('express.valueSubtitle', { defaultValue: 'Accumulators built from AI value bets — same engine as Value Finder' })}
         </p>
+        {/* Token cost badge for funnel-3 */}
+        {isFunnel3 && tokenSpent && (
+          <div className="mt-2 bg-white/20 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+            <span className="text-xs font-bold">-3 {t('express.tokens', { defaultValue: 'tokens used' })}</span>
+          </div>
+        )}
       </div>
 
       <div className="px-4 -mt-3 space-y-4">
-        {/* Loading state with progress */}
-        {loading && (
+        {/* Access blocked */}
+        {accessBlocked && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-8 text-center">
+              <svg className="w-12 h-12 mx-auto text-purple-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+              </svg>
+              {isFunnel1 && (
+                <>
+                  <p className="font-bold text-gray-900 mb-1">
+                    {t('express.weeklyLimitTitle', { defaultValue: 'Weekly limit reached' })}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {t('express.weeklyLimitDesc', { defaultValue: 'Free express is available once per week. Come back next week or get PRO for unlimited access!' })}
+                  </p>
+                </>
+              )}
+              {isFunnel3 && (
+                <>
+                  <p className="font-bold text-gray-900 mb-1">
+                    {t('express.noTokensTitle', { defaultValue: 'Not enough tokens' })}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {t('express.noTokensDesc', { defaultValue: 'Express costs 3 tokens. Wait for your daily reset or get PRO for unlimited access!' })}
+                  </p>
+                </>
+              )}
+              {!user && (
+                <>
+                  <p className="font-bold text-gray-900 mb-1">
+                    {t('express.loginRequired', { defaultValue: 'Login required' })}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {t('express.loginRequiredDesc', { defaultValue: 'Sign in to access AI Express.' })}
+                  </p>
+                </>
+              )}
+              <button
+                onClick={() => navigate('/promo?banner=express_unlock_pro')}
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-500/30"
+              >
+                {t('express.getProNow', { defaultValue: 'Get PRO Access' })}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loading && !accessBlocked && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-4 py-5">
               <div className="flex items-center gap-3 mb-3">
@@ -122,7 +261,6 @@ export default function ExpressBet() {
                 </div>
               )}
             </div>
-            {/* Skeleton cards */}
             <div className="px-4 pb-4 space-y-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-gray-50 rounded-xl p-4">
@@ -135,7 +273,7 @@ export default function ExpressBet() {
         )}
 
         {/* Error state */}
-        {error && (
+        {error && !accessBlocked && (
           <div className="bg-white rounded-2xl shadow-sm border border-red-100 px-4 py-6 text-center">
             <p className="text-sm text-gray-500">{t('express.noMatches', { defaultValue: 'No matches available today. Check back later!' })}</p>
             <button onClick={loadExpresses} className="mt-2 text-xs font-bold text-indigo-600">
@@ -145,14 +283,14 @@ export default function ExpressBet() {
         )}
 
         {/* Express cards */}
-        {!loading && !error && (
+        {!loading && !error && !accessBlocked && (
           <>
             {expresses.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-8 text-center">
                 <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                 </svg>
-                <p className="font-medium text-gray-500">{t('express.noValueBets', { defaultValue: 'Not enough value bets for express today' })}</p>
+                <p className="font-medium text-gray-500">{t('express.noValueBets', { defaultValue: 'Not enough matches for express today' })}</p>
                 <p className="text-sm text-gray-400 mt-1">{t('express.checkLater', { defaultValue: 'Check back when more matches are available' })}</p>
                 <button onClick={loadExpresses} className="mt-3 text-sm font-bold text-indigo-600">
                   {t('express.retry', { defaultValue: 'Retry' })}
@@ -179,6 +317,15 @@ export default function ExpressBet() {
                   </div>
                 )}
 
+                {/* Funnel-1 weekly info */}
+                {isFunnel1 && !isPro && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5">
+                    <p className="text-xs text-blue-700">
+                      {t('express.weeklyFreeNote', { defaultValue: 'Free express this week. Next one available in 7 days, or get PRO for unlimited.' })}
+                    </p>
+                  </div>
+                )}
+
                 {/* How it works badge */}
                 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -186,7 +333,7 @@ export default function ExpressBet() {
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
                     </svg>
                     <p className="text-xs text-indigo-700">
-                      {t('express.howItWorks', { defaultValue: 'AI finds matches where bookmaker odds undervalue a team, then combines the best into accumulators.' })}
+                      {t('express.howItWorks', { defaultValue: 'AI analyzes odds from top leagues, picks the best bets and combines them into accumulators.' })}
                     </p>
                   </div>
                 </div>
@@ -197,8 +344,7 @@ export default function ExpressBet() {
                     express={express}
                     isExpanded={expandedKey === express.key}
                     onToggle={() => setExpandedKey(expandedKey === express.key ? null : express.key)}
-                    getExpressLink={getExpressLink}
-                    getFonbetLink={getFonbetLink}
+                    getBetLink={getBetLink}
                     trackClick={trackClick}
                     userId={user?.id}
                     navigate={navigate}
@@ -211,8 +357,8 @@ export default function ExpressBet() {
           </>
         )}
 
-        {/* PRO upsell — shown below free expresses for non-PRO */}
-        {!loading && !error && !isPro && expresses.length > 0 && (
+        {/* PRO upsell — shown below for non-PRO */}
+        {!loading && !error && !isPro && !accessBlocked && expresses.length > 0 && (
           <ProUpsell t={t} navigate={navigate} />
         )}
       </div>
@@ -221,9 +367,9 @@ export default function ExpressBet() {
 }
 
 
-function ExpressPresetCard({ express, isExpanded, onToggle, getExpressLink, getFonbetLink, trackClick, userId, navigate, t, isPro }) {
+function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackClick, userId, navigate, t, isPro }) {
   const style = PRESET_STYLES[express.key] || PRESET_STYLES.value;
-  const betLink = getExpressLink(express);
+  const betLink = getBetLink(express);
 
   // PRO-gate: risky (7 legs) is PRO only
   const isLocked = express.key === 'risky' && !isPro;
@@ -277,76 +423,57 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getExpressLink, getF
 
           {/* Legs list */}
           <div className="divide-y divide-gray-50">
-            {express.legs.map((leg, i) => {
-              const fbLink = getFonbetLink(leg);
-              return (
-                <div key={i} className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
-                      {i + 1}
+            {express.legs.map((leg, i) => (
+              <div key={i} className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {leg.home_logo && <img src={leg.home_logo} alt="" className="w-4 h-4 object-contain"/>}
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {leg.home_team} &mdash; {leg.away_team}
+                      </p>
+                      {leg.away_logo && <img src={leg.away_logo} alt="" className="w-4 h-4 object-contain"/>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        {leg.home_logo && <img src={leg.home_logo} alt="" className="w-4 h-4 object-contain"/>}
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {leg.home_team} &mdash; {leg.away_team}
-                        </p>
-                        {leg.away_logo && <img src={leg.away_logo} alt="" className="w-4 h-4 object-contain"/>}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {leg.league_logo && <img src={leg.league_logo} alt="" className="w-3 h-3 object-contain"/>}
-                        <span className="text-[10px] text-gray-400">{leg.league}</span>
-                        <span className="text-[10px] text-gray-300">&middot;</span>
-                        <span className="text-[10px] text-gray-400">
-                          {new Date(leg.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {leg.isTopLeague && (
-                          <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-1 py-0.5 rounded">TOP</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="inline-block bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg mb-0.5">
-                        {leg.bet_type}
+                    <div className="flex items-center gap-1.5">
+                      {leg.league_logo && <img src={leg.league_logo} alt="" className="w-3 h-3 object-contain"/>}
+                      <span className="text-[10px] text-gray-400">{leg.league}</span>
+                      <span className="text-[10px] text-gray-300">&middot;</span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(leg.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{leg.odds}</p>
+                      {leg.isTopLeague && (
+                        <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-1 py-0.5 rounded">TOP</span>
+                      )}
                     </div>
                   </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="inline-block bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg mb-0.5">
+                      {leg.bet_type}
+                    </span>
+                    <p className="text-sm font-black text-gray-900 mt-0.5">{leg.odds}</p>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
-          {/* Bet button */}
+          {/* Bet Now button */}
           <div className="px-4 py-3 bg-gray-50">
-            {betLink ? (
-              <a
-                href={betLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackClick?.(userId, 'express_bet')}
-                className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
-                </svg>
-                {t('express.placeBet', { defaultValue: 'Place Bet on Fonbet' })}
-              </a>
-            ) : (
-              <button
-                onClick={() => {
-                  // Navigate to first leg's match detail
-                  const fid = express.legs[0]?.fixture_id;
-                  if (fid) navigate(`/match/${fid}`);
-                }}
-                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
-                </svg>
-                {t('express.viewMatches', { defaultValue: 'View Matches' })}
-              </button>
-            )}
+            <a
+              href={betLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick?.(userId, 'express_bet')}
+              className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+              </svg>
+              {t('express.betNow', { defaultValue: 'Bet Now' })}
+            </a>
           </div>
         </div>
       )}
@@ -366,7 +493,7 @@ function ProUpsell({ t, navigate }) {
           <h3 className="font-bold text-lg">{t('express.proUpsellTitle', { defaultValue: 'Want more?' })}</h3>
         </div>
         <p className="text-white/80 text-sm">
-          {t('express.proUpsellBig', { defaultValue: 'Unlock Big Express (7 legs) for maximum payout with PRO access.' })}
+          {t('express.proUpsellBig', { defaultValue: 'Unlock Big Express (7 legs) and unlimited access with PRO.' })}
         </p>
       </div>
       <div className="px-4 py-3">
