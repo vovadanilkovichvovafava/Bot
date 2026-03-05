@@ -2,44 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
-import footballApi from '../../matches/api/footballApi';
-import fonbetApi from '../../../services/fonbetApi';
-import FootballSpinner from '../../../shared/components/FootballSpinner';
+import { loadValueBets, loadFonbetMap } from '../../../services/valueBetService';
 import { addTrackingToUrl } from '../../betting/services/trackingService';
+import FootballSpinner from '../../../shared/components/FootballSpinner';
 
 const VALUE_BET_USED_KEY = 'value_bet_used';
-
-// Top leagues to prioritize (league IDs from API-Football)
-const TOP_LEAGUE_IDS = [
-  39,   // Premier League (England)
-  140,  // La Liga (Spain)
-  135,  // Serie A (Italy)
-  78,   // Bundesliga (Germany)
-  61,   // Ligue 1 (France)
-  2,    // UEFA Champions League
-  3,    // UEFA Europa League
-  848,  // UEFA Conference League
-  88,   // Eredivisie (Netherlands)
-  94,   // Primeira Liga (Portugal)
-  203,  // Super Lig (Turkey)
-  144,  // Belgian Pro League
-  235,  // Russian Premier League
-  40,   // Championship (England)
-  41,   // League One (England)
-  253,  // MLS (USA)
-  262,  // Liga MX (Mexico)
-  71,   // Serie A (Brazil)
-  128,  // Primera Division (Argentina)
-];
-
-function impliedProb(odd) {
-  return odd > 0 ? (1 / parseFloat(odd)) * 100 : 0;
-}
-
-function valuePct(predicted, odd) {
-  const implied = impliedProb(odd);
-  return predicted - implied;
-}
 
 export default function ValueFinder() {
   const navigate = useNavigate();
@@ -49,7 +16,7 @@ export default function ValueFinder() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all | high | medium
   const [progress, setProgress] = useState({ current: 0, total: 0, phase: '' });
-  const [fonbetMap, setFonbetMap] = useState({}); // team key → fonbet event
+  const [fonbetMap, setFonbetMap] = useState({});
 
   const isPremium = user?.is_premium;
 
@@ -61,121 +28,22 @@ export default function ValueFinder() {
   }, [isPremium]);
 
   useEffect(() => {
-    loadValueBets();
+    doLoad();
   }, []);
 
-  const loadValueBets = async () => {
+  const doLoad = async () => {
     try {
-      setProgress({ current: 0, total: 0, phase: t('valueFinder.loadingMatches') });
+      const results = await loadValueBets({
+        onProgress: (p) => setProgress({
+          current: p.current,
+          total: p.total,
+          phase: p.phase === 'Loading matches...' ? t('valueFinder.loadingMatches') : t('valueFinder.analyzingMatches'),
+        }),
+      });
+      setValueBets(results);
 
-      const today = new Date().toISOString().split('T')[0];
-      const fixtures = await footballApi.getFixturesByDate(today);
-
-      // Filter to upcoming/live matches only
-      const upcoming = fixtures.filter(f =>
-        ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short)
-      );
-
-      // Separate top leagues from others
-      const topLeagueMatches = upcoming.filter(f => TOP_LEAGUE_IDS.includes(f.league.id));
-      const otherMatches = upcoming.filter(f => !TOP_LEAGUE_IDS.includes(f.league.id));
-
-      // Prioritize: all top leagues first, then fill with others
-      // Limit: 30 top league + 15 others = 45 max
-      const prioritized = [
-        ...topLeagueMatches.slice(0, 30),
-        ...otherMatches.slice(0, 15),
-      ];
-
-      setProgress({ current: 0, total: prioritized.length, phase: t('valueFinder.analyzingMatches') });
-
-      // Process in smaller batches to show progress
-      const allResults = [];
-      const BATCH_SIZE = 5;
-
-      for (let i = 0; i < prioritized.length; i += BATCH_SIZE) {
-        const batch = prioritized.slice(i, i + BATCH_SIZE);
-
-        const batchResults = await Promise.allSettled(
-          batch.map(async (fix) => {
-            const [pred, odds] = await Promise.allSettled([
-              footballApi.getPrediction(fix.fixture.id),
-              footballApi.getOdds(fix.fixture.id),
-            ]);
-
-            const prediction = pred.status === 'fulfilled' ? pred.value : null;
-            const oddsData = odds.status === 'fulfilled' ? odds.value : [];
-
-            if (!prediction?.predictions?.percent) return null;
-
-            // Get 1X2 odds
-            const bookmaker = oddsData?.[0]?.bookmakers?.[0];
-            const market = bookmaker?.bets?.find(b => b.name === 'Match Winner');
-            if (!market) return null;
-
-            const homeOdd = market.values?.find(v => v.value === 'Home')?.odd;
-            const drawOdd = market.values?.find(v => v.value === 'Draw')?.odd;
-            const awayOdd = market.values?.find(v => v.value === 'Away')?.odd;
-            if (!homeOdd) return null;
-
-            const homePred = parseInt(prediction.predictions.percent.home);
-            const drawPred = parseInt(prediction.predictions.percent.draw);
-            const awayPred = parseInt(prediction.predictions.percent.away);
-
-            const homeValue = valuePct(homePred, homeOdd);
-            const drawValue = valuePct(drawPred, drawOdd);
-            const awayValue = valuePct(awayPred, awayOdd);
-
-            // Find best value bet for this match
-            const bets = [
-              { type: 'Home', pred: homePred, odd: homeOdd, value: homeValue, team: fix.teams.home.name },
-              { type: 'Draw', pred: drawPred, odd: drawOdd, value: drawValue, team: 'Draw' },
-              { type: 'Away', pred: awayPred, odd: awayOdd, value: awayValue, team: fix.teams.away.name },
-            ];
-
-            const best = bets.reduce((a, b) => a.value > b.value ? a : b);
-            const isTopLeague = TOP_LEAGUE_IDS.includes(fix.league.id);
-
-            return {
-              fixture: fix,
-              prediction,
-              bookmaker: bookmaker?.name,
-              bets,
-              bestBet: best,
-              isTopLeague,
-            };
-          })
-        );
-
-        allResults.push(...batchResults);
-        setProgress({ current: Math.min(i + BATCH_SIZE, prioritized.length), total: prioritized.length, phase: t('valueFinder.analyzingMatches') });
-      }
-
-      const valid = allResults
-        .filter(r => r.status === 'fulfilled' && r.value !== null)
-        .map(r => r.value)
-        .filter(v => v.bestBet.value > 0) // Only positive value
-        .sort((a, b) => {
-          // Sort by: top league first, then by value
-          if (a.isTopLeague && !b.isTopLeague) return -1;
-          if (!a.isTopLeague && b.isTopLeague) return 1;
-          return b.bestBet.value - a.bestBet.value;
-        });
-
-      setValueBets(valid);
-
-      // Load Fonbet odds in background for comparison (never blocks, never crashes)
-      try {
-        const fbData = await fonbetApi.getTopLeaguesEvents('en');
-        if (fbData?.events) {
-          const map = {};
-          fbData.events.forEach(ev => {
-            const key = `${(ev.team1 || '').toLowerCase()}_${(ev.team2 || '').toLowerCase()}`;
-            map[key] = ev;
-          });
-          setFonbetMap(map);
-        }
-      } catch (_) { /* Fonbet unavailable — value finder works fine without it */ }
+      // Load Fonbet odds in background
+      loadFonbetMap().then(setFonbetMap);
     } catch (e) {
       console.error('Value finder error:', e);
     } finally {
