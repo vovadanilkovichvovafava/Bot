@@ -140,7 +140,7 @@ export async function saveTrackingParams(userId) {
  *   external_id = наш userId (для постбэков)
  *   sub_id_1..7 = из клоачной ссылки (as-is)
  *   sub_id_8    = original external_id из клоачной
- *   sub_id_9    = из клоачной ссылки (as-is)
+ *   sub_id_9    = original utm_medium из клоачной (affiliate, cpc и т.д.)
  *   sub_id_10   = наш userId (PostbackAPI матчит по нему для премиума!)
  *   sub_id_11   = banner (наш, 21 баннер из разных мест)
  *   sub_id_12..15 = из клоачной ссылки (as-is)
@@ -162,9 +162,9 @@ export function getTrackingLink(userId, banner = '') {
     params.set('sub_id_10', String(userId));
     if (banner) params.set('sub_id_11', banner);
 
-    // sub_id_1..15 из клоачной ссылки (as-is, кроме 8, 10, 11 — наши)
+    // sub_id_1..15 из клоачной ссылки (as-is, кроме 8, 9, 10, 11 — наши)
     for (let i = 1; i <= 15; i++) {
-      if (i === 8 || i === 10 || i === 11) continue; // зарезервированы нами
+      if (i === 8 || i === 9 || i === 10 || i === 11) continue; // зарезервированы нами
       const val = getParam(`sub_id_${i}`);
       if (val) params.set(`sub_id_${i}`, val);
     }
@@ -172,6 +172,14 @@ export function getTrackingLink(userId, banner = '') {
     // Original external_id из клоачной ссылки → sub_id_8
     const cloakerExternalId = getParam('external_id');
     if (cloakerExternalId) params.set('sub_id_8', cloakerExternalId);
+
+    // Оригинальный utm_medium клоакера → sub_id_9 (чтобы не потерять)
+    const cloakerUtmMedium = getParam('utm_medium');
+    if (cloakerUtmMedium) params.set('sub_id_9', cloakerUtmMedium);
+
+    // partner_click_id из клоакера — критично для атрибуции конверсий
+    const partnerClickId = getParam('partner_click_id');
+    if (partnerClickId) params.set('partner_click_id', partnerClickId);
 
     // fbclid → sub_id_16 (Keitaro маппит fbclid на sub_id_16) + отдельный param
     const fbclid = getParam('fbclid');
@@ -217,9 +225,9 @@ export function addTrackingToUrl(url, userId, banner = '') {
     const urlParams = new URLSearchParams(window.location.search);
     const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';
 
-    // sub_id_1..15 из клоачной ссылки (as-is, кроме 8, 10, 11 — наши)
+    // sub_id_1..15 из клоачной ссылки (as-is, кроме 8, 9, 10, 11 — наши)
     for (let i = 1; i <= 15; i++) {
-      if (i === 8 || i === 10 || i === 11) continue; // зарезервированы нами
+      if (i === 8 || i === 9 || i === 10 || i === 11) continue; // зарезервированы нами
       const val = getParam(`sub_id_${i}`);
       if (val) u.searchParams.set(`sub_id_${i}`, val);
     }
@@ -227,6 +235,14 @@ export function addTrackingToUrl(url, userId, banner = '') {
     // Original external_id из клоачной ссылки → sub_id_8
     const cloakerExternalId = getParam('external_id');
     if (cloakerExternalId) u.searchParams.set('sub_id_8', cloakerExternalId);
+
+    // Оригинальный utm_medium клоакера → sub_id_9
+    const cloakerUtmMedium = getParam('utm_medium');
+    if (cloakerUtmMedium) u.searchParams.set('sub_id_9', cloakerUtmMedium);
+
+    // partner_click_id из клоакера — для атрибуции конверсий
+    const partnerClickId = getParam('partner_click_id');
+    if (partnerClickId) u.searchParams.set('partner_click_id', partnerClickId);
 
     // fbclid
     const fbclid = getParam('fbclid');
