@@ -27,6 +27,7 @@ export default function ExpressBet() {
   const [progress, setProgress] = useState({ current: 0, total: 0, phase: '' });
   const [expandedKey, setExpandedKey] = useState(null);
   const [fonbetMap, setFonbetMap] = useState({});
+  const [isTopLeagues, setIsTopLeagues] = useState(true);
 
   useEffect(() => {
     loadExpresses();
@@ -36,10 +37,12 @@ export default function ExpressBet() {
     setLoading(true);
     setError(null);
     try {
-      // Load express-suitable bets (top leagues only, multiple markets, odds 1.25-3.0)
-      const expressBets = await loadExpressBets({
+      // Load express-suitable bets (top leagues first, fallback to all)
+      const { bets: expressBets, isTopLeagues: topFlag } = await loadExpressBets({
         onProgress: setProgress,
       });
+
+      setIsTopLeagues(topFlag);
 
       // Build express presets from bets
       const built = buildExpressFromBets(expressBets);
@@ -157,6 +160,25 @@ export default function ExpressBet() {
               </div>
             ) : (
               <>
+                {/* Warning: non-top-leagues fallback */}
+                {!isTopLeagues && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                      </svg>
+                      <div>
+                        <p className="text-xs font-bold text-amber-800">
+                          {t('express.noTopLeaguesToday', { defaultValue: 'No top-league matches today' })}
+                        </p>
+                        <p className="text-xs text-amber-700 mt-0.5">
+                          {t('express.fallbackWarning', { defaultValue: 'Express built from other leagues — AI confidence may be lower. Top-league expresses are more reliable.' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* How it works badge */}
                 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2">

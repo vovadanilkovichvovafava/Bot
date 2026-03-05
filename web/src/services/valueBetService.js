@@ -288,15 +288,17 @@ function _scoreExpressBet(bet, aiConfidence) {
 }
 
 /**
- * Load express-suitable bets from today's top-league matches.
+ * Load express-suitable bets from today's matches.
  *
- * Different from loadValueBets():
- * - TOP LEAGUES ONLY
- * - Multiple markets (1X2, Double Chance, Totals, Handicap)
- * - Odds filtered to 1.25-3.0 range
- * - Scored by express suitability, not by value edge
+ * Strategy:
+ * 1. Try top leagues first
+ * 2. If no top-league matches today → fallback to ALL upcoming matches
+ *    (returns { bets, isTopLeagues: false } so UI can show warning)
  *
- * Returns array of express-ready bet objects.
+ * Markets: 1X2, Double Chance, Over/Under, Handicap
+ * Odds filtered to 1.25-3.0 range.
+ *
+ * Returns { bets: Array, isTopLeagues: boolean }
  */
 export async function loadExpressBets({
   onProgress = () => {},
@@ -307,18 +309,30 @@ export async function loadExpressBets({
   const today = new Date().toISOString().split('T')[0];
   const fixtures = await footballApi.getFixturesByDate(today);
 
-  // TOP LEAGUES ONLY — no cups, no women's, no random leagues
-  const upcoming = fixtures.filter(f =>
-    ['NS'].includes(f.fixture.status.short) &&
-    TOP_LEAGUE_IDS.includes(f.league.id)
+  // All upcoming (not started) matches
+  const allUpcoming = fixtures.filter(f =>
+    ['NS'].includes(f.fixture.status.short)
   );
 
-  if (upcoming.length === 0) {
-    return [];
+  // Try top leagues first
+  const topLeagueMatches = allUpcoming.filter(f => TOP_LEAGUE_IDS.includes(f.league.id));
+
+  let matches;
+  let isTopLeagues;
+
+  if (topLeagueMatches.length >= 3) {
+    // Enough top-league matches — use them
+    matches = topLeagueMatches.slice(0, 30);
+    isTopLeagues = true;
+  } else {
+    // Fallback: use all upcoming matches
+    matches = allUpcoming.slice(0, 40);
+    isTopLeagues = false;
   }
 
-  // Limit to 30 matches max
-  const matches = upcoming.slice(0, 30);
+  if (matches.length === 0) {
+    return { bets: [], isTopLeagues: true };
+  }
 
   onProgress({ current: 0, total: matches.length, phase: 'Analyzing matches...' });
 
@@ -349,21 +363,23 @@ export async function loadExpressBets({
         if (prediction?.predictions?.percent) {
           const homePred = parseInt(prediction.predictions.percent.home) || 0;
           const awayPred = parseInt(prediction.predictions.percent.away) || 0;
-          aiConfidence = Math.max(homePred, awayPred); // strongest prediction
+          aiConfidence = Math.max(homePred, awayPred);
         }
 
-        // Score each candidate
+        // Score each candidate — lower score for non-top-league
+        const isTopLeague = TOP_LEAGUE_IDS.includes(fix.league.id);
         const scored = candidates.map(bet => ({
           ...bet,
-          score: _scoreExpressBet(bet, aiConfidence),
+          score: _scoreExpressBet(bet, aiConfidence) + (isTopLeague ? 3 : 0),
           fixture: fix,
           aiConfidence,
           bookmakerName: bookmaker.name,
+          isTopLeague,
         }));
 
         // Pick best bet per match (highest score)
         scored.sort((a, b) => b.score - a.score);
-        return [scored[0]]; // only the best one per match
+        return [scored[0]];
       })
     );
 
@@ -383,7 +399,7 @@ export async function loadExpressBets({
   // Sort all bets by score
   allBets.sort((a, b) => b.score - a.score);
 
-  return allBets;
+  return { bets: allBets, isTopLeagues };
 }
 
 
@@ -437,7 +453,7 @@ export function buildExpressFromBets(expressBets) {
         bet_category: bet.category,
         odds: bet.odd,
         confidence: bet.aiConfidence,
-        isTopLeague: true,
+        isTopLeague: bet.isTopLeague ?? true,
       })),
       total_odds: Math.round(totalOdds * 100) / 100,
       leg_count: legs.length,
