@@ -114,10 +114,17 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_predictions_bet_accuracy ON predictions(bet_type, is_correct)",
             "CREATE INDEX IF NOT EXISTS ix_predictions_league_accuracy ON predictions(league, is_correct)",
             "CREATE INDEX IF NOT EXISTS ix_predictions_verified ON predictions(is_correct, verified_at)",
+            "CREATE INDEX IF NOT EXISTS ix_predictions_created ON predictions(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_users_premium_status ON users(is_premium, premium_until)",
             "CREATE INDEX IF NOT EXISTS ix_users_cohort ON users(created_at, country)",
             "CREATE INDEX IF NOT EXISTS ix_users_created ON users(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_users_updated ON users(updated_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_users_total_preds ON users(total_predictions) WHERE total_predictions > 0",
             "CREATE INDEX IF NOT EXISTS ix_support_user_created ON support_chat_messages(user_id, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_support_session ON support_chat_messages(session_id, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_aichat_created_role ON ai_chat_messages(created_at DESC, role)",
+            "CREATE INDEX IF NOT EXISTS ix_analytics_events_recent ON analytics_events(created_at DESC, user_id) WHERE user_id IS NOT NULL",
+            "CREATE INDEX IF NOT EXISTS ix_postback_amount ON postback_logs(amount) WHERE amount > 0",
             # Admin session takeover table (auto/manual mode per session)
             # Postback logs table
             """CREATE TABLE IF NOT EXISTS postback_logs (
