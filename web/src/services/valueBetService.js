@@ -40,13 +40,8 @@ export function valuePct(predicted, odd) {
 }
 
 /**
- * Load value bets from today's matches.
- *
- * @param {object} opts
- * @param {function} opts.onProgress - progress callback({ current, total, phase })
- * @param {number} opts.maxMatches - max matches to analyze (default 45)
- * @param {number} opts.batchSize - parallel batch size (default 5)
- * @returns {Promise<Array>} array of value bet objects sorted by value
+ * Load value bets from today's matches (for ValueFinder page).
+ * Uses 1X2 market only, includes all leagues.
  */
 export async function loadValueBets({
   onProgress = () => {},
@@ -58,16 +53,13 @@ export async function loadValueBets({
   const today = new Date().toISOString().split('T')[0];
   const fixtures = await footballApi.getFixturesByDate(today);
 
-  // Filter to upcoming/live matches only
   const upcoming = fixtures.filter(f =>
     ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short)
   );
 
-  // Separate top leagues from others
   const topLeagueMatches = upcoming.filter(f => TOP_LEAGUE_IDS.includes(f.league.id));
   const otherMatches = upcoming.filter(f => !TOP_LEAGUE_IDS.includes(f.league.id));
 
-  // Prioritize top leagues, limit total
   const topLimit = Math.min(topLeagueMatches.length, 30);
   const otherLimit = Math.min(otherMatches.length, maxMatches - topLimit);
   const prioritized = [
@@ -94,7 +86,6 @@ export async function loadValueBets({
 
         if (!prediction?.predictions?.percent) return null;
 
-        // Get 1X2 odds
         const bookmaker = oddsData?.[0]?.bookmakers?.[0];
         const market = bookmaker?.bets?.find(b => b.name === 'Match Winner');
         if (!market) return null;
@@ -155,7 +146,6 @@ export async function loadValueBets({
 
 /**
  * Load Fonbet odds map for deeplinks (background, never blocks).
- * @returns {Promise<object>} map of lowercase "team1_team2" → fonbet event
  */
 export async function loadFonbetMap() {
   try {
@@ -172,64 +162,285 @@ export async function loadFonbetMap() {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// EXPRESS-SPECIFIC LOGIC
+// ---------------------------------------------------------------------------
+
+// Odds range suitable for express legs
+const EXPRESS_MIN_ODD = 1.25;
+const EXPRESS_MAX_ODD = 3.0;
+
 /**
- * Build express accumulators from value bets.
+ * Extract all suitable bets from a bookmaker's odds for express.
+ * Markets: 1X2, Double Chance, Over/Under, Handicap.
+ * Filters to odds range 1.25-3.0.
  *
- * Takes the sorted value bets and creates several preset combinations:
- * - safe:  3 legs, highest confidence (top value bets from top leagues)
- * - value: 5 legs, balanced mix of value and diversity
- * - risky: 7 legs, more legs = higher combined odds
+ * Returns array of { type, label, odd, category }
+ */
+function _extractExpressBets(bookmaker) {
+  if (!bookmaker?.bets) return [];
+
+  const candidates = [];
+
+  // 1X2 (Match Winner)
+  const mw = bookmaker.bets.find(b => b.name === 'Match Winner');
+  if (mw?.values) {
+    for (const v of mw.values) {
+      const odd = parseFloat(v.odd);
+      if (odd >= EXPRESS_MIN_ODD && odd <= EXPRESS_MAX_ODD) {
+        candidates.push({
+          type: v.value, // "Home", "Draw", "Away"
+          label: v.value === 'Home' ? '1' : v.value === 'Away' ? '2' : 'X',
+          odd,
+          category: 'result',
+        });
+      }
+    }
+  }
+
+  // Double Chance
+  const dc = bookmaker.bets.find(b => b.name === 'Double Chance');
+  if (dc?.values) {
+    for (const v of dc.values) {
+      const odd = parseFloat(v.odd);
+      if (odd >= EXPRESS_MIN_ODD && odd <= EXPRESS_MAX_ODD) {
+        candidates.push({
+          type: `DC ${v.value}`,
+          label: v.value, // "Home/Draw", "Draw/Away", "Home/Away"
+          odd,
+          category: 'double_chance',
+        });
+      }
+    }
+  }
+
+  // Over/Under (Goals)
+  const ou = bookmaker.bets.find(b =>
+    b.name === 'Goals Over/Under' || b.name === 'Over/Under'
+  );
+  if (ou?.values) {
+    for (const v of ou.values) {
+      const odd = parseFloat(v.odd);
+      if (odd >= EXPRESS_MIN_ODD && odd <= EXPRESS_MAX_ODD) {
+        candidates.push({
+          type: v.value, // "Over 2.5", "Under 2.5", etc.
+          label: v.value,
+          odd,
+          category: 'total',
+        });
+      }
+    }
+  }
+
+  // Asian Handicap / Handicap
+  const hc = bookmaker.bets.find(b =>
+    b.name === 'Asian Handicap' || b.name === 'Handicap'
+  );
+  if (hc?.values) {
+    for (const v of hc.values) {
+      const odd = parseFloat(v.odd);
+      if (odd >= EXPRESS_MIN_ODD && odd <= EXPRESS_MAX_ODD) {
+        candidates.push({
+          type: v.value, // "Home -1", "Away +1", etc.
+          label: v.value,
+          odd,
+          category: 'handicap',
+        });
+      }
+    }
+  }
+
+  return candidates;
+}
+
+/**
+ * Score a bet candidate for express suitability.
+ * Prefers: odds in 1.4-2.2 range (sweet spot), result/total markets,
+ * AI confidence as bonus.
+ */
+function _scoreExpressBet(bet, aiConfidence) {
+  let score = 0;
+
+  // Odds sweet spot: 1.4 - 2.2 is ideal for express
+  if (bet.odd >= 1.4 && bet.odd <= 2.2) {
+    score += 10;
+  } else if (bet.odd >= 1.25 && bet.odd < 1.4) {
+    score += 6; // very safe but low payout
+  } else if (bet.odd > 2.2 && bet.odd <= 2.8) {
+    score += 7;
+  } else {
+    score += 3;
+  }
+
+  // Market type preference
+  if (bet.category === 'result') score += 5;        // 1X2 — most popular
+  if (bet.category === 'total') score += 4;          // Over/Under
+  if (bet.category === 'double_chance') score += 3;  // Safer
+  if (bet.category === 'handicap') score += 3;
+
+  // AI confidence bonus (0-100)
+  if (aiConfidence > 0) {
+    score += (aiConfidence / 100) * 5;
+  }
+
+  return score;
+}
+
+/**
+ * Load express-suitable bets from today's top-league matches.
+ *
+ * Different from loadValueBets():
+ * - TOP LEAGUES ONLY
+ * - Multiple markets (1X2, Double Chance, Totals, Handicap)
+ * - Odds filtered to 1.25-3.0 range
+ * - Scored by express suitability, not by value edge
+ *
+ * Returns array of express-ready bet objects.
+ */
+export async function loadExpressBets({
+  onProgress = () => {},
+  batchSize = 5,
+} = {}) {
+  onProgress({ current: 0, total: 0, phase: 'Loading matches...' });
+
+  const today = new Date().toISOString().split('T')[0];
+  const fixtures = await footballApi.getFixturesByDate(today);
+
+  // TOP LEAGUES ONLY — no cups, no women's, no random leagues
+  const upcoming = fixtures.filter(f =>
+    ['NS'].includes(f.fixture.status.short) &&
+    TOP_LEAGUE_IDS.includes(f.league.id)
+  );
+
+  if (upcoming.length === 0) {
+    return [];
+  }
+
+  // Limit to 30 matches max
+  const matches = upcoming.slice(0, 30);
+
+  onProgress({ current: 0, total: matches.length, phase: 'Analyzing matches...' });
+
+  const allBets = [];
+
+  for (let i = 0; i < matches.length; i += batchSize) {
+    const batch = matches.slice(i, i + batchSize);
+
+    const batchResults = await Promise.allSettled(
+      batch.map(async (fix) => {
+        const [pred, odds] = await Promise.allSettled([
+          footballApi.getPrediction(fix.fixture.id),
+          footballApi.getOdds(fix.fixture.id),
+        ]);
+
+        const prediction = pred.status === 'fulfilled' ? pred.value : null;
+        const oddsData = odds.status === 'fulfilled' ? odds.value : [];
+
+        const bookmaker = oddsData?.[0]?.bookmakers?.[0];
+        if (!bookmaker) return [];
+
+        // Extract all suitable bets from all markets
+        const candidates = _extractExpressBets(bookmaker);
+        if (candidates.length === 0) return [];
+
+        // Get AI confidence for scoring
+        let aiConfidence = 0;
+        if (prediction?.predictions?.percent) {
+          const homePred = parseInt(prediction.predictions.percent.home) || 0;
+          const awayPred = parseInt(prediction.predictions.percent.away) || 0;
+          aiConfidence = Math.max(homePred, awayPred); // strongest prediction
+        }
+
+        // Score each candidate
+        const scored = candidates.map(bet => ({
+          ...bet,
+          score: _scoreExpressBet(bet, aiConfidence),
+          fixture: fix,
+          aiConfidence,
+          bookmakerName: bookmaker.name,
+        }));
+
+        // Pick best bet per match (highest score)
+        scored.sort((a, b) => b.score - a.score);
+        return [scored[0]]; // only the best one per match
+      })
+    );
+
+    for (const result of batchResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        allBets.push(...result.value);
+      }
+    }
+
+    onProgress({
+      current: Math.min(i + batchSize, matches.length),
+      total: matches.length,
+      phase: 'Analyzing matches...',
+    });
+  }
+
+  // Sort all bets by score
+  allBets.sort((a, b) => b.score - a.score);
+
+  return allBets;
+}
+
+
+/**
+ * Build express accumulators from express-ready bets.
+ *
+ * Creates 3 presets:
+ * - safe:  3 legs, safest bets (highest score)
+ * - value: 5 legs, balanced
+ * - risky: 7 legs, more legs = bigger combined odds
  *
  * Rules:
  * - Max 1 bet per match
- * - Diverse leagues preferred
- * - Already sorted by value (from loadValueBets)
- *
- * @param {Array} valueBets - sorted value bets from loadValueBets()
- * @returns {Array} array of express objects
+ * - Max 2 per league for diversity
+ * - Max 2 per bet category for variety
+ * - Odds 1.25-3.0 per leg (guaranteed by loadExpressBets)
  */
-export function buildExpressFromValueBets(valueBets) {
-  if (!valueBets || valueBets.length < 2) return [];
+export function buildExpressFromBets(expressBets) {
+  if (!expressBets || expressBets.length < 2) return [];
 
   const presets = [
-    { key: 'safe', label: 'Safe Express', description: '3 top value bets from top leagues', legCount: 3, topLeagueOnly: true },
-    { key: 'value', label: 'Value Express', description: '5 best value bets, diverse leagues', legCount: 5, topLeagueOnly: false },
-    { key: 'risky', label: 'Big Express', description: '7 legs for maximum payout', legCount: 7, topLeagueOnly: false },
+    { key: 'safe', label: 'Safe Express', description: '3 top-league picks, safer odds', legCount: 3 },
+    { key: 'value', label: 'Value Express', description: '5 picks, balanced risk & reward', legCount: 5 },
+    { key: 'risky', label: 'Big Express', description: '7 picks, bigger combined odds', legCount: 7 },
   ];
 
   const expresses = [];
 
   for (const preset of presets) {
-    const legs = _selectDiverseLegs(valueBets, preset.legCount, preset.topLeagueOnly);
-    if (legs.length < 2) continue;
+    const legs = _selectDiverseExpressLegs(expressBets, preset.legCount);
+    if (legs.length < Math.min(2, preset.legCount)) continue;
 
-    const totalOdds = legs.reduce((acc, leg) => acc * leg.bestBet.odd, 1);
-    const avgValue = legs.reduce((acc, leg) => acc + leg.bestBet.value, 0) / legs.length;
-    const avgConfidence = legs.reduce((acc, leg) => acc + leg.bestBet.pred, 0) / legs.length;
+    const totalOdds = legs.reduce((acc, leg) => acc * leg.odd, 1);
+    const avgConfidence = legs.reduce((acc, leg) => acc + leg.aiConfidence, 0) / legs.length;
 
     expresses.push({
       key: preset.key,
       label: preset.label,
       description: preset.description,
-      legs: legs.map(vb => ({
-        fixture_id: vb.fixture.fixture.id,
-        home_team: vb.fixture.teams.home.name,
-        away_team: vb.fixture.teams.away.name,
-        home_logo: vb.fixture.teams.home.logo,
-        away_logo: vb.fixture.teams.away.logo,
-        league: vb.fixture.league.name,
-        league_logo: vb.fixture.league.logo,
-        league_id: vb.fixture.league.id,
-        match_date: vb.fixture.fixture.date,
-        bet_type: `${vb.bestBet.type} — ${vb.bestBet.team}`,
-        odds: vb.bestBet.odd,
-        value: vb.bestBet.value,
-        confidence: vb.bestBet.pred,
-        isTopLeague: vb.isTopLeague,
+      legs: legs.map(bet => ({
+        fixture_id: bet.fixture.fixture.id,
+        home_team: bet.fixture.teams.home.name,
+        away_team: bet.fixture.teams.away.name,
+        home_logo: bet.fixture.teams.home.logo,
+        away_logo: bet.fixture.teams.away.logo,
+        league: bet.fixture.league.name,
+        league_logo: bet.fixture.league.logo,
+        league_id: bet.fixture.league.id,
+        match_date: bet.fixture.fixture.date,
+        bet_type: bet.label,
+        bet_category: bet.category,
+        odds: bet.odd,
+        confidence: bet.aiConfidence,
+        isTopLeague: true,
       })),
       total_odds: Math.round(totalOdds * 100) / 100,
       leg_count: legs.length,
-      avg_value: Math.round(avgValue * 10) / 10,
       avg_confidence: Math.round(avgConfidence),
     });
   }
@@ -237,41 +448,61 @@ export function buildExpressFromValueBets(valueBets) {
   return expresses;
 }
 
-/**
- * Select diverse legs: max 1 per match, spread across leagues.
- */
-function _selectDiverseLegs(valueBets, targetCount, topLeagueOnly) {
-  const pool = topLeagueOnly
-    ? valueBets.filter(vb => vb.isTopLeague)
-    : valueBets;
 
+/**
+ * Select diverse legs for express:
+ * - Max 1 per match
+ * - Max 2 per league
+ * - Max 2 per bet category (result, total, double_chance, handicap)
+ */
+function _selectDiverseExpressLegs(bets, targetCount) {
   const selected = [];
   const usedFixtures = new Set();
   const leagueCount = {};
+  const categoryCount = {};
 
-  for (const vb of pool) {
-    const fid = vb.fixture.fixture.id;
+  // First pass: strict diversity
+  for (const bet of bets) {
+    const fid = bet.fixture.fixture.id;
     if (usedFixtures.has(fid)) continue;
 
-    const leagueId = vb.fixture.league.id;
-    const currentLeagueCount = leagueCount[leagueId] || 0;
+    const leagueId = bet.fixture.league.id;
+    if ((leagueCount[leagueId] || 0) >= 2) continue;
 
-    // Max 2 per league for diversity
-    if (currentLeagueCount >= 2) continue;
+    const cat = bet.category;
+    if ((categoryCount[cat] || 0) >= 2) continue;
 
-    selected.push(vb);
+    selected.push(bet);
     usedFixtures.add(fid);
-    leagueCount[leagueId] = currentLeagueCount + 1;
+    leagueCount[leagueId] = (leagueCount[leagueId] || 0) + 1;
+    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
 
     if (selected.length >= targetCount) break;
   }
 
-  // Relax league constraint if not enough
+  // Second pass: relax category constraint
   if (selected.length < targetCount) {
-    for (const vb of pool) {
-      const fid = vb.fixture.fixture.id;
+    for (const bet of bets) {
+      const fid = bet.fixture.fixture.id;
       if (usedFixtures.has(fid)) continue;
-      selected.push(vb);
+
+      const leagueId = bet.fixture.league.id;
+      if ((leagueCount[leagueId] || 0) >= 2) continue;
+
+      selected.push(bet);
+      usedFixtures.add(fid);
+      leagueCount[leagueId] = (leagueCount[leagueId] || 0) + 1;
+
+      if (selected.length >= targetCount) break;
+    }
+  }
+
+  // Third pass: relax all constraints except 1-per-match
+  if (selected.length < targetCount) {
+    for (const bet of bets) {
+      const fid = bet.fixture.fixture.id;
+      if (usedFixtures.has(fid)) continue;
+      selected.push(bet);
       usedFixtures.add(fid);
       if (selected.length >= targetCount) break;
     }

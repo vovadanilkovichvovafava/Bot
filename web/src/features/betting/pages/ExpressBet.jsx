@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { addTrackingToUrl } from '../services/trackingService';
-import { loadValueBets, loadFonbetMap, buildExpressFromValueBets } from '../../../services/valueBetService';
+import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 
 const PRESET_STYLES = {
@@ -36,13 +36,13 @@ export default function ExpressBet() {
     setLoading(true);
     setError(null);
     try {
-      // Reuse the exact same value bet logic as Value Finder
-      const valueBets = await loadValueBets({
+      // Load express-suitable bets (top leagues only, multiple markets, odds 1.25-3.0)
+      const expressBets = await loadExpressBets({
         onProgress: setProgress,
       });
 
-      // Build express presets from value bets
-      const built = buildExpressFromValueBets(valueBets);
+      // Build express presets from bets
+      const built = buildExpressFromBets(expressBets);
       setExpresses(built);
 
       // Auto-expand first one
@@ -241,19 +241,13 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getExpressLink, getF
       {/* Expanded legs */}
       {isExpanded && !isLocked && (
         <div className="border-t border-gray-100">
-          {/* Value stats bar */}
-          <div className="px-4 py-2.5 bg-gradient-to-r from-emerald-50 to-green-50 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('express.avgValue', { defaultValue: 'Avg Value' })}</p>
-                <p className="text-sm font-bold text-emerald-600">+{express.avg_value}%</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('express.confidence', { defaultValue: 'AI Confidence' })}</p>
-                <p className="text-sm font-bold text-blue-600">{express.avg_confidence}%</p>
-              </div>
-            </div>
+          {/* Stats bar */}
+          <div className="px-4 py-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
             <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('express.confidence', { defaultValue: 'AI Confidence' })}</p>
+              <p className="text-sm font-bold text-blue-600">{express.avg_confidence}%</p>
+            </div>
+            <div className="text-right">
               <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('express.totalOdds', { defaultValue: 'Total Odds' })}</p>
               <p className="text-lg font-black text-gray-900">&times;{express.total_odds}</p>
             </div>
@@ -293,10 +287,7 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getExpressLink, getF
                       <span className="inline-block bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg mb-0.5">
                         {leg.bet_type}
                       </span>
-                      <div className="flex items-center gap-1.5 justify-end">
-                        <span className="text-sm font-black text-gray-900">{leg.odds}</span>
-                        <span className="text-[10px] font-bold text-emerald-600">+{leg.value.toFixed(1)}%</span>
-                      </div>
+                      <p className="text-sm font-black text-gray-900 mt-0.5">{leg.odds}</p>
                     </div>
                   </div>
                 </div>
