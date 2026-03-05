@@ -127,122 +127,73 @@ async def get_overview(
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
 
-    # Users stats
-    total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    pro_users = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(User.is_premium == True, User.premium_until > now)
-        )
-    )).scalar() or 0
-    new_today = (await db.execute(
-        select(func.count(User.id)).where(User.created_at >= today_start)
-    )).scalar() or 0
-    new_week = (await db.execute(
-        select(func.count(User.id)).where(User.created_at >= week_ago)
-    )).scalar() or 0
-
-    # Predictions stats
-    total_predictions = (await db.execute(select(func.count(Prediction.id)))).scalar() or 0
-    verified = (await db.execute(
-        select(func.count(Prediction.id)).where(Prediction.is_correct.isnot(None))
-    )).scalar() or 0
-    correct = (await db.execute(
-        select(func.count(Prediction.id)).where(Prediction.is_correct == True)
-    )).scalar() or 0
-    today_predictions = (await db.execute(
-        select(func.count(Prediction.id)).where(Prediction.created_at >= today_start)
-    )).scalar() or 0
-
-    # New PRO users today — premium_until set to ~now+15d on activation,
-    # so today's activations have premium_until in [today+15d, tomorrow+15d)
-    tomorrow_start = today_start + timedelta(days=1)
-    pro_new_today = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(
-                User.is_premium == True,
-                User.premium_until >= today_start + timedelta(days=15),
-                User.premium_until < tomorrow_start + timedelta(days=15),
-            )
-        )
-    )).scalar() or 0
-
-    # Predictions yesterday (for comparison)
     yesterday_start = today_start - timedelta(days=1)
-    yesterday_predictions = (await db.execute(
-        select(func.count(Prediction.id)).where(
-            and_(
-                Prediction.created_at >= yesterday_start,
-                Prediction.created_at < today_start,
-            )
-        )
-    )).scalar() or 0
-
-    # AI chats today
-    ai_chats_today = (await db.execute(
-        select(func.count(AIChatMessage.id)).where(
-            and_(
-                AIChatMessage.created_at >= today_start,
-                AIChatMessage.role == "user",
-            )
-        )
-    )).scalar() or 0
-
-    # AI chats yesterday (for comparison)
-    ai_chats_yesterday = (await db.execute(
-        select(func.count(AIChatMessage.id)).where(
-            and_(
-                AIChatMessage.created_at >= yesterday_start,
-                AIChatMessage.created_at < today_start,
-                AIChatMessage.role == "user",
-            )
-        )
-    )).scalar() or 0
-
-    # Support total unique sessions
-    total_support_sessions = (await db.execute(
-        select(func.count(func.distinct(SupportChatMessage.session_id)))
-    )).scalar() or 0
-
-    # Support sessions today
-    support_sessions_today = (await db.execute(
-        select(func.count(func.distinct(SupportChatMessage.session_id))).where(
-            SupportChatMessage.created_at >= today_start
-        )
-    )).scalar() or 0
-
-    accuracy = round((correct / verified * 100), 1) if verified > 0 else 0.0
-
-    # Online users (active in last 15 minutes) — from analytics_events for accuracy
+    tomorrow_start = today_start + timedelta(days=1)
     online_cutoff = now - timedelta(minutes=15)
-    online_users = (await db.execute(
-        text("SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :cutoff AND user_id IS NOT NULL"),
-        {"cutoff": online_cutoff},
-    )).scalar() or 0
+
+    # ── Users + Predictions: 1 query instead of 10 ──
+    user_stats = (await db.execute(text("""
+        SELECT
+            COUNT(*) AS total_users,
+            COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro_users,
+            COUNT(*) FILTER (WHERE created_at >= :today) AS new_today,
+            COUNT(*) FILTER (WHERE created_at >= :week_ago) AS new_week,
+            COUNT(*) FILTER (
+                WHERE is_premium = true
+                AND premium_until >= :today + interval '15 days'
+                AND premium_until < :tomorrow + interval '15 days'
+            ) AS pro_new_today
+        FROM users
+    """), {"now": now, "today": today_start, "week_ago": week_ago, "tomorrow": tomorrow_start})).one()
+
+    pred_stats = (await db.execute(text("""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct,
+            COUNT(*) FILTER (WHERE created_at >= :today) AS today_cnt,
+            COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yesterday_cnt
+        FROM predictions
+    """), {"today": today_start, "yesterday": yesterday_start})).one()
+
+    # ── Chat/support + online: 1 query ──
+    chat_stats = (await db.execute(text("""
+        SELECT
+            (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :today AND role = 'user'),
+            (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :yesterday AND created_at < :today AND role = 'user'),
+            (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages),
+            (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages WHERE created_at >= :today),
+            (SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :online_cutoff AND user_id IS NOT NULL)
+    """), {"today": today_start, "yesterday": yesterday_start, "online_cutoff": online_cutoff})).one()
+
+    verified_cnt = pred_stats[1] or 0
+    correct_cnt = pred_stats[2] or 0
+    accuracy = round((correct_cnt / verified_cnt * 100), 1) if verified_cnt > 0 else 0.0
 
     # Football API usage today
     football_api_today = await _get_football_api_status()
 
     result = {
         "users": {
-            "total": total_users,
-            "pro": pro_users,
-            "pro_new_today": pro_new_today,
-            "new_today": new_today,
-            "new_week": new_week,
-            "online": online_users,
+            "total": user_stats[0],
+            "pro": user_stats[1],
+            "pro_new_today": user_stats[4],
+            "new_today": user_stats[2],
+            "new_week": user_stats[3],
+            "online": chat_stats[4],
         },
         "predictions": {
-            "total": total_predictions,
-            "verified": verified,
-            "correct": correct,
+            "total": pred_stats[0],
+            "verified": verified_cnt,
+            "correct": correct_cnt,
             "accuracy": accuracy,
-            "today": today_predictions,
-            "yesterday": yesterday_predictions,
+            "today": pred_stats[3],
+            "yesterday": pred_stats[4],
         },
-        "ai_chats_today": ai_chats_today,
-        "ai_chats_yesterday": ai_chats_yesterday,
-        "support_sessions": total_support_sessions,
-        "support_sessions_today": support_sessions_today,
+        "ai_chats_today": chat_stats[0],
+        "ai_chats_yesterday": chat_stats[1],
+        "support_sessions": chat_stats[2],
+        "support_sessions_today": chat_stats[3],
         "football_api": football_api_today,
     }
     _cache_set("overview", result)
@@ -489,117 +440,81 @@ async def get_retention_stats(
 
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_ago = now - timedelta(days=30)
 
-    # Weekly retention cohorts (last 8 weeks)
+    # ── Weekly cohorts: 1 query instead of 32 ──
+    cohort_start_oldest = today_start - timedelta(days=7 * 8)
+    cohort_rows = (await db.execute(text("""
+        WITH cohort AS (
+            SELECT
+                id, created_at, updated_at, is_premium, total_predictions,
+                FLOOR(EXTRACT(EPOCH FROM (:today - created_at)) / (7 * 86400))::int AS weeks_ago
+            FROM users
+            WHERE created_at >= :oldest AND created_at < :today
+        )
+        SELECT
+            weeks_ago,
+            COUNT(*) AS registered,
+            COUNT(*) FILTER (WHERE updated_at >= created_at + interval '7 days') AS returned,
+            COUNT(*) FILTER (WHERE is_premium = true) AS converted_pro,
+            COUNT(*) FILTER (WHERE total_predictions > 0) AS made_prediction
+        FROM cohort
+        WHERE weeks_ago BETWEEN 0 AND 7
+        GROUP BY weeks_ago
+        ORDER BY weeks_ago DESC
+    """), {"today": today_start, "oldest": cohort_start_oldest})).all()
+
+    cohort_map = {r[0]: r for r in cohort_rows}
     cohorts = []
     for weeks_ago in range(8):
         cohort_start = today_start - timedelta(days=7 * (weeks_ago + 1))
-        cohort_end = today_start - timedelta(days=7 * weeks_ago)
-
-        # Users registered in this week
-        total_in_cohort = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(User.created_at >= cohort_start, User.created_at < cohort_end)
-            )
-        )).scalar() or 0
-
-        if total_in_cohort == 0:
+        r = cohort_map.get(weeks_ago + 1)  # weeks_ago=1 means last week
+        if not r or r[1] == 0:
             cohorts.append({
                 "week": cohort_start.strftime("%m/%d"),
-                "registered": 0,
-                "returned_week1": 0,
-                "converted_pro": 0,
-                "made_prediction": 0,
+                "registered": 0, "returned_week1": 0,
+                "converted_pro": 0, "made_prediction": 0,
             })
-            continue
+        else:
+            total = r[1]
+            cohorts.append({
+                "week": cohort_start.strftime("%m/%d"),
+                "registered": total,
+                "returned_week1": r[2],
+                "retention_pct": round(r[2] / total * 100, 1),
+                "converted_pro": r[3],
+                "conversion_pct": round(r[3] / total * 100, 1),
+                "made_prediction": r[4],
+                "activation_pct": round(r[4] / total * 100, 1),
+            })
+    cohorts.reverse()
 
-        # How many came back (had activity after first week = updated_at > cohort_end)
-        returned = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(
-                    User.created_at >= cohort_start,
-                    User.created_at < cohort_end,
-                    User.updated_at >= cohort_end,
-                )
-            )
-        )).scalar() or 0
+    # ── Overall + 30d funnel: 1 query instead of 6 ──
+    overall = (await db.execute(text("""
+        SELECT
+            COUNT(*) AS total_users,
+            COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS total_pro,
+            COUNT(*) FILTER (WHERE total_predictions > 0) AS total_activated,
+            COUNT(*) FILTER (WHERE created_at >= :month_ago) AS new_30d,
+            COUNT(*) FILTER (WHERE created_at >= :month_ago AND is_premium = true) AS pro_30d,
+            COUNT(*) FILTER (WHERE created_at >= :month_ago AND total_predictions > 0) AS activated_30d
+        FROM users
+    """), {"now": now, "month_ago": month_ago})).one()
 
-        # How many converted to PRO
-        converted = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(
-                    User.created_at >= cohort_start,
-                    User.created_at < cohort_end,
-                    User.is_premium == True,
-                )
-            )
-        )).scalar() or 0
-
-        # How many made at least one prediction
-        made_prediction = (await db.execute(
-            select(func.count(func.distinct(Prediction.user_id))).where(
-                and_(
-                    Prediction.user_id.in_(
-                        select(User.id).where(
-                            and_(User.created_at >= cohort_start, User.created_at < cohort_end)
-                        )
-                    )
-                )
-            )
-        )).scalar() or 0
-
-        cohorts.append({
-            "week": cohort_start.strftime("%m/%d"),
-            "registered": total_in_cohort,
-            "returned_week1": returned,
-            "retention_pct": round(returned / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
-            "converted_pro": converted,
-            "conversion_pct": round(converted / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
-            "made_prediction": made_prediction,
-            "activation_pct": round(made_prediction / total_in_cohort * 100, 1) if total_in_cohort > 0 else 0,
-        })
-
-    cohorts.reverse()  # oldest first
-
-    # Overall conversion stats
-    total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    total_pro = (await db.execute(
-        select(func.count(User.id)).where(and_(User.is_premium == True, User.premium_until > now))
-    )).scalar() or 0
-    total_with_predictions = (await db.execute(
-        select(func.count(User.id)).where(User.total_predictions > 0)
-    )).scalar() or 0
-
-    # 30-day conversion funnel
-    month_ago = now - timedelta(days=30)
-    new_30d = (await db.execute(
-        select(func.count(User.id)).where(User.created_at >= month_ago)
-    )).scalar() or 0
-    activated_30d = (await db.execute(
-        select(func.count(func.distinct(Prediction.user_id))).where(
-            Prediction.user_id.in_(
-                select(User.id).where(User.created_at >= month_ago)
-            )
-        )
-    )).scalar() or 0
-    pro_30d = (await db.execute(
-        select(func.count(User.id)).where(
-            and_(User.created_at >= month_ago, User.is_premium == True)
-        )
-    )).scalar() or 0
+    total_users = overall[0] or 1
 
     result = {
         "cohorts": cohorts,
         "overall": {
-            "total_users": total_users,
-            "total_pro": total_pro,
-            "conversion_rate": round(total_pro / total_users * 100, 1) if total_users > 0 else 0,
-            "activation_rate": round(total_with_predictions / total_users * 100, 1) if total_users > 0 else 0,
+            "total_users": overall[0],
+            "total_pro": overall[1],
+            "conversion_rate": round(overall[1] / total_users * 100, 1),
+            "activation_rate": round(overall[2] / total_users * 100, 1),
         },
         "funnel_30d": {
-            "registered": new_30d,
-            "activated": activated_30d,
-            "converted_pro": pro_30d,
+            "registered": overall[3],
+            "activated": overall[5],
+            "converted_pro": overall[4],
         },
     }
     _cache_set("retention", result)
@@ -786,51 +701,35 @@ async def get_funnel_stats(
         return cached
 
     now = datetime.utcnow()
-    funnels = ["funnel-1", "funnel-2", "funnel-3"]
+
+    # ── All funnels in 1 query instead of 15 ──
+    funnel_rows = (await db.execute(text("""
+        SELECT
+            funnel,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS premium,
+            COUNT(*) FILTER (WHERE total_predictions > 0) AS active,
+            COUNT(*) FILTER (WHERE daily_chat_requests > 0) AS with_chat,
+            COALESCE(AVG(total_predictions) FILTER (WHERE total_predictions > 0), 0) AS avg_preds
+        FROM users
+        WHERE funnel IN ('funnel-1', 'funnel-2', 'funnel-3')
+        GROUP BY funnel
+        ORDER BY funnel
+    """), {"now": now})).all()
+
     stats = []
-
-    for f in funnels:
-        funnel_filter = User.funnel == f
-
-        total = (await db.execute(
-            select(func.count(User.id)).where(funnel_filter)
-        )).scalar() or 0
-
-        premium = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(funnel_filter, User.is_premium == True, User.premium_until > now)
-            )
-        )).scalar() or 0
-
-        active = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(funnel_filter, User.total_predictions > 0)
-            )
-        )).scalar() or 0
-
-        with_chat = (await db.execute(
-            select(func.count(User.id)).where(
-                and_(funnel_filter, User.daily_chat_requests > 0)
-            )
-        )).scalar() or 0
-
-        # Avg predictions per user in this funnel
-        avg_preds = (await db.execute(
-            select(func.avg(User.total_predictions)).where(
-                and_(funnel_filter, User.total_predictions > 0)
-            )
-        )).scalar() or 0
-
+    for r in funnel_rows:
+        total = r[1] or 1
         stats.append({
-            "funnel": f,
-            "total_users": total,
-            "premium_users": premium,
-            "active_users": active,
-            "users_with_chat": with_chat,
-            "conversion_rate": round(premium / total * 100, 1) if total > 0 else 0,
-            "activation_rate": round(active / total * 100, 1) if total > 0 else 0,
-            "chat_usage_rate": round(with_chat / total * 100, 1) if total > 0 else 0,
-            "avg_predictions": round(float(avg_preds), 1),
+            "funnel": r[0],
+            "total_users": r[1],
+            "premium_users": r[2],
+            "active_users": r[3],
+            "users_with_chat": r[4],
+            "conversion_rate": round(r[2] / total * 100, 1),
+            "activation_rate": round(r[3] / total * 100, 1),
+            "chat_usage_rate": round(r[4] / total * 100, 1),
+            "avg_predictions": round(float(r[5]), 1),
         })
 
     result = {"funnels": stats}

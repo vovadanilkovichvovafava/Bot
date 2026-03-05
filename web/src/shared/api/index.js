@@ -169,10 +169,16 @@ class ApiService {
     const { ENV } = await import('../config/env');
     const body = { phone, password };
     if (referralCode) body.referral_code = referralCode;
-    // Attach traffic source: from ENV config, URL param, or localStorage
+    // Attach traffic source: ENV > URL param > localStorage > auto-detect from hostname
     const source = ENV.TRAFFIC_SOURCE
       || new URLSearchParams(window.location.search).get('source')
-      || ((() => { try { return localStorage.getItem('traffic_source'); } catch { return null; } })());
+      || ((() => { try { return localStorage.getItem('traffic_source'); } catch { return null; } })())
+      || ((() => {
+        // Auto-detect: prescoreai.com → prescoreai, sportscoreai.com → sportscoreai
+        const host = window.location.hostname.replace(/^www\./, '');
+        const name = host.split('.')[0]; // "prescoreai" from "prescoreai.com"
+        return name && name !== 'localhost' ? name : null;
+      })());
     if (source) body.source = source;
     // Attach UTM params from cloaker link (saved in sessionStorage by App.jsx)
     const getUtm = (key) => {
