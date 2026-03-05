@@ -2,19 +2,26 @@
 Express Bet API — lightweight endpoints.
 
 Express generation is now frontend-driven (reuses Value Finder logic).
-Backend only provides:
+Backend provides:
+  - /spend-tokens — funnel-3 token deduction (costs 3 daily requests)
   - /history — user's saved express history
   - /leagues — available leagues list
-  - /daily — backward compat (returns latest menu express if any)
+  - /daily — backward compat
 """
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
+from app.core.database import get_db
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+EXPRESS_TOKEN_COST = 3  # funnel-3 pays 3 daily requests
 
 
 def _get_generator():
@@ -28,6 +35,63 @@ def _get_generator():
         "get_user": get_user_expresses,
         "get_leagues": get_available_leagues,
     }
+
+
+@router.post("/spend-tokens")
+async def spend_tokens(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Spend tokens for Express access (funnel-3 only).
+    Costs 3 daily chat requests.
+    PRO and funnel-2 users skip this (free).
+    """
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # PRO and funnel-2 don't need tokens
+    if user.is_premium or user.funnel == "funnel-2":
+        return {"ok": True, "cost": 0, "remaining": 999}
+
+    # Funnel-3: check and spend 3 tokens
+    if user.funnel == "funnel-3":
+        from app.api.predictions import get_daily_limit
+        from datetime import datetime
+
+        # Reset daily counter if new day
+        today = datetime.utcnow().date()
+        if user.last_chat_request_date and user.last_chat_request_date.date() < today:
+            user.daily_chat_requests = 0
+
+        limit = get_daily_limit(user.account_day_number or 1, user.funnel)
+        used = user.daily_chat_requests or 0
+        remaining = max(0, limit - used)
+
+        if remaining < EXPRESS_TOKEN_COST:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Not enough tokens. Need {EXPRESS_TOKEN_COST}, have {remaining}.",
+            )
+
+        user.daily_chat_requests = used + EXPRESS_TOKEN_COST
+        user.last_chat_request_date = datetime.utcnow()
+        await db.commit()
+
+        return {
+            "ok": True,
+            "cost": EXPRESS_TOKEN_COST,
+            "remaining": max(0, limit - user.daily_chat_requests),
+        }
+
+    # Funnel-1: free (access controlled on frontend via weekly localStorage)
+    return {"ok": True, "cost": 0}
 
 
 @router.get("/daily")
