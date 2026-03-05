@@ -7,11 +7,34 @@
  * - sub_id_1..sub_id_15 — произвольные метки из трекера
  * - fbclid — Facebook Click ID
  * - utm_source, utm_medium, utm_campaign, utm_content, utm_term — UTM метки
+ *
+ * App UTM override:
+ * - utm_source = 'sportscoreai' (наше приложение)
+ * - utm_medium = категория источника (home, aichat, match, express, promo, tools, nav)
+ * - utm_campaign = конкретный banner (smart_bet_banner, aichat_bet_card и т.д.)
+ * - utm_content, utm_term — из клоакерской ссылки (as-is)
  */
 
 import { ENV } from '../../../shared/config/env';
 
 const TRACKING_API = ENV.TRACKING_API;
+
+/**
+ * Маппинг banner → utm_medium (категория источника).
+ * Позволяет в аналитике группировать клики по разделам приложения.
+ */
+function getUtmMedium(banner) {
+  if (!banner) return 'other';
+  if (banner.startsWith('aichat_')) return 'aichat';
+  if (banner.startsWith('match_') || banner.startsWith('live_') || banner.startsWith('matches_')) return 'match';
+  if (banner.startsWith('express_')) return 'express';
+  if (banner.startsWith('smart_bet_') || banner.startsWith('pro_featured_') || banner.startsWith('pro_fallback_')) return 'home';
+  if (banner.startsWith('promo_') || banner.startsWith('pro_access_')) return 'promo';
+  if (banner.startsWith('value_finder_') || banner.startsWith('pro_guide_')) return 'tools';
+  if (banner === 'bottom_nav_bet') return 'nav';
+  if (banner === 'post_match_reminder') return 'reminder';
+  return 'other';
+}
 
 /**
  * Собрать ВСЕ tracking параметры из URL + sessionStorage.
@@ -157,11 +180,16 @@ export function getTrackingLink(userId, banner = '') {
       params.set('fbclid', fbclid);
     }
 
-    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
-    for (const key of utmKeys) {
-      const val = getParam(key);
-      if (val) params.set(key, val);
-    }
+    // UTM метки — приложение ставит свои source/medium/campaign для разделения источников,
+    // utm_content и utm_term берём из клоакерской ссылки (as-is)
+    params.set('utm_source', 'sportscoreai');
+    params.set('utm_medium', getUtmMedium(banner));
+    params.set('utm_campaign', banner || 'unknown');
+    // utm_content/utm_term — из клоачной ссылки если есть
+    const utmContent = getParam('utm_content');
+    if (utmContent) params.set('utm_content', utmContent);
+    const utmTerm = getParam('utm_term');
+    if (utmTerm) params.set('utm_term', utmTerm);
 
     const link = `${OFFER_BASE_URL}?${params.toString()}`;
     console.log('[Tracking] Link built:', link);
@@ -207,11 +235,14 @@ export function addTrackingToUrl(url, userId, banner = '') {
       u.searchParams.set('sub_id_16', fbclid);
     }
 
-    // UTM
-    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
-      const val = getParam(key);
-      if (val) u.searchParams.set(key, val);
-    }
+    // UTM — свои source/medium/campaign для разделения источников
+    u.searchParams.set('utm_source', 'sportscoreai');
+    u.searchParams.set('utm_medium', getUtmMedium(banner));
+    u.searchParams.set('utm_campaign', banner || 'unknown');
+    const utmContent = getParam('utm_content');
+    if (utmContent) u.searchParams.set('utm_content', utmContent);
+    const utmTerm = getParam('utm_term');
+    if (utmTerm) u.searchParams.set('utm_term', utmTerm);
 
     return u.toString();
   } catch {

@@ -197,13 +197,37 @@ describe('getTrackingLink', () => {
     expect(url.searchParams.get('fbclid')).toBe('fb_click_42');
   });
 
-  it('copies utm_* params onto the generated link', () => {
-    setLocation('?utm_source=fb&utm_medium=cpc&utm_campaign=summer');
-    const link = getTrackingLink('user_12');
+  it('sets app UTM params: source=sportscoreai, medium from banner category, campaign=banner', () => {
+    setLocation('?utm_content=old_content&utm_term=old_term');
+    const link = getTrackingLink('user_12', 'aichat_bet_card');
     const url = new URL(link);
-    expect(url.searchParams.get('utm_source')).toBe('fb');
-    expect(url.searchParams.get('utm_medium')).toBe('cpc');
-    expect(url.searchParams.get('utm_campaign')).toBe('summer');
+    expect(url.searchParams.get('utm_source')).toBe('sportscoreai');
+    expect(url.searchParams.get('utm_medium')).toBe('aichat');
+    expect(url.searchParams.get('utm_campaign')).toBe('aichat_bet_card');
+    // utm_content/utm_term — из клоакерской ссылки (as-is)
+    expect(url.searchParams.get('utm_content')).toBe('old_content');
+    expect(url.searchParams.get('utm_term')).toBe('old_term');
+  });
+
+  it('sets utm_medium based on banner prefix', () => {
+    const cases = [
+      ['aichat_bet_fonbet', 'aichat'],
+      ['match_ai_bet', 'match'],
+      ['live_ai_bet', 'match'],
+      ['express_bet', 'express'],
+      ['smart_bet_banner', 'home'],
+      ['promo_fonbet', 'promo'],
+      ['value_finder_fonbet', 'tools'],
+      ['bottom_nav_bet', 'nav'],
+      ['post_match_reminder', 'reminder'],
+    ];
+    for (const [banner, expectedMedium] of cases) {
+      setLocation('');
+      const link = getTrackingLink('user_utm', banner);
+      const url = new URL(link);
+      expect(url.searchParams.get('utm_medium')).toBe(expectedMedium);
+      expect(url.searchParams.get('utm_campaign')).toBe(banner);
+    }
   });
 
   it('returns a fallback URL on error', () => {
