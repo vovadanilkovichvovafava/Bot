@@ -191,7 +191,7 @@ function _extractExpressBets(bookmaker) {
       if (odd >= EXPRESS_MIN_ODD && odd <= EXPRESS_MAX_ODD) {
         candidates.push({
           type: v.value, // "Home", "Draw", "Away"
-          label: v.value === 'Home' ? '1' : v.value === 'Away' ? '2' : 'X',
+          label: v.value === 'Home' ? 'W1 (Home)' : v.value === 'Away' ? 'W2 (Away)' : 'Draw',
           odd,
           category: 'result',
         });
