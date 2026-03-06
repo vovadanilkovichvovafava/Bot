@@ -63,12 +63,13 @@ export default function BottomNav() {
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const isFunnel2 = user?.funnel === 'funnel-2';
-  const isPremium = user?.is_premium && !isFunnel2;
+  const isFunnel4 = user?.funnel === 'funnel-4';
+  const isPremium = user?.is_premium && !isFunnel2 && !isFunnel4;
 
   const handleBetClick = () => {
     trackClick(user?.id, 'bottom_nav_bet');
-    if (isPremium || isFunnel2) {
-      // PRO and funnel-2 go directly to bookmaker
+    if (isPremium || isFunnel2 || isFunnel4) {
+      // PRO, funnel-2, funnel-4 go directly to bookmaker
       const link = getTrackingLink(user?.id, 'bottom_nav_bet') || advertiser?.link;
       if (link) {
         window.open(link, '_blank', 'noopener,noreferrer');

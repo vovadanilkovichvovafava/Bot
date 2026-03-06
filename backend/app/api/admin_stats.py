@@ -125,75 +125,97 @@ async def get_overview(
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
-    month_ago = now - timedelta(days=30)
 
     yesterday_start = today_start - timedelta(days=1)
     tomorrow_start = today_start + timedelta(days=1)
     online_cutoff = now - timedelta(minutes=15)
 
-    # ── Users + Predictions: 1 query instead of 10 ──
-    user_stats = (await db.execute(text("""
-        SELECT
-            COUNT(*) AS total_users,
-            COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro_users,
-            COUNT(*) FILTER (WHERE created_at >= :today) AS new_today,
-            COUNT(*) FILTER (WHERE created_at >= :week_ago) AS new_week,
-            COUNT(*) FILTER (
-                WHERE is_premium = true
-                AND premium_until >= :today + interval '15 days'
-                AND premium_until < :tomorrow + interval '15 days'
-            ) AS pro_new_today
-        FROM users
-    """), {"now": now, "today": today_start, "week_ago": week_ago, "tomorrow": tomorrow_start})).one()
+    # Defaults in case any query fails
+    user_data = {"total": 0, "pro": 0, "pro_new_today": 0, "new_today": 0, "new_week": 0, "online": 0}
+    pred_data = {"total": 0, "verified": 0, "correct": 0, "accuracy": 0.0, "today": 0, "yesterday": 0}
+    ai_chats_today = 0
+    ai_chats_yesterday = 0
+    support_sessions = 0
+    support_sessions_today = 0
 
-    pred_stats = (await db.execute(text("""
-        SELECT
-            COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
-            COUNT(*) FILTER (WHERE is_correct = true) AS correct,
-            COUNT(*) FILTER (WHERE created_at >= :today) AS today_cnt,
-            COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yesterday_cnt
-        FROM predictions
-    """), {"today": today_start, "yesterday": yesterday_start})).one()
-
-    # ── Chat/support + online: 1 query ──
-    chat_stats = (await db.execute(text("""
-        SELECT
-            (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :today AND role = 'user'),
-            (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :yesterday AND created_at < :today AND role = 'user'),
-            (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages),
-            (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages WHERE created_at >= :today),
-            (SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :online_cutoff AND user_id IS NOT NULL)
-    """), {"today": today_start, "yesterday": yesterday_start, "online_cutoff": online_cutoff})).one()
-
-    verified_cnt = pred_stats[1] or 0
-    correct_cnt = pred_stats[2] or 0
-    accuracy = round((correct_cnt / verified_cnt * 100), 1) if verified_cnt > 0 else 0.0
-
-    # Football API usage today
-    football_api_today = await _get_football_api_status()
-
-    result = {
-        "users": {
+    # ── Users ──
+    try:
+        user_stats = (await db.execute(text("""
+            SELECT
+                COUNT(*) AS total_users,
+                COUNT(*) FILTER (WHERE is_premium = true AND premium_until > :now) AS pro_users,
+                COUNT(*) FILTER (WHERE created_at >= :today) AS new_today,
+                COUNT(*) FILTER (WHERE created_at >= :week_ago) AS new_week,
+                COUNT(*) FILTER (
+                    WHERE is_premium = true
+                    AND premium_until >= :today + interval '15 days'
+                    AND premium_until < :tomorrow + interval '15 days'
+                ) AS pro_new_today
+            FROM users
+        """), {"now": now, "today": today_start, "week_ago": week_ago, "tomorrow": tomorrow_start})).one()
+        user_data = {
             "total": user_stats[0],
             "pro": user_stats[1],
             "pro_new_today": user_stats[4],
             "new_today": user_stats[2],
             "new_week": user_stats[3],
-            "online": chat_stats[4],
-        },
-        "predictions": {
+            "online": 0,  # filled from analytics below
+        }
+    except Exception as e:
+        logger.error(f"Overview: users query failed: {e}")
+
+    # ── Predictions ──
+    try:
+        pred_stats = (await db.execute(text("""
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
+                COUNT(*) FILTER (WHERE is_correct = true) AS correct,
+                COUNT(*) FILTER (WHERE created_at >= :today) AS today_cnt,
+                COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yesterday_cnt
+            FROM predictions
+        """), {"today": today_start, "yesterday": yesterday_start})).one()
+        verified_cnt = pred_stats[1] or 0
+        correct_cnt = pred_stats[2] or 0
+        pred_data = {
             "total": pred_stats[0],
             "verified": verified_cnt,
             "correct": correct_cnt,
-            "accuracy": accuracy,
+            "accuracy": round((correct_cnt / verified_cnt * 100), 1) if verified_cnt > 0 else 0.0,
             "today": pred_stats[3],
             "yesterday": pred_stats[4],
-        },
-        "ai_chats_today": chat_stats[0],
-        "ai_chats_yesterday": chat_stats[1],
-        "support_sessions": chat_stats[2],
-        "support_sessions_today": chat_stats[3],
+        }
+    except Exception as e:
+        logger.error(f"Overview: predictions query failed: {e}")
+
+    # ── Chat/support + online ──
+    try:
+        chat_stats = (await db.execute(text("""
+            SELECT
+                (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :today AND role = 'user'),
+                (SELECT COUNT(*) FROM ai_chat_messages WHERE created_at >= :yesterday AND created_at < :today AND role = 'user'),
+                (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages),
+                (SELECT COUNT(DISTINCT session_id) FROM support_chat_messages WHERE created_at >= :today),
+                (SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE created_at >= :online_cutoff AND user_id IS NOT NULL)
+        """), {"today": today_start, "yesterday": yesterday_start, "online_cutoff": online_cutoff})).one()
+        ai_chats_today = chat_stats[0]
+        ai_chats_yesterday = chat_stats[1]
+        support_sessions = chat_stats[2]
+        support_sessions_today = chat_stats[3]
+        user_data["online"] = chat_stats[4]
+    except Exception as e:
+        logger.error(f"Overview: chat/online query failed: {e}")
+
+    # Football API usage today
+    football_api_today = await _get_football_api_status()
+
+    result = {
+        "users": user_data,
+        "predictions": pred_data,
+        "ai_chats_today": ai_chats_today,
+        "ai_chats_yesterday": ai_chats_yesterday,
+        "support_sessions": support_sessions,
+        "support_sessions_today": support_sessions_today,
         "football_api": football_api_today,
     }
     _cache_set("overview", result)

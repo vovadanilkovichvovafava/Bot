@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
 
-export default function WelcomeModal({ onClose, onGoToPromo, hidePro }) {
+export default function WelcomeModal({ onClose, onGoToPromo, onGoToExpress, hidePro, expressFirst }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const { hideBottomNav, showBottomNav } = useBottomNav();
@@ -12,17 +12,25 @@ export default function WelcomeModal({ onClose, onGoToPromo, hidePro }) {
     return () => showBottomNav();
   }, [hideBottomNav, showBottomNav]);
 
-  // funnel-2: skip Step4 (PRO features) — 4 steps instead of 5
-  const TOTAL_STEPS = hidePro ? 4 : 5;
+  // funnel-4 express-first: 4 steps (Welcome → Express → Predictions → Go)
+  // funnel-2: 4 steps (skip PRO)
+  // funnel-1: 5 steps (full)
+  const TOTAL_STEPS = expressFirst ? 4 : hidePro ? 4 : 5;
   const lastStep = TOTAL_STEPS - 1;
 
   const next = () => {
     if (step < lastStep) setStep(step + 1);
   };
 
-  // Map step index to component (skip Step4Features for funnel-2)
+  // Map step index to component
   const getStepContent = () => {
-    if (hidePro) {
+    if (expressFirst) {
+      // funnel-4: Welcome → Express intro → Predictions → Go (express CTA)
+      if (step === 0) return <Step1Welcome t={t} />;
+      if (step === 1) return <StepExpress t={t} />;
+      if (step === 2) return <Step2Predictions t={t} />;
+      if (step === 3) return <Step5Start t={t} onClose={onClose} onGoToPromo={onGoToExpress} hidePro expressCTA />;
+    } else if (hidePro) {
       if (step === 0) return <Step1Welcome t={t} />;
       if (step === 1) return <Step2Predictions t={t} />;
       if (step === 2) return <Step3Chat t={t} />;
@@ -200,8 +208,44 @@ function Step4Features({ t }) {
   );
 }
 
+/* Step Express — for funnel-4 */
+function StepExpress({ t }) {
+  return (
+    <div className="px-6 pt-6 pb-4 text-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #4F46E5, #EC4899)' }}>
+        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+        </svg>
+      </div>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">
+        {t('onboarding.stepExpressTitle', { defaultValue: 'AI Express — Ready Accumulators' })}
+      </h2>
+      <p className="text-gray-500 text-sm leading-relaxed mb-5">
+        {t('onboarding.stepExpressDesc', { defaultValue: 'Every day AI builds 3 express bets from top leagues. Just pick Safe, Value or Big — and place your bet!' })}
+      </p>
+      {/* Express preview */}
+      <div className="space-y-2">
+        {[
+          { name: 'Safe', odds: 'x3-5', color: 'from-emerald-500 to-green-600', emoji: '🛡️' },
+          { name: 'Value', odds: 'x8-15', color: 'from-blue-500 to-indigo-600', emoji: '💎' },
+          { name: 'Big', odds: 'x20+', color: 'from-orange-500 to-red-500', emoji: '🔥' },
+        ].map((e) => (
+          <div key={e.name} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 text-left">
+            <span className="text-lg">{e.emoji}</span>
+            <div className="flex-1">
+              <span className="text-sm font-bold text-gray-800">{e.name}</span>
+              <span className="text-xs text-gray-400 ml-2">3-4 legs</span>
+            </div>
+            <span className="text-sm font-black bg-gradient-to-r {e.color} text-gray-700">{e.odds}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* Step 5 — Go! */
-function Step5Start({ t, onClose, onGoToPromo, hidePro }) {
+function Step5Start({ t, onClose, onGoToPromo, hidePro, expressCTA }) {
   return (
     <div className="px-6 pt-6 pb-6 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center shadow-lg">
@@ -227,7 +271,17 @@ function Step5Start({ t, onClose, onGoToPromo, hidePro }) {
         </svg>
         {t('onboarding.goPredict', { defaultValue: 'Vai ai pronostici' })}
       </button>
-      {!hidePro && (
+      {expressCTA ? (
+        <button
+          onClick={onGoToPromo}
+          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+          </svg>
+          {t('onboarding.goExpress', { defaultValue: 'See AI Express Bets' })}
+        </button>
+      ) : !hidePro && (
         <button
           onClick={onGoToPromo}
           className="w-full text-primary-500 text-sm font-medium py-2"

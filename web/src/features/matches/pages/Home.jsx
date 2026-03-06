@@ -577,7 +577,12 @@ export default function Home() {
             setShowWelcome(false);
             navigate('/promo');
           }}
-          hidePro={isFunnel2}
+          onGoToExpress={() => {
+            setShowWelcome(false);
+            navigate('/express');
+          }}
+          hidePro={isFunnel2 || isFunnel4}
+          expressFirst={isFunnel4}
         />
       )}
 

@@ -149,8 +149,8 @@ export default function LiveMatchDetail() {
       const data = await api.aiChat(userMessage, [], prompt);
 
       // Increment AI request counter for non-premium users (AFTER successful response)
-      const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
-      const isFunnel2 = user?.funnel === 'funnel-2';
+      const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
+      const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
       if (!isPremium && !isFunnel2) {
         incrementAIRequestCount();
       }

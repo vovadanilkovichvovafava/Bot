@@ -93,7 +93,7 @@ export default function AIChat() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && !isFunnel2);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
