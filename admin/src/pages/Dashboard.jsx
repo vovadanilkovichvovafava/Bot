@@ -12,6 +12,51 @@ function getSourceColor(source) {
   return SOURCE_COLORS[source] || { bg: 'bg-amber-500', text: 'text-amber-400', light: 'bg-amber-500/20' }
 }
 
+/* ── Tiny bar chart ─────────────────────────────────────── */
+function MiniBarChart({ data, color = 'bg-blue-500', labelKey = 'date', valueKey = 'count' }) {
+  if (!data || data.length === 0) return <p className="text-xs text-dark-500 py-8 text-center">No data</p>
+  const max = Math.max(...data.map(d => d[valueKey] || 0), 1)
+  return (
+    <div className="flex items-end gap-[3px] h-36 mt-2">
+      {data.slice(-14).map((d, i) => {
+        const pct = ((d[valueKey] || 0) / max) * 100
+        const label = (d[labelKey] || '').slice(5) // "MM-DD"
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+            <div className="absolute -top-6 hidden group-hover:block bg-dark-700 text-[10px] text-dark-200 px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+              {d[valueKey]}
+            </div>
+            <div className={`w-full rounded-t ${color} transition-all`} style={{ height: `${Math.max(pct, 2)}%` }} />
+            {i % 3 === 0 && <span className="text-[8px] text-dark-500 leading-none">{label}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ── Online history chart (hourly) ─────────────────────── */
+function OnlineChart({ data }) {
+  if (!data || data.length === 0) return <p className="text-xs text-dark-500 py-8 text-center">No data</p>
+  const max = Math.max(...data.map(d => d.unique_users || 0), 1)
+  return (
+    <div className="flex items-end gap-[2px] h-32 mt-2">
+      {data.map((d, i) => {
+        const pct = ((d.unique_users || 0) / max) * 100
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+            <div className="absolute -top-6 hidden group-hover:block bg-dark-700 text-[10px] text-dark-200 px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+              {d.unique_users} users
+            </div>
+            <div className="w-full rounded-t bg-cyan-500 transition-all" style={{ height: `${Math.max(pct, 2)}%` }} />
+            {i % 4 === 0 && <span className="text-[8px] text-dark-500 leading-none">{d.hour}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { admin } = useAuth()
   const [team, setTeam] = useState([])
@@ -19,13 +64,22 @@ export default function Dashboard() {
   const [newInvite, setNewInvite] = useState(null)
   const [creating, setCreating] = useState(false)
   const [overview, setOverview] = useState(null)
+  const [overviewError, setOverviewError] = useState(null)
   const [traffic, setTraffic] = useState(null)
+  const [usersStats, setUsersStats] = useState(null)
+  const [onlineHistory, setOnlineHistory] = useState(null)
+  const [predsStats, setPredsStats] = useState(null)
 
   useEffect(() => {
     api.getTeam().then(setTeam).catch(() => {})
     api.getInvites().then(setInvites).catch(() => {})
-    api.getOverview().then(setOverview).catch(() => {})
+    api.getOverview()
+      .then(data => { setOverview(data); setOverviewError(null) })
+      .catch(err => { setOverviewError(err.message); console.error('Overview failed:', err) })
     api.getTrafficStats().then(setTraffic).catch(() => {})
+    api.getUsersStats().then(setUsersStats).catch(() => {})
+    api.getOnlineHistory().then(setOnlineHistory).catch(() => {})
+    api.getPredictionsStats().then(setPredsStats).catch(() => {})
   }, [])
 
   const handleCreateInvite = async (role) => {
@@ -43,79 +97,146 @@ export default function Dashboard() {
 
   const u = overview?.users || {}
   const p = overview?.predictions || {}
+  const fApi = overview?.football_api || {}
 
   const stats = [
-    { label: 'Users', value: u.total ?? '—', sub: `+${u.new_today ?? 0} today`, color: 'blue' },
-    { label: 'Online', value: u.online ?? '—', sub: `+${u.new_week ?? 0} this week`, color: 'green' },
-    { label: 'PRO', value: u.pro ?? '—', sub: `+${u.pro_new_today ?? 0} today`, color: 'purple' },
-    { label: 'AI chats', value: overview?.ai_chats_today ?? '—', sub: `${overview?.ai_chats_yesterday ?? 0} yesterday`, color: 'amber' },
+    {
+      label: 'Total Users', value: u.total ?? 0,
+      sub: `+${u.new_today ?? 0} today`,
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H5.228A2 2 0 015 17.128c0-2.493 1.834-4.615 4.347-5.138a6.5 6.5 0 015.306 0" /></svg>,
+      gradient: 'from-blue-500/20 to-blue-600/10', iconColor: 'text-blue-400',
+    },
+    {
+      label: 'PRO Users', value: u.pro ?? 0,
+      sub: u.pro_new_today ? `+${u.pro_new_today} today` : 'No new today',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>,
+      gradient: 'from-purple-500/20 to-purple-600/10', iconColor: 'text-purple-400',
+    },
+    {
+      label: 'Online Users', value: u.online ?? 0,
+      sub: 'Active last 15 min',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582" /></svg>,
+      gradient: 'from-green-500/20 to-green-600/10', iconColor: 'text-green-400',
+    },
+    {
+      label: 'Predictions', value: p.total ?? 0,
+      sub: `+${p.today ?? 0} today · ${p.accuracy ?? 0}% acc`,
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>,
+      gradient: 'from-amber-500/20 to-amber-600/10', iconColor: 'text-amber-400',
+      badge: p.today > 0 ? p.today : null,
+    },
+    {
+      label: 'Support Sessions', value: overview?.support_sessions_today ?? 0,
+      sub: overview?.support_sessions ? `${overview.support_sessions} total` : 'None today',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>,
+      gradient: 'from-teal-500/20 to-teal-600/10', iconColor: 'text-teal-400',
+    },
+    {
+      label: 'Football API', value: fApi.used ?? 0,
+      sub: fApi.limit > 0 ? `${fApi.used}/${fApi.limit} requests` : 'No key set',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
+      gradient: 'from-rose-500/20 to-rose-600/10', iconColor: 'text-rose-400',
+    },
   ]
-
-  const colorMap = { blue: 'text-blue-400', green: 'text-green-400', purple: 'text-purple-400', amber: 'text-amber-400' }
 
   return (
     <div className="space-y-6">
       {/* Welcome */}
       <div>
-        <h1 className="text-xl font-semibold">Welcome, {admin?.name}</h1>
-        <p className="text-sm text-dark-400 mt-1">
-          Role: <span className="text-blue-400">{admin?.role}</span>
-        </p>
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <p className="text-sm text-dark-400 mt-1">Welcome back, {admin?.name}</p>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Error banner */}
+      {overviewError && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+          <p className="text-xs text-red-400">Overview API error: {overviewError}</p>
+        </div>
+      )}
+
+      {/* 6 Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {stats.map(s => (
-          <div key={s.label} className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-            <p className="text-xs text-dark-400">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${colorMap[s.color] || 'text-dark-100'}`}>{s.value}</p>
+          <div key={s.label} className={`bg-gradient-to-br ${s.gradient} rounded-xl p-4 border border-dark-700 relative overflow-hidden`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-dark-400 font-medium">{s.label}</p>
+              <span className={s.iconColor}>{s.icon}</span>
+            </div>
+            <p className="text-2xl font-bold">{s.value}</p>
             <p className="text-[10px] text-dark-500 mt-1">{s.sub}</p>
+            {s.badge && (
+              <span className="absolute top-3 right-8 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                {s.badge}
+              </span>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Predictions Stats */}
-      {p.total != null && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-            <p className="text-xs text-dark-400">Predictions</p>
-            <p className="text-2xl font-bold mt-1">{p.total}</p>
-            <p className="text-[10px] text-dark-500 mt-1">+{p.today ?? 0} today</p>
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* User Registrations */}
+        <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-sm font-semibold">User Registrations</h3>
+              <p className="text-[10px] text-dark-500">Last 14 days</p>
+            </div>
+            <a href="#/users" className="text-xs text-blue-400 hover:underline">View all</a>
           </div>
-          <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-            <p className="text-xs text-dark-400">Verified</p>
-            <p className="text-2xl font-bold mt-1">{p.verified}</p>
-            <p className="text-[10px] text-dark-500 mt-1">{p.correct ?? 0} correct</p>
+          <MiniBarChart
+            data={usersStats?.daily_registrations}
+            color="bg-blue-500"
+          />
+        </div>
+
+        {/* Daily Predictions */}
+        <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-sm font-semibold">Daily Predictions</h3>
+              <p className="text-[10px] text-dark-500">Last 14 days</p>
+            </div>
+            <a href="#/predictions" className="text-xs text-blue-400 hover:underline">View all</a>
           </div>
-          <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-            <p className="text-xs text-dark-400">Accuracy</p>
-            <p className={`text-2xl font-bold mt-1 ${p.accuracy >= 60 ? 'text-green-400' : p.accuracy >= 45 ? 'text-amber-400' : 'text-dark-100'}`}>
-              {p.accuracy}%
-            </p>
-            <p className="text-[10px] text-dark-500 mt-1">{p.yesterday ?? 0} preds yesterday</p>
+          <MiniBarChart
+            data={predsStats?.daily_predictions}
+            color="bg-emerald-500"
+          />
+        </div>
+      </div>
+
+      {/* Online Users — Last 24h */}
+      {onlineHistory && (
+        <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-sm font-semibold">Online Users — Last 24h</h3>
+              <p className="text-[10px] text-dark-500">
+                Peak: <span className="text-blue-400 font-medium">{onlineHistory.peak_users}</span>
+                {onlineHistory.peak_hour && <> at {onlineHistory.peak_hour}</>}
+                {' · '}Now: <span className="text-green-400 font-medium">{onlineHistory.current_online}</span>
+              </p>
+            </div>
           </div>
-          <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
-            <p className="text-xs text-dark-400">Support</p>
-            <p className="text-2xl font-bold mt-1">{overview?.support_sessions_today ?? 0}</p>
-            <p className="text-[10px] text-dark-500 mt-1">{overview?.support_sessions ?? 0} total sessions</p>
-          </div>
+          <OnlineChart data={onlineHistory.hours} />
         </div>
       )}
 
-      {/* Football API usage */}
-      {overview?.football_api && overview.football_api.limit > 0 && (
+      {/* Football API usage bar */}
+      {fApi.limit > 0 && (
         <div className="bg-dark-800 rounded-xl p-4 border border-dark-700">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-dark-400">API-Football usage today</p>
-            <p className="text-xs font-mono text-dark-300">{overview.football_api.used} / {overview.football_api.limit}</p>
+            <p className="text-xs font-mono text-dark-300">{fApi.used} / {fApi.limit}</p>
           </div>
           <div className="w-full bg-dark-700 rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all ${
-                overview.football_api.used / overview.football_api.limit > 0.8 ? 'bg-red-500' :
-                overview.football_api.used / overview.football_api.limit > 0.5 ? 'bg-amber-500' : 'bg-green-500'
+                fApi.used / fApi.limit > 0.8 ? 'bg-red-500' :
+                fApi.used / fApi.limit > 0.5 ? 'bg-amber-500' : 'bg-green-500'
               }`}
-              style={{ width: `${Math.min(overview.football_api.used / overview.football_api.limit * 100, 100)}%` }}
+              style={{ width: `${Math.min(fApi.used / fApi.limit * 100, 100)}%` }}
             />
           </div>
         </div>

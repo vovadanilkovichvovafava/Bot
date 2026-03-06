@@ -70,6 +70,9 @@ export const api = {
   // ── Stats ────────────────────────────
   getOverview: () => request('/stats/overview'),
   getTrafficStats: () => request('/stats/traffic'),
+  getUsersStats: () => request('/stats/users'),
+  getOnlineHistory: () => request('/stats/online-history'),
+  getPredictionsStats: () => request('/stats/predictions'),
 
   // ── Users ────────────────────────────
   getEmailDomains: () => request('/stats/users/email-domains'),
