@@ -144,8 +144,7 @@ export default function Home() {
   };
 
   const isPremium = user?.is_premium;
-  const isFunnelFree = user?.funnel === 'funnel-free';
-  const isFunnel2 = user?.funnel === 'funnel-2' || isFunnelFree;
+  const isFunnel2 = user?.funnel === 'funnel-2';
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3);
   const isFunnel1or3 = isFunnel1 || isFunnel3;
@@ -498,8 +497,8 @@ export default function Home() {
               {matches.map((f, idx) => (
                 <React.Fragment key={f.fixture.id}>
                   <HomeMatchCard fixture={f} navigate={navigate} />
-                  {/* Inline bonus banner after 3rd match for funnel-free */}
-                  {isFunnelFree && idx === 2 && (
+                  {/* Inline bonus banner after 3rd match for funnel-2 */}
+                  {isFunnel2 && idx === 2 && (
                     <div
                       onClick={() => { trackClick(user?.id, 'home_inline_bonus'); window.open(getTrackingLink(user?.id, 'home_inline_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
                       className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"

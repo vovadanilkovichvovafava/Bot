@@ -176,8 +176,8 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # All new users go to funnel-free
-    funnel = "funnel-free"
+    # All new users go to funnel-2 (all free, no paywall)
+    funnel = "funnel-2"
 
     # Create new user
     new_user = User(
