@@ -381,7 +381,7 @@ export default function ProAccess() {
             <div className="ft">{t('proAccess.s5Title')}</div>
             <div className="fs">{t('proAccess.s5Sub')}</div>
           </div>
-          <div className="q-bfloat"><div className="q-bfl">{t('proAccess.s5BonusLabel')}</div><div className="q-bfa">{advertiser.exampleAmounts?.bonusDisplay || '€1,500'}</div><div className="q-bfd">{t('proAccess.s5BonusDesc')}</div></div>
+          <div className="q-bfloat"><div className="q-bfl">{t('proAccess.s5BonusLabel')}</div><div className="q-bfa">{advertiser?.bonusBanner?.bonus || '€75'}</div><div className="q-bfd">{t('proAccess.s5BonusDesc')}</div></div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('proAccess.s5Install')}</div></div>
             <div className="q-marr">→</div>
