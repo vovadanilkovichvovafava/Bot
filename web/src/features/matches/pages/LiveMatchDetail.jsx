@@ -458,13 +458,8 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => {
-                    if (canUseDeeplink && fonbetMatch?.deeplink) {
-                      trackClick(user?.id, 'live_ai_bet');
-                      window.open(addTrackingToUrl(fonbetMatch.deeplink, user?.id, 'live_ai_bet'), '_blank', 'noopener,noreferrer');
-                    } else {
-                      trackClick(user?.id, 'live_ai_bet');
-                      window.open(getTrackingLink(user?.id, 'live_ai_bet') || advertiser?.link, '_blank', 'noopener,noreferrer');
-                    }
+                    trackClick(user?.id, 'live_ai_bet');
+                    navigate('/promo');
                   }}
                   className="w-full text-left relative overflow-hidden rounded-2xl shadow-lg"
                   style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
@@ -522,7 +517,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
               <div
                 className="mt-4 rounded-2xl overflow-hidden shadow-lg cursor-pointer"
                 style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
-                onClick={() => { trackClick(user?.id, 'live_free_bet_banner'); window.open(getTrackingLink(user?.id, 'live_free_bet_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+                onClick={() => { trackClick(user?.id, 'live_free_bet_banner'); navigate('/promo'); }}
               >
                 <div className="px-4 py-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>

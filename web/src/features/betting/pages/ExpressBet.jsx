@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
 import { generateExpressShareText, sharePrediction } from '../../predictions/services/shareUtils';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
@@ -163,28 +162,6 @@ export default function ExpressBet() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Bet link logic:
-  // - PRO (is_premium / registered on Fonbet) → Fonbet deeplink to first match
-  // - Everyone else → referral offer link
-  const getBetLink = (express) => {
-    if (!express?.legs?.[0]) return null;
-
-    if (isFonbetUser) {
-      // Try Fonbet deeplink for first leg
-      const firstLeg = express.legs[0];
-      try {
-        const key = `${firstLeg.home_team.toLowerCase()}_${firstLeg.away_team.toLowerCase()}`;
-        const fbEvent = fonbetMap[key];
-        if (fbEvent?.deeplink) {
-          return addTrackingToUrl(fbEvent.deeplink, user?.id, 'express_bet_fonbet');
-        }
-      } catch {}
-    }
-
-    // Fallback: referral offer link for all non-Fonbet users
-    return getTrackingLink(user?.id, 'express_bet');
   };
 
   return (
@@ -365,7 +342,6 @@ export default function ExpressBet() {
                     express={express}
                     isExpanded={expandedKey === express.key}
                     onToggle={() => setExpandedKey(expandedKey === express.key ? null : express.key)}
-                    getBetLink={getBetLink}
                     trackClick={trackClick}
                     userId={user?.id}
                     referralCode={user?.referral_code}
@@ -385,7 +361,7 @@ export default function ExpressBet() {
           <div
             className="rounded-2xl overflow-hidden shadow-lg cursor-pointer"
             style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
-            onClick={() => { trackClick(user?.id, 'express_free_bet_banner'); window.open(getTrackingLink(user?.id, 'express_free_bet_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+            onClick={() => { trackClick(user?.id, 'express_free_bet_banner'); navigate('/promo'); }}
           >
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
             <div className="relative px-4 py-4">
@@ -446,9 +422,8 @@ export default function ExpressBet() {
 }
 
 
-function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackClick, userId, referralCode, bonus, navigate, t, isPro }) {
+function ExpressPresetCard({ express, isExpanded, onToggle, trackClick, userId, referralCode, bonus, navigate, t, isPro }) {
   const style = PRESET_STYLES[express.key] || PRESET_STYLES.value;
-  const betLink = getBetLink(express);
 
   // PRO-gate: risky (7 legs) is PRO only
   const isLocked = express.key === 'risky' && !isPro;
@@ -541,18 +516,15 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackCli
 
           {/* Bet Now + Share buttons */}
           <div className="px-4 py-3 bg-gray-50 space-y-2">
-            <a
-              href={betLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackClick?.(userId, 'express_bet')}
+            <button
+              onClick={() => { trackClick?.(userId, 'express_bet'); navigate('/promo'); }}
               className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
               </svg>
               {t('express.betNow', { defaultValue: 'Bet Now' })}
-            </a>
+            </button>
             <button
               onClick={async () => {
                 trackClick?.(userId, 'express_share');
