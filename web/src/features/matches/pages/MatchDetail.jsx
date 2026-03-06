@@ -1011,6 +1011,102 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
               </div>
             </div>
           )}
+
+          {/* Promo ad block — always shown after analysis */}
+          {!isPremium && (
+            <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+              {/* Header bar */}
+              <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('aiChat.exclusiveFor')}</span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">{t('aiChat.limitedTime')}</span>
+              </div>
+
+              {/* Body */}
+              <div className="bg-white p-4">
+                <p
+                  className="text-sm text-gray-700 leading-relaxed mb-3"
+                  dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
+                    match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`,
+                    confidence: recommendedBet ? Math.round(recommendedBet.odds * 30) : 62,
+                    bonus: advertiser?.bonusBanner?.bonus || '',
+                  }) }}
+                />
+
+                {/* Free bet card — dark navy */}
+                <div className="rounded-xl p-4 mb-3" style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎁</span>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">{t('advertiser.freeBetLabel')}</p>
+                      <p className="text-xl font-black text-emerald-400">{advertiser?.bonusBanner?.bonus}</p>
+                      <p className="text-[11px] text-white/50 mt-0.5">
+                        {t('aiChat.bonusBannerDeposit', {
+                          deposit: advertiser?.bonusBanner?.deposit || '',
+                          bonus: advertiser?.bonusBanner?.bonus || '',
+                        })}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full border border-emerald-400/30">{t('aiChat.noRisk')}</span>
+                  </div>
+                </div>
+
+                {/* 3 steps */}
+                <div className="flex items-center justify-between mb-3 px-2">
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">1</div>
+                    <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step1Label')}</p>
+                    <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.deposit}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">2</div>
+                    <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step2Label')}</p>
+                    <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.bonus}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                  <div className="flex flex-col items-center">
+                    <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">3</div>
+                    <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step3Label')}</p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-gray-400 text-center mb-3">{t('aiChat.bonusDisclaimer')}</p>
+
+                {/* CTA */}
+                <button
+                  onClick={() => { trackClick(user?.id, 'match_ad_get_bonus'); navigate('/promo'); }}
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                  {t('aiChat.bonusCta', { bonus: advertiser?.bonusBanner?.bonus || '' })}
+                </button>
+
+                {/* Trust badges */}
+                <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                    {t('aiChat.trustSafe')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                    {t('aiChat.trustLicensed')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    4.9/5
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {t('aiChat.trustWithdrawal', { defaultValue: 'Withdrawal 15 min' })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="card border border-gray-100 text-center py-6">
