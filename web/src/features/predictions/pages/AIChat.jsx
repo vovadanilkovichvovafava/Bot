@@ -94,6 +94,7 @@ export default function AIChat() {
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
   const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
+  const isFunnelFree = user?.funnel === 'funnel-free';
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -647,6 +648,26 @@ export default function AIChat() {
         )}
         <div ref={messagesEndRef}/>
       </div>
+
+      {/* Funnel-free: prominent bonus banner above chat */}
+      {isFunnelFree && !isPremium && messages.length <= 1 && !keyboardOpen && (
+        <div className="px-5 pb-2 shrink-0">
+          <div
+            onClick={() => { trackClick(user?.id, 'aichat_free_bonus'); window.open(getTrackingLink(user?.id, 'aichat_free_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+            className="rounded-xl p-3 cursor-pointer shadow-md flex items-center gap-3"
+            style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+          >
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+              <span className="text-lg">🎁</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('advertiser.freeBetLabel')}</p>
+              <p className="text-white text-sm font-bold">{t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus, defaultValue: `Get ${advertiser?.bonusBanner?.bonus} free bet` })}</p>
+            </div>
+            <svg className="w-5 h-5 shrink-0" style={{ color: '#F7C948' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+          </div>
+        </div>
+      )}
 
       {/* Quick Questions - Compact (hidden when keyboard is open) */}
       {showQuick && messages.length <= 1 && !keyboardOpen && (

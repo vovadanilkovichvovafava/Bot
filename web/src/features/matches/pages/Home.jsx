@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -144,7 +144,8 @@ export default function Home() {
   };
 
   const isPremium = user?.is_premium;
-  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnelFree = user?.funnel === 'funnel-free';
+  const isFunnel2 = user?.funnel === 'funnel-2' || isFunnelFree;
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3);
   const isFunnel1or3 = isFunnel1 || isFunnel3;
@@ -494,8 +495,25 @@ export default function Home() {
             </div>
           ) : (
             <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {matches.map((f) => (
-                <HomeMatchCard key={f.fixture.id} fixture={f} navigate={navigate} />
+              {matches.map((f, idx) => (
+                <React.Fragment key={f.fixture.id}>
+                  <HomeMatchCard fixture={f} navigate={navigate} />
+                  {/* Inline bonus banner after 3rd match for funnel-free */}
+                  {isFunnelFree && idx === 2 && (
+                    <div
+                      onClick={() => { trackClick(user?.id, 'home_inline_bonus'); window.open(getTrackingLink(user?.id, 'home_inline_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"
+                      style={{ background: 'linear-gradient(135deg, #FFFBF0, #FEF3C7)' }}
+                    >
+                      <span className="text-lg">🎁</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900">{t('advertiser.freeBetLabel')} {advertiser?.bonusBanner?.bonus}</p>
+                        <p className="text-[10px] text-gray-500">{t('home.claimNow', { defaultValue: 'Claim your free bet now' })}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           )}
