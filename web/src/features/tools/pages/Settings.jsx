@@ -14,7 +14,7 @@ export default function Settings() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
-  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-free';
+  const isFunnel2 = user?.funnel === 'funnel-2';
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);

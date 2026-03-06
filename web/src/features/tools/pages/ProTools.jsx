@@ -12,7 +12,7 @@ export default function ProTools() {
   const { t } = useTranslation();
   const [showSupportChat, setShowSupportChat] = useState(false);
   const isPremium = user?.is_premium;
-  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-free';
+  const isFunnel2 = user?.funnel === 'funnel-2';
 
   // Check if user has used free Value Bet Finder trial
   const valueBetUsed = localStorage.getItem('value_bet_used') === 'true';

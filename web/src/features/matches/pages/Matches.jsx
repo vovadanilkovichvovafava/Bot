@@ -67,7 +67,7 @@ export default function Matches() {
   const liveInterval = useRef(null);
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
-  const isFunnelFree = user?.funnel === 'funnel-free';
+  const isFunnel2 = user?.funnel === 'funnel-2';
 
   // Load favourite IDs on mount
   useEffect(() => {
@@ -225,8 +225,8 @@ export default function Matches() {
       </div>
 
       <div className="px-5 pt-4">
-        {/* Partner Banner — bigger for funnel-free */}
-        {isFunnelFree ? (
+        {/* Partner Banner — bigger for funnel-2 */}
+        {isFunnel2 ? (
           <div
             onClick={() => { trackClick(user?.id, 'matches_bonus_banner'); window.open(getTrackingLink(user?.id, 'matches_bonus_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
             className="rounded-xl overflow-hidden mb-4 cursor-pointer shadow-lg"

@@ -94,7 +94,7 @@ export default function AIChat() {
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
   const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
-  const isFunnelFree = user?.funnel === 'funnel-free';
+  const isFunnel2 = user?.funnel === 'funnel-2';
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -655,8 +655,8 @@ export default function AIChat() {
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Funnel-free: prominent bonus banner above chat */}
-      {isFunnelFree && !isPremium && messages.length <= 1 && !keyboardOpen && (
+      {/* Funnel-2: prominent bonus banner above chat */}
+      {isFunnel2 && !isPremium && messages.length <= 1 && !keyboardOpen && (
         <div className="px-5 pb-2 shrink-0">
           <div
             onClick={() => { trackClick(user?.id, 'aichat_free_bonus'); window.open(getTrackingLink(user?.id, 'aichat_free_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}

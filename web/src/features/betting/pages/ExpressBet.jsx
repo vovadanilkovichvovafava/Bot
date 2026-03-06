@@ -44,8 +44,8 @@ function getCurrentWeek() {
 
 function canAccessFree(user) {
   if (!user) return false;
-  // Premium or funnel-2/funnel-free — always free
-  if (user.is_premium || user.funnel === 'funnel-2' || user.funnel === 'funnel-free') return true;
+  // Premium or funnel-2 — always free
+  if (user.is_premium || user.funnel === 'funnel-2') return true;
   // Funnel-1 — once per week
   if (user.funnel === 'funnel-1' || !user.funnel) {
     const lastWeek = localStorage.getItem(EXPRESS_WEEKLY_KEY);
@@ -67,7 +67,7 @@ export default function ExpressBet() {
   const { trackClick } = useAdvertiser();
   const navigate = useNavigate();
 
-  const isPro = user?.is_premium || user?.funnel === 'funnel-2' || user?.funnel === 'funnel-free';
+  const isPro = user?.is_premium || user?.funnel === 'funnel-2';
   const isFonbetUser = user?.is_premium; // registered on Fonbet = has deeplink access
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPro && !isFunnel3);
