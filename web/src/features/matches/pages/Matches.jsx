@@ -231,7 +231,7 @@ export default function Matches() {
         >
           <span className="text-lg">🎯</span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser.bonusAmount, name: advertiser.name })}</p>
+            <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
           </div>
           <span className="text-slate-400 text-xs">{t('matches.getIt')} →</span>
         </div>

@@ -515,7 +515,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                               {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
                             </p>
                             <p className="text-white font-bold text-xs">
-                              {advertiser?.bonusAmount} &times; {bet.odds.toFixed(2)}
+                              {advertiser?.bonusBanner?.bonus} &times; {bet.odds.toFixed(2)}
                             </p>
                           </div>
                         )}
