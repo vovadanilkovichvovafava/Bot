@@ -266,7 +266,7 @@ export default function ProGuide() {
                     onClick={() => {
                       if (advertiser?.link) {
                         if (user?.id) trackClick(user.id, 'pro_guide_value_bet');
-                        window.open(getTrackingLink(user?.id, 'pro_guide_value_bet') || advertiser.link, '_blank', 'noopener,noreferrer');
+                        navigate('/promo');
                       }
                     }}
                     className="relative w-full bg-gradient-to-r from-emerald-400 to-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-xl flex items-center justify-center gap-2"

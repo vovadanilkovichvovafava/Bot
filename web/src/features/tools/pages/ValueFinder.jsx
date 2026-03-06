@@ -300,7 +300,7 @@ function ValueBetCard({ item, navigate, t, fonbetMap, userId }) {
             className="bg-indigo-50 border border-indigo-200 rounded-lg p-2.5 mb-2 cursor-pointer hover:bg-indigo-100 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
-              if (fbDeeplink) window.open(addTrackingToUrl(fbDeeplink, userId, 'value_finder_fonbet'), '_blank', 'noopener,noreferrer');
+              if (fbDeeplink) navigate('/promo');
             }}
           >
             <div className="flex items-center justify-between">

@@ -228,7 +228,7 @@ export default function Matches() {
         {/* Partner Banner — bigger for funnel-2 */}
         {isFunnel2 ? (
           <div
-            onClick={() => { trackClick(user?.id, 'matches_bonus_banner'); window.open(getTrackingLink(user?.id, 'matches_bonus_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+            onClick={() => { trackClick(user?.id, 'matches_bonus_banner'); navigate('/promo'); }}
             className="rounded-xl overflow-hidden mb-4 cursor-pointer shadow-lg"
             style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
           >
@@ -555,7 +555,7 @@ function MatchesAdBanner({ advertiser, trackClick, userId, navigate, t, isLive }
 
       {/* Bonus mini-banner */}
       <div
-        onClick={() => { trackClick(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus'); window.open(getTrackingLink(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+        onClick={() => { trackClick(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus'); navigate('/promo'); }}
         className="mt-2 rounded-xl bg-slate-800 p-3 cursor-pointer flex items-center gap-3"
       >
         <span className="text-lg">🎁</span>
@@ -642,6 +642,7 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular,
 }
 
 function FixtureCard({ fixture, onClick, fonbetMap, userId }) {
+  const navigate = useNavigate();
   const f = fixture;
   const date = new Date(f.fixture.date);
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -703,7 +704,7 @@ function FixtureCard({ fixture, onClick, fonbetMap, userId }) {
                 key={o.label}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (fbDeeplink) window.open(addTrackingToUrl(fbDeeplink, userId, 'matches_fonbet_odds'), '_blank', 'noopener,noreferrer');
+                  if (fbDeeplink) navigate('/promo');
                 }}
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-1.5 py-1 text-center cursor-pointer transition-colors min-w-[36px]"
               >

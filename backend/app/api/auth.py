@@ -49,6 +49,7 @@ class UserRegister(BaseModel):
     source: Optional[str] = None  # Traffic source: "prescoreai_com", "sportscoreai_com", etc.
     utm_source: Optional[str] = None  # Рекламный источник: google, facebook, tiktok
     utm_campaign: Optional[str] = None  # Название рекламной кампании
+    utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
 
     @field_validator("phone")
     @classmethod
@@ -185,8 +186,13 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # All new users go to funnel-2 (all free, no paywall)
-    funnel = "funnel-2"
+    # Determine funnel from utm_funnel param, default to funnel-2
+    VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4", "1", "2", "3", "4"}
+    raw_funnel = user.utm_funnel
+    if raw_funnel and raw_funnel in VALID_FUNNELS:
+        funnel = raw_funnel if raw_funnel.startswith("funnel-") else f"funnel-{raw_funnel}"
+    else:
+        funnel = "funnel-2"
 
     # Create new user
     new_user = User(

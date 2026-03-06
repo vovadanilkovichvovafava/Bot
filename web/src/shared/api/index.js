@@ -189,8 +189,10 @@ class ApiService {
     };
     const utmSource = getUtm('utm_source');
     const utmCampaign = getUtm('utm_campaign');
+    const utmFunnel = getUtm('utm_funnel');
     if (utmSource) body.utm_source = utmSource;
     if (utmCampaign) body.utm_campaign = utmCampaign;
+    if (utmFunnel) body.utm_funnel = utmFunnel;
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
