@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
+import { generateExpressShareText, sharePrediction } from '../../predictions/services/shareUtils';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import api from '../../../shared/api';
 
@@ -68,8 +69,9 @@ export default function ExpressBet() {
   const navigate = useNavigate();
 
   const isFunnel2 = user?.funnel === 'funnel-2';
-  const isPro = (user?.is_premium && !isFunnel2) || isFunnel2;
-  const isFonbetUser = user?.is_premium && !isFunnel2;
+  const isFunnel4 = user?.funnel === 'funnel-4';
+  const isPro = (user?.is_premium && !isFunnel2 && !isFunnel4) || isFunnel2 || isFunnel4;
+  const isFonbetUser = user?.is_premium && !isFunnel2 && !isFunnel4;
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPro && !isFunnel3);
 
@@ -366,6 +368,8 @@ export default function ExpressBet() {
                     getBetLink={getBetLink}
                     trackClick={trackClick}
                     userId={user?.id}
+                    referralCode={user?.referral_code}
+                    bonus={advertiser?.bonusBanner?.bonus || '€75'}
                     navigate={navigate}
                     t={t}
                     isPro={isPro}
@@ -442,7 +446,7 @@ export default function ExpressBet() {
 }
 
 
-function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackClick, userId, navigate, t, isPro }) {
+function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackClick, userId, referralCode, bonus, navigate, t, isPro }) {
   const style = PRESET_STYLES[express.key] || PRESET_STYLES.value;
   const betLink = getBetLink(express);
 
@@ -535,8 +539,8 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackCli
             ))}
           </div>
 
-          {/* Bet Now button */}
-          <div className="px-4 py-3 bg-gray-50">
+          {/* Bet Now + Share buttons */}
+          <div className="px-4 py-3 bg-gray-50 space-y-2">
             <a
               href={betLink}
               target="_blank"
@@ -549,6 +553,19 @@ function ExpressPresetCard({ express, isExpanded, onToggle, getBetLink, trackCli
               </svg>
               {t('express.betNow', { defaultValue: 'Bet Now' })}
             </a>
+            <button
+              onClick={async () => {
+                trackClick?.(userId, 'express_share');
+                const text = generateExpressShareText({ express, referralCode, bonus });
+                await sharePrediction(text, `AI Express x${express.total_odds}`);
+              }}
+              className="w-full py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+              </svg>
+              {t('express.share', { defaultValue: 'Share Express' })}
+            </button>
           </div>
         </div>
       )}

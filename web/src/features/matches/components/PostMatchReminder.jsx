@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink } from '../../betting/services/trackingService';
 import { useTranslation } from 'react-i18next';
+import { generatePostMatchShareText, sharePrediction } from '../../predictions/services/shareUtils';
 import api from '../../../shared/api';
 
 const STORAGE_KEY = 'post_match_reminders';
@@ -146,7 +147,8 @@ export default function PostMatchReminder() {
             </span>
           </div>
 
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
+          {/* Could have won */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-3">
             <p className="text-sm text-emerald-800 font-medium mb-1">
               {t('postMatch.youCouldHaveWon', { defaultValue: 'You could have won' })}
             </p>
@@ -163,6 +165,26 @@ export default function PostMatchReminder() {
             </p>
           </div>
 
+          {/* Bonus calculation — with free bet you'd win even more */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-3 mb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">🎁</span>
+              <p className="text-xs font-bold text-amber-800">
+                {t('postMatch.withFreebet', { defaultValue: 'With free bet bonus:' })}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-bold text-amber-700">{advertiser?.bonusBanner?.bonus || '€75'}</span>
+              <span className="text-amber-500">&times;</span>
+              <span className="font-bold text-amber-700">{reminder.odds?.toFixed(2)}</span>
+              <span className="text-amber-500">=</span>
+              <span className="text-lg font-black text-amber-700">
+                {advertiser?.currency}{Math.round((advertiser?.freeBetAmount || 75) * (reminder.odds || 1))}
+              </span>
+            </div>
+          </div>
+
+          {/* CTA: Place bet */}
           <button
             onClick={handlePlaceBet}
             className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white"
@@ -173,12 +195,38 @@ export default function PostMatchReminder() {
             </svg>
           </button>
 
-          <button
-            onClick={handleDismiss}
-            className="w-full text-center text-sm text-gray-400 mt-2 py-1"
-          >
-            {t('postMatch.dismiss', { defaultValue: 'Maybe later' })}
-          </button>
+          {/* Share + Dismiss row */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={async () => {
+                const text = generatePostMatchShareText({
+                  homeTeam: reminder.home_team,
+                  awayTeam: reminder.away_team,
+                  score: reminder.actual_score || '',
+                  bet: reminder.bet_name || reminder.bet_type,
+                  odds: reminder.odds?.toFixed(2),
+                  potentialWin: reminder.potential_win,
+                  currency: advertiser?.currency || '€',
+                  referralCode: user?.referral_code,
+                  bonus: advertiser?.bonusBanner?.bonus || '€75',
+                });
+                trackClick(user?.id, 'post_match_share');
+                await sharePrediction(text, `${reminder.home_team} vs ${reminder.away_team}`);
+              }}
+              className="flex-1 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+              </svg>
+              {t('postMatch.share', { defaultValue: 'Share' })}
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="flex-1 text-center text-sm text-gray-400 py-2"
+            >
+              {t('postMatch.dismiss', { defaultValue: 'Maybe later' })}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -45,7 +45,7 @@ export default function Home() {
     // Launch all API requests in PARALLEL (not sequentially)
     const promises = [loadMatches()];
 
-    if (!user?.is_premium && user?.funnel !== 'funnel-2') {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4') {
       promises.push(
         api.getChatLimit()
           .then(data => {
@@ -56,7 +56,7 @@ export default function Home() {
       );
     }
 
-    if (user?.is_premium && user?.funnel !== 'funnel-2') {
+    if (user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4') {
       try {
         const cached = localStorage.getItem(SMART_BET_CACHE_KEY);
         if (cached) {
@@ -144,11 +144,12 @@ export default function Home() {
   };
 
   const isFunnel2 = user?.funnel === 'funnel-2';
-  const isPremium = user?.is_premium && !isFunnel2;
+  const isFunnel4 = user?.funnel === 'funnel-4';
+  const isPremium = user?.is_premium && !isFunnel2 && !isFunnel4;
   const isFunnel3 = user?.funnel === 'funnel-3';
-  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3);
+  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3 && !isFunnel4);
   const isFunnel1or3 = isFunnel1 || isFunnel3;
-  const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const remaining = (isPremium || isFunnel2 || isFunnel4) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
   // Show full-screen splash while loading matches
@@ -187,10 +188,10 @@ export default function Home() {
             </div>
             <div>
               <p className="text-primary-100 text-xs">{t('home.aiPredictionsLeft')}</p>
-              <p className="text-2xl font-bold">{(isPremium || isFunnel2) ? '∞' : remaining}<span className="text-sm text-primary-200">{(isPremium || isFunnel2) ? '' : ` / ${aiLimit}`}</span></p>
+              <p className="text-2xl font-bold">{(isPremium || isFunnel2 || isFunnel4) ? '∞' : remaining}<span className="text-sm text-primary-200">{(isPremium || isFunnel2 || isFunnel4) ? '' : ` / ${aiLimit}`}</span></p>
             </div>
           </div>
-          {!isPremium && !isFunnel2 && (
+          {!isPremium && !isFunnel2 && !isFunnel4 && (
             <button onClick={() => navigate('/pro-access')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
               {t('home.getUnlimited')}
             </button>
@@ -199,6 +200,53 @@ export default function Home() {
       </div>
 
       <div className="px-5 -mt-4 space-y-4">
+        {/* Express-First Hero Card — funnel-4 */}
+        {isFunnel4 && (
+          <div
+            onClick={() => navigate('/express')}
+            className="relative overflow-hidden rounded-2xl p-5 text-white cursor-pointer shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)' }}
+          >
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.1) 40%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-xl">{t('home.aiExpress', { defaultValue: 'AI Express Bets' })}</h3>
+                  <p className="text-white/70 text-sm">{t('home.aiExpressDesc', { defaultValue: '3 ready accumulators from top leagues' })}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.safe', { defaultValue: 'Safe' })}</p>
+                  <p className="font-black text-lg">x3-5</p>
+                </div>
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.value', { defaultValue: 'Value' })}</p>
+                  <p className="font-black text-lg">x8-15</p>
+                </div>
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.big', { defaultValue: 'Big' })}</p>
+                  <p className="font-black text-lg">x20+</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between bg-white/10 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🎁</span>
+                  <span className="text-sm font-bold">{t('home.freeBetOnExpress', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `${advertiser?.bonusBanner?.bonus || '€75'} free bet on your express` })}</span>
+                </div>
+                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI Assistant Card */}
         <div
           onClick={() => navigate('/ai-chat')}

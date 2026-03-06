@@ -56,8 +56,8 @@ async def spend_tokens(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # PRO and funnel-2 don't need tokens
-    if user.is_premium or user.funnel == "funnel-2":
+    # PRO, funnel-2, and funnel-4 (express-first) don't need tokens
+    if user.is_premium or user.funnel in ("funnel-2", "funnel-4"):
         return {"ok": True, "cost": 0, "remaining": 999}
 
     # Funnel-3: check and spend 3 tokens

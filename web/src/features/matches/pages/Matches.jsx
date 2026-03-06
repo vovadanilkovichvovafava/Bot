@@ -311,6 +311,15 @@ export default function Matches() {
                   />
                 )}
 
+                {/* Inline ad banner between league sections */}
+                <MatchesAdBanner
+                  advertiser={advertiser}
+                  trackClick={trackClick}
+                  userId={user?.id}
+                  navigate={navigate}
+                  t={t}
+                />
+
                 {/* Other leagues */}
                 {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
                   <LeagueSection
@@ -377,6 +386,16 @@ export default function Matches() {
                     isPopular={true}
                   />
                 )}
+
+                {/* Inline ad banner between league sections */}
+                <MatchesAdBanner
+                  advertiser={advertiser}
+                  trackClick={trackClick}
+                  userId={user?.id}
+                  navigate={navigate}
+                  t={t}
+                  isLive
+                />
 
                 {/* Other leagues */}
                 {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
@@ -501,6 +520,54 @@ function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavou
       >
         {t('matches.all')} ({popularCount + otherCount})
       </button>
+    </div>
+  );
+}
+
+function MatchesAdBanner({ advertiser, trackClick, userId, navigate, t, isLive }) {
+  return (
+    <div className="my-4">
+      {/* Express banner */}
+      <div
+        onClick={() => navigate('/express')}
+        className="rounded-xl overflow-hidden cursor-pointer shadow-md"
+        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)' }}
+      >
+        <div className="p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm">
+              {t('matches.aiExpressBanner', { defaultValue: 'AI Express — 3 ready accumulators' })}
+            </p>
+            <p className="text-white/60 text-[11px]">
+              {t('matches.expressSubtitle', { defaultValue: 'Safe, Value & Big express from top leagues' })}
+            </p>
+          </div>
+          <svg className="w-5 h-5 text-white/50 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Bonus mini-banner */}
+      <div
+        onClick={() => { trackClick(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus'); window.open(getTrackingLink(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+        className="mt-2 rounded-xl bg-slate-800 p-3 cursor-pointer flex items-center gap-3"
+      >
+        <span className="text-lg">🎁</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-xs font-bold">
+            {t('matches.inlineBonusText', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `Free bet ${advertiser?.bonusBanner?.bonus || '€75'} — bet on any match` })}
+          </p>
+        </div>
+        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full shrink-0">
+          {advertiser?.bonusBanner?.bonus || '€75'}
+        </span>
+      </div>
     </div>
   );
 }

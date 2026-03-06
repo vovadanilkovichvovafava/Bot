@@ -5,18 +5,21 @@ const FUNNEL_COLORS = {
   'funnel-1': '#3b82f6',  // blue — degressive + Pro
   'funnel-2': '#22c55e',  // green — all free
   'funnel-3': '#a855f7',  // purple — fixed 7/day
+  'funnel-4': '#f97316',  // orange — express-first
 };
 
 const FUNNEL_LABELS = {
   'funnel-1': 'Degressive + Pro',
   'funnel-2': 'All Free (No Pro)',
   'funnel-3': 'Fixed 7/day',
+  'funnel-4': 'Express-First',
 };
 
 const FUNNEL_DESCRIPTIONS = {
   'funnel-1': 'Limits: 3→2→1/day. Upsell to Pro.',
   'funnel-2': 'Everything unlocked. No paywall. Bonus banners.',
   'funnel-3': 'Fixed 7 requests/day. No degradation.',
+  'funnel-4': 'Express-first UX. All free. Leads with accumulators + bonus ads.',
 };
 
 export default function AdminFunnels() {
