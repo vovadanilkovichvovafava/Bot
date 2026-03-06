@@ -1,9 +1,9 @@
 {
   "advertiser": {
-    "freeBet": "Gratiswette bis zu {{bonus}}",
-    "freeBetLabel": "Gratiswette",
+    "freeBet": "Kostenlose Wette 75 Euro",
+    "freeBetLabel": "Kostenlose Wette",
     "betOnMatch": "Wette auf jedes Spiel",
-    "ctaButton": "{{bonus}} erhalten",
+    "ctaButton": "Kostenlose Wette 75 Euro",
     "promoTitle": "Kostenlose Wette 75 Euro",
     "promoCta": "Wette platzieren",
     "promoCtaFree": "Gratiswette platzieren",

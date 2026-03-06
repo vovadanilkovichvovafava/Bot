@@ -1,9 +1,9 @@
 {
   "advertiser": {
-    "freeBet": "Scommessa gratuita fino a {{bonus}}",
+    "freeBet": "Scommessa gratuita da 75 euro",
     "freeBetLabel": "Scommessa gratuita",
     "betOnMatch": "Scommetti su qualsiasi partita",
-    "ctaButton": "Ottieni {{bonus}}",
+    "ctaButton": "Scommessa gratuita da 75 euro",
     "promoTitle": "Scommessa gratuita da 75 euro",
     "promoCta": "Piazza la scommessa",
     "promoCtaFree": "Piazza scommessa gratuita",
