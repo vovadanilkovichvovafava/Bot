@@ -64,7 +64,7 @@ function markWeeklyUsed() {
 export default function ExpressBet() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
-  const { trackClick } = useAdvertiser();
+  const { trackClick, advertiser } = useAdvertiser();
   const navigate = useNavigate();
 
   const isFunnel2 = user?.funnel === 'funnel-2';
@@ -374,6 +374,62 @@ export default function ExpressBet() {
               </>
             )}
           </>
+        )}
+
+        {/* Bonus banner — shown for non-premium after expresses */}
+        {!loading && !error && !accessBlocked && expresses.length > 0 && !isFonbetUser && (
+          <div
+            className="rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+            style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+            onClick={() => { trackClick(user?.id, 'express_free_bet_banner'); window.open(getTrackingLink(user?.id, 'express_free_bet_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+          >
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
+            <div className="relative px-4 py-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>
+                    {t('advertiser.freeBetLabel')}
+                  </p>
+                  <p className="text-white text-base font-bold">
+                    {t('express.betExpressWithBonus', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `Bet your express with ${advertiser?.bonusBanner?.bonus || '€75'} free bet` })}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-xl p-3 border border-white/10" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎁</span>
+                    <div>
+                      <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">{t('advertiser.freeBetLabel')}</p>
+                      <p className="text-white font-black text-sm">{advertiser?.bonusBanner?.bonus || '€75'}</p>
+                    </div>
+                  </div>
+                  {expresses[0] && (
+                    <div className="flex items-center gap-1.5 text-white/40 text-xs font-bold">
+                      <span>&times;</span>
+                      <span className="text-white">{expresses[0].total_odds}</span>
+                      <span>=</span>
+                    </div>
+                  )}
+                  {expresses[0] && (
+                    <div className="text-right">
+                      <p className="text-[10px] text-white/50 font-semibold uppercase">{t('matchDetail.potentialWin', { defaultValue: 'Potential win' })}</p>
+                      <p className="text-lg font-black" style={{ color: '#F7C948' }}>&euro;{Math.round((advertiser?.freeBetAmount || 75) * parseFloat(expresses[0].total_odds))}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="relative px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <p className="text-white font-bold text-xs">
+                {t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `Get ${advertiser?.bonusBanner?.bonus || '€75'} free bet` })}
+              </p>
+              <svg className="w-4 h-4 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </div>
+          </div>
         )}
 
         {/* PRO upsell — shown below for non-PRO */}
