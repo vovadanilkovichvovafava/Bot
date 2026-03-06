@@ -83,7 +83,7 @@ export default function MatchDetail() {
   useEffect(() => {
     loadMatch();
     // Fetch AI remaining from server
-    if (!user?.is_premium || user?.funnel === 'funnel-2') {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2') {
       api.getChatLimit()
         .then(data => setAiRemaining(data.remaining ?? FREE_AI_LIMIT))
         .catch(() => setAiRemaining(FREE_AI_LIMIT));
@@ -444,7 +444,8 @@ export default function MatchDetail() {
   const getAnalysis = async (forceReanalyze = false) => {
     // Check free limit for non-premium users BEFORE making request
     const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
-    if (!isPremium && aiRemaining !== null && aiRemaining <= 0) {
+    const hasFreeAccess = user?.funnel === 'funnel-2';
+    if (!isPremium && !hasFreeAccess && aiRemaining !== null && aiRemaining <= 0) {
       navigate('/pro-access?reason=limit&feature=match-analysis');
       return;
     }
@@ -499,7 +500,7 @@ export default function MatchDetail() {
       }
 
       // Refresh AI remaining counter from server (AFTER successful response)
-      if (!user?.is_premium || user?.funnel === 'funnel-2') {
+      if (!user?.is_premium && user?.funnel !== 'funnel-2') {
         api.getChatLimit()
           .then(data => setAiRemaining(data.remaining ?? 0))
           .catch(() => {});
@@ -789,9 +790,10 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
   const odds1x2 = getOdds1x2();
 
   // Check AI limit status (server-based)
-  const isPremium = user?.is_premium;
-  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
-  const limitReached = !isPremium && aiRemaining !== null && aiRemaining <= 0;
+  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
+  const isFunnel2 = user?.funnel === 'funnel-2';
+  const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const limitReached = !isPremium && !isFunnel2 && aiRemaining !== null && aiRemaining <= 0;
   const remainingRequests = Math.max(0, remaining);
 
   // Use i18n for all promo texts (never use advertiser.texts directly)

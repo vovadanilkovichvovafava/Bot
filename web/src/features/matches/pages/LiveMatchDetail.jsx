@@ -150,7 +150,8 @@ export default function LiveMatchDetail() {
 
       // Increment AI request counter for non-premium users (AFTER successful response)
       const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
-      if (!isPremium) {
+      const isFunnel2 = user?.funnel === 'funnel-2';
+      if (!isPremium && !isFunnel2) {
         incrementAIRequestCount();
       }
 

@@ -121,14 +121,14 @@ export default function AIChat() {
 
   // Fetch AI chat limit from server
   useEffect(() => {
-    if (isPremium) {
+    if (isPremium || isFunnel2) {
       setRemaining(999);
       return;
     }
     api.getChatLimit()
       .then(data => setRemaining(data.remaining ?? data.limit ?? 3))
       .catch(() => setRemaining(3)); // Fallback to 3 on error
-  }, [isPremium]);
+  }, [isPremium, isFunnel2]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -219,7 +219,7 @@ export default function AIChat() {
     if (!text.trim() || loading) return;
 
     // Check free limit from server
-    if (!isPremium && remaining !== null && remaining <= 0) {
+    if (!isPremium && !isFunnel2 && remaining !== null && remaining <= 0) {
       setShowLimitModal(true);
       return;
     }
@@ -261,7 +261,7 @@ export default function AIChat() {
       const data = await api.aiChat(textWithPrefs, history, matchContext, locale);
 
       // Refresh remaining count from server after each request
-      if (!isPremium) {
+      if (!isPremium && !isFunnel2) {
         api.getChatLimit()
           .then(d => setRemaining(d.remaining ?? d.limit ?? 0))
           .catch(() => {});

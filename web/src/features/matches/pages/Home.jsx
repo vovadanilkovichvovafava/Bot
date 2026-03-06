@@ -45,7 +45,7 @@ export default function Home() {
     // Launch all API requests in PARALLEL (not sequentially)
     const promises = [loadMatches()];
 
-    if (!user?.is_premium || user?.funnel === 'funnel-2') {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2') {
       promises.push(
         api.getChatLimit()
           .then(data => {
@@ -148,7 +148,7 @@ export default function Home() {
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3);
   const isFunnel1or3 = isFunnel1 || isFunnel3;
-  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
   // Show full-screen splash while loading matches
