@@ -814,7 +814,7 @@ async def get_verified_recent(
         .limit(10)
     )).scalars().all()
 
-    stake = 50
+    stake = 75
     results = []
     for p in rows:
         odds = p.predicted_odds or p.odds

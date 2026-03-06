@@ -481,7 +481,6 @@ export default function AIChat() {
                     </div>
                   );
                 })()}
-                )}
 
                 {/* Simple promo link for messages without bet recommendation */}
                 {!msg.bets?.length && msg.role === 'assistant' && msg.id !== 'welcome' && (

@@ -1018,6 +1018,26 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
               fonbetMatch={fonbetMatch}
             />
           )}
+
+          {/* Simple free bet banner when no recommended bet parsed */}
+          {!isPremium && !recommendedBet && (
+            <div
+              className="mt-4 rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+              style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+              onClick={() => { trackClick(user?.id, 'match_free_bet_banner'); window.open(getTrackingLink(user?.id, 'match_free_bet_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+            >
+              <div className="px-4 py-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                  <span className="text-lg">🎁</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('advertiser.freeBetLabel')}</p>
+                  <p className="text-white text-sm font-bold">{t('advertiser.promoTitle', { bonus: advertiser?.bonusBanner?.bonus || '' })}</p>
+                </div>
+                <svg className="w-5 h-5 shrink-0" style={{ color: '#F7C948' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="card border border-gray-100 text-center py-6">
