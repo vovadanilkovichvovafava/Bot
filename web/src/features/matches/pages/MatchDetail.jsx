@@ -894,91 +894,39 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             })}
           </div>
 
-          {/* Best Bet cards — clean white style */}
-          {recommendedBets.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="rounded-xl border border-gray-100 overflow-hidden">
-                {/* Header */}
-                <div className="px-4 pt-3 pb-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-                    <span>🔥</span>
-                    {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
-                  </p>
-                </div>
-
-                {/* Bet rows */}
-                <div className="px-4 pb-3 space-y-2">
-                  {recommendedBets.map((bet, idx) => {
-                    const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
-                    return (
-                      <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                            <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                          </div>
-                        </div>
-                        <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Re-analyze button — shown when user returns to a previously analyzed match */}
-          {isRestoredAnalysis && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <button
-                onClick={() => getAnalysis(true)}
-                disabled={predicting}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {predicting ? (
-                  <>
-                    <FootballSpinner size="xs" />
-                    {t('matchDetail.reanalyzing')}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>
-                    </svg>
-                    {t('matchDetail.reanalyze')}
-                    <span className="text-xs text-gray-400">({t('matchDetail.reanalyzeCost')})</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
-
-          {/* Simple free bet banner when no recommended bet parsed */}
-          {!isPremium && !recommendedBet && (
-            <div
-              className="mt-4 rounded-2xl overflow-hidden shadow-lg cursor-pointer"
-              style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
-              onClick={() => { trackClick(user?.id, 'match_free_bet_banner'); navigate('/promo'); }}
-            >
-              <div className="px-4 py-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
-                  <span className="text-lg">🎁</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('advertiser.freeBetLabel')}</p>
-                  <p className="text-white text-sm font-bold">{t('advertiser.promoTitle', { bonus: advertiser?.bonusBanner?.bonus || '' })}</p>
-                </div>
-                <svg className="w-5 h-5 shrink-0" style={{ color: '#F7C948' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-              </div>
-            </div>
-          )}
-
-          {/* Promo ad block — always shown after analysis */}
+          {/* Combined: Best Bet cards + Promo block (merged into one card) */}
           {!isPremium && (
             <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-              {/* Header bar */}
+              {/* Best Bet section — only if bets exist */}
+              {recommendedBets.length > 0 && (
+                <>
+                  <div className="bg-white px-4 pt-3 pb-2">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                      <span>🔥</span>
+                      {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
+                    </p>
+                  </div>
+                  <div className="bg-white px-4 pb-3 space-y-2">
+                    {recommendedBets.map((bet, idx) => {
+                      const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+                      return (
+                        <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                              <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Promo header bar */}
               <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
@@ -987,7 +935,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                 <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">{t('aiChat.limitedTime')}</span>
               </div>
 
-              {/* Body */}
+              {/* Promo body */}
               <div className="bg-white p-4">
                 <p
                   className="text-sm text-gray-700 leading-relaxed mb-3"
@@ -1068,6 +1016,32 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                   </span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Re-analyze button — moved below promo block */}
+          {isRestoredAnalysis && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => getAnalysis(true)}
+                disabled={predicting}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {predicting ? (
+                  <>
+                    <FootballSpinner size="xs" />
+                    {t('matchDetail.reanalyzing')}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>
+                    </svg>
+                    {t('matchDetail.reanalyze')}
+                    <span className="text-xs text-gray-400">({t('matchDetail.reanalyzeCost')})</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
