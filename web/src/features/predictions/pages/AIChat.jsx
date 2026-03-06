@@ -294,7 +294,7 @@ export default function AIChat() {
         role: 'assistant',
         content: data.response,
         hasData: !!matchContext,
-        showAd: newCount % 2 === 0,
+        showAd: true,
         bet: firstBet,
         bets: parsedBets,
         fonbetDeeplink,
@@ -443,8 +443,8 @@ export default function AIChat() {
                 )}
               </div>
             </div>
-            {/* Ad block after certain responses — skip for registered/PRO if bet card already shown */}
-            {msg.showAd && !(canUseDeeplink && msg.bets?.length) && (
+            {/* Promo ad block — always shown after AI response */}
+            {msg.showAd && (
               canUseDeeplink ? (
                 <div
                   onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); navigate('/promo'); }}
