@@ -162,11 +162,12 @@ async def increment_chat_usage(user_id: int, db: AsyncSession):
             user.daily_chat_requests = (user.daily_chat_requests or 0) + 1
 
         user.last_chat_request_date = now
+        user.total_predictions = (user.total_predictions or 0) + 1
         await db.commit()
 
         logger.info(
             f"User {user_id} chat usage: {user.daily_chat_requests} requests, "
-            f"day {user.account_day_number}"
+            f"day {user.account_day_number}, total_predictions: {user.total_predictions}"
         )
     except Exception as e:
         logger.error(f"DB error in increment_chat_usage: {e}")
