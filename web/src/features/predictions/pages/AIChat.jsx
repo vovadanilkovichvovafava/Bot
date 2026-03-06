@@ -397,37 +397,69 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* Best bets list — white cards like screenshot */}
-                {msg.bets?.length > 0 && msg.role === 'assistant' && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base">⚽✨</span>
-                      <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">{t('aiChat.bestBetLabel', { defaultValue: 'Best bet' })}</span>
-                    </div>
-                    {/* Bet cards */}
-                    <div className="space-y-2">
-                      {msg.bets.slice(0, 3).map((bet, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
-                          className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                                <p className="text-[11px] text-gray-500">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {bet.confidence || Math.round(bet.odds * 30)}%</p>
+                {/* AI Recommended Bet banner — dark navy style */}
+                {msg.bets?.length > 0 && msg.role === 'assistant' && (() => {
+                  const topBet = msg.bets[0];
+                  const bonusNum = advertiser?.freeBetAmount || 75;
+                  const winAmt = Math.round(bonusNum * topBet.odds);
+                  return (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                        className="w-full text-left relative overflow-hidden rounded-2xl shadow-lg"
+                        style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+                      >
+                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
+                        <div className="relative p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                              <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('liveMatch.aiLiveBetRecommendation', { defaultValue: 'AI LIVE BET RECOMMENDATION' })}</span>
+                          </div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-white font-bold flex-1 mr-3">{topBet.type}</p>
+                            <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5">
+                              <span className="text-base font-black" style={{ color: '#F7C948' }}>{topBet.odds.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="rounded-xl p-3 border border-white/10" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{isPremium ? '💰' : '🎁'}</span>
+                                <div>
+                                  <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">
+                                    {isPremium ? t('aiChat.betAmount', { defaultValue: 'Bet amount' }) : t('advertiser.freeBetLabel')}
+                                  </p>
+                                  <p className="text-white font-black text-sm">
+                                    {isPremium ? advertiser?.bonusBanner?.deposit : advertiser?.bonusBanner?.bonus}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-white/40 text-xs font-bold">
+                                <span>&times;</span>
+                                <span className="text-white">{topBet.odds.toFixed(2)}</span>
+                                <span>=</span>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] text-white/50 font-semibold uppercase">{t('matchDetail.potentialWin', { defaultValue: 'Potential win' })}</p>
+                                <p className="text-lg font-black" style={{ color: '#F7C948' }}>&euro;{winAmt}</p>
                               </div>
                             </div>
-                            <span className="text-lg font-black text-emerald-600 ml-3">{bet.odds.toFixed(2)}</span>
                           </div>
                         </div>
-                      ))}
+                        <div className="relative px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                          <p className="text-white font-bold text-xs">
+                            {isPremium
+                              ? t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })
+                              : t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus, defaultValue: `Get ${advertiser?.bonusBanner?.bonus} free bet` })}
+                          </p>
+                          <svg className="w-4 h-4 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                        </div>
+                      </button>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Simple promo link for messages without bet recommendation */}
                 {!msg.bets?.length && msg.role === 'assistant' && msg.id !== 'welcome' && (
@@ -448,26 +480,18 @@ export default function AIChat() {
               canUseDeeplink ? (
                 <div
                   onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); navigate('/promo'); }}
-                  className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                  className="mt-3 rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                  style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
                 >
-                  <div className="flex items-center gap-3">
-                    {/* Left icon */}
-                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                      </svg>
+                  <div className="px-4 py-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                      <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
                     </div>
-                    {/* Center content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">{t('aiChat.bestBetLabel', { defaultValue: 'Best bet' })}</p>
-                      <p className="text-sm font-bold text-gray-900 truncate">{t('aiChat.placeBetsNow')}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('liveMatch.aiLiveBetRecommendation', { defaultValue: 'AI LIVE BET RECOMMENDATION' })}</p>
+                      <p className="text-white text-sm font-bold">{t('aiChat.placeBetsNow')}</p>
                     </div>
-                    {/* Right arrow */}
-                    <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                      </svg>
-                    </div>
+                    <svg className="w-5 h-5 shrink-0" style={{ color: '#F7C948' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
                   </div>
                 </div>
               ) : (
