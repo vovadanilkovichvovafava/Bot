@@ -190,10 +190,12 @@ async def save_predictions(
 
     user.predictions_data = json.dumps(predictions, ensure_ascii=False)
 
-    # Update stats counters
+    # Update stats counters — don't overwrite if backend already has a higher count
     verified = [p for p in predictions if p.get("result")]
     correct = [p for p in verified if p.get("result", {}).get("isCorrect")]
-    user.total_predictions = len(predictions)
+    synced_total = len(predictions)
+    if synced_total > (user.total_predictions or 0):
+        user.total_predictions = synced_total
     user.correct_predictions = len(correct)
 
     await db.commit()
