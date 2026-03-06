@@ -108,7 +108,7 @@
     "odds": "Kursy",
     "title": "Mecze",
     "leagues": "Ligi",
-    "bonusAt": "Zakład za darmo 320 złotych",
+    "bonusAt": "Bonus {{bonus}} w {{name}}",
     "getIt": "Odbierz",
     "noMatchesToday": "Brak meczów dziś",
     "checkBackLater": "Sprawdź później",

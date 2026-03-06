@@ -109,7 +109,7 @@
     "odds": "Quote",
     "title": "Partite",
     "leagues": "Campionati",
-    "bonusAt": "Scommessa gratuita da 75 euro",
+    "bonusAt": "Bonus {{bonus}} su {{name}}",
     "getIt": "Ottieni",
     "noMatchesToday": "Nessuna partita oggi",
     "checkBackLater": "Torna più tardi",

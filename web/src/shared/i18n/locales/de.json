@@ -108,7 +108,7 @@
     "odds": "Quoten",
     "title": "Spiele",
     "leagues": "Ligen",
-    "bonusAt": "Kostenlose Wette 75 Euro",
+    "bonusAt": "Bonus {{bonus}} bei {{name}}",
     "getIt": "Holen",
     "noMatchesToday": "Keine Spiele heute",
     "checkBackLater": "Schau später vorbei",
