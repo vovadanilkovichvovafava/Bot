@@ -108,9 +108,66 @@ export function getShareLinks(text, url = window.location.href) {
   };
 }
 
+/**
+ * Generate share text with referral link for viral growth
+ */
+export function generateReferralShareText({ matchText, prediction, referralCode, bonus = '€75' }) {
+  const baseUrl = window.location.origin;
+  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+
+  let text = '';
+  if (matchText) {
+    text += `${matchText}\n\n`;
+  }
+  if (prediction) {
+    text += `AI Prediction: ${prediction}\n\n`;
+  }
+  text += `Get ${bonus} free bet + AI predictions at PreScore AI\n`;
+  text += refLink;
+
+  return text;
+}
+
+/**
+ * Generate express share text with referral
+ */
+export function generateExpressShareText({ express, referralCode, bonus = '€75' }) {
+  const baseUrl = window.location.origin;
+  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+
+  let text = `AI Express x${express.total_odds} (${express.leg_count} legs)\n\n`;
+  express.legs?.forEach((leg, i) => {
+    text += `${i + 1}. ${leg.home_team} - ${leg.away_team}: ${leg.bet_type} @ ${leg.odds}\n`;
+  });
+  text += `\nPotential win: ${bonus} x ${express.total_odds} = €${Math.round(75 * parseFloat(express.total_odds))}\n\n`;
+  text += `Get ${bonus} free bet at PreScore AI\n`;
+  text += refLink;
+
+  return text;
+}
+
+/**
+ * Generate post-match "could have won" share text
+ */
+export function generatePostMatchShareText({ homeTeam, awayTeam, score, bet, odds, potentialWin, currency, referralCode, bonus = '€75' }) {
+  const baseUrl = window.location.origin;
+  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+
+  let text = `${homeTeam} vs ${awayTeam} ${score}\n`;
+  text += `AI predicted: ${bet} @ ${odds} ✅\n`;
+  text += `Could have won: ${currency}${potentialWin}\n\n`;
+  text += `Get ${bonus} free bet + AI predictions\n`;
+  text += refLink;
+
+  return text;
+}
+
 export default {
   generatePredictionShareText,
   generateMatchShareText,
   sharePrediction,
   getShareLinks,
+  generateReferralShareText,
+  generateExpressShareText,
+  generatePostMatchShareText,
 };

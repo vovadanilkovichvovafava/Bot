@@ -90,9 +90,9 @@ async def get_current_user_info(
         user.is_premium = False
         await db.commit()
 
-    # For funnel-2 users, behave as if premium (everything free)
+    # For funnel-2 and funnel-4 users, behave as if premium (everything free)
     funnel = user.funnel or "funnel-1"
-    effective_premium = is_premium or funnel == "funnel-2"
+    effective_premium = is_premium or funnel in ("funnel-2", "funnel-4")
 
     return UserResponse(
         id=user.public_id,  # Return public_id as 'id' for frontend compatibility

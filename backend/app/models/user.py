@@ -29,7 +29,7 @@ class User(Base):
     utm_source = Column(String, nullable=True, index=True)      # рекламный источник: google, facebook, tiktok
     utm_campaign = Column(String, nullable=True, index=True)    # название кампании
 
-    # A/B funnel: "funnel-1" (degressive+Pro), "funnel-2" (all free, no paywall), "funnel-3" (fixed 7/day)
+    # A/B funnel: "funnel-1" (degressive+Pro), "funnel-2" (all free, no paywall), "funnel-3" (fixed 7/day), "funnel-4" (express-first)
     funnel = Column(String, nullable=True, index=True, default="funnel-1")
 
     language = Column(String, default="en")
