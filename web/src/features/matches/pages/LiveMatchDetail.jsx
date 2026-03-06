@@ -35,7 +35,7 @@ export default function LiveMatchDetail() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
+  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -149,8 +149,9 @@ export default function LiveMatchDetail() {
       const data = await api.aiChat(userMessage, [], prompt);
 
       // Increment AI request counter for non-premium users (AFTER successful response)
-      const isPremium = user?.is_premium;
-      if (!isPremium) {
+      const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
+      const isFunnel2 = user?.funnel === 'funnel-2';
+      if (!isPremium && !isFunnel2) {
         incrementAIRequestCount();
       }
 
@@ -504,7 +505,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                       }}
                     >
                       <div className="flex items-center justify-between">
-                        {user?.is_premium ? (
+                        {(user?.is_premium && user?.funnel !== 'funnel-2') ? (
                           <div>
                             <p className="text-white font-bold text-xs">{t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })}</p>
                             <p className="text-emerald-200 text-[10px] mt-0.5">{bet.type} @ {bet.odds.toFixed(2)}</p>

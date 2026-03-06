@@ -60,13 +60,13 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     return crypto.randomUUID?.() || Date.now().toString();
   });
   const [isPro, setIsPro] = useState(() => {
-    return user?.is_premium || false;
+    return (user?.is_premium && user?.funnel !== 'funnel-2') || false;
   });
 
   // Sync isPro when user object changes (e.g. deposit activates PRO)
   // If user just became PRO, reset chat to show congratulation
   useEffect(() => {
-    if (user?.is_premium && !isPro) {
+    if (user?.is_premium && user?.funnel !== 'funnel-2' && !isPro) {
       setIsPro(true);
       // Check if chat was started before PRO — reset to show congratulation
       try {

@@ -45,7 +45,7 @@ export default function Home() {
     // Launch all API requests in PARALLEL (not sequentially)
     const promises = [loadMatches()];
 
-    if (!user?.is_premium) {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2') {
       promises.push(
         api.getChatLimit()
           .then(data => {
@@ -56,7 +56,7 @@ export default function Home() {
       );
     }
 
-    if (user?.is_premium) {
+    if (user?.is_premium && user?.funnel !== 'funnel-2') {
       try {
         const cached = localStorage.getItem(SMART_BET_CACHE_KEY);
         if (cached) {
@@ -143,12 +143,12 @@ export default function Home() {
     return t('home.goodEvening');
   };
 
-  const isPremium = user?.is_premium;
   const isFunnel2 = user?.funnel === 'funnel-2';
+  const isPremium = user?.is_premium && !isFunnel2;
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3);
   const isFunnel1or3 = isFunnel1 || isFunnel3;
-  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const valueBetUsed = localStorage.getItem(VALUE_BET_USED_KEY) === 'true';
 
   // Show full-screen splash while loading matches
@@ -190,7 +190,7 @@ export default function Home() {
               <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${aiLimit}`}</span></p>
             </div>
           </div>
-          {!user?.is_premium && (
+          {!isPremium && (
             <button onClick={() => navigate('/pro-access')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
               {t('home.getUnlimited')}
             </button>
@@ -455,8 +455,8 @@ export default function Home() {
               </div>
               <p className="text-xs font-medium text-gray-700">{t('home.matches')}</p>
             </div>
-            <div onClick={() => navigate(user?.is_premium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              {!user?.is_premium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
+            <div onClick={() => navigate(isPremium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
+              {!isPremium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
