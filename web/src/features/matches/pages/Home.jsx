@@ -615,7 +615,7 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
   };
 
   // Use i18n for all advertiser texts (bonus amount comes from advertiser config)
-  const bonus = advertiser?.bonusAmount || '';
+  const bonus = advertiser?.bonusBanner?.bonus || '';
   const bet = smartBet?.bet;
   const texts = {
     freeBet: t('advertiser.freeBet', { bonus }),

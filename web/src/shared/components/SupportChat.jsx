@@ -485,7 +485,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                     onClick={() => navigate('/promo?banner=support_promo_link')}
                     className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700 ml-1"
                   >
-                    {t('advertiser.freeBet', { bonus: advertiser?.bonusAmount })}
+                    {t('advertiser.freeBet', { bonus: advertiser?.bonusBanner?.bonus })}
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                     </svg>
@@ -502,7 +502,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900">{t('aiChat.betOnPredictions')}</p>
-                      <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser?.bonusAmount, name: advertiser?.name })}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{t('aiChat.getBonus', { bonus: advertiser?.bonusBanner?.bonus, name: advertiser?.name })}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
@@ -572,7 +572,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                     className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-full"
                   >
                     <span>🎁</span>
-                    {t('support.getBonus', { bonus: advertiser?.bonusAmount })}
+                    {t('support.getBonus', { bonus: advertiser?.bonusBanner?.bonus })}
                   </button>
                   {!isFunnel2 && (
                     <button
