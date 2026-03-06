@@ -163,6 +163,7 @@ async def get_overview(
         }
     except Exception as e:
         logger.error(f"Overview: users query failed: {e}")
+        await db.rollback()
 
     # ── Predictions ──
     try:
@@ -187,6 +188,7 @@ async def get_overview(
         }
     except Exception as e:
         logger.error(f"Overview: predictions query failed: {e}")
+        await db.rollback()
 
     # ── Chat/support + online ──
     try:
@@ -205,6 +207,7 @@ async def get_overview(
         user_data["online"] = chat_stats[4]
     except Exception as e:
         logger.error(f"Overview: chat/online query failed: {e}")
+        await db.rollback()
 
     # Football API usage today
     football_api_today = await _get_football_api_status()
