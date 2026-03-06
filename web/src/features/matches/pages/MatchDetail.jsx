@@ -796,7 +796,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
 
   // Use i18n for all promo texts (never use advertiser.texts directly)
   const adTexts = {
-    promoTitle: t('advertiser.promoTitle', { bonus: advertiser?.bonusAmount || '' }),
+    promoTitle: t('advertiser.promoTitle', { bonus: advertiser?.bonusBanner?.bonus || '' }),
     promoCtaFree: t('advertiser.promoCtaFree'),
   };
   // Parse AI recommended bets from analysis (multiple [BET] tags)
@@ -822,12 +822,12 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
   const recommendedBet = recommendedBets[0] || null;
 
   // Calculate potential win for free bet card
-  const bonusNumeric = parseInt((advertiser?.bonusAmount || '').replace(/[^\d]/g, ''), 10) || 0;
+  const bonusNumeric = advertiser?.freeBetAmount || 75;
   const potentialWin = recommendedBet ? Math.round(bonusNumeric * recommendedBet.odds) : 0;
   const formatWinAmount = (val) => {
     const currency = advertiser?.currency || '€';
-    const original = advertiser?.bonusAmount || '';
-    if (original.indexOf(currency) === 0) return `${currency}${val.toLocaleString('en-US')}`;
+    const bonusFmt = advertiser?.bonusBanner?.bonus || '';
+    if (bonusFmt.indexOf(currency) === 0) return `${currency}${val.toLocaleString('en-US')}`;
     return `${val.toLocaleString('de-DE')} ${currency}`;
   };
 
@@ -968,7 +968,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                               {advertiser?.texts?.freeBetLabel || t('advertiser.freeBetLabel')}
                             </p>
                             <p className="text-white font-bold text-xs">
-                              {advertiser?.bonusAmount} &times; {bet.odds.toFixed(2)} = {formatWinAmount(betPotentialWin)} {advertiser?.texts?.potentialWin || 'Win'}
+                              {advertiser?.bonusBanner?.bonus} &times; {bet.odds.toFixed(2)} = {formatWinAmount(betPotentialWin)} {advertiser?.texts?.potentialWin || 'Win'}
                             </p>
                           </div>
                         )}
@@ -1637,200 +1637,100 @@ function StandingsTable({ enriched, match, t }) {
 
 // Match Bonus Card with team colors diagonal split
 function MatchBonusCard({ match, enriched, advertiser, user, trackClick, adTexts }) {
-  const navigate = useNavigate();
   const { t } = useTranslation();
-  // Get team IDs from enriched data or match data
-  const homeTeamId = enriched?.homeId || enriched?.fixture?.teams?.home?.id;
-  const awayTeamId = enriched?.awayId || enriched?.fixture?.teams?.away?.id;
-
-  // Get team colors with contrast check
-  const { homeColor, awayColor } = getMatchColors(homeTeamId, awayTeamId);
+  const matchName = `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`;
 
   return (
-    <div
-      onClick={() => {
-        trackClick(user?.id, 'match_promo_banner');
-        window.open(getTrackingLink(user?.id, 'match_promo_banner') || advertiser?.link, '_blank', 'noopener,noreferrer');
-      }}
-      className="block mt-4 relative overflow-hidden rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
-      style={{ minHeight: '120px' }}
-    >
-      {/* Diagonal split background */}
-      <div className="absolute inset-0">
-        {/* Home team color - left side */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundColor: homeColor,
-            clipPath: 'polygon(0 0, 65% 0, 35% 100%, 0 100%)'
-          }}
-        />
-        {/* Away team color - right side */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundColor: awayColor,
-            clipPath: 'polygon(65% 0, 100% 0, 100% 100%, 35% 100%)'
-          }}
-        />
-        {/* Diagonal line separator */}
-        <div
-          className="absolute inset-0 bg-white/30"
-          style={{
-            clipPath: 'polygon(63% 0, 67% 0, 37% 100%, 33% 100%)'
-          }}
-        />
+    <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+      {/* Header bar */}
+      <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('aiChat.exclusiveFor')}</span>
+        </div>
+        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">{t('aiChat.limitedTime')}</span>
       </div>
 
-      {/* Animated shine effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full" style={{animation: 'shine 6s infinite'}}/>
+      {/* Body */}
+      <div className="bg-white p-4">
+        {/* Dynamic text with match name */}
+        <p
+          className="text-sm text-gray-700 leading-relaxed mb-3"
+          dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
+            match: matchName,
+            confidence: 62,
+            bonus: advertiser?.bonusBanner?.bonus || '',
+          }) }}
+        />
 
-      {/* Sparkle decoration */}
-      <div className="absolute top-2 right-3 text-yellow-200 animate-pulse text-lg">✨</div>
-
-      {/* Content */}
-      <div className="relative flex items-center justify-between h-full p-4" style={{ minHeight: '120px' }}>
-        {/* Home team - left side */}
-        <div className="flex flex-col items-center gap-1 z-10 w-16">
-          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
-            <img
-              src={match?.home_team?.logo}
-              alt={match?.home_team?.name}
-              className="w-full h-full object-contain"
-              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
-            />
-          </div>
-          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[70px] truncate">
-            {match?.home_team?.name}
-          </span>
-        </div>
-
-        {/* Center - Promo text */}
-        <div className="flex-1 flex flex-col items-center justify-center z-10 px-2">
-          <span className="text-white/80 font-bold text-xs mb-1 drop-shadow">{t('matchDetail.vs')}</span>
-          <p className="font-black text-sm sm:text-base leading-tight drop-shadow-lg text-center mb-2 max-w-[160px]">
-            {adTexts?.promoTitle || t('matchDetail.ad1Title')}
-          </p>
-          <div className="bg-white text-gray-800 font-bold px-4 py-1.5 rounded-xl text-xs shadow-lg hover:bg-gray-100 transition-colors">
-            {adTexts?.promoCtaFree || t('matchDetail.ad1Cta', { bonus: advertiser?.bonusAmount || '' })}
+        {/* Free bet card */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-3 mb-3 border border-amber-100">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎁</span>
+            <div className="flex-1">
+              <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">{t('advertiser.freeBetLabel')}</p>
+              <p className="text-xl font-black text-gray-900">{advertiser?.bonusBanner?.bonus}</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {t('aiChat.bonusBannerDeposit', {
+                  deposit: advertiser?.bonusBanner?.deposit || '',
+                  bonus: advertiser?.bonusBanner?.bonus || '',
+                })}
+              </p>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">{t('aiChat.noRisk')}</span>
           </div>
         </div>
 
-        {/* Away team - right side */}
-        <div className="flex flex-col items-center gap-1 z-10 w-16">
-          <div className="w-14 h-14 bg-white/90 rounded-xl p-1.5 flex items-center justify-center shadow-lg">
-            <img
-              src={match?.away_team?.logo}
-              alt={match?.away_team?.name}
-              className="w-full h-full object-contain"
-              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
-            />
+        {/* 3 steps */}
+        <div className="flex items-center justify-between mb-3 px-2">
+          <div className="flex flex-col items-center">
+            <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">1</div>
+            <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step1Label')}</p>
+            <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.deposit}</p>
           </div>
-          <span className="text-[10px] font-bold text-white text-center leading-tight drop-shadow-lg max-w-[70px] truncate">
-            {match?.away_team?.name}
-          </span>
+          <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+          <div className="flex flex-col items-center">
+            <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">2</div>
+            <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step2Label')}</p>
+            <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.bonus}</p>
+          </div>
+          <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+          <div className="flex flex-col items-center">
+            <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">3</div>
+            <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step3Label')}</p>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-// Native Ad Block with rotating ad texts
-function NativeAdBlock({ advertiser, matchId, user, trackClick }) {
-  const { t } = useTranslation();
-  const bonus = advertiser?.bonusAmount || '';
-  // 6 ad text variants for rotation (based on match ID for consistency)
-  const adVariants = [
-    // Variant 1: Main (recommended)
-    {
-      title: t('matchDetail.ad1Title'),
-      body: t('matchDetail.ad1Body'),
-      features: [
-        { icon: '🎁', text: t('matchDetail.ad1Feature1', { bonus }) },
-        { icon: '⚡', text: t('matchDetail.ad1Feature2') },
-        { icon: '📱', text: t('matchDetail.ad1Feature3') },
-        { icon: '🔒', text: t('matchDetail.ad1Feature4') },
-      ],
-      cta: t('matchDetail.ad1Cta', { bonus }),
-    },
-    // Variant 2: Short
-    {
-      title: t('matchDetail.ad2Title'),
-      body: t('matchDetail.ad2Body', { bonus }),
-      features: [],
-      cta: t('matchDetail.ad2Cta', { bonus }),
-    },
-    // Variant 3: Motivational
-    {
-      title: t('matchDetail.ad3Title'),
-      body: t('matchDetail.ad3Body'),
-      features: [
-        { icon: '•', text: t('matchDetail.ad3Feature1', { bonus }) },
-        { icon: '•', text: t('matchDetail.ad3Feature2') },
-        { icon: '•', text: t('matchDetail.ad3Feature3') },
-      ],
-      cta: t('matchDetail.ad3Cta', { bonus }),
-    },
-    // Variant 4: Social proof
-    {
-      title: t('matchDetail.ad4Title'),
-      body: t('matchDetail.ad4Body'),
-      features: [
-        { icon: '✔', text: t('matchDetail.ad4Feature1', { bonus }) },
-        { icon: '✔', text: t('matchDetail.ad4Feature2') },
-        { icon: '✔', text: t('matchDetail.ad4Feature3') },
-        { icon: '✔', text: t('matchDetail.ad4Feature4') },
-      ],
-      cta: t('matchDetail.ad4Cta', { bonus }),
-    },
-    // Variant 5: Urgency (for matches starting soon)
-    {
-      title: t('matchDetail.ad5Title'),
-      body: t('matchDetail.ad5Body'),
-      features: [
-        { icon: '⚡', text: t('matchDetail.ad5Feature1') },
-        { icon: '🎁', text: t('matchDetail.ad5Feature2', { bonus }) },
-        { icon: '✓', text: t('matchDetail.ad5Feature3') },
-      ],
-      cta: t('matchDetail.ad5Cta', { bonus }),
-    },
-    // Variant 6: Focus on odds
-    {
-      title: t('matchDetail.ad6Title'),
-      body: t('matchDetail.ad6Body', { bonus }),
-      features: [],
-      cta: t('matchDetail.ad6Cta', { bonus }),
-    },
-  ];
+        {/* Disclaimer */}
+        <p className="text-[10px] text-gray-400 text-center mb-3">{t('aiChat.bonusDisclaimer')}</p>
 
-  // Select variant based on matchId for consistency (same match = same ad)
-  const variantIndex = matchId ? Math.abs(parseInt(matchId, 10) || 0) % adVariants.length : 0;
-  const ad = adVariants[variantIndex];
-
-  return (
-    <div className="mt-6 pt-4 border-t border-gray-100">
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-        <h4 className="font-bold text-gray-900 mb-2">{ad.title}</h4>
-        <p className="text-sm text-gray-600 mb-3">{ad.body}</p>
-
-        {ad.features.length > 0 && (
-          <div className="space-y-1.5 mb-4">
-            {ad.features.map((f, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                <span>{f.icon}</span>
-                <span>{f.text}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
+        {/* CTA button */}
         <button
-          onClick={() => { trackClick(user?.id, 'match_ad_cta'); window.open(getTrackingLink(user?.id, 'match_ad_cta') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
-          className="block w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl text-center text-sm hover:opacity-95 transition-opacity shadow-lg shadow-orange-500/20"
+          onClick={() => { trackClick(user?.id, 'match_promo_banner'); window.open(getTrackingLink(user?.id, 'match_promo_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+          className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+          style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
         >
-          👉 {ad.cta}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+          {t('aiChat.bonusCta', { bonus: advertiser?.bonusBanner?.bonus || '' })}
         </button>
+
+        {/* Trust badges */}
+        <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400">
+          <span className="flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+            {t('aiChat.trustSafe')}
+          </span>
+          <span className="flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+            {t('aiChat.trustLicensed')}
+          </span>
+          <span className="flex items-center gap-1">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            4.9/5
+          </span>
+        </div>
       </div>
     </div>
   );
 }
+
