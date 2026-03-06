@@ -12,7 +12,7 @@ import {
   toggleFavouriteTeam,
   isTeamFavourite,
 } from '../services/favouritesStore';
-import { addTrackingToUrl } from '../../betting/services/trackingService';
+import { addTrackingToUrl, getTrackingLink } from '../../betting/services/trackingService';
 
 // Popular league IDs for API-Football
 const POPULAR_LEAGUE_IDS = [
@@ -67,6 +67,7 @@ export default function Matches() {
   const liveInterval = useRef(null);
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
+  const isFunnelFree = user?.funnel === 'funnel-free';
 
   // Load favourite IDs on mount
   useEffect(() => {
@@ -224,17 +225,45 @@ export default function Matches() {
       </div>
 
       <div className="px-5 pt-4">
-        {/* Partner Banner */}
-        <div
-          onClick={() => navigate('/promo?banner=matches_partner_banner')}
-          className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
-        >
-          <span className="text-lg">🎯</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
+        {/* Partner Banner — bigger for funnel-free */}
+        {isFunnelFree ? (
+          <div
+            onClick={() => { trackClick(user?.id, 'matches_bonus_banner'); window.open(getTrackingLink(user?.id, 'matches_bonus_banner') || advertiser?.link, '_blank', 'noopener,noreferrer'); }}
+            className="rounded-xl overflow-hidden mb-4 cursor-pointer shadow-lg"
+            style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+          >
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                  <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('advertiser.freeBetLabel')}</p>
+                  <p className="text-white text-sm font-bold">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur border border-white/20 rounded-lg px-3 py-2">
+                  <p className="text-lg font-black" style={{ color: '#F7C948' }}>{advertiser?.bonusBanner?.bonus}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-3 mt-3 text-[10px] text-white/40 font-medium">
+                <span>🔒 {t('aiChat.trustSafe')}</span>
+                <span>✓ {t('aiChat.trustLicensed')}</span>
+                <span>⭐ 4.9/5</span>
+              </div>
+            </div>
           </div>
-          <span className="text-slate-400 text-xs">{t('matches.getIt')} →</span>
-        </div>
+        ) : (
+          <div
+            onClick={() => navigate('/promo?banner=matches_partner_banner')}
+            className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
+          >
+            <span className="text-lg">🎯</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
+            </div>
+            <span className="text-slate-400 text-xs">{t('matches.getIt')} →</span>
+          </div>
+        )}
 
         {/* TODAY TAB */}
         {tab === 'today' && (

@@ -97,7 +97,7 @@ const Card = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 export default function BookmakerPromo() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-free';
   const { advertiser, trackClick } = useAdvertiser();
   const ex = advertiser.exampleAmounts || {};
   const navigate = useNavigate();

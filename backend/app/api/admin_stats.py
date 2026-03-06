@@ -712,7 +712,7 @@ async def get_funnel_stats(
             COUNT(*) FILTER (WHERE daily_chat_requests > 0) AS with_chat,
             COALESCE(AVG(total_predictions) FILTER (WHERE total_predictions > 0), 0) AS avg_preds
         FROM users
-        WHERE funnel IN ('funnel-1', 'funnel-2', 'funnel-3')
+        WHERE funnel IN ('funnel-1', 'funnel-2', 'funnel-3', 'funnel-free')
         GROUP BY funnel
         ORDER BY funnel
     """), {"now": now})).all()

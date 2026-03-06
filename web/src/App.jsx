@@ -157,6 +157,13 @@ function SplashScreen() {
   } catch {}
 })();
 
+// /free → /register with utm_campaign=free, preserving all other query params from ad creatives
+function FreeRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  params.set('utm_campaign', 'free');
+  return <Navigate to={`/register?${params.toString()}`} replace />;
+}
+
 export default function App() {
   const { loading, user } = useAuth();
   const trackingSaved = useRef(false);
@@ -198,6 +205,8 @@ export default function App() {
     <ErrorBoundary>
       <Suspense fallback={<SplashScreen />}>
       <Routes>
+        {/* Short URL for free funnel traffic: /free → /register?utm_campaign=free (preserves all query params) */}
+        <Route path="/free" element={<FreeRedirect />} />
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
         <Route path="/admin/*" element={<AdminRoutes />} />

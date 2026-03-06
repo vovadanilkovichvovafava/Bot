@@ -176,8 +176,8 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # Randomly assign A/B funnel
-    funnel = random.choice(["funnel-1", "funnel-2", "funnel-3"])
+    # All new users go to funnel-free
+    funnel = "funnel-free"
 
     # Create new user
     new_user = User(
