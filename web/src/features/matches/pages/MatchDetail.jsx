@@ -1002,22 +1002,6 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             </div>
           )}
 
-          {/* Match Bonus Card after AI Analysis - hidden for PRO */}
-          {!isPremium && recommendedBet && (
-            <MatchBonusCard
-              match={match}
-              enriched={enriched}
-              advertiser={advertiser}
-              user={user}
-              trackClick={trackClick}
-              adTexts={adTexts}
-              recommendedBet={recommendedBet}
-              potentialWin={potentialWin}
-              formatWinAmount={formatWinAmount}
-              canUseDeeplink={canUseDeeplink}
-              fonbetMatch={fonbetMatch}
-            />
-          )}
 
           {/* Simple free bet banner when no recommended bet parsed */}
           {!isPremium && !recommendedBet && (
