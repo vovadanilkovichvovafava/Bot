@@ -140,6 +140,8 @@ async def get_overview(
 
     # ── Users ──
     try:
+        pro_window_start = today_start + timedelta(days=15)
+        pro_window_end = tomorrow_start + timedelta(days=15)
         user_stats = (await db.execute(text("""
             SELECT
                 COUNT(*) AS total_users,
@@ -148,11 +150,17 @@ async def get_overview(
                 COUNT(*) FILTER (WHERE created_at >= :week_ago) AS new_week,
                 COUNT(*) FILTER (
                     WHERE is_premium = true
-                    AND premium_until >= :today + interval '15 days'
-                    AND premium_until < :tomorrow + interval '15 days'
+                    AND premium_until >= :pro_start
+                    AND premium_until < :pro_end
                 ) AS pro_new_today
             FROM users
-        """), {"now": now, "today": today_start, "week_ago": week_ago, "tomorrow": tomorrow_start})).one()
+        """), {
+            "now": now,
+            "today": today_start,
+            "week_ago": week_ago,
+            "pro_start": pro_window_start,
+            "pro_end": pro_window_end,
+        })).one()
         user_data = {
             "total": user_stats[0],
             "pro": user_stats[1],
