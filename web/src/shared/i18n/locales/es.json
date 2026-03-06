@@ -13,7 +13,22 @@
     "potentialWin": "Ganancia",
     "betAndTakeIt": "¡Úsalo ahora mismo!",
     "bonusUpTo": "Bono hasta {{bonus}}",
-    "getBonus": "Obtener bono"
+    "getBonus": "Obtener bono",
+    "bannerSocialProof": "{{count}} usuarios ya reclamaron el bono hoy",
+    "bannerSpotsLeft": "Plazas restantes hoy",
+    "bannerSpotsNote": "Se agotan rápido",
+    "bannerSpecialOffer": "OFERTA ESPECIAL",
+    "bannerOnlyFor": "Solo para PreScore AI",
+    "bannerFreeBet": "Apuesta gratuita",
+    "bannerTotal": "TOTAL",
+    "bannerOnAccount": "en cuenta",
+    "bannerDesc": "Deposita {{deposit}} y recibe {{bonus}} extra en tu cuenta. En total {{total}}. Sin riesgo — es un bono del socio.",
+    "bannerYourDeposit": "tu depósito",
+    "bannerPartnerBonus": "bono del socio",
+    "bannerYourBankroll": "tu bankroll",
+    "bannerFirstDeposit": "Solo en el primer depósito",
+    "bannerCta": "Consigue tu plaza y {{bonus}} gratis",
+    "bannerCtaSub": "Depósito {{deposit}} + bono {{bonus}} = {{total}} en cuenta"
   },
   "common": {
     "loading": "Cargando...",

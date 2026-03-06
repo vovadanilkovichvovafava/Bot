@@ -13,7 +13,22 @@
     "potentialWin": "Выигрыш",
     "betAndTakeIt": "Используй прямо сейчас!",
     "bonusUpTo": "Бонус до {{bonus}}",
-    "getBonus": "Получить бонус"
+    "getBonus": "Получить бонус",
+    "bannerSocialProof": "{{count}} пользователей уже забрали бонус сегодня",
+    "bannerSpotsLeft": "Осталось мест сегодня",
+    "bannerSpotsNote": "Разбирают быстро",
+    "bannerSpecialOffer": "СПЕЦПРЕДЛОЖЕНИЕ",
+    "bannerOnlyFor": "Только для PreScore AI",
+    "bannerFreeBet": "Бесплатная ставка",
+    "bannerTotal": "ИТОГО",
+    "bannerOnAccount": "на счёту",
+    "bannerDesc": "Внеси {{deposit}} и получи ещё {{bonus}} на счёт. В сумме будет у тебя {{total}}. Риск нулевой — это бонус партнёра.",
+    "bannerYourDeposit": "твой депозит",
+    "bannerPartnerBonus": "бонус партнёра",
+    "bannerYourBankroll": "твой банкролл",
+    "bannerFirstDeposit": "Действует только на первый депозит",
+    "bannerCta": "Забрать место и {{bonus}} бесплатно",
+    "bannerCtaSub": "Депозит {{deposit}} + бонус {{bonus}} = {{total}} на счёту"
   },
   "common": {
     "loading": "Загрузка...",

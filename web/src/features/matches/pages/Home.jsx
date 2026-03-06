@@ -263,6 +263,11 @@ export default function Home() {
           </div>
         )}
 
+        {/* Funnel-2: Bonus offer banner with social proof & urgency */}
+        {isFunnel2 && !isPremium && (
+          <HomeBonusBanner advertiser={advertiser} userId={user?.id} trackClick={trackClick} />
+        )}
+
         {/* PRO: Smart Bet Banner | Free: Featured Match Promo Banner */}
         <FeaturedMatchBanner
           matches={matches}
@@ -795,4 +800,139 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
   );
 }
 
+// Bonus banner for funnel-2 with social proof, urgency, and bonus breakdown
+function HomeBonusBanner({ advertiser, userId, trackClick }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const bb = advertiser?.bonusBanner || { deposit: '€50', bonus: '€75', total: '€125' };
+
+  // Deterministic "random" numbers based on current hour (change hourly, look dynamic)
+  const hour = new Date().getHours();
+  const claimedCount = 90 + ((hour * 7 + 13) % 80); // 90-169
+  const spotsMax = 150 + ((hour * 3) % 30); // 150-179
+  const spotsLeft = 15 + ((hour * 5 + 3) % 25); // 15-39
+  const progressPct = ((spotsMax - spotsLeft) / spotsMax) * 100;
+
+  const handleClick = () => {
+    if (userId) trackClick(userId, 'home_bonus_banner');
+    navigate('/promo?banner=home_bonus_banner');
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 50%, #1a2744 100%)' }}>
+      {/* Social proof bar */}
+      <div className="flex items-center justify-center gap-2 py-2 px-4" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }}>
+        <div className="flex -space-x-1.5">
+          <span className="w-5 h-5 rounded-full bg-red-400 border border-white/30 text-[8px] flex items-center justify-center font-bold text-white">K</span>
+          <span className="w-5 h-5 rounded-full bg-blue-400 border border-white/30 text-[8px] flex items-center justify-center font-bold text-white">M</span>
+          <span className="w-5 h-5 rounded-full bg-green-400 border border-white/30 text-[8px] flex items-center justify-center font-bold text-white">A</span>
+        </div>
+        <p className="text-white text-xs font-medium">
+          <span className="font-bold">{claimedCount}</span>{' '}
+          {t('advertiser.bannerSocialProof', { count: claimedCount }).replace(/^\d+\s*/, '')}
+        </p>
+        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Urgency: spots left */}
+        <div className="bg-white/10 rounded-xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span className="text-white/80 text-xs font-medium">{t('advertiser.bannerSpotsLeft')}</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-white font-bold text-lg">{spotsLeft}</span>
+              <span className="text-white/50 text-xs">/{spotsMax}</span>
+            </div>
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #ef4444, #f97316)' }} />
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-white/30 text-[10px]">0</span>
+            <span className="text-white/50 text-[10px] flex items-center gap-1">🔥 {t('advertiser.bannerSpotsNote')}</span>
+            <span className="text-white/30 text-[10px]">{spotsMax}</span>
+          </div>
+        </div>
+
+        {/* Special offer label */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-yellow-400 rounded-full" />
+            <span className="text-yellow-400 text-xs font-black tracking-wider">{t('advertiser.bannerSpecialOffer')}</span>
+          </div>
+          <span className="text-white/40 text-[10px]">{t('advertiser.bannerOnlyFor')}</span>
+        </div>
+
+        {/* Bonus amount card */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl">🎁</span>
+            </div>
+            <div>
+              <p className="text-white/60 text-xs">{t('advertiser.bannerFreeBet')}</p>
+              <p className="text-white font-black text-2xl leading-none">{bb.bonus}</p>
+            </div>
+          </div>
+          <div className="bg-yellow-400/15 rounded-xl px-3 py-2 text-center">
+            <p className="text-yellow-400/70 text-[9px] font-bold uppercase">{t('advertiser.bannerTotal')}</p>
+            <p className="text-yellow-400 font-black text-xl leading-none">{bb.total}</p>
+            <p className="text-yellow-400/60 text-[9px]">{t('advertiser.bannerOnAccount')}</p>
+          </div>
+        </div>
+
+        {/* Description */}
+        <p className="text-white/60 text-xs leading-relaxed">
+          {t('advertiser.bannerDesc', { deposit: bb.deposit, bonus: bb.bonus, total: bb.total })}
+        </p>
+
+        {/* Breakdown: deposit + bonus = total */}
+        <div className="flex items-center justify-center gap-2 bg-white/5 rounded-xl py-3 px-4">
+          <div className="text-center">
+            <p className="text-white font-bold text-sm">{bb.deposit}</p>
+            <p className="text-white/40 text-[9px]">{t('advertiser.bannerYourDeposit')}</p>
+          </div>
+          <span className="text-white/30 font-bold text-lg">+</span>
+          <div className="text-center">
+            <p className="text-white font-bold text-sm">{bb.bonus}</p>
+            <p className="text-white/40 text-[9px]">{t('advertiser.bannerPartnerBonus')}</p>
+          </div>
+          <span className="text-white/30 font-bold text-lg">=</span>
+          <div className="text-center">
+            <p className="text-yellow-400 font-black text-sm">{bb.total}</p>
+            <p className="text-white/40 text-[9px]">{t('advertiser.bannerYourBankroll')}</p>
+          </div>
+        </div>
+
+        {/* First deposit note */}
+        <div className="flex items-center justify-center gap-1.5">
+          <svg className="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+          </svg>
+          <span className="text-white/30 text-[10px]">{t('advertiser.bannerFirstDeposit')}</span>
+        </div>
+      </div>
+
+      {/* CTA button */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={handleClick}
+          className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]"
+          style={{ background: 'linear-gradient(90deg, #eab308, #f59e0b)' }}
+        >
+          <svg className="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span className="text-gray-900">{t('advertiser.bannerCta', { bonus: bb.bonus })}</span>
+        </button>
+        <p className="text-white/30 text-[10px] text-center mt-2">
+          {t('advertiser.bannerCtaSub', { deposit: bb.deposit, bonus: bb.bonus, total: bb.total })}
+        </p>
+      </div>
+    </div>
+  );
+}
 

@@ -69,6 +69,8 @@ const ADVERTISERS_CONFIG = {
       minAmount: '5 €',
       profitDiff: '+3.50 €',
     },
+    // Bonus banner amounts (funnel-2)
+    bonusBanner: { deposit: '€50', bonus: '€75', total: '€125' },
     texts: {
       freeBet: 'Scommessa gratuita da 75 euro',
       betOnMatch: 'Scommetti su qualsiasi partita',
@@ -125,6 +127,7 @@ const ADVERTISERS_CONFIG = {
       minAmount: '5 €',
       profitDiff: '+3.50 €',
     },
+    bonusBanner: { deposit: '€50', bonus: '€75', total: '€125' },
     texts: {
       freeBet: 'Apuesta gratuita hasta 1.500 €',
       betOnMatch: 'Apuesta en cualquier partido',
@@ -181,6 +184,7 @@ const ADVERTISERS_CONFIG = {
       minAmount: '5 €',
       profitDiff: '+3.50 €',
     },
+    bonusBanner: { deposit: '€50', bonus: '€75', total: '€125' },
     texts: {
       freeBet: 'Pari gratuit jusqu\'à 1 500 €',
       betOnMatch: 'Pariez sur n\'importe quel match',
@@ -237,6 +241,7 @@ const ADVERTISERS_CONFIG = {
       minAmount: '5 €',
       profitDiff: '+3,50 €',
     },
+    bonusBanner: { deposit: '€50', bonus: '€75', total: '€125' },
     texts: {
       freeBet: 'Kostenlose Wette 75 Euro',
       betOnMatch: 'Wetten Sie auf jedes Spiel',
@@ -294,6 +299,7 @@ const ADVERTISERS_CONFIG = {
       minAmount: '20 zł',
       profitDiff: '+14 zł',
     },
+    bonusBanner: { deposit: '200 zł', bonus: '320 zł', total: '520 zł' },
     texts: {
       freeBet: 'Zakład za darmo 320 złotych',
       betOnMatch: 'Obstawiaj dowolny mecz',
@@ -350,6 +356,7 @@ const ADVERTISERS_CONFIG = {
       minAmount: '€5',
       profitDiff: '+€3.50',
     },
+    bonusBanner: { deposit: '€50', bonus: '€75', total: '€125' },
     texts: {
       freeBet: 'Free bet up to €1,500',
       betOnMatch: 'Bet on any match',

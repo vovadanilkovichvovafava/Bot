@@ -13,7 +13,22 @@
     "potentialWin": "Win",
     "betAndTakeIt": "Use it right now!",
     "bonusUpTo": "Bonus up to {{bonus}}",
-    "getBonus": "Get bonus"
+    "getBonus": "Get bonus",
+    "bannerSocialProof": "{{count}} users already claimed bonus today",
+    "bannerSpotsLeft": "Spots left today",
+    "bannerSpotsNote": "Going fast",
+    "bannerSpecialOffer": "SPECIAL OFFER",
+    "bannerOnlyFor": "Only for PreScore AI",
+    "bannerFreeBet": "Free bet",
+    "bannerTotal": "TOTAL",
+    "bannerOnAccount": "on account",
+    "bannerDesc": "Deposit {{deposit}} and get another {{bonus}} on your account. Total {{total}}. Zero risk — it's a partner bonus.",
+    "bannerYourDeposit": "your deposit",
+    "bannerPartnerBonus": "partner bonus",
+    "bannerYourBankroll": "your bankroll",
+    "bannerFirstDeposit": "First deposit only",
+    "bannerCta": "Claim your spot and {{bonus}} for free",
+    "bannerCtaSub": "Deposit {{deposit}} + {{bonus}} bonus = {{total}} on account"
   },
   "common": {
     "loading": "Loading...",

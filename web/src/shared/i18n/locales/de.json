@@ -13,7 +13,22 @@
     "potentialWin": "Gewinn",
     "betAndTakeIt": "Jetzt nutzen!",
     "bonusUpTo": "Bonus bis zu {{bonus}}",
-    "getBonus": "Bonus holen"
+    "getBonus": "Bonus holen",
+    "bannerSocialProof": "{{count}} Nutzer haben den Bonus heute schon geholt",
+    "bannerSpotsLeft": "Plätze übrig heute",
+    "bannerSpotsNote": "Schnell zugreifen",
+    "bannerSpecialOffer": "SONDERANGEBOT",
+    "bannerOnlyFor": "Nur für PreScore AI",
+    "bannerFreeBet": "Gratiswette",
+    "bannerTotal": "GESAMT",
+    "bannerOnAccount": "auf dem Konto",
+    "bannerDesc": "Zahle {{deposit}} ein und erhalte {{bonus}} extra auf dein Konto. Insgesamt {{total}}. Null Risiko — es ist ein Partner-Bonus.",
+    "bannerYourDeposit": "deine Einzahlung",
+    "bannerPartnerBonus": "Partner-Bonus",
+    "bannerYourBankroll": "dein Guthaben",
+    "bannerFirstDeposit": "Nur bei der ersten Einzahlung",
+    "bannerCta": "Platz sichern und {{bonus}} gratis",
+    "bannerCtaSub": "Einzahlung {{deposit}} + Bonus {{bonus}} = {{total}} auf dem Konto"
   },
   "common": {
     "loading": "Laden...",
