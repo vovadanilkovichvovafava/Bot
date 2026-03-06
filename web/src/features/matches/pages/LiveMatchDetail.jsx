@@ -408,19 +408,47 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
   const recentEvents = events.slice(-5).reverse();
   const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
 
-  // Parse AI recommended bets from analysis (multiple [BET] tags)
+  // Parse AI recommended bets from analysis — supports multiple formats
   const parseRecommendedBets = () => {
     if (!aiAnalysis) return [];
-    const regex = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
     const bets = [];
+    const seen = new Set();
     let m;
-    while ((m = regex.exec(aiAnalysis)) !== null) {
-      bets.push({
-        type: m[1].trim(),
-        odds: parseFloat(m[2]),
-      });
+
+    // 1) Explicit [BET] tags
+    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
+    while ((m = betTagRe.exec(aiAnalysis)) !== null) {
+      const key = m[1].trim().toLowerCase();
+      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) }); }
     }
-    return bets;
+
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85"
+    if (bets.length === 0) {
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
+      while ((m = numberedRe.exec(aiAnalysis)) !== null) {
+        const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+        }
+      }
+    }
+
+    // 3) Fallback: "Bet Type @ odds" anywhere
+    if (bets.length === 0) {
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
+      while ((m = fallbackRe.exec(aiAnalysis)) !== null) {
+        const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+        }
+      }
+    }
+
+    return bets.slice(0, 4);
   };
 
   const recommendedBets = parseRecommendedBets();

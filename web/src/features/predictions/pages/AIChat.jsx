@@ -199,20 +199,59 @@ export default function AIChat() {
   // Parse bets from AI response (multiple [BET] tags)
   const parseBetsFromMessage = (content) => {
     if (!content) return [];
-    const regex = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
     const bets = [];
+    const seen = new Set();
+
+    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85
+    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
     let m;
-    while ((m = regex.exec(content)) !== null) {
-      bets.push({
-        type: m[1].trim(),
-        odds: parseFloat(m[2]),
-        homeTeam: 'Match',
-        awayTeam: '',
-        league: '',
-        date: new Date().toLocaleDateString('en-GB'),
-      });
+    while ((m = betTagRe.exec(content)) !== null) {
+      const key = m[1].trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) });
+      }
     }
-    return bets;
+
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85" or "1. **Over 2.5 Goals** @ 1.85"
+    if (bets.length === 0) {
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
+      while ((m = numberedRe.exec(content)) !== null) {
+        const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            bets.push({ type, odds });
+          }
+        }
+      }
+    }
+
+    // 3) Fallback: "Bet Type @ odds" or "Bet Type — odds" anywhere in text
+    if (bets.length === 0) {
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
+      while ((m = fallbackRe.exec(content)) !== null) {
+        const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            bets.push({ type, odds });
+          }
+        }
+      }
+    }
+
+    return bets.slice(0, 4).map(b => ({
+      ...b,
+      homeTeam: 'Match',
+      awayTeam: '',
+      league: '',
+      date: new Date().toLocaleDateString('en-GB'),
+    }));
   };
 
   const sendMessage = async (text) => {
