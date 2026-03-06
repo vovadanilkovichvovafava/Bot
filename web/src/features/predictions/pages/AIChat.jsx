@@ -93,8 +93,8 @@ export default function AIChat() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const canUseDeeplink = user?.use_deeplink === true || user?.is_premium;
   const isFunnel2 = user?.funnel === 'funnel-2';
+  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && !isFunnel2);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,7 +109,7 @@ export default function AIChat() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const isPremium = user?.is_premium;
+  const isPremium = user?.is_premium && !isFunnel2;
 
   // Hide BottomNav when keyboard is open
   useEffect(() => {

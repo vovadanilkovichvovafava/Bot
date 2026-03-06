@@ -62,8 +62,8 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
-  const isPremium = user?.is_premium;
   const isFunnel2 = user?.funnel === 'funnel-2';
+  const isPremium = user?.is_premium && !isFunnel2;
 
   const handleBetClick = () => {
     trackClick(user?.id, 'bottom_nav_bet');

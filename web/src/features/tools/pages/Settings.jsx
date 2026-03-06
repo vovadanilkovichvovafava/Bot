@@ -15,6 +15,7 @@ export default function Settings() {
   const { user, logout } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const isFunnel2 = user?.funnel === 'funnel-2';
+  const isPremium = user?.is_premium && !isFunnel2;
   const navigate = useNavigate();
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
@@ -195,7 +196,7 @@ export default function Settings() {
                 <span className="text-lg">🎁</span>
               </div>
               <div className="flex-1 min-w-0">
-                {user?.is_premium ? (
+                {isPremium ? (
                   <>
                     <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -212,7 +213,7 @@ export default function Settings() {
                   </>
                 )}
               </div>
-              {!user?.is_premium && (
+              {!isPremium && (
                 <button
                   onClick={() => navigate('/promo?banner=settings_get_pro')}
                   className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
@@ -221,7 +222,7 @@ export default function Settings() {
                 </button>
               )}
             </div>
-            {!user?.is_premium && (
+            {!isPremium && (
               <div className="mt-3 pt-3 border-t border-amber-200/50">
                 <p className="text-xs text-amber-700">
                   <span className="font-semibold">Important:</span> {t('settings.proActivationNote', { name: advertiser.name })}
