@@ -596,7 +596,7 @@
     "learnMore": "Więcej",
     "exclusiveFor": "EKSKLUZYWNIE DLA PRESCORE AI",
     "limitedTime": "TYLKO TERAZ",
-    "bonusBannerText": "AI przeanalizował <b>{{match}}</b> z {{confidence}}% pewnością. Po co ryzykować swoje pieniądze — postaw {{bonus}} za darmo na ten mecz i zatrzymaj wygrane.",
+    "bonusBannerText": "AI przeanalizował <b>{{match}}</b> z {{confidence}}% pewnością. Po co ryzykować swoje pieniądze — postaw <strong style=\"color:#059669\">{{bonus}} za darmo</strong> na ten mecz i zatrzymaj wygrane.",
     "bonusBannerDeposit": "Wpłać {{deposit}} — otrzymaj {{bonus}} na konto. Zero ryzyka — to bonus partnera.",
     "noRisk": "BEZ RYZYKA",
     "step1Label": "Depozyt",

@@ -587,7 +587,7 @@
     "learnMore": "Подробнее",
     "exclusiveFor": "ЭКСКЛЮЗИВНО ДЛЯ PRESCORE AI",
     "limitedTime": "ТОЛЬКО СЕЙЧАС",
-    "bonusBannerText": "AI дал прогноз на <b>{{match}}</b> с уверенностью {{confidence}}%. Но зачем рисковать своими деньгами — поставь {{bonus}} бесплатно на этот матч и забери выигрыш себе.",
+    "bonusBannerText": "AI дал прогноз на <b>{{match}}</b> с уверенностью {{confidence}}%. Но зачем рисковать своими деньгами — поставь <strong style=\"color:#059669\">{{bonus}} бесплатно</strong> на этот матч и забери выигрыш себе.",
     "bonusBannerDeposit": "Внеси {{deposit}} — получи {{bonus}} на счёт. Риск нулевой — это бонус партнёра.",
     "noRisk": "БЕЗ РИСКА",
     "step1Label": "Депозит",

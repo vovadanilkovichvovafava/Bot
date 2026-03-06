@@ -497,7 +497,7 @@
     "learnMore": "Mehr erfahren",
     "exclusiveFor": "EXKLUSIV FÜR PRESCORE AI",
     "limitedTime": "NUR JETZT",
-    "bonusBannerText": "AI hat <b>{{match}}</b> mit {{confidence}}% Sicherheit analysiert. Warum dein Geld riskieren — setze {{bonus}} kostenlos auf dieses Spiel und behalte den Gewinn.",
+    "bonusBannerText": "AI hat <b>{{match}}</b> mit {{confidence}}% Sicherheit analysiert. Warum dein Geld riskieren — setze <strong style=\"color:#059669\">{{bonus}} kostenlos</strong> auf dieses Spiel und behalte den Gewinn.",
     "bonusBannerDeposit": "Zahle {{deposit}} ein — erhalte {{bonus}} aufs Konto. Null Risiko — das ist ein Partnerbonus.",
     "noRisk": "KEIN RISIKO",
     "step1Label": "Einzahlung",

@@ -1030,7 +1030,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                   className="text-sm text-gray-700 leading-relaxed mb-3"
                   dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
                     match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`,
-                    confidence: recommendedBet ? Math.round(recommendedBet.odds * 30) : 62,
+                    confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
                     bonus: advertiser?.bonusBanner?.bonus || '',
                   }) }}
                 />

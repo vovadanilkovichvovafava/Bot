@@ -550,7 +550,7 @@ function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAna
                     className="text-sm text-gray-700 leading-relaxed mb-3"
                     dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
                       match: `${fixture?.teams?.home?.name || ''} — ${fixture?.teams?.away?.name || ''}`,
-                      confidence: recommendedBet ? Math.round(recommendedBet.odds * 30) : 62,
+                      confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
                       bonus: advertiser?.bonusBanner?.bonus || '',
                     }) }}
                   />

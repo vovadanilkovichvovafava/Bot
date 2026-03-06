@@ -596,7 +596,7 @@
     "learnMore": "En Savoir Plus",
     "exclusiveFor": "EXCLUSIF POUR PRESCORE AI",
     "limitedTime": "OFFRE LIMITÉE",
-    "bonusBannerText": "L'IA a analysé <b>{{match}}</b> avec {{confidence}}% de confiance. Pourquoi risquer votre argent — misez {{bonus}} gratuitement sur ce match et gardez les gains.",
+    "bonusBannerText": "L'IA a analysé <b>{{match}}</b> avec {{confidence}}% de confiance. Pourquoi risquer votre argent — misez <strong style=\"color:#059669\">{{bonus}} gratuitement</strong> sur ce match et gardez les gains.",
     "bonusBannerDeposit": "Déposez {{deposit}} — recevez {{bonus}} sur votre compte. Zéro risque — c'est un bonus partenaire.",
     "noRisk": "SANS RISQUE",
     "step1Label": "Dépôt",

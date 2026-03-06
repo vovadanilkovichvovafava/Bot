@@ -611,7 +611,7 @@
     "learnMore": "Scopri di più",
     "exclusiveFor": "ESCLUSIVO PER PRESCORE AI",
     "limitedTime": "SOLO ORA",
-    "bonusBannerText": "L'AI ha analizzato <b>{{match}}</b> con il {{confidence}}% di sicurezza. Perché rischiare i tuoi soldi — piazza {{bonus}} gratis su questa partita e tieni le vincite.",
+    "bonusBannerText": "L'AI ha analizzato <b>{{match}}</b> con il {{confidence}}% di sicurezza. Perché rischiare i tuoi soldi — piazza <strong style=\"color:#059669\">{{bonus}} gratis</strong> su questa partita e tieni le vincite.",
     "bonusBannerDeposit": "Deposita {{deposit}} — ricevi {{bonus}} sul conto. Zero rischi — è un bonus del partner.",
     "noRisk": "ZERO RISCHI",
     "step1Label": "Deposito",

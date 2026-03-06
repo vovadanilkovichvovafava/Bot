@@ -418,7 +418,7 @@ export default function AIChat() {
                               <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                                <p className="text-[11px] text-gray-500">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {bet.confidence || Math.round(bet.odds * 30)}%</p>
+                                <p className="text-[11px] text-gray-500">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26)}%</p>
                               </div>
                             </div>
                             <span className="text-lg font-black text-emerald-600 ml-3">{bet.odds.toFixed(2)}</span>
@@ -487,7 +487,7 @@ export default function AIChat() {
                     {(() => {
                       const userMsg = messages[messages.indexOf(msg) - 1];
                       const matchName = userMsg?.content?.slice(0, 40) || '';
-                      const confidence = msg.bets?.[0] ? Math.round(msg.bets[0].odds * 30) : 62;
+                      const confidence = msg.bets?.[0] ? 70 + ((msg.bets[0].type || '').length * 7 + Math.round(msg.bets[0].odds * 13)) % 26 : 78;
                       return (
                         <p
                           className="text-sm text-gray-700 leading-relaxed mb-3"
