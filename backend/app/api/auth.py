@@ -1,5 +1,6 @@
 import re
 import random
+import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel, EmailStr, field_validator
@@ -12,6 +13,8 @@ from app.core.phone_country import detect_country_from_phone
 from app.config import settings
 from app.core.database import get_db
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -109,10 +112,16 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str):
 @router.get("/check-ip")
 async def check_ip(request: Request, db: AsyncSession = Depends(get_db)):
     """Check if an account already exists for the client's IP address"""
-    client_ip = get_client_ip(request)
-    result = await db.execute(select(User).where(User.registration_ip == client_ip))
-    exists = result.scalar_one_or_none() is not None
-    return {"exists": exists}
+    try:
+        client_ip = get_client_ip(request)
+        from sqlalchemy import func
+        count = (await db.execute(
+            select(func.count()).select_from(User).where(User.registration_ip == client_ip)
+        )).scalar() or 0
+        return {"exists": count > 0, "count": count}
+    except Exception as e:
+        logger.error(f"check-ip failed: {e}")
+        return {"exists": False, "count": 0}
 
 
 @router.post("/register", response_model=TokenResponse)
