@@ -187,10 +187,10 @@ export default function Home() {
             </div>
             <div>
               <p className="text-primary-100 text-xs">{t('home.aiPredictionsLeft')}</p>
-              <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${aiLimit}`}</span></p>
+              <p className="text-2xl font-bold">{(isPremium || isFunnel2) ? '∞' : remaining}<span className="text-sm text-primary-200">{(isPremium || isFunnel2) ? '' : ` / ${aiLimit}`}</span></p>
             </div>
           </div>
-          {!isPremium && (
+          {!isPremium && !isFunnel2 && (
             <button onClick={() => navigate('/pro-access')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
               {t('home.getUnlimited')}
             </button>
@@ -241,8 +241,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* PRO Guide - Only for PRO users */}
-        {isPremium && (
+        {/* PRO Guide - Only for PRO users and funnel-2 */}
+        {(isPremium || isFunnel2) && (
           <div
             onClick={() => navigate('/pro-guide')}
             className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 flex items-center gap-4 cursor-pointer shadow-md"
@@ -340,7 +340,7 @@ export default function Home() {
           </div>
         ) : (
           <div
-            onClick={() => navigate(isPremium || !valueBetUsed ? '/value-finder' : '/pro-access')}
+            onClick={() => navigate(isPremium || isFunnel2 || !valueBetUsed ? '/value-finder' : '/pro-access')}
             className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
           >
             <div className="flex items-start justify-between mb-3">
@@ -354,7 +354,7 @@ export default function Home() {
                   {t('home.freeTry')}
                 </span>
               )}
-              {!isPremium && valueBetUsed && (
+              {!isPremium && !isFunnel2 && valueBetUsed && (
                 <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
@@ -389,10 +389,10 @@ export default function Home() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
-                {isPremium ? t('home.unlimitedScans') : valueBetUsed ? t('home.depositToUnlock') : t('home.tryFreeNow')}
+                {(isPremium || isFunnel2) ? t('home.unlimitedScans') : valueBetUsed ? t('home.depositToUnlock') : t('home.tryFreeNow')}
               </div>
               <div className="bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
-                {isPremium || !valueBetUsed ? t('home.findValueBets') : t('home.unlock')}
+                {isPremium || isFunnel2 || !valueBetUsed ? t('home.findValueBets') : t('home.unlock')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                 </svg>
@@ -455,8 +455,8 @@ export default function Home() {
               </div>
               <p className="text-xs font-medium text-gray-700">{t('home.matches')}</p>
             </div>
-            <div onClick={() => navigate(isPremium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              {!isPremium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
+            <div onClick={() => navigate((isPremium || isFunnel2) ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
+              {!isPremium && !isFunnel2 && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
@@ -465,7 +465,7 @@ export default function Home() {
               <p className="text-xs font-medium text-gray-700">{t('home.valueFinder')}</p>
             </div>
             <div onClick={() => navigate('/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              <span className="badge-pro absolute -top-2 right-1">PRO</span>
+              {!isFunnel2 && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-blue-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
