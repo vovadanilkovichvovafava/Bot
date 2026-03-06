@@ -154,17 +154,13 @@ function SplashScreen() {
     // Persist traffic source for registration (from ?source=pwa-2)
     const source = params.get('source');
     if (source) localStorage.setItem('traffic_source', source);
-    // ?funnel=free on any URL → save marker, will redirect to register in App
-    const funnel = params.get('funnel');
-    if (funnel === 'free') localStorage.setItem('funnel_free', 'true');
   } catch {}
 })();
 
-// /free or ?funnel=free → /register with utm_campaign=free, preserving all query params
+// /free → /register with utm_campaign=free, preserving all other query params from ad creatives
 function FreeRedirect() {
   const params = new URLSearchParams(window.location.search);
   params.set('utm_campaign', 'free');
-  params.delete('funnel'); // clean up
   return <Navigate to={`/register?${params.toString()}`} replace />;
 }
 
@@ -173,18 +169,6 @@ export default function App() {
   const trackingSaved = useRef(false);
   const location = useLocation();
   const prevLocationRef = useRef(null);
-
-  // Auto-redirect ?funnel=free guests to registration
-  const params = new URLSearchParams(location.search);
-  const isFunnelFree = params.get('funnel') === 'free' || localStorage.getItem('funnel_free') === 'true';
-  if (!loading && !user && isFunnelFree && location.pathname !== '/register' && location.pathname !== '/login' && location.pathname !== '/free') {
-    localStorage.removeItem('funnel_free');
-    params.set('utm_campaign', 'free');
-    params.delete('funnel');
-    return <Navigate to={`/register?${params.toString()}`} replace />;
-  }
-  // Clear funnel_free flag after login (no longer needed)
-  if (user && localStorage.getItem('funnel_free')) localStorage.removeItem('funnel_free');
 
   // SPA pageview tracking — наша аналитика + Яндекс Метрика
   useEffect(() => {
