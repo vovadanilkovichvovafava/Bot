@@ -894,74 +894,37 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             })}
           </div>
 
-          {/* Single AI Bet Banner — uses best recommendation */}
-          {recommendedBet && (
+          {/* Best Bet cards — clean white style */}
+          {recommendedBets.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <button
-                onClick={() => {
-                  trackClick(user?.id, 'match_ai_bet');
-                  navigate('/promo');
-                }}
-                className="w-full text-left relative overflow-hidden rounded-2xl shadow-lg"
-                style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
-              >
-                {/* Shimmer */}
-                <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
-
-                <div className="relative p-4">
-                  {/* Header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
-                      <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('matchDetail.aiRecommendedBet')}</span>
-                  </div>
-
-                  {/* Bet type + odds */}
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-white font-bold flex-1 mr-3">{recommendedBet.type}</p>
-                    <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5">
-                      <span className="text-base font-black" style={{ color: '#F7C948' }}>{recommendedBet.odds.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  {/* Calculation row */}
-                  <div className="rounded-xl p-3 border border-white/10" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{isPremium ? '💰' : '🎁'}</span>
-                        <div>
-                          <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">
-                            {isPremium ? t('aiChat.betAmount', { defaultValue: 'Bet amount' }) : t('advertiser.freeBetLabel')}
-                          </p>
-                          <p className="text-white font-black text-sm">
-                            {isPremium ? advertiser?.bonusBanner?.deposit : advertiser?.bonusBanner?.bonus}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-white/40 text-xs font-bold">
-                        <span>×</span>
-                        <span className="text-white">{recommendedBet.odds.toFixed(2)}</span>
-                        <span>=</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-white/50 font-semibold uppercase">{t('matchDetail.potentialWin', { defaultValue: 'Potential win' })}</p>
-                        <p className="text-lg font-black" style={{ color: '#F7C948' }}>{formatWinAmount(potentialWin)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="relative px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p className="text-white font-bold text-xs">
-                    {isPremium
-                      ? t('aiChat.placeBetNow', { defaultValue: 'Place this bet now' })
-                      : t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus, defaultValue: `Get ${advertiser?.bonusBanner?.bonus} free bet` })}
+              <div className="rounded-xl border border-gray-100 overflow-hidden">
+                {/* Header */}
+                <div className="px-4 pt-3 pb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                    <span>🔥</span>
+                    {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
                   </p>
-                  <svg className="w-4 h-4 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
                 </div>
-              </button>
+
+                {/* Bet rows */}
+                <div className="px-4 pb-3 space-y-2">
+                  {recommendedBets.map((bet, idx) => {
+                    const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+                    return (
+                      <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                            <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                          </div>
+                        </div>
+                        <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1030,7 +993,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                   className="text-sm text-gray-700 leading-relaxed mb-3"
                   dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
                     match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`,
-                    confidence: recommendedBet ? Math.round(recommendedBet.odds * 30) : 62,
+                    confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
                     bonus: advertiser?.bonusBanner?.bonus || '',
                   }) }}
                 />

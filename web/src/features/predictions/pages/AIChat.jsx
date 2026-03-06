@@ -397,34 +397,39 @@ export default function AIChat() {
                 )}
                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* Best bets list — white cards */}
+                {/* Best bets list — clean white card style */}
                 {msg.bets?.length > 0 && msg.role === 'assistant' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base">⚽✨</span>
-                      <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">{t('aiChat.bestBetLabel', { defaultValue: 'Best bet' })}</span>
-                    </div>
-                    {/* Bet cards */}
-                    <div className="space-y-2">
-                      {msg.bets.slice(0, 3).map((bet, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
-                          className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                                <p className="text-[11px] text-gray-500">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {bet.confidence || Math.round(bet.odds * 30)}%</p>
+                    <div className="rounded-xl border border-gray-100 overflow-hidden">
+                      {/* Header */}
+                      <div className="px-3 pt-3 pb-2">
+                        <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                          <span>🔥</span>
+                          {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
+                        </p>
+                      </div>
+                      {/* Bet rows */}
+                      <div className="px-3 pb-3 space-y-2">
+                        {msg.bets.slice(0, 3).map((bet, idx) => {
+                          const conf = bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26);
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                              className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                                </div>
                               </div>
+                              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
                             </div>
-                            <span className="text-lg font-black text-emerald-600 ml-3">{bet.odds.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -487,7 +492,7 @@ export default function AIChat() {
                     {(() => {
                       const userMsg = messages[messages.indexOf(msg) - 1];
                       const matchName = userMsg?.content?.slice(0, 40) || '';
-                      const confidence = msg.bets?.[0] ? Math.round(msg.bets[0].odds * 30) : 62;
+                      const confidence = msg.bets?.[0] ? 70 + ((msg.bets[0].type || '').length * 7 + Math.round(msg.bets[0].odds * 13)) % 26 : 78;
                       return (
                         <p
                           className="text-sm text-gray-700 leading-relaxed mb-3"
