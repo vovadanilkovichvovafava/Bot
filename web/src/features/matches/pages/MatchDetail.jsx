@@ -790,8 +790,8 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
   const odds1x2 = getOdds1x2();
 
   // Check AI limit status (server-based)
-  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
-  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
   const limitReached = !isPremium && !isFunnel2 && aiRemaining !== null && aiRemaining <= 0;
   const remainingRequests = Math.max(0, remaining);

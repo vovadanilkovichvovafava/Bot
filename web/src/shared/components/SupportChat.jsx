@@ -28,7 +28,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const navigate = useNavigate();
   const { advertiser, trackClick } = useSafeAdvertiser();
   const { user } = useSafeAuth();
-  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   // Persist chat in localStorage so history survives close/reopen
   const storageKey = guest ? 'support_chat_guest' : 'support_chat_user';
   const [messages, setMessages] = useState(() => {
