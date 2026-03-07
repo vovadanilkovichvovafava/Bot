@@ -70,7 +70,7 @@ export default function BottomNav() {
     trackClick(user?.id, 'bottom_nav_bet');
     if (isPremium || isFunnel2 || isFunnel4) {
       // PRO, funnel-2, funnel-4 go directly to bookmaker
-      const link = getTrackingLink(user?.id, 'bottom_nav_bet') || advertiser?.link;
+      const link = getTrackingLink(user?.id, 'bottom_nav_bet', user?.funnel) || advertiser?.link;
       if (link) {
         window.open(link, '_blank', 'noopener,noreferrer');
       }

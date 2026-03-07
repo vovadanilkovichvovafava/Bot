@@ -153,7 +153,7 @@ export default function ProAccess() {
   useEffect(() => {
     if (!user?.id) return;
     const bannerName = feature ? `pro_access_${feature}` : 'pro_access_page';
-    setBookmakerLink(getTrackingLink(user.id, bannerName));
+    setBookmakerLink(getTrackingLink(user.id, bannerName, user.funnel));
   }, [user?.id, feature]);
 
   const next = () => { if (step < TOTAL) setStep(step + 1); };

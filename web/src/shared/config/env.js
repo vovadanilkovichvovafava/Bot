@@ -9,6 +9,7 @@ export const ENV = {
   GEO_SERVER_URL:     rc.GEO_SERVER_URL     || import.meta.env.VITE_GEO_SERVER_URL     || 'http://localhost:3001',
   TRACKING_API:       rc.TRACKING_API       || import.meta.env.VITE_TRACKING_API       || 'https://postbackapi-production.up.railway.app',
   OFFER_URL:          rc.OFFER_URL          || import.meta.env.VITE_OFFER_URL          || 'https://siteofficialred.com/KnSQ1M',
+  OFFER_URL_F2:       rc.OFFER_URL_F2       || import.meta.env.VITE_OFFER_URL_F2       || 'https://siteofficialred.com/724sSCYP',
   BKPROXY_URL:        rc.BKPROXY_URL        || import.meta.env.VITE_BKPROXY_URL        || 'https://bkproxy-production.up.railway.app',
   VAPID_PUBLIC_KEY:   rc.VAPID_PUBLIC_KEY   || import.meta.env.VITE_VAPID_PUBLIC_KEY   || '',
   BOOKMAKER_NAME:     rc.BOOKMAKER_NAME     || import.meta.env.VITE_BOOKMAKER_NAME     || 'Partner',

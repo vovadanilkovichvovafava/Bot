@@ -116,7 +116,7 @@ export default function BookmakerPromo() {
     if (fonbetDeeplink) {
       setBookmakerLink(addTrackingToUrl(fonbetDeeplink, user.id, banner || 'promo_fonbet'));
     } else {
-      setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page'));
+      setBookmakerLink(getTrackingLink(user.id, banner || 'promo_page', user.funnel));
     }
   }, [user?.id, banner, fonbetDeeplink]);
 

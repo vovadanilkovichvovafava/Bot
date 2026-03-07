@@ -85,7 +85,7 @@ export default function PostMatchReminder() {
   const handlePlaceBet = () => {
     if (reminder) markShown(reminder.id);
     trackClick(user?.id, 'post_match_reminder');
-    const link = getTrackingLink(user?.id, 'post_match_reminder') || advertiser?.link;
+    const link = getTrackingLink(user?.id, 'post_match_reminder', user?.funnel) || advertiser?.link;
     if (link) window.open(link, '_blank', 'noopener,noreferrer');
     setVisible(false);
     setTimeout(() => setReminder(null), 300);
