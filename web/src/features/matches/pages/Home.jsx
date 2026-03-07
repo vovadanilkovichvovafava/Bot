@@ -289,8 +289,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* PRO Guide - Only for PRO users and funnel-2 */}
-        {(isPremium || isFunnel2) && (
+        {/* PRO Guide - Only for PRO users who already have deposit */}
+        {isPremium && !isFunnel2 && (
           <div
             onClick={() => navigate('/pro-guide')}
             className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 flex items-center gap-4 cursor-pointer shadow-md"
@@ -301,7 +301,7 @@ export default function Home() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className="font-bold text-white text-sm">{t('home.proGuide', { defaultValue: 'Come guadagnare' })}</p>
-                {!isFunnel2 && <span className="bg-white/20 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">PRO</span>}
+                <span className="bg-white/20 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">PRO</span>
               </div>
               <p className="text-white/80 text-xs">{t('home.proGuideDesc', { defaultValue: 'Errori del bookmaker trovati dall\'AI' })}</p>
             </div>
