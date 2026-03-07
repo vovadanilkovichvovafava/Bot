@@ -147,8 +147,10 @@ export async function saveTrackingParams(userId) {
  *   + fbclid, utm_* отдельными параметрами
  */
 const OFFER_BASE_URL = ENV.OFFER_URL;
+const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 
-export function getTrackingLink(userId, banner = '') {
+export function getTrackingLink(userId, banner = '', funnel = '') {
+  const baseUrl = (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
   if (!userId) return null;
 
   try {
@@ -199,12 +201,12 @@ export function getTrackingLink(userId, banner = '') {
     const utmTerm = getParam('utm_term');
     if (utmTerm) params.set('utm_term', utmTerm);
 
-    const link = `${OFFER_BASE_URL}?${params.toString()}`;
+    const link = `${baseUrl}?${params.toString()}`;
     console.log('[Tracking] Link built:', link);
     return link;
   } catch (err) {
     console.warn('[Tracking] Failed to build link:', err.message);
-    return `${OFFER_BASE_URL}?external_id=${userId}`;
+    return `${baseUrl}?external_id=${userId}`;
   }
 }
 
