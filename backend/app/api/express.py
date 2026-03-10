@@ -21,9 +21,6 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-EXPRESS_TOKEN_COST = 3  # funnel-3 pays 3 daily requests
-
-
 def _get_generator():
     from app.services.express_generator import (
         get_today_daily_express,
@@ -56,39 +53,9 @@ async def spend_tokens(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # PRO, funnel-2, and funnel-4 (express-first) don't need tokens
-    if user.is_premium or user.funnel in ("funnel-2", "funnel-4"):
+    # PRO users don't need tokens
+    if user.is_premium:
         return {"ok": True, "cost": 0, "remaining": 999}
-
-    # Funnel-3: check and spend 3 tokens
-    if user.funnel == "funnel-3":
-        from app.api.predictions import get_daily_limit
-        from datetime import datetime
-
-        # Reset daily counter if new day
-        today = datetime.utcnow().date()
-        if user.last_chat_request_date and user.last_chat_request_date.date() < today:
-            user.daily_chat_requests = 0
-
-        limit = get_daily_limit(user.account_day_number or 1, user.funnel)
-        used = user.daily_chat_requests or 0
-        remaining = max(0, limit - used)
-
-        if remaining < EXPRESS_TOKEN_COST:
-            raise HTTPException(
-                status_code=402,
-                detail=f"Not enough tokens. Need {EXPRESS_TOKEN_COST}, have {remaining}.",
-            )
-
-        user.daily_chat_requests = used + EXPRESS_TOKEN_COST
-        user.last_chat_request_date = datetime.utcnow()
-        await db.commit()
-
-        return {
-            "ok": True,
-            "cost": EXPRESS_TOKEN_COST,
-            "remaining": max(0, limit - user.daily_chat_requests),
-        }
 
     # Funnel-1: free (access controlled on frontend via weekly localStorage)
     return {"ok": True, "cost": 0}

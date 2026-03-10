@@ -12,9 +12,9 @@ export default function WelcomeModal({ onClose, onGoToPromo, onGoToExpress, hide
     return () => showBottomNav();
   }, [hideBottomNav, showBottomNav]);
 
-  // funnel-4 express-first: 4 steps (Welcome → Express → Predictions → Go)
-  // funnel-2: 4 steps (skip PRO)
-  // funnel-1: 5 steps (full)
+  // expressFirst: 4 steps (Welcome → Express → Predictions → Go)
+  // hidePro: 4 steps (skip PRO)
+  // default: 5 steps (full)
   const TOTAL_STEPS = expressFirst ? 4 : hidePro ? 4 : 5;
   const lastStep = TOTAL_STEPS - 1;
 
@@ -25,7 +25,7 @@ export default function WelcomeModal({ onClose, onGoToPromo, onGoToExpress, hide
   // Map step index to component
   const getStepContent = () => {
     if (expressFirst) {
-      // funnel-4: Welcome → Express intro → Predictions → Go (express CTA)
+      // expressFirst: Welcome → Express intro → Predictions → Go (express CTA)
       if (step === 0) return <Step1Welcome t={t} />;
       if (step === 1) return <StepExpress t={t} />;
       if (step === 2) return <Step2Predictions t={t} />;
@@ -208,7 +208,7 @@ function Step4Features({ t }) {
   );
 }
 
-/* Step Express — for funnel-4 */
+/* Step Express — for express-first onboarding */
 function StepExpress({ t }) {
   return (
     <div className="px-6 pt-6 pb-4 text-center">

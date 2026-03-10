@@ -35,7 +35,7 @@ export default function LiveMatchDetail() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
+  const canUseDeeplink = user?.use_deeplink === true || !!user?.is_premium;
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -149,9 +149,7 @@ export default function LiveMatchDetail() {
       const data = await api.aiChat(userMessage, [], prompt);
 
       // Increment AI request counter for non-premium users (AFTER successful response)
-      const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
-      const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
-      if (!isPremium && !isFunnel2) {
+      if (!user?.is_premium) {
         incrementAIRequestCount();
       }
 
@@ -406,7 +404,7 @@ function QuickStats({ stats, t }) {
 // Overview Tab
 function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t, fonbetMatch, canUseDeeplink }) {
   const recentEvents = events.slice(-5).reverse();
-  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
+  const isPremium = !!user?.is_premium;
 
   // Parse AI recommended bets from analysis — supports multiple formats
   const parseRecommendedBets = () => {

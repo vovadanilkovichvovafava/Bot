@@ -63,7 +63,7 @@ export default function Statistics() {
               </svg>
               <span className="font-bold">{t('statistics.aiPredictions')}</span>
             </div>
-            {(!user?.is_premium || user?.funnel === 'funnel-2') && <span className="badge-pro">{t('statistics.pro')}</span>}
+            {!user?.is_premium && <span className="badge-pro">{t('statistics.pro')}</span>}
           </div>
 
           {/* Circular Progress */}

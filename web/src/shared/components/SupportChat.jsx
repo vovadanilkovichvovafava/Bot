@@ -28,7 +28,6 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const navigate = useNavigate();
   const { advertiser, trackClick } = useSafeAdvertiser();
   const { user } = useSafeAuth();
-  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   // Persist chat in localStorage so history survives close/reopen
   const storageKey = guest ? 'support_chat_guest' : 'support_chat_user';
   const [messages, setMessages] = useState(() => {
@@ -60,13 +59,13 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
     return crypto.randomUUID?.() || Date.now().toString();
   });
   const [isPro, setIsPro] = useState(() => {
-    return (user?.is_premium && user?.funnel !== 'funnel-2') || false;
+    return !!user?.is_premium;
   });
 
   // Sync isPro when user object changes (e.g. deposit activates PRO)
   // If user just became PRO, reset chat to show congratulation
   useEffect(() => {
-    if (user?.is_premium && user?.funnel !== 'funnel-2' && !isPro) {
+    if (user?.is_premium && !isPro) {
       setIsPro(true);
       // Check if chat was started before PRO — reset to show congratulation
       try {
@@ -120,7 +119,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
       let welcomeText;
       if (guest) {
         welcomeText = t('support.guestWelcome', { name: agentName, defaultValue: `Hi! I'm ${agentName}, support manager. Need help with your password or account? I'm here to help!` });
-      } else if (isPro && !isFunnel2) {
+      } else if (isPro ) {
         welcomeText = t('support.proWelcomeMessage', { name: agentName });
       } else {
         welcomeText = t('support.welcomeMessage', { name: agentName });
@@ -133,8 +132,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         time: new Date(),
       }];
 
-      // Add PRO congratulation card as a special message (not for funnel-2)
-      if (!guest && isPro && !isFunnel2) {
+      // Add PRO congratulation card as a special message
+      if (!guest && isPro ) {
         welcomeMessages.push({
           id: 2,
           from: 'manager',
@@ -311,7 +310,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         from: 'manager',
         text: response.response,
         time: new Date(),
-        showAd: !guest && !isPro && !isFunnel2 && newCount % 2 === 0, // Show PRO banner every 2nd response (not for PRO/funnel-2/guest)
+        showAd: !guest && !isPro && newCount % 2 === 0, // Show PRO banner every 2nd response (not for PRO/guest)
       };
 
       setMessages(prev => [...prev, managerMessage]);
@@ -421,8 +420,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {messages.map(msg => (
             <div key={msg.id}>
-              {/* PRO Congratulation Card (hidden for funnel-2) */}
-              {msg.proCard && !isFunnel2 && (
+              {/* PRO Congratulation Card */}
+              {msg.proCard  && (
                 <div className="flex justify-start">
                   <div className="max-w-[88%] rounded-2xl overflow-hidden shadow-sm border border-emerald-100">
                     <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700 px-5 py-4 text-white">
@@ -478,8 +477,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                 </div>
               )}
 
-              {/* Simple promo link under each manager response (not for PRO/funnel-2/guest) */}
-              {!guest && !isPro && !isFunnel2 && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && !msg.proCard && (
+              {/* Simple promo link under each manager response (not for PRO/guest) */}
+              {!guest && !isPro  && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && !msg.proCard && (
                 <div className="flex justify-start mt-1">
                   <button
                     onClick={() => navigate('/promo?banner=support_promo_link')}
@@ -493,8 +492,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                 </div>
               )}
 
-              {/* PRO banner after every 2nd manager response (hidden for funnel-2) */}
-              {msg.showAd && !isFunnel2 && (
+              {/* PRO banner after every 2nd manager response */}
+              {msg.showAd  && (
                 <div className="mt-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
@@ -544,7 +543,7 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
         {!keyboardOpen && !guest && (
           <div className="px-5 py-2 border-t border-gray-100">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {isPro && !isFunnel2 ? (
+              {isPro  ? (
                 <>
                   <button
                     onClick={() => setInput(t('support.proQuickTools', { defaultValue: 'How to use PRO tools?' }))}
@@ -574,14 +573,12 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                     <span>🎁</span>
                     {t('support.getBonus', { bonus: advertiser?.bonusBanner?.bonus })}
                   </button>
-                  {!isFunnel2 && (
-                    <button
-                      onClick={() => setInput(t('support.wantPro'))}
-                      className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-                    >
-                      {t('support.wantPro')}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setInput(t('support.wantPro'))}
+                    className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                  >
+                    {t('support.wantPro')}
+                  </button>
                   <button
                     onClick={() => setInput(t('support.howToStart'))}
                     className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"

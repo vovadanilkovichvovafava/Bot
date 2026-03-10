@@ -44,17 +44,12 @@ function getCurrentWeek() {
 
 function canAccessFree(user) {
   if (!user) return false;
-  // Funnel-2 — always free (treated as non-PRO); Premium (non funnel-2) — always free
-  if (user.funnel === 'funnel-2' || (user.is_premium && user.funnel !== 'funnel-2')) return true;
-  // Funnel-1 — once per week
-  if (user.funnel === 'funnel-1' || !user.funnel) {
-    const lastWeek = localStorage.getItem(EXPRESS_WEEKLY_KEY);
-    const currentWeek = getCurrentWeek();
-    return lastWeek !== currentWeek;
-  }
-  // Funnel-3 — always allowed (costs tokens, checked separately)
-  if (user.funnel === 'funnel-3') return true;
-  return false;
+  // Premium — always free
+  if (user.is_premium) return true;
+  // Free users — once per week
+  const lastWeek = localStorage.getItem(EXPRESS_WEEKLY_KEY);
+  const currentWeek = getCurrentWeek();
+  return lastWeek !== currentWeek;
 }
 
 function markWeeklyUsed() {
@@ -67,12 +62,8 @@ export default function ExpressBet() {
   const { trackClick, advertiser } = useAdvertiser();
   const navigate = useNavigate();
 
-  const isFunnel2 = user?.funnel === 'funnel-2';
-  const isFunnel4 = user?.funnel === 'funnel-4';
-  const isPro = (user?.is_premium && !isFunnel2 && !isFunnel4) || isFunnel2 || isFunnel4;
-  const isFonbetUser = user?.is_premium && !isFunnel2 && !isFunnel4;
-  const isFunnel3 = user?.funnel === 'funnel-3';
-  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPro && !isFunnel3);
+  const isPro = !!user?.is_premium;
+  const isFonbetUser = !!user?.is_premium;
 
   const [expresses, setExpresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,47 +86,19 @@ export default function ExpressBet() {
       return;
     }
 
-    // PRO / funnel-2: always free
+    // PRO: always free
     if (isPro) {
       return loadExpresses();
     }
 
-    // Funnel-1: once per week free
-    if (isFunnel1) {
-      if (!canAccessFree(user)) {
-        setAccessBlocked(true);
-        setLoading(false);
-        return;
-      }
-      markWeeklyUsed();
-      return loadExpresses();
+    // Free users: once per week
+    if (!canAccessFree(user)) {
+      setAccessBlocked(true);
+      setLoading(false);
+      return;
     }
-
-    // Funnel-3: costs 3 tokens
-    if (isFunnel3) {
-      try {
-        // Spend 3 tokens via backend
-        const result = await api.request('/express/spend-tokens', { method: 'POST' });
-        if (result?.error) {
-          setAccessBlocked(true);
-          setLoading(false);
-          return;
-        }
-        setTokenSpent(true);
-        if (refreshUser) refreshUser(); // refresh token count in UI
-      } catch (e) {
-        // If 402 = not enough tokens
-        if (e.message?.includes('402') || e.message?.includes('tokens')) {
-          setAccessBlocked(true);
-          setLoading(false);
-          return;
-        }
-      }
-      return loadExpresses();
-    }
-
-    // Default: allow
-    loadExpresses();
+    markWeeklyUsed();
+    return loadExpresses();
   };
 
   const loadExpresses = async () => {
@@ -178,13 +141,6 @@ export default function ExpressBet() {
         <p className="text-white/70 text-sm">
           {t('express.valueSubtitle', { defaultValue: 'Accumulators built from AI value bets — same engine as Value Finder' })}
         </p>
-        {/* Token cost badge for funnel-3 */}
-        {isFunnel3 && tokenSpent && (
-          <div className="mt-2 bg-white/20 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
-            <span className="text-xs font-bold">-3 {t('express.tokens', { defaultValue: 'tokens used' })}</span>
-          </div>
-        )}
       </div>
 
       <div className="px-4 -mt-3 space-y-4">
@@ -195,23 +151,13 @@ export default function ExpressBet() {
               <svg className="w-12 h-12 mx-auto text-purple-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
               </svg>
-              {isFunnel1 && (
+              {user && (
                 <>
                   <p className="font-bold text-gray-900 mb-1">
                     {t('express.weeklyLimitTitle', { defaultValue: 'Weekly limit reached' })}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
                     {t('express.weeklyLimitDesc', { defaultValue: 'Free express is available once per week. Come back next week or get PRO for unlimited access!' })}
-                  </p>
-                </>
-              )}
-              {isFunnel3 && (
-                <>
-                  <p className="font-bold text-gray-900 mb-1">
-                    {t('express.noTokensTitle', { defaultValue: 'Not enough tokens' })}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {t('express.noTokensDesc', { defaultValue: 'Express costs 3 tokens. Wait for your daily reset or get PRO for unlimited access!' })}
                   </p>
                 </>
               )}
@@ -315,8 +261,8 @@ export default function ExpressBet() {
                   </div>
                 )}
 
-                {/* Funnel-1 weekly info */}
-                {isFunnel1 && !isPro && (
+                {/* Weekly info for free users */}
+                {!isPro && (
                   <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5">
                     <p className="text-xs text-blue-700">
                       {t('express.weeklyFreeNote', { defaultValue: 'Free express this week. Next one available in 7 days, or get PRO for unlimited.' })}

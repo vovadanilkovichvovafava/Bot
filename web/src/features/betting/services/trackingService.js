@@ -147,10 +147,9 @@ export async function saveTrackingParams(userId) {
  *   + fbclid, utm_* отдельными параметрами
  */
 const OFFER_BASE_URL = ENV.OFFER_URL;
-const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 
 export function getTrackingLink(userId, banner = '', funnel = '') {
-  const baseUrl = (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
+  const baseUrl = OFFER_BASE_URL;
   if (!userId) return null;
 
   try {

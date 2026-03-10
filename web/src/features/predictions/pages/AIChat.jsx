@@ -93,8 +93,7 @@ export default function AIChat() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
-  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && !isFunnel2);
+  const canUseDeeplink = user?.use_deeplink === true || !!user?.is_premium;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,7 +108,7 @@ export default function AIChat() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const isPremium = user?.is_premium && !isFunnel2;
+  const isPremium = !!user?.is_premium;
 
   // Hide BottomNav when keyboard is open
   useEffect(() => {
@@ -121,14 +120,14 @@ export default function AIChat() {
 
   // Fetch AI chat limit from server
   useEffect(() => {
-    if (isPremium || isFunnel2) {
+    if (isPremium) {
       setRemaining(999);
       return;
     }
     api.getChatLimit()
       .then(data => setRemaining(data.remaining ?? data.limit ?? 3))
       .catch(() => setRemaining(3)); // Fallback to 3 on error
-  }, [isPremium, isFunnel2]);
+  }, [isPremium]);
 
   // Load cached chat history from localStorage
   const loadCachedChat = () => {
@@ -258,7 +257,7 @@ export default function AIChat() {
     if (!text.trim() || loading) return;
 
     // Check free limit from server
-    if (!isPremium && !isFunnel2 && remaining !== null && remaining <= 0) {
+    if (!isPremium && remaining !== null && remaining <= 0) {
       setShowLimitModal(true);
       return;
     }
@@ -300,7 +299,7 @@ export default function AIChat() {
       const data = await api.aiChat(textWithPrefs, history, matchContext, locale);
 
       // Refresh remaining count from server after each request
-      if (!isPremium && !isFunnel2) {
+      if (!isPremium) {
         api.getChatLimit()
           .then(d => setRemaining(d.remaining ?? d.limit ?? 0))
           .catch(() => {});

@@ -284,8 +284,8 @@ export default function YourStats() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">{t('yourStats.plan')}</span>
-                    <span className={`font-semibold ${(user?.is_premium && user?.funnel !== 'funnel-2') ? 'text-amber-500' : 'text-gray-900'}`}>
-                      {(user?.is_premium && user?.funnel !== 'funnel-2') ? t('yourStats.premium') : t('yourStats.free')}
+                    <span className={`font-semibold ${user?.is_premium ? 'text-amber-500' : 'text-gray-900'}`}>
+                      {user?.is_premium ? t('yourStats.premium') : t('yourStats.free')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
