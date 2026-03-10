@@ -49,7 +49,7 @@ const quizCSS = `
 .q-unlock{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .5s both}.q-up-head{padding:8px 13px;background:#F8FAFC;border-bottom:1px solid var(--qborder);font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;justify-content:space-between}.q-up-tag{background:var(--green-g);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px}.q-up-row{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;border-bottom:1px solid var(--qborder)}.q-up-row:last-child{border-bottom:none}.q-up-name{font-size:12px;font-weight:600;color:var(--qtext)}.q-up-ok{font-size:11px;font-weight:700;color:var(--qgreen);display:flex;align-items:center;gap:4px}.q-up-ok svg{width:11px;height:11px}
 
 /* deposit grid */
-.q-dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}.q-dopt{border-radius:12px;padding:13px 10px;cursor:pointer;transition:all .2s;background:var(--qcard);border:2px solid var(--qborder);position:relative;text-align:center;animation:qfadeUp .35s ease both}.q-dopt:active{transform:scale(.97)}.q-dopt.sel{border-color:var(--qaccent);background:#FFFBF0}.q-dopt.rec{border-color:var(--qgreen);background:#F0FDF4}.q-dopt .rtag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;white-space:nowrap}.q-dopt .da{font-size:22px;font-weight:900;color:var(--qprimary)}.q-dopt .dl{font-size:10px;color:var(--qtext3);font-weight:600;margin-top:1px}.q-dopt .dbonus{font-size:10px;font-weight:800;color:var(--qaccent);margin-top:5px;background:#FEF3C7;border-radius:6px;padding:2px 6px;display:inline-block}.q-dopt .dbonus-green{color:var(--qgreen);background:#D1FAE5}.q-dopt.sel .dbonus{background:#FDE68A}.q-dopt.rec .dbonus{background:#D1FAE5}
+.q-dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}.q-dopt{border-radius:12px;padding:13px 10px;cursor:pointer;transition:all .2s;background:var(--qcard);border:2px solid var(--qborder);position:relative;text-align:center;animation:qfadeUp .35s ease both}.q-dopt:active{transform:scale(.97)}.q-dopt.sel{border-color:var(--qaccent);background:#FFFBF0}.q-dopt.rec{border-color:var(--qgreen);background:#F0FDF4}.q-dopt .rtag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;white-space:nowrap}.q-dopt .rtag.blue{background:var(--blue-g)}.q-dopt .da{font-size:22px;font-weight:900;color:var(--qprimary)}.q-dopt .dl{font-size:10px;color:var(--qtext3);font-weight:600;margin-top:1px}.q-dopt .dbonus{font-size:10px;font-weight:800;color:var(--qaccent);margin-top:5px;background:#FEF3C7;border-radius:6px;padding:2px 6px;display:inline-block}.q-dopt .dbonus-green{color:var(--qgreen);background:#D1FAE5}.q-dopt.sel .dbonus{background:#FDE68A}.q-dopt.rec .dbonus{background:#D1FAE5}
 
 /* step list */
 .q-slist{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);overflow:hidden;flex-shrink:0}.q-slrow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--qborder);animation:qfadeUp .35s ease both}.q-slrow:last-child{border-bottom:none}.q-slico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-slico svg{width:15px;height:15px}.q-slico.blue{background:#DBEAFE}.q-slico.blue svg{color:var(--qblue)}.q-slico.green{background:#D1FAE5}.q-slico.green svg{color:var(--qgreen)}.q-slico.gold{background:#FEF3C7}.q-slico.gold svg{color:var(--qaccent)}.q-slrow h4{font-size:12px;font-weight:700;color:var(--qtext)}.q-slrow p{font-size:11px;color:var(--qtext2);margin-top:1px}
@@ -75,6 +75,7 @@ const quizCSS = `
 .q-copt.active .co-dep{color:var(--qaccent)}
 .q-copt .co-lbl{font-size:9px;color:var(--qtext3);font-weight:600;margin-top:1px}
 .q-copt .co-rec{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--green-g);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
+.q-copt .co-min{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--blue-g);color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:100px;white-space:nowrap}
 
 .q-calc-result{padding:14px 16px}
 .q-cr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -95,6 +96,40 @@ const quizCSS = `
 .q-once-text{font-size:12px;color:#B91C1C;line-height:1.5;font-weight:600}
 .q-once-text strong{color:#991B1B}
 
+/* NEW: money stays with you explainer card */
+.q-money-card{background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:13px;padding:13px;flex-shrink:0;animation:qfadeUp .35s ease .35s both}
+.q-mc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.q-mc-ico{width:32px;height:32px;border-radius:9px;background:var(--green-g);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q-mc-ico svg{width:16px;height:16px;color:#fff}
+.q-mc-title{font-size:13px;font-weight:800;color:#15803D}
+.q-mc-rows{display:flex;flex-direction:column;gap:7px}
+.q-mc-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#166534;line-height:1.45}
+.q-mc-dot{width:5px;height:5px;border-radius:50%;background:#22C55E;flex-shrink:0;margin-top:4px}
+
+/* NEW: €50+€75=€125 math banner */
+.q-math-banner{background:var(--dark-g);border-radius:13px;padding:13px 14px;flex-shrink:0;animation:qfadeUp .35s ease .1s both;position:relative;overflow:hidden}
+.q-math-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;background:rgba(247,201,72,.1)}
+.q-mb-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
+.q-mb-row{display:flex;align-items:center;gap:0}
+.q-mb-cell{flex:1;text-align:center;padding:8px 4px;border-radius:8px}
+.q-mb-cell.green{background:rgba(74,222,128,.13);border:1px solid rgba(74,222,128,.2)}
+.q-mb-cell.gold{background:rgba(247,201,72,.13);border:1px solid rgba(247,201,72,.2)}
+.q-mb-cell.blue{background:rgba(147,197,253,.13);border:1px solid rgba(147,197,253,.2)}
+.q-mb-val{font-size:20px;font-weight:900;line-height:1}
+.q-mb-cell.green .q-mb-val{color:#4ADE80}
+.q-mb-cell.gold .q-mb-val{color:#F7C948}
+.q-mb-cell.blue .q-mb-val{color:#93C5FD}
+.q-mb-sub{font-size:8px;color:rgba(255,255,255,.35);font-weight:600;margin-top:2px;line-height:1.3}
+.q-mb-op{color:rgba(255,255,255,.2);font-size:18px;font-weight:300;padding:0 4px;flex-shrink:0;align-self:center}
+.q-mb-note{font-size:10px;color:rgba(255,255,255,.4);margin-top:8px;line-height:1.5}
+
+/* NEW: min deposit alert */
+.q-min-alert{background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:12px;padding:11px 13px;display:flex;align-items:flex-start;gap:10px;flex-shrink:0;animation:qfadeUp .35s ease both}
+.q-min-alert-ico{font-size:18px;flex-shrink:0;margin-top:1px}
+.q-min-alert-body{flex:1}
+.q-min-alert-title{font-size:12px;font-weight:800;color:#C2410C;margin-bottom:2px}
+.q-min-alert-text{font-size:11px;color:#9A3412;line-height:1.5}
+
 /* payment */
 .q-pay-row{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:11px 13px;flex-shrink:0;animation:qfadeUp .35s ease .6s both}.q-pay-title{font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px;display:flex;align-items:center;gap:6px}.q-pay-title svg{width:11px;height:11px}.q-pay-chips{display:flex;gap:7px;flex-wrap:wrap}.q-pchip{background:#F8FAFC;border:1px solid var(--qborder);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--qtext2);display:flex;align-items:center;gap:5px}.q-pchip svg{width:13px;height:13px;color:var(--qblue)}
 
@@ -107,6 +142,24 @@ const quizCSS = `
 .q-fgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:8px 14px 0;animation:qfadeUp .35s ease .38s both;flex-shrink:0}.q-fchip{background:var(--qcard);border:1px solid var(--qborder);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:600;color:var(--qtext2);display:flex;align-items:center;gap:6px}.q-fchip svg{width:11px;height:11px;color:var(--qgreen);flex-shrink:0}
 .q-trow{display:flex;justify-content:center;gap:7px;padding:8px 14px 0;flex-wrap:wrap;animation:qfadeUp .35s ease .44s both;flex-shrink:0}.q-tchip{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--qtext3);background:var(--qcard);border:1px solid var(--qborder);border-radius:100px;padding:4px 10px}.q-tchip svg{width:10px;height:10px}
 .q-review{background:var(--qcard);border-radius:13px;border:1px solid var(--qborder);padding:12px 13px;flex-shrink:0;animation:qfadeUp .35s ease .52s both;display:flex;align-items:flex-start;gap:10px;margin:0 14px}.q-rav{width:32px;height:32px;border-radius:50%;background:var(--dark-g);color:rgba(255,255,255,.9);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}.q-rtext{font-size:12px;color:var(--qtext2);line-height:1.5}.q-rname{font-size:11px;font-weight:700;color:var(--qtext3);margin-top:4px;display:flex;align-items:center;gap:5px}.q-rstar{color:var(--qaccent);font-size:10px;letter-spacing:1px}
+
+/* NEW: step 6 bankroll breakdown */
+.q-bankroll{margin:0 14px;background:var(--qcard);border:1px solid var(--qborder);border-radius:13px;overflow:hidden;flex-shrink:0;animation:qfadeUp .35s ease .28s both}
+.q-br-head{background:#F8FAFC;border-bottom:1px solid var(--qborder);padding:8px 13px;font-size:10px;font-weight:700;color:var(--qtext3);text-transform:uppercase;letter-spacing:.6px}
+.q-br-row{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--qborder)}
+.q-br-row:last-child{border-bottom:none}
+.q-br-label{font-size:12px;color:var(--qtext2);display:flex;align-items:center;gap:6px}
+.q-br-label span{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.q-br-label span.g{background:var(--qgreen)}
+.q-br-label span.a{background:var(--qaccent)}
+.q-br-label span.b{background:var(--qblue)}
+.q-br-val{font-size:13px;font-weight:800}
+.q-br-val.g{color:var(--qgreen)}
+.q-br-val.a{color:var(--qaccent)}
+.q-br-val.b{color:var(--qblue)}
+.q-br-total{background:var(--dark-g);display:flex;align-items:center;justify-content:space-between;padding:11px 13px}
+.q-br-total-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px}
+.q-br-total-val{font-size:20px;font-weight:900;background:var(--gold-g);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:qshimmer 3s linear infinite}
 `;
 
 const ArrowRight = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
@@ -129,19 +182,19 @@ export default function ProAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
-  const [sel, setSel] = useState(1);
-  const [calcSel, setCalcSel] = useState(1);
+  const [sel, setSel] = useState(0);       // default: €50 — минимум для PRO
+  const [calcSel, setCalcSel] = useState(0); // default: €50 в калькуляторе
   const [bookmakerLink, setBookmakerLink] = useState(null);
 
   const feature = searchParams.get('feature');
 
   const calcTiers = advertiser.calcTiers || [
-    { dep: '\u20ac50',  bonus: '\u20ac75',   total: '\u20ac125',  months: 1 },
-    { dep: '\u20ac100', bonus: '\u20ac150',  total: '\u20ac250',  months: 2 },
-    { dep: '\u20ac300', bonus: '\u20ac450',  total: '\u20ac750',  months: 5 },
-    { dep: '\u20ac500', bonus: '\u20ac750',  total: '\u20ac1,250', months: 8 },
+    { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+    { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+    { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+    { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
   ];
-  const calcMaxBonus = advertiser.calcMaxBonus || '\u20ac750';
+  const calcMaxBonus = advertiser.calcMaxBonus || '€750';
   const calcBonusPercent = advertiser.calcBonusPercent || '+150%';
   const calcLabels = [
     t('proAccess.s4bLblStart'),
@@ -170,7 +223,9 @@ export default function ProAccess() {
       )}
       <div className="q-spill">{step} / {TOTAL}</div>
 
-      {/* STEP 1 — Free vs PRO */}
+      {/* ═══════════════════════════════════════════
+          STEP 1 — Free vs PRO  (БЕЗ ИЗМЕНЕНИЙ)
+      ═══════════════════════════════════════════ */}
       <div className={`q-step${step === 1 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico red">
@@ -210,7 +265,9 @@ export default function ProAccess() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('proAccess.s1Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 2 — Not a payment */}
+      {/* ═══════════════════════════════════════════
+          STEP 2 — Not a payment  (БЕЗ ИЗМЕНЕНИЙ)
+      ═══════════════════════════════════════════ */}
       <div className={`q-step${step === 2 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico green">
@@ -242,7 +299,9 @@ export default function ProAccess() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('proAccess.s2Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 3 — Why this bookmaker */}
+      {/* ═══════════════════════════════════════════
+          STEP 3 — Why this bookmaker  (БЕЗ ИЗМЕНЕНИЙ)
+      ═══════════════════════════════════════════ */}
       <div className={`q-step${step === 3 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico gold">
@@ -263,7 +322,11 @@ export default function ProAccess() {
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('proAccess.s3Btn')}<ArrowRight /></button></div>
       </div>
 
-      {/* STEP 4 — Bonus Calculator */}
+      {/* ═══════════════════════════════════════════
+          STEP 4 — Bonus Calculator  (ОБНОВЛЕНО)
+          + объяснение что деньги остаются у юзера
+          + предупреждение минимум €50
+      ═══════════════════════════════════════════ */}
       <div className={`q-step${step === 4 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-bonus-header">
@@ -280,6 +343,8 @@ export default function ProAccess() {
                   className={`q-copt${calcSel === i ? ' active' : ''}`}
                   onClick={() => setCalcSel(i)}
                 >
+                  {/* €50 — помечаем как минимум для PRO */}
+                  {i === 0 && <div className="co-min">Min PRO</div>}
                   {i === 2 && <div className="co-rec">{t('proAccess.s4bRecTag')}</div>}
                   <div className="co-dep">{tier.dep}</div>
                   <div className="co-lbl">{calcLabels[i]}</div>
@@ -310,10 +375,26 @@ export default function ProAccess() {
             </div>
           </div>
 
+          {/* НОВЫЙ БЛОК: деньги остаются у вас */}
+          <div className="q-money-card">
+            <div className="q-mc-head">
+              <div className="q-mc-ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div className="q-mc-title">Эти деньги остаются полностью у вас</div>
+            </div>
+            <div className="q-mc-rows">
+              <div className="q-mc-row"><div className="q-mc-dot"/><span>Депозит — это <strong>не оплата нам</strong>. Деньги зачисляются на ваш счёт у букмекера, не к нам.</span></div>
+              <div className="q-mc-row"><div className="q-mc-dot"/><span>Вы можете делать ставки этими деньгами, следуя нашим прогнозам, и выводить выигрыши в любой момент.</span></div>
+              <div className="q-mc-row"><div className="q-mc-dot"/><span>PRO-доступ открывается автоматически после верификации депозита — никаких дополнительных платежей нет.</span></div>
+            </div>
+          </div>
+
+          {/* НОВЫЙ БЛОК: предупреждение о минимуме */}
           <div className="q-once-box">
             <div className="q-once-ico">⚠️</div>
             <div className="q-once-text">
-              <strong>{t('proAccess.s4bWarningBold')}</strong> {t('proAccess.s4bWarning')}
+              <strong>Минимальный депозит для PRO — €50.</strong> Если внесёте меньше, PRO-доступ не откроется. Система проверяет баланс автоматически.
             </div>
           </div>
         </div>
@@ -321,39 +402,79 @@ export default function ProAccess() {
           <button className="q-btn gold" onClick={next}>
             {t('proAccess.s4bBtn')} <ArrowRight />
           </button>
-          <div className="q-hint">{t('proAccess.s4bHint')}</div>
+          <div className="q-hint">Минимум €50 · ваши деньги остаются у вас · +€75 бонус</div>
         </div>
       </div>
 
-      {/* STEP 5 — How much to deposit */}
+      {/* ═══════════════════════════════════════════
+          STEP 5 — Выбор суммы депозита  (ОБНОВЛЕНО)
+          + формула €50 + €75 = €125
+          + метка «Min PRO» на опции €50
+          + предупреждение минимум
+      ═══════════════════════════════════════════ */}
       <div className={`q-step${step === 5 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-sico blue"><Card /></div>
           <div className="q-stit">{t('proAccess.s4Title')}{'\n'}<em>{t('proAccess.s4TitleEm')}</em></div>
           <div className="q-ssub">{t('proAccess.s4Sub')}</div>
+
+          {/* НОВЫЙ БЛОК: €50 + €75 = €125 */}
+          <div className="q-math-banner">
+            <div className="q-mb-label">Ваш стартовый баланс при депозите €50</div>
+            <div className="q-mb-row">
+              <div className="q-mb-cell green">
+                <div className="q-mb-val">€50</div>
+                <div className="q-mb-sub">ваши деньги<br/>остаются у вас</div>
+              </div>
+              <div className="q-mb-op">+</div>
+              <div className="q-mb-cell gold">
+                <div className="q-mb-val">€75</div>
+                <div className="q-mb-sub">бонус от<br/>букмекера</div>
+              </div>
+              <div className="q-mb-op">=</div>
+              <div className="q-mb-cell blue">
+                <div className="q-mb-val">€125</div>
+                <div className="q-mb-sub">итого на<br/>счёту</div>
+              </div>
+            </div>
+            <div className="q-mb-note">€125 достаточно, чтобы начать делать ставки по нашим прогнозам и выходить в плюс</div>
+          </div>
+
+          {/* НОВЫЙ БЛОК: предупреждение о минимуме */}
+          <div className="q-min-alert">
+            <div className="q-min-alert-ico">🔐</div>
+            <div className="q-min-alert-body">
+              <div className="q-min-alert-title">Минимум €50 для активации PRO</div>
+              <div className="q-min-alert-text">Депозиты меньше €50 не открывают PRO-доступ. Выберите сумму от €50 и ваш аккаунт будет автоматически переведён на PRO.</div>
+            </div>
+          </div>
+
           <div className="q-dgrid">
+            {/* €50 — помечаем как минимальный вариант для PRO */}
             <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
+              <div className="rtag blue">Min PRO</div>
               <div className="da">{advertiser.depositAmounts?.[0] || '€50'}</div>
-              <div className="dl">{t('proAccess.s4Popular')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} bonus</div>
+              <div className="dl">Минимум для PRO</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} бонус</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('proAccess.s4Recommended')}</div>
               <div className="da">{advertiser.depositAmounts?.[1] || '€100'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} bonus</div>
+              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} бонус</div>
             </div>
             <div className={`q-dopt${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}>
               <div className="da">{advertiser.depositAmounts?.[2] || '€300'}</div>
               <div className="dl">{t('proAccess.s4Serious')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} bonus</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} бонус</div>
             </div>
             <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}>
               <div className="da">{advertiser.depositAmounts?.[3] || '€500'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} bonus</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} бонус</div>
             </div>
           </div>
+
           <div className="q-slist">
             <div className="q-slrow"><div className="q-slico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><h4>{t('proAccess.s4Time')}</h4><p>{t('proAccess.s4TimeDesc')}</p></div></div>
             <div className="q-slrow"><div className="q-slico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></div><div><h4>{t('proAccess.s4AutoPro')}</h4><p>{t('proAccess.s4AutoProDesc')}</p></div></div>
@@ -370,24 +491,55 @@ export default function ProAccess() {
             </div>
           </div>
         </div>
-        <div className="q-foot"><button className="q-btn green" onClick={next}>{t('proAccess.s4Btn')}<Check /></button></div>
+        <div className="q-foot">
+          <button className="q-btn green" onClick={next}>{t('proAccess.s4Btn')}<Check /></button>
+          <div className="q-hint">Депозит от €50 · деньги остаются у вас · +€75 бонус автоматически</div>
+        </div>
       </div>
 
-      {/* STEP 6 — Final */}
+      {/* ═══════════════════════════════════════════
+          STEP 6 — Final CTA  (ОБНОВЛЕНО)
+          + разбивка €50+€75=€125
+          + акцент на «деньги у вас»
+      ═══════════════════════════════════════════ */}
       <div className={`q-step final${step === 6 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-fhd">
             <div className="q-ficobig"><Download /></div>
             <div className="ft">{t('proAccess.s5Title')}</div>
-            <div className="fs">{t('proAccess.s5Sub')}</div>
+            <div className="fs">Депозит €50 → бонус €75 → €125 на старт</div>
           </div>
-          <div className="q-bfloat"><div className="q-bfl">{t('proAccess.s5BonusLabel')}</div><div className="q-bfa">{advertiser?.bonusBanner?.bonus || '€75'}</div><div className="q-bfd">{t('proAccess.s5BonusDesc')}</div></div>
+
+          {/* ОБНОВЛЁННЫЙ: показываем €125 и объясняем откуда */}
+          <div className="q-bfloat">
+            <div className="q-bfl">Ваш стартовый банкролл</div>
+            <div className="q-bfa">€125</div>
+            <div className="q-bfd">€50 ваших + €75 бонуса от букмекера</div>
+          </div>
+
+          {/* НОВЫЙ БЛОК: разбивка баланса */}
+          <div className="q-bankroll">
+            <div className="q-br-head">Как формируется €125</div>
+            <div className="q-br-row">
+              <div className="q-br-label"><span className="g"/>Ваш депозит (остаётся у вас)</div>
+              <div className="q-br-val g">€50</div>
+            </div>
+            <div className="q-br-row">
+              <div className="q-br-label"><span className="a"/>Бонус от букмекера (+150%)</div>
+              <div className="q-br-val a">+€75</div>
+            </div>
+            <div className="q-br-total">
+              <div className="q-br-total-label">Итого на счёту</div>
+              <div className="q-br-total-val">€125</div>
+            </div>
+          </div>
+
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('proAccess.s5Install')}</div></div>
             <div className="q-marr">→</div>
             <div className="q-mstep"><div className="q-mnum">2</div><div className="q-mlbl">{t('proAccess.s5Register')}</div></div>
             <div className="q-marr">→</div>
-            <div className="q-mstep"><div className="q-mnum">3</div><div className="q-mlbl">{t('proAccess.s5Deposit')}</div></div>
+            <div className="q-mstep"><div className="q-mnum">3</div><div className="q-mlbl">Депозит от €50</div></div>
             <div className="q-marr">→</div>
             <div className="q-mstep"><div className="q-mnum done"><CheckBold /></div><div className="q-mlbl">{t('proAccess.s5ProActive')}</div></div>
           </div>
@@ -416,9 +568,9 @@ export default function ProAccess() {
             className="q-btn gold"
             style={{ textDecoration: 'none' }}
           >
-            <Download />{t('proAccess.s5Cta')}
+            <Download />Внести €50 и получить PRO
           </a>
-          <div className="q-hint">{t('proAccess.s5CtaHint')}</div>
+          <div className="q-hint">€50 остаются у вас · +€75 бонус · PRO активируется автоматически</div>
         </div>
       </div>
     </div>
