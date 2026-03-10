@@ -375,34 +375,30 @@ export default function ProAccess() {
             </div>
           </div>
 
-          {/* НОВЫЙ БЛОК: деньги остаются у вас */}
           <div className="q-money-card">
             <div className="q-mc-head">
               <div className="q-mc-ico">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
-              <div className="q-mc-title">Эти деньги остаются полностью у вас</div>
+              <div className="q-mc-title">{t('proAccess.s4bMoneyTitle')}</div>
             </div>
             <div className="q-mc-rows">
-              <div className="q-mc-row"><div className="q-mc-dot"/><span>Депозит — это <strong>не оплата нам</strong>. Деньги зачисляются на ваш счёт у букмекера, не к нам.</span></div>
-              <div className="q-mc-row"><div className="q-mc-dot"/><span>Вы можете делать ставки этими деньгами, следуя нашим прогнозам, и выводить выигрыши в любой момент.</span></div>
-              <div className="q-mc-row"><div className="q-mc-dot"/><span>PRO-доступ открывается автоматически после верификации депозита — никаких дополнительных платежей нет.</span></div>
+              <div className="q-mc-row"><div className="q-mc-dot"/><span dangerouslySetInnerHTML={{ __html: t('proAccess.s4bMoneyRow1') }} /></div>
+              <div className="q-mc-row"><div className="q-mc-dot"/><span>{t('proAccess.s4bMoneyRow2')}</span></div>
+              <div className="q-mc-row"><div className="q-mc-dot"/><span>{t('proAccess.s4bMoneyRow3')}</span></div>
             </div>
           </div>
 
-          {/* НОВЫЙ БЛОК: предупреждение о минимуме */}
           <div className="q-once-box">
             <div className="q-once-ico">⚠️</div>
-            <div className="q-once-text">
-              <strong>Минимальный депозит для PRO — €50.</strong> Если внесёте меньше, PRO-доступ не откроется. Система проверяет баланс автоматически.
-            </div>
+            <div className="q-once-text" dangerouslySetInnerHTML={{ __html: t('proAccess.s4bMinWarn') }} />
           </div>
         </div>
         <div className="q-foot">
           <button className="q-btn gold" onClick={next}>
             {t('proAccess.s4bBtn')} <ArrowRight />
           </button>
-          <div className="q-hint">Минимум €50 · ваши деньги остаются у вас · +€75 бонус</div>
+          <div className="q-hint">{t('proAccess.s4bFootHint')}</div>
         </div>
       </div>
 
@@ -418,34 +414,32 @@ export default function ProAccess() {
           <div className="q-stit">{t('proAccess.s4Title')}{'\n'}<em>{t('proAccess.s4TitleEm')}</em></div>
           <div className="q-ssub">{t('proAccess.s4Sub')}</div>
 
-          {/* НОВЫЙ БЛОК: €50 + €75 = €125 */}
           <div className="q-math-banner">
-            <div className="q-mb-label">Ваш стартовый баланс при депозите €50</div>
+            <div className="q-mb-label">{t('proAccess.s5MathLabel')}</div>
             <div className="q-mb-row">
               <div className="q-mb-cell green">
                 <div className="q-mb-val">€50</div>
-                <div className="q-mb-sub">ваши деньги<br/>остаются у вас</div>
+                <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathYourMoney') }} />
               </div>
               <div className="q-mb-op">+</div>
               <div className="q-mb-cell gold">
                 <div className="q-mb-val">€75</div>
-                <div className="q-mb-sub">бонус от<br/>букмекера</div>
+                <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathBonus') }} />
               </div>
               <div className="q-mb-op">=</div>
               <div className="q-mb-cell blue">
                 <div className="q-mb-val">€125</div>
-                <div className="q-mb-sub">итого на<br/>счёту</div>
+                <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathTotal') }} />
               </div>
             </div>
-            <div className="q-mb-note">€125 достаточно, чтобы начать делать ставки по нашим прогнозам и выходить в плюс</div>
+            <div className="q-mb-note">{t('proAccess.s5MathNote')}</div>
           </div>
 
-          {/* НОВЫЙ БЛОК: предупреждение о минимуме */}
           <div className="q-min-alert">
             <div className="q-min-alert-ico">🔐</div>
             <div className="q-min-alert-body">
-              <div className="q-min-alert-title">Минимум €50 для активации PRO</div>
-              <div className="q-min-alert-text">Депозиты меньше €50 не открывают PRO-доступ. Выберите сумму от €50 и ваш аккаунт будет автоматически переведён на PRO.</div>
+              <div className="q-min-alert-title">{t('proAccess.s5MinAlertTitle')}</div>
+              <div className="q-min-alert-text">{t('proAccess.s5MinAlertText')}</div>
             </div>
           </div>
 
@@ -454,24 +448,24 @@ export default function ProAccess() {
             <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
               <div className="rtag blue">Min PRO</div>
               <div className="da">{advertiser.depositAmounts?.[0] || '€50'}</div>
-              <div className="dl">Минимум для PRO</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} бонус</div>
+              <div className="dl">{t('proAccess.s5MinForPro')}</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('proAccess.s4Recommended')}</div>
               <div className="da">{advertiser.depositAmounts?.[1] || '€100'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} бонус</div>
+              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}>
               <div className="da">{advertiser.depositAmounts?.[2] || '€300'}</div>
               <div className="dl">{t('proAccess.s4Serious')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} бонус</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}>
               <div className="da">{advertiser.depositAmounts?.[3] || '€500'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} бонус</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} {t('proAccess.s5Bonus')}</div>
             </div>
           </div>
 
@@ -493,7 +487,7 @@ export default function ProAccess() {
         </div>
         <div className="q-foot">
           <button className="q-btn green" onClick={next}>{t('proAccess.s4Btn')}<Check /></button>
-          <div className="q-hint">Депозит от €50 · деньги остаются у вас · +€75 бонус автоматически</div>
+          <div className="q-hint">{t('proAccess.s5DepositHint')}</div>
         </div>
       </div>
 
@@ -507,29 +501,27 @@ export default function ProAccess() {
           <div className="q-fhd">
             <div className="q-ficobig"><Download /></div>
             <div className="ft">{t('proAccess.s5Title')}</div>
-            <div className="fs">Депозит €50 → бонус €75 → €125 на старт</div>
+            <div className="fs">{t('proAccess.s6Subtitle')}</div>
           </div>
 
-          {/* ОБНОВЛЁННЫЙ: показываем €125 и объясняем откуда */}
           <div className="q-bfloat">
-            <div className="q-bfl">Ваш стартовый банкролл</div>
+            <div className="q-bfl">{t('proAccess.s6YourBankroll')}</div>
             <div className="q-bfa">€125</div>
-            <div className="q-bfd">€50 ваших + €75 бонуса от букмекера</div>
+            <div className="q-bfd">{t('proAccess.s6BankrollDesc')}</div>
           </div>
 
-          {/* НОВЫЙ БЛОК: разбивка баланса */}
           <div className="q-bankroll">
-            <div className="q-br-head">Как формируется €125</div>
+            <div className="q-br-head">{t('proAccess.s6BreakdownTitle')}</div>
             <div className="q-br-row">
-              <div className="q-br-label"><span className="g"/>Ваш депозит (остаётся у вас)</div>
+              <div className="q-br-label"><span className="g"/>{t('proAccess.s6BreakdownDeposit')}</div>
               <div className="q-br-val g">€50</div>
             </div>
             <div className="q-br-row">
-              <div className="q-br-label"><span className="a"/>Бонус от букмекера (+150%)</div>
+              <div className="q-br-label"><span className="a"/>{t('proAccess.s6BreakdownBonus')}</div>
               <div className="q-br-val a">+€75</div>
             </div>
             <div className="q-br-total">
-              <div className="q-br-total-label">Итого на счёту</div>
+              <div className="q-br-total-label">{t('proAccess.s6BreakdownTotal')}</div>
               <div className="q-br-total-val">€125</div>
             </div>
           </div>
@@ -539,7 +531,7 @@ export default function ProAccess() {
             <div className="q-marr">→</div>
             <div className="q-mstep"><div className="q-mnum">2</div><div className="q-mlbl">{t('proAccess.s5Register')}</div></div>
             <div className="q-marr">→</div>
-            <div className="q-mstep"><div className="q-mnum">3</div><div className="q-mlbl">Депозит от €50</div></div>
+            <div className="q-mstep"><div className="q-mnum">3</div><div className="q-mlbl">{t('proAccess.s6DepositStep')}</div></div>
             <div className="q-marr">→</div>
             <div className="q-mstep"><div className="q-mnum done"><CheckBold /></div><div className="q-mlbl">{t('proAccess.s5ProActive')}</div></div>
           </div>
@@ -568,9 +560,9 @@ export default function ProAccess() {
             className="q-btn gold"
             style={{ textDecoration: 'none' }}
           >
-            <Download />Внести €50 и получить PRO
+            <Download />{t('proAccess.s6CtaBtn')}
           </a>
-          <div className="q-hint">€50 остаются у вас · +€75 бонус · PRO активируется автоматически</div>
+          <div className="q-hint">{t('proAccess.s6CtaHint')}</div>
         </div>
       </div>
     </div>
