@@ -186,15 +186,8 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # Determine funnel from utm_funnel param
-    # If no utm_funnel specified, A/B split between funnel-1 and funnel-3 (50/50)
-    # Funnel-2 only receives traffic via explicit utm_funnel=2 tag
-    VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4", "1", "2", "3", "4"}
-    raw_funnel = user.utm_funnel
-    if raw_funnel and raw_funnel in VALID_FUNNELS:
-        funnel = raw_funnel if raw_funnel.startswith("funnel-") else f"funnel-{raw_funnel}"
-    else:
-        funnel = random.choice(["funnel-1", "funnel-3"])
+    # All new users go to funnel-1
+    funnel = "funnel-1"
 
     # Create new user
     new_user = User(
