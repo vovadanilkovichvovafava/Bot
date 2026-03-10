@@ -1,4 +1,5 @@
 import re
+import random
 import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
@@ -48,7 +49,7 @@ class UserRegister(BaseModel):
     source: Optional[str] = None  # Traffic source: "prescoreai_com", "sportscoreai_com", etc.
     utm_source: Optional[str] = None  # Рекламный источник: google, facebook, tiktok
     utm_campaign: Optional[str] = None  # Название рекламной кампании
-    utm_funnel: Optional[str] = None  # Deprecated: all users now go to funnel-1
+    utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
 
     @field_validator("phone")
     @classmethod
@@ -185,8 +186,15 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # All users go to funnel-1 (single funnel)
-    funnel = "funnel-1"
+    # Determine funnel from utm_funnel param
+    # If no utm_funnel specified, A/B split between funnel-1 and funnel-3 (50/50)
+    # Funnel-2 only receives traffic via explicit utm_funnel=2 tag
+    VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4", "1", "2", "3", "4"}
+    raw_funnel = user.utm_funnel
+    if raw_funnel and raw_funnel in VALID_FUNNELS:
+        funnel = raw_funnel if raw_funnel.startswith("funnel-") else f"funnel-{raw_funnel}"
+    else:
+        funnel = random.choice(["funnel-1", "funnel-3"])
 
     # Create new user
     new_user = User(

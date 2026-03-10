@@ -68,7 +68,7 @@ export default function MatchDetail() {
   const { advertiser, trackClick, countryCode } = useAdvertiser();
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
-  const canUseDeeplink = user?.use_deeplink === true || !!user?.is_premium;
+  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -83,7 +83,7 @@ export default function MatchDetail() {
   useEffect(() => {
     loadMatch();
     // Fetch AI remaining from server
-    if (!user?.is_premium) {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2') {
       api.getChatLimit()
         .then(data => setAiRemaining(data.remaining ?? FREE_AI_LIMIT))
         .catch(() => setAiRemaining(FREE_AI_LIMIT));
@@ -443,8 +443,9 @@ export default function MatchDetail() {
 
   const getAnalysis = async (forceReanalyze = false) => {
     // Check free limit for non-premium users BEFORE making request
-    const isPremium = !!user?.is_premium;
-    if (!isPremium && aiRemaining !== null && aiRemaining <= 0) {
+    const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
+    const hasFreeAccess = user?.funnel === 'funnel-2';
+    if (!isPremium && !hasFreeAccess && aiRemaining !== null && aiRemaining <= 0) {
       navigate('/pro-access?reason=limit&feature=match-analysis');
       return;
     }
@@ -499,7 +500,7 @@ export default function MatchDetail() {
       }
 
       // Refresh AI remaining counter from server (AFTER successful response)
-      if (!user?.is_premium) {
+      if (!user?.is_premium && user?.funnel !== 'funnel-2') {
         api.getChatLimit()
           .then(data => setAiRemaining(data.remaining ?? 0))
           .catch(() => {});
@@ -783,9 +784,10 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
   const odds1x2 = getOdds1x2();
 
   // Check AI limit status (server-based)
-  const isPremium = !!user?.is_premium;
-  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
-  const limitReached = !isPremium && aiRemaining !== null && aiRemaining <= 0;
+  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
+  const remaining = (isPremium || isFunnel2) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const limitReached = !isPremium && !isFunnel2 && aiRemaining !== null && aiRemaining <= 0;
   const remainingRequests = Math.max(0, remaining);
 
   // Use i18n for all promo texts (never use advertiser.texts directly)
@@ -1087,7 +1089,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
           </p>
 
           {/* Limit info badge - only show for premium or when requests remain */}
-          {isPremium ? (
+          {(isPremium || isFunnel2) ? (
             <div className="bg-green-50 text-green-600 text-xs py-2 px-4 rounded-xl inline-flex items-center gap-2 mb-4">
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>

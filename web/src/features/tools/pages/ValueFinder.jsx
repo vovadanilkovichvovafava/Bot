@@ -18,7 +18,7 @@ export default function ValueFinder() {
   const [progress, setProgress] = useState({ current: 0, total: 0, phase: '' });
   const [fonbetMap, setFonbetMap] = useState({});
 
-  const isPremium = !!user?.is_premium;
+  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
 
   // Mark Value Bet Finder as used for free users (on first load)
   useEffect(() => {

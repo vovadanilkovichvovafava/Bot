@@ -35,8 +35,23 @@ DEGRESSIVE_LIMITS = {
     3: 1,  # Third day+: 1 free request per day
 }
 
+# Fixed daily limit for funnel-3
+FUNNEL3_DAILY_LIMIT = 7
+
+
 def get_daily_limit(day_number: int, funnel: str = "funnel-1") -> int:
-    """Get the daily limit based on day of usage (degressive system)."""
+    """Get the daily limit based on funnel type and day of usage."""
+    if funnel == "funnel-2":
+        # All-free funnel: unlimited requests
+        return 999
+    if funnel == "funnel-3":
+        # Fixed daily limit, no degradation
+        return FUNNEL3_DAILY_LIMIT
+    if funnel == "funnel-4":
+        # Express-first funnel: same as funnel-2 (all free), monetize via express ads
+        return 999
+
+    # funnel-1 (default): degressive limits
     if day_number <= 0:
         day_number = 1
     if day_number in DEGRESSIVE_LIMITS:
@@ -62,7 +77,7 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
 
     funnel = user.funnel or "funnel-1"
 
-    # Premium users have unlimited access
+    # Premium users have unlimited access (only relevant for funnel-1)
     if user.is_premium:
         return {
             "remaining": 999,
@@ -70,6 +85,17 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
             "day_number": 0,
             "resets_at": None,
             "is_premium": True,
+            "funnel": funnel,
+        }
+
+    # funnel-2 and funnel-4: everything free, unlimited — behave like premium
+    if funnel in ("funnel-2", "funnel-4"):
+        return {
+            "remaining": 999,
+            "limit": 999,
+            "day_number": 0,
+            "resets_at": None,
+            "is_premium": False,
             "funnel": funnel,
         }
 

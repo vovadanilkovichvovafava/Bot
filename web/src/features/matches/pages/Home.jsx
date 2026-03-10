@@ -44,7 +44,7 @@ export default function Home() {
     // Launch all API requests in PARALLEL (not sequentially)
     const promises = [loadMatches()];
 
-    if (!user?.is_premium) {
+    if (!user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4') {
       promises.push(
         api.getChatLimit()
           .then(data => {
@@ -55,7 +55,7 @@ export default function Home() {
       );
     }
 
-    if (user?.is_premium) {
+    if (user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4') {
       try {
         const cached = localStorage.getItem(SMART_BET_CACHE_KEY);
         if (cached) {
@@ -142,8 +142,12 @@ export default function Home() {
     return t('home.goodEvening');
   };
 
-  const isPremium = !!user?.is_premium;
-  const remaining = isPremium ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnel4 = user?.funnel === 'funnel-4';
+  const isPremium = user?.is_premium && !isFunnel2 && !isFunnel4;
+  const isFunnel3 = user?.funnel === 'funnel-3';
+  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3 && !isFunnel4);
+  const remaining = (isPremium || isFunnel2 || isFunnel4) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
 
   // Show full-screen splash while loading matches
   if (loading) {
@@ -181,10 +185,10 @@ export default function Home() {
             </div>
             <div>
               <p className="text-primary-100 text-xs">{t('home.aiPredictionsLeft')}</p>
-              <p className="text-2xl font-bold">{isPremium ? '∞' : remaining}<span className="text-sm text-primary-200">{isPremium ? '' : ` / ${aiLimit}`}</span></p>
+              <p className="text-2xl font-bold">{(isPremium || isFunnel2 || isFunnel4) ? '∞' : remaining}<span className="text-sm text-primary-200">{(isPremium || isFunnel2 || isFunnel4) ? '' : ` / ${aiLimit}`}</span></p>
             </div>
           </div>
-          {!isPremium && (
+          {!isPremium && !isFunnel2 && !isFunnel4 && (
             <button onClick={() => navigate('/pro-access')} className="bg-accent-gold text-white text-xs font-bold px-3 py-1.5 rounded-lg">
               {t('home.getUnlimited')}
             </button>
@@ -193,6 +197,53 @@ export default function Home() {
       </div>
 
       <div className="px-5 -mt-4 space-y-4">
+        {/* Express-First Hero Card — funnel-4 */}
+        {isFunnel4 && (
+          <div
+            onClick={() => navigate('/express')}
+            className="relative overflow-hidden rounded-2xl p-5 text-white cursor-pointer shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)' }}
+          >
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.1) 40%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-xl">{t('home.aiExpress', { defaultValue: 'AI Express Bets' })}</h3>
+                  <p className="text-white/70 text-sm">{t('home.aiExpressDesc', { defaultValue: '3 ready accumulators from top leagues' })}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.safe', { defaultValue: 'Safe' })}</p>
+                  <p className="font-black text-lg">x3-5</p>
+                </div>
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.value', { defaultValue: 'Value' })}</p>
+                  <p className="font-black text-lg">x8-15</p>
+                </div>
+                <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('express.big', { defaultValue: 'Big' })}</p>
+                  <p className="font-black text-lg">x20+</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between bg-white/10 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🎁</span>
+                  <span className="text-sm font-bold">{t('home.freeBetOnExpress', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `${advertiser?.bonusBanner?.bonus || '€75'} free bet on your express` })}</span>
+                </div>
+                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI Assistant Card */}
         <div
           onClick={() => navigate('/ai-chat')}
@@ -236,7 +287,7 @@ export default function Home() {
         )}
 
         {/* PRO Guide - Only for PRO users who already have deposit */}
-        {isPremium && (
+        {isPremium && !isFunnel2 && (
           <div
             onClick={() => navigate('/pro-guide')}
             className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 flex items-center gap-4 cursor-pointer shadow-md"
@@ -255,6 +306,11 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>
           </div>
+        )}
+
+        {/* Funnel-2: Bonus offer banner with social proof & urgency */}
+        {isFunnel2 && !isPremium && (
+          <HomeBonusBanner advertiser={advertiser} userId={user?.id} trackClick={trackClick} />
         )}
 
         {/* PRO: Smart Bet Banner | Free: Featured Match Promo Banner */}
@@ -278,15 +334,20 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
               </svg>
             </div>
-            {isPremium ? (
+            {(isPremium || isFunnel2) ? (
               <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
                 {t('home.unlimitedLabel', { defaultValue: 'Unlimited' })}
               </span>
-            ) : (
+            ) : isFunnel1 ? (
               <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
                 {t('home.freeWeekly', { defaultValue: '1x / week free' })}
               </span>
-            )}
+            ) : isFunnel3 ? (
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                {t('home.expressTokenCost', { defaultValue: '3 tokens' })}
+              </span>
+            ) : null}
           </div>
 
           <h3 className="text-xl font-bold text-white mb-2">{t('home.aiExpress', { defaultValue: 'AI Express' })}</h3>
@@ -379,8 +440,8 @@ export default function Home() {
               </div>
               <p className="text-xs font-medium text-gray-700">{t('home.matches')}</p>
             </div>
-            <div onClick={() => navigate(isPremium ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              {!isPremium && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
+            <div onClick={() => navigate((isPremium || isFunnel2) ? '/value-finder' : '/pro-access')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
+              {!isPremium && !isFunnel2 && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
@@ -389,7 +450,7 @@ export default function Home() {
               <p className="text-xs font-medium text-gray-700">{t('home.valueFinder')}</p>
             </div>
             <div onClick={() => navigate('/pro-tools')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5 relative">
-              <span className="badge-pro absolute -top-2 right-1">PRO</span>
+              {!isFunnel2 && <span className="badge-pro absolute -top-2 right-1">PRO</span>}
               <div className="w-10 h-10 mx-auto mb-2 bg-blue-50 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
@@ -421,6 +482,21 @@ export default function Home() {
               {matches.map((f, idx) => (
                 <React.Fragment key={f.fixture.id}>
                   <HomeMatchCard fixture={f} navigate={navigate} />
+                  {/* Inline bonus banner after 3rd match for funnel-2 */}
+                  {isFunnel2 && idx === 2 && (
+                    <div
+                      onClick={() => { trackClick(user?.id, 'home_inline_bonus'); navigate('/promo'); }}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"
+                      style={{ background: 'linear-gradient(135deg, #FFFBF0, #FEF3C7)' }}
+                    >
+                      <span className="text-lg">🎁</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900">{t('advertiser.freeBetLabel')} {advertiser?.bonusBanner?.bonus}</p>
+                        <p className="text-[10px] text-gray-500">{t('home.claimNow', { defaultValue: 'Claim your free bet now' })}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                    </div>
+                  )}
                 </React.Fragment>
               ))}
             </div>
@@ -442,8 +518,8 @@ export default function Home() {
             setShowWelcome(false);
             navigate('/express');
           }}
-          hidePro={false}
-          expressFirst={false}
+          hidePro={isFunnel2 || isFunnel4}
+          expressFirst={isFunnel4}
         />
       )}
 

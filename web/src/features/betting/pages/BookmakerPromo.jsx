@@ -97,6 +97,7 @@ const Card = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 export default function BookmakerPromo() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   const { advertiser, trackClick } = useAdvertiser();
   const ex = advertiser.exampleAmounts || {};
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ export default function BookmakerPromo() {
               <div className="q-fdsc">Deposita qualsiasi importo — il partner lo <strong>moltiplica ×2,5</strong>. Depositi €100, ottieni €250 totali sul conto.</div>
             </div>
           </div>
-          <div className="q-fcard blue"><div className="q-fico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg></div><div><div className="q-ftit">{t('promo.s3ProTitle')}</div><div className="q-fdsc">{t('promo.s3ProDesc')}</div></div></div>
+          {!isFunnel2 && <div className="q-fcard blue"><div className="q-fico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg></div><div><div className="q-ftit">{t('promo.s3ProTitle')}</div><div className="q-fdsc">{t('promo.s3ProDesc')}</div></div></div>}
           <div className="q-fcard green"><div className="q-fico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><div className="q-ftit">{t('promo.s3ClickTitle')}</div><div className="q-fdsc">{t('promo.s3ClickDesc')}</div></div></div>
           <div className="q-fcard purple"><div className="q-fico purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div><div className="q-ftit">{t('promo.s3OddsTitle')}</div><div className="q-fdsc">{t('promo.s3OddsDesc')}</div></div></div>
           <div className="q-fcard"><div className="q-fico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><div className="q-ftit">{t('promo.s3WithdrawTitle')}</div><div className="q-fdsc">{t('promo.s3WithdrawDesc')}</div></div></div>
@@ -310,7 +311,7 @@ export default function BookmakerPromo() {
           </div>
           <div className="q-cklist">
             <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4FreeReg')}</h4><p>{t('promo.s4FreeRegDesc')}</p></div></div>
-            <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4AutoPro')}</h4><p>{t('promo.s4AutoProDesc')}</p></div></div>
+            {!isFunnel2 && <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4AutoPro')}</h4><p>{t('promo.s4AutoProDesc')}</p></div></div>}
             <div className="q-ckrow"><div className="q-ckdot"><CheckBold /></div><div><h4>{t('promo.s4NoRisk')}</h4><p>{t('promo.s4NoRiskDesc')}</p></div></div>
           </div>
           <div style={{ textAlign: 'center' }}><div className="q-abadge"><div className="q-adot" />{t('promo.s4Badge')}</div></div>
@@ -346,13 +347,15 @@ export default function BookmakerPromo() {
             <div className="q-mstep"><div className="q-mnum">2</div><div className="q-mlbl">{t('promo.s5Register')}</div></div>
             <div className="q-marr">→</div>
             <div className="q-mstep"><div className="q-mnum">3</div><div className="q-mlbl">{t('promo.s5Deposit')}</div></div>
+            {!isFunnel2 && <>
               <div className="q-marr">→</div>
               <div className="q-mstep"><div className="q-mnum done"><CheckBold /></div><div className="q-mlbl">{t('promo.s5ProActive')}</div></div>
+            </>}
           </div>
           <div className="q-fgrid">
-            <div className="q-fchip"><Check /> {t('promo.s5UnlimitedPred')}</div>
+            {!isFunnel2 && <div className="q-fchip"><Check /> {t('promo.s5UnlimitedPred')}</div>}
             <div className="q-fchip"><Check /> {t('promo.s5ClickBet')}</div>
-            <div className="q-fchip"><Check /> {t('promo.s5ValueBet')}</div>
+            {!isFunnel2 && <div className="q-fchip"><Check /> {t('promo.s5ValueBet')}</div>}
             <div className="q-fchip"><Check /> {t('promo.s5Withdraw15')}</div>
           </div>
           <div className="q-trow">
