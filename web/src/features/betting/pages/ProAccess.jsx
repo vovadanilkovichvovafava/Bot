@@ -418,17 +418,17 @@ export default function ProAccess() {
             <div className="q-mb-label">{t('proAccess.s5MathLabel')}</div>
             <div className="q-mb-row">
               <div className="q-mb-cell green">
-                <div className="q-mb-val">€50</div>
+                <div className="q-mb-val">{calcTiers[0].dep}</div>
                 <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathYourMoney') }} />
               </div>
               <div className="q-mb-op">+</div>
               <div className="q-mb-cell gold">
-                <div className="q-mb-val">€75</div>
+                <div className="q-mb-val">{calcTiers[0].bonus}</div>
                 <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathBonus') }} />
               </div>
               <div className="q-mb-op">=</div>
               <div className="q-mb-cell blue">
-                <div className="q-mb-val">€125</div>
+                <div className="q-mb-val">{calcTiers[0].total}</div>
                 <div className="q-mb-sub" dangerouslySetInnerHTML={{ __html: t('proAccess.s5MathTotal') }} />
               </div>
             </div>
@@ -506,7 +506,7 @@ export default function ProAccess() {
 
           <div className="q-bfloat">
             <div className="q-bfl">{t('proAccess.s6YourBankroll')}</div>
-            <div className="q-bfa">€125</div>
+            <div className="q-bfa">{calcTiers[sel].total}</div>
             <div className="q-bfd">{t('proAccess.s6BankrollDesc')}</div>
           </div>
 
@@ -514,15 +514,15 @@ export default function ProAccess() {
             <div className="q-br-head">{t('proAccess.s6BreakdownTitle')}</div>
             <div className="q-br-row">
               <div className="q-br-label"><span className="g"/>{t('proAccess.s6BreakdownDeposit')}</div>
-              <div className="q-br-val g">€50</div>
+              <div className="q-br-val g">{calcTiers[sel].dep}</div>
             </div>
             <div className="q-br-row">
               <div className="q-br-label"><span className="a"/>{t('proAccess.s6BreakdownBonus')}</div>
-              <div className="q-br-val a">+€75</div>
+              <div className="q-br-val a">+{calcTiers[sel].bonus}</div>
             </div>
             <div className="q-br-total">
               <div className="q-br-total-label">{t('proAccess.s6BreakdownTotal')}</div>
-              <div className="q-br-total-val">€125</div>
+              <div className="q-br-total-val">{calcTiers[sel].total}</div>
             </div>
           </div>
 
