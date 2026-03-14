@@ -137,7 +137,7 @@ async def get_overview(
     if cached is not None:
         return cached
 
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
 
@@ -258,7 +258,7 @@ async def get_online_history(
     if cached is not None:
         return cached
 
-    now = datetime.utcnow()
+    now = datetime.now()
     day_ago = now - timedelta(hours=24)
 
     try:
@@ -318,7 +318,7 @@ async def get_users_stats(
     if cached is not None:
         return cached
 
-    now = datetime.utcnow()
+    now = datetime.now()
 
     # Users by country (top 10)
     country_rows = (await db.execute(
@@ -492,7 +492,7 @@ async def get_retention_stats(
     if cached is not None:
         return cached
 
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     month_ago = now - timedelta(days=30)
 
@@ -588,7 +588,7 @@ async def export_users_csv(
     import csv
     import io
 
-    now = datetime.utcnow()
+    now = datetime.now()
     query = select(User).order_by(User.created_at.desc())
 
     if status == "pro":
@@ -670,7 +670,7 @@ async def search_users(
     db: AsyncSession = Depends(get_db),
 ):
     """Search users by phone, email, public_id, username."""
-    now = datetime.utcnow()
+    now = datetime.now()
     query = select(User)
     count_query = select(func.count(User.id))
 
@@ -754,7 +754,7 @@ async def get_funnel_stats(
     if cached is not None:
         return cached
 
-    now = datetime.utcnow()
+    now = datetime.now()
 
     # ── All funnels in 1 query instead of 15 ──
     funnel_rows = (await db.execute(text("""
@@ -803,7 +803,7 @@ async def get_user_profile(
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="User not found")
 
-    now = datetime.utcnow()
+    now = datetime.now()
 
     # Predictions by this user
     user_predictions = (await db.execute(
@@ -907,7 +907,7 @@ async def toggle_user_premium(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if user.is_premium and user.premium_until and user.premium_until > datetime.utcnow():
+    if user.is_premium and user.premium_until and user.premium_until > datetime.now():
         # Deactivate
         user.is_premium = False
         user.premium_until = None
@@ -915,7 +915,7 @@ async def toggle_user_premium(
     else:
         # Activate
         user.is_premium = True
-        user.premium_until = datetime.utcnow() + timedelta(days=days)
+        user.premium_until = datetime.now() + timedelta(days=days)
         action = "activated"
 
     await db.commit()
@@ -962,7 +962,7 @@ async def get_predictions_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Prediction analytics."""
-    now = datetime.utcnow()
+    now = datetime.now()
 
     # By bet type
     bet_rows = (await db.execute(
@@ -1392,7 +1392,7 @@ async def get_support_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Support chat analytics."""
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
 
@@ -2022,7 +2022,7 @@ async def get_chat_insights(
     import json as json_mod
     import re
 
-    now = datetime.utcnow()
+    now = datetime.now()
     week_ago = now - timedelta(days=7)
 
     # Grab last 60 user messages from support chats (last 7 days)
@@ -2186,7 +2186,7 @@ async def get_pro_analytics(
     db: AsyncSession = Depends(get_db),
 ):
     """Comprehensive PRO user analytics — engagement, churn, growth, activity."""
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
@@ -2471,7 +2471,7 @@ async def get_traffic_analytics(
     db: AsyncSession = Depends(get_db),
 ):
     """Traffic source analytics — registrations, conversions, retention by source."""
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
@@ -2667,7 +2667,7 @@ async def get_finance_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Financial dashboard — revenue from deposits, LTV, CAC estimates."""
-    now = datetime.utcnow()
+    now = datetime.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
@@ -2906,7 +2906,7 @@ async def get_postback_logs(
         for l in rows
     ]
 
-    now = datetime.utcnow()
+    now = datetime.now()
     day_ago = now - timedelta(days=1)
     today_count = (await db.execute(
         select(func.count(PostbackLog.id)).where(PostbackLog.created_at >= day_ago)
@@ -2937,7 +2937,7 @@ async def get_banner_clicks_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Banner click analytics — clicks by banner, daily trends."""
-    now = datetime.utcnow()
+    now = datetime.now()
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
 
