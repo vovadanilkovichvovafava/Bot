@@ -211,6 +211,45 @@ export default function AdminPredictions() {
           </div>
         </div>
       )}
+
+      {/* Debug info — temporary */}
+      {stats?._debug && (
+        <div className="bg-red-950/30 border border-red-800/50 rounded-xl p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-red-400">Debug Info (temporary)</h3>
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div><span className="text-slate-500">Python now:</span> <span className="text-slate-300">{stats._debug.python_now}</span></div>
+            <div><span className="text-slate-500">DB now:</span> <span className="text-slate-300">{stats._debug.db_now}</span></div>
+            <div><span className="text-slate-500">DB date:</span> <span className="text-slate-300">{stats._debug.db_date}</span></div>
+            <div><span className="text-slate-500">DB timezone:</span> <span className="text-slate-300">{stats._debug.db_timezone}</span></div>
+            <div><span className="text-slate-500">Total (all time):</span> <span className="text-slate-300">{stats._debug.total_predictions_all_time}</span></div>
+            <div><span className="text-slate-500">NULL created_at:</span> <span className="text-red-400 font-bold">{stats._debug.predictions_with_null_created_at}</span></div>
+            <div className="col-span-2"><span className="text-slate-500">Filter:</span> <span className="text-slate-300">created_at &gt;= {stats._debug.filter_used}</span></div>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Last 5 predictions (by ID desc):</p>
+            <div className="space-y-1">
+              {(stats._debug.recent_5_predictions || []).map(p => (
+                <div key={p.id} className="text-[11px] font-mono text-slate-400 bg-slate-900 rounded px-2 py-1">
+                  #{p.id} | created_at: <span className={p.created_at === 'None' ? 'text-red-400 font-bold' : 'text-green-400'}>{p.created_at}</span> | {p.match}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Daily counts (raw SQL, last 14d):</p>
+            <div className="flex flex-wrap gap-2">
+              {(stats._debug.daily_14d_raw_sql || []).map(d => (
+                <span key={d.date} className="text-[11px] font-mono bg-slate-900 rounded px-2 py-1 text-slate-300">
+                  {d.date}: <span className="text-green-400 font-bold">{d.count}</span>
+                </span>
+              ))}
+              {!stats._debug.daily_14d_raw_sql?.length && (
+                <span className="text-[11px] text-red-400">No predictions in last 14 days (raw SQL)</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

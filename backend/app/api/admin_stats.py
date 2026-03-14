@@ -1039,11 +1039,45 @@ async def get_predictions_stats(
         for r in roi_rows
     ]
 
+    # Debug info — temporary, to diagnose missing predictions
+    db_now = (await db.execute(text("SELECT NOW()"))).scalar()
+    db_date = (await db.execute(text("SELECT CURRENT_DATE"))).scalar()
+    db_tz = (await db.execute(text("SHOW timezone"))).scalar()
+    total_all = (await db.execute(select(func.count(Prediction.id)))).scalar() or 0
+    null_created = (await db.execute(
+        select(func.count(Prediction.id)).where(Prediction.created_at.is_(None))
+    )).scalar() or 0
+    recent_raw = (await db.execute(text("""
+        SELECT id, created_at, bet_type, home_team || ' vs ' || away_team AS match
+        FROM predictions ORDER BY id DESC LIMIT 5
+    """))).all()
+    daily_raw = (await db.execute(text("""
+        SELECT created_at::date AS day, COUNT(*) FROM predictions
+        WHERE created_at >= CURRENT_DATE - 14
+        GROUP BY 1 ORDER BY 1 DESC
+    """))).all()
+
     return {
         "by_bet_type": by_bet_type,
         "by_league": by_league,
         "daily_predictions": daily_predictions,
         "roi": roi_data,
+        "_debug": {
+            "python_now": str(now),
+            "db_now": str(db_now),
+            "db_date": str(db_date),
+            "db_timezone": db_tz,
+            "total_predictions_all_time": total_all,
+            "predictions_with_null_created_at": null_created,
+            "filter_used": str(now - timedelta(days=30)),
+            "recent_5_predictions": [
+                {"id": r[0], "created_at": str(r[1]), "bet_type": r[2], "match": r[3]}
+                for r in recent_raw
+            ],
+            "daily_14d_raw_sql": [
+                {"date": str(r[0]), "count": r[1]} for r in daily_raw
+            ],
+        },
     }
 
 
