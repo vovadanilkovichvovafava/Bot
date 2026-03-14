@@ -80,13 +80,32 @@ function ModelComparisonChart({ models }) {
 export default function AdminML() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [training, setTraining] = useState(false)
+  const [trainResult, setTrainResult] = useState(null)
 
-  useEffect(() => {
+  const reload = () => {
     adminApi.getMLStats()
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { reload() }, [])
+
+  const startTraining = async () => {
+    setTraining(true)
+    setTrainResult(null)
+    try {
+      const result = await adminApi.triggerTraining()
+      setTrainResult({ ok: true, message: result.message || 'Training started' })
+      // Refresh stats after a delay to show progress
+      setTimeout(reload, 5000)
+    } catch (e) {
+      setTrainResult({ ok: false, message: e.message || 'Training failed' })
+    } finally {
+      setTraining(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -157,6 +176,28 @@ export default function AdminML() {
             {ps.unverified_matches} match{ps.unverified_matches !== 1 ? 'es' : ''} awaiting final results (scheduled/live)
           </p>
         )}
+
+        {/* Train button */}
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-800">
+          <button
+            onClick={startTraining}
+            disabled={training || !ps.training_possible}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded-lg font-medium disabled:opacity-50 transition-colors"
+          >
+            {training ? 'Starting...' : 'Train Now'}
+          </button>
+          <button
+            onClick={reload}
+            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded-lg font-medium transition-colors"
+          >
+            Refresh
+          </button>
+          {trainResult && (
+            <span className={`text-xs ${trainResult.ok ? 'text-green-400' : 'text-red-400'}`}>
+              {trainResult.message}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Active model highlight */}
