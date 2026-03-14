@@ -55,6 +55,40 @@ export default function AdminPredictions() {
   const [stats, setStats] = useState(null)
   const [overview, setOverview] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [testResult, setTestResult] = useState(null)
+  const [testing, setTesting] = useState(false)
+
+  const testSavePrediction = async () => {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      // Use user API (not admin) to test the actual save endpoint
+      const token = localStorage.getItem('access_token')
+      const apiUrl = window.__APP_CONFIG__?.API_URL || 'https://appbot-production-152e.up.railway.app/api/v1'
+      const res = await fetch(`${apiUrl}/predictions/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          match_id: 999999,
+          home_team: 'DEBUG_Test_Home',
+          away_team: 'DEBUG_Test_Away',
+          league: 'Debug League',
+          bet_type: 'test',
+          confidence: 50.0,
+        }),
+      })
+      const text = await res.text()
+      let data
+      try { data = JSON.parse(text) } catch { data = text }
+      setTestResult({ status: res.status, ok: res.ok, data })
+    } catch (e) {
+      setTestResult({ status: 'NETWORK_ERROR', ok: false, data: e.message })
+    }
+    setTesting(false)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -247,6 +281,25 @@ export default function AdminPredictions() {
                 <span className="text-[11px] text-red-400">No predictions in last 14 days (raw SQL)</span>
               )}
             </div>
+          </div>
+          <div className="pt-3 border-t border-red-800/30">
+            <button
+              onClick={testSavePrediction}
+              disabled={testing}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-medium disabled:opacity-50"
+            >
+              {testing ? 'Saving...' : 'Test Save Prediction'}
+            </button>
+            {testResult && (
+              <div className={`mt-2 p-3 rounded-lg text-xs font-mono ${testResult.ok ? 'bg-green-900/30 border border-green-800/50' : 'bg-red-900/50 border border-red-700/50'}`}>
+                <p className={testResult.ok ? 'text-green-400' : 'text-red-400'}>
+                  Status: {testResult.status} {testResult.ok ? 'OK' : 'FAILED'}
+                </p>
+                <pre className="text-slate-300 mt-1 whitespace-pre-wrap text-[10px] max-h-40 overflow-auto">
+                  {typeof testResult.data === 'string' ? testResult.data : JSON.stringify(testResult.data, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
         </div>
       )}
