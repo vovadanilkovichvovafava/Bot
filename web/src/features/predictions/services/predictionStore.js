@@ -90,9 +90,12 @@ export function savePrediction({
 
   const predictions = getAll();
 
-  // Don't duplicate — one prediction per match
-  if (predictions.find(p => String(p.matchId) === String(matchId))) {
+  // Don't duplicate — one prediction per match in localStorage
+  const existing = predictions.find(p => String(p.matchId) === String(matchId));
+  if (existing) {
     console.log('savePrediction: prediction already exists for matchId', matchId);
+    // Still try to sync to DB — it might not have been saved there
+    syncToDB(existing);
     return null;
   }
 
@@ -171,7 +174,7 @@ export function savePrediction({
 
 /**
  * Save a prediction to the backend predictions table (for ML tracking).
- * Fires and forgets — doesn't block the UI.
+ * Retries once on failure. Returns a promise for optional awaiting.
  */
 function syncToDB(entry) {
   try {
@@ -184,7 +187,7 @@ function syncToDB(entry) {
       bet_type: entry.prediction?.betType || null,
       predicted_odds: entry.odds?.home ? parseFloat(entry.odds.home) : null,
       confidence: entry.prediction?.confidence || null,
-      ai_analysis: entry.prediction?.advice || null,
+      ai_analysis: entry.prediction?.advice || entry.claudeAnalysis?.slice(0, 500) || null,
       api_prediction: entry.prediction ? {
         winnerName: entry.prediction.winnerName,
         homePct: entry.prediction.homePct,
@@ -192,11 +195,17 @@ function syncToDB(entry) {
         awayPct: entry.prediction.awayPct,
       } : null,
     };
-    api.savePredictionToDB(payload).catch((e) => {
-      console.warn('Failed to save prediction to DB:', e);
+    return api.savePredictionToDB(payload).catch((e) => {
+      console.error('[syncToDB] FAILED to save prediction to DB:', e?.message || e);
+      // Retry once after 2 seconds
+      return new Promise(resolve => setTimeout(resolve, 2000))
+        .then(() => api.savePredictionToDB(payload))
+        .catch((e2) => {
+          console.error('[syncToDB] RETRY FAILED:', e2?.message || e2);
+        });
     });
-  } catch {
-    // ignore — DB sync is best-effort
+  } catch (e) {
+    console.error('[syncToDB] Exception building payload:', e);
   }
 }
 
