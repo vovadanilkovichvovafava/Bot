@@ -656,6 +656,61 @@ async def get_email_domains(
     return {"domains": [{"domain": r.domain, "count": r.cnt} for r in rows if r.domain]}
 
 
+@router.get("/users/recent-registrations")
+async def get_recent_registrations(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get registrations for today and yesterday with user details."""
+    now = datetime.now()
+    today_start = datetime.combine(now.date(), datetime.min.time())
+    yesterday_start = today_start - timedelta(days=1)
+
+    result = await db.execute(
+        select(
+            User.id,
+            User.phone,
+            User.email,
+            User.username,
+            User.country,
+            User.traffic_source,
+            User.is_premium,
+            User.created_at,
+        )
+        .where(User.created_at >= yesterday_start)
+        .order_by(User.created_at.desc())
+    )
+    rows = result.all()
+
+    today = []
+    yesterday = []
+    for r in rows:
+        entry = {
+            "id": r.id,
+            "phone": r.phone,
+            "email": r.email,
+            "username": r.username,
+            "country": r.country,
+            "source": r.traffic_source,
+            "is_premium": r.is_premium,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "time": r.created_at.strftime("%H:%M") if r.created_at else None,
+        }
+        if r.created_at >= today_start:
+            today.append(entry)
+        else:
+            yesterday.append(entry)
+
+    return {
+        "today": today,
+        "today_count": len(today),
+        "yesterday": yesterday,
+        "yesterday_count": len(yesterday),
+        "today_date": str(now.date()),
+        "yesterday_date": str((now - timedelta(days=1)).date()),
+    }
+
+
 @router.get("/users/search")
 async def search_users(
     q: str = Query("", max_length=100),

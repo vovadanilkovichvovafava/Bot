@@ -190,6 +190,16 @@ export default function AdminDashboard() {
   const [retention, setRetention] = useState(null)
   const [onlineHistory, setOnlineHistory] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recentRegs, setRecentRegs] = useState(null)
+  const [recentRegsLoading, setRecentRegsLoading] = useState(false)
+
+  const loadRecentRegistrations = () => {
+    setRecentRegsLoading(true)
+    adminApi.getRecentRegistrations()
+      .then(setRecentRegs)
+      .catch(() => setRecentRegs(null))
+      .finally(() => setRecentRegsLoading(false))
+  }
 
   useEffect(() => {
     Promise.all([
@@ -304,6 +314,99 @@ export default function AdminDashboard() {
           </div>
           <BarChart data={predStats?.daily_predictions || []} color="green" />
         </div>
+      </div>
+
+      {/* Recent Registrations */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold">Recent Registrations</h3>
+            <p className="text-[11px] text-slate-500">Today & yesterday details</p>
+          </div>
+          <button
+            onClick={loadRecentRegistrations}
+            disabled={recentRegsLoading}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg font-medium disabled:opacity-50 transition-colors"
+          >
+            {recentRegsLoading ? 'Loading...' : recentRegs ? 'Refresh' : 'Load'}
+          </button>
+        </div>
+
+        {recentRegs && (
+          <div className="space-y-4">
+            {/* Today */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-green-400">Today ({recentRegs.today_date})</span>
+                <span className="text-xs text-slate-500 font-mono">{recentRegs.today_count} users</span>
+              </div>
+              {recentRegs.today.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500">
+                        <th className="text-left px-2 py-1.5 font-medium">Time</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Phone</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Country</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Source</th>
+                        <th className="text-left px-2 py-1.5 font-medium">PRO</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {recentRegs.today.map(u => (
+                        <tr key={u.id} className="hover:bg-slate-800/30">
+                          <td className="px-2 py-1.5 font-mono text-slate-300">{u.time}</td>
+                          <td className="px-2 py-1.5 text-slate-300">{u.phone || u.email || '—'}</td>
+                          <td className="px-2 py-1.5 text-slate-400">{u.country ? `${countryFlag(u.country)} ${u.country}` : '—'}</td>
+                          <td className="px-2 py-1.5 text-slate-400">{u.source || '—'}</td>
+                          <td className="px-2 py-1.5">{u.is_premium ? <span className="text-purple-400 font-semibold">PRO</span> : <span className="text-slate-600">—</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-600 text-center py-3">No registrations today</p>
+              )}
+            </div>
+
+            {/* Yesterday */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-blue-400">Yesterday ({recentRegs.yesterday_date})</span>
+                <span className="text-xs text-slate-500 font-mono">{recentRegs.yesterday_count} users</span>
+              </div>
+              {recentRegs.yesterday.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500">
+                        <th className="text-left px-2 py-1.5 font-medium">Time</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Phone</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Country</th>
+                        <th className="text-left px-2 py-1.5 font-medium">Source</th>
+                        <th className="text-left px-2 py-1.5 font-medium">PRO</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {recentRegs.yesterday.map(u => (
+                        <tr key={u.id} className="hover:bg-slate-800/30">
+                          <td className="px-2 py-1.5 font-mono text-slate-300">{u.time}</td>
+                          <td className="px-2 py-1.5 text-slate-300">{u.phone || u.email || '—'}</td>
+                          <td className="px-2 py-1.5 text-slate-400">{u.country ? `${countryFlag(u.country)} ${u.country}` : '—'}</td>
+                          <td className="px-2 py-1.5 text-slate-400">{u.source || '—'}</td>
+                          <td className="px-2 py-1.5">{u.is_premium ? <span className="text-purple-400 font-semibold">PRO</span> : <span className="text-slate-600">—</span>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-600 text-center py-3">No registrations yesterday</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Peak Online — 24h */}
