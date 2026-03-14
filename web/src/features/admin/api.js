@@ -74,6 +74,7 @@ export const adminApi = {
   getEmailDomains: () => request('/stats/users/email-domains'),
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
   getDeeplinkSplit: () => request('/stats/users/deeplink-split'),
+  getRecentRegistrations: () => request('/stats/users/recent-registrations'),
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
   getMLStats: () => request('/stats/ml'),
