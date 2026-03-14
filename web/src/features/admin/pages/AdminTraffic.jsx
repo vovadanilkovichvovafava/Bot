@@ -203,7 +203,7 @@ export default function AdminTraffic() {
       )}
 
       {/* Retention by Source */}
-      {data.retention_by_source.length > 0 && (
+      {data.retention_by_source?.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-300 mb-3">Week-1 Retention by Source</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -229,9 +229,9 @@ export default function AdminTraffic() {
         <section>
           <h2 className="text-sm font-semibold text-slate-300 mb-3">New This Week</h2>
           <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800">
-            {data.new_week.map((r, i) => {
+            {(data.new_week || []).map((r, i) => {
               const ci = sourceIdx(r.source) >= 0 ? sourceIdx(r.source) : i;
-              const maxW = Math.max(...data.new_week.map(w => w.count), 1);
+              const maxW = Math.max(...(data.new_week || []).map(w => w.count), 1);
               return (
                 <div key={r.source} className="px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
@@ -250,7 +250,7 @@ export default function AdminTraffic() {
                 </div>
               );
             })}
-            {data.new_week.length === 0 && (
+            {(data.new_week || []).length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-slate-500">No registrations this week</p>
             )}
           </div>
@@ -259,9 +259,9 @@ export default function AdminTraffic() {
         <section>
           <h2 className="text-sm font-semibold text-slate-300 mb-3">New This Month</h2>
           <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800">
-            {data.new_month.map((r, i) => {
+            {(data.new_month || []).map((r, i) => {
               const ci = sourceIdx(r.source) >= 0 ? sourceIdx(r.source) : i;
-              const maxM = Math.max(...data.new_month.map(w => w.count), 1);
+              const maxM = Math.max(...(data.new_month || []).map(w => w.count), 1);
               return (
                 <div key={r.source} className="px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
@@ -280,7 +280,7 @@ export default function AdminTraffic() {
                 </div>
               );
             })}
-            {data.new_month.length === 0 && (
+            {(data.new_month || []).length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-slate-500">No registrations this month</p>
             )}
           </div>
@@ -308,7 +308,7 @@ export default function AdminTraffic() {
                   <tr key={s.source} className="hover:bg-slate-800/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor(i + 4) }} />
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor(i) }} />
                         <span className="font-medium">{s.source}</span>
                       </div>
                     </td>
@@ -385,7 +385,7 @@ export default function AdminTraffic() {
       )}
 
       {/* Country breakdown */}
-      {data.by_source_country.length > 0 && (
+      {data.by_source_country?.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-300 mb-3">Top Countries by Source</h2>
           <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto">
