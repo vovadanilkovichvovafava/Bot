@@ -6,8 +6,8 @@ All endpoints require admin authentication.
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Optional, Any, Dict, Tuple
+from datetime import date, datetime, timedelta
+from typing import Optional, Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy import select, func, case, and_, text
@@ -43,6 +43,21 @@ def _cache_get(key: str) -> Any:
 
 def _cache_set(key: str, value: Any) -> None:
     _admin_cache[key] = (time.time(), value)
+
+def _fill_daily_gaps(rows: List[dict], days: int = 30, value_key: str = "count") -> List[dict]:
+    """Fill missing dates with 0 so charts always show all days including today."""
+    today = date.today()
+    by_date = {r["date"]: r for r in rows}
+    result = []
+    for i in range(days - 1, -1, -1):
+        d = today - timedelta(days=i)
+        ds = str(d)
+        if ds in by_date:
+            result.append(by_date[ds])
+        else:
+            result.append({"date": ds, value_key: 0})
+    return result
+
 
 LOCALE_NAMES = {
     "en": "English", "ru": "Russian", "es": "Spanish", "de": "German",
@@ -333,7 +348,9 @@ async def get_users_stats(
         .group_by(func.date(User.created_at))
         .order_by(func.date(User.created_at))
     )).all()
-    daily_registrations = [{"date": str(r[0]), "count": r[1]} for r in growth_rows]
+    daily_registrations = _fill_daily_gaps(
+        [{"date": str(r[0]), "count": r[1]} for r in growth_rows], days=30
+    )
 
     # Daily registrations by country — last 30 days
     daily_country_rows = (await db.execute(
@@ -350,6 +367,10 @@ async def get_users_stats(
         {"date": str(r[0]), "country": r[1] or "Unknown", "count": r[2]}
         for r in daily_country_rows
     ]
+    # Ensure today is present even if no registrations yet
+    today_str = str(date.today())
+    if not any(r["date"] == today_str for r in daily_by_country):
+        daily_by_country.insert(0, {"date": today_str, "country": "—", "count": 0})
 
     # Referral stats
     total_referred = (await db.execute(
@@ -975,7 +996,9 @@ async def get_predictions_stats(
         .group_by(func.date(Prediction.created_at))
         .order_by(func.date(Prediction.created_at))
     )).all()
-    daily_predictions = [{"date": str(r[0]), "count": r[1]} for r in daily_rows]
+    daily_predictions = _fill_daily_gaps(
+        [{"date": str(r[0]), "count": r[1]} for r in daily_rows], days=30
+    )
 
     # By league (top 10)
     league_rows = (await db.execute(
@@ -2497,6 +2520,10 @@ async def get_traffic_analytics(
             {"date": str(r[0]), "source": r[1], "count": r[2]}
             for r in daily_rows
         ]
+        # Ensure today is present even if no registrations yet
+        today_str = str(date.today())
+        if not any(r["date"] == today_str for r in daily_by_source):
+            daily_by_source.append({"date": today_str, "source": "—", "count": 0})
 
         # ── New this week / month per source ──
         week_rows = (await db.execute(text("""
@@ -2735,10 +2762,20 @@ async def get_finance_stats(
             ORDER BY created_at::date
         """), {"since": month_ago})).all()
 
-        daily = [
+        daily_revenue_raw = [
             {"date": str(r[0]), "revenue": round(float(r[1]), 2), "deposits": r[2]}
             for r in daily_rows
         ]
+        # Fill missing dates with 0 revenue/deposits so today always shows
+        today_d = date.today()
+        revenue_by_date = {r["date"]: r for r in daily_revenue_raw}
+        daily = []
+        for i in range(29, -1, -1):
+            d = str(today_d - timedelta(days=i))
+            if d in revenue_by_date:
+                daily.append(revenue_by_date[d])
+            else:
+                daily.append({"date": d, "revenue": 0, "deposits": 0})
 
         # ── Conversion funnel ──
         pro_users = (await db.execute(
@@ -2938,7 +2975,10 @@ async def get_banner_clicks_stats(
             ORDER BY created_at::date
         """), {"since": month_ago})).all()
 
-        daily = [{"date": str(r[0]), "clicks": r[1]} for r in daily_rows]
+        daily = _fill_daily_gaps(
+            [{"date": str(r[0]), "clicks": r[1]} for r in daily_rows],
+            days=30, value_key="clicks",
+        )
 
         # Total stats
         total_clicks = (await db.execute(
