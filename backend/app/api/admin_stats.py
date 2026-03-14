@@ -1047,6 +1047,68 @@ async def get_predictions_stats(
     }
 
 
+@router.get("/debug/dates")
+async def debug_dates(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Debug endpoint to check date alignment between Python and PostgreSQL."""
+    python_now = datetime.now()
+    python_utcnow = datetime.utcnow()
+    python_today = date.today()
+
+    db_now = (await db.execute(text("SELECT NOW()"))).scalar()
+    db_date = (await db.execute(text("SELECT CURRENT_DATE"))).scalar()
+    db_timezone = (await db.execute(text("SHOW timezone"))).scalar()
+
+    # Recent predictions — raw from DB
+    recent_preds = (await db.execute(text("""
+        SELECT id, created_at, created_at::date AS day, bet_type, home_team, away_team
+        FROM predictions
+        ORDER BY created_at DESC
+        LIMIT 10
+    """))).all()
+
+    # Predictions per day (last 14 days) — raw SQL
+    daily_preds = (await db.execute(text("""
+        SELECT created_at::date AS day, COUNT(*) AS cnt
+        FROM predictions
+        WHERE created_at >= CURRENT_DATE - 14
+        GROUP BY created_at::date
+        ORDER BY created_at::date DESC
+    """))).all()
+
+    # Recent registrations — raw from DB
+    daily_regs = (await db.execute(text("""
+        SELECT created_at::date AS day, COUNT(*) AS cnt
+        FROM users
+        WHERE created_at >= CURRENT_DATE - 14
+        GROUP BY created_at::date
+        ORDER BY created_at::date DESC
+    """))).all()
+
+    return {
+        "python_now": str(python_now),
+        "python_utcnow": str(python_utcnow),
+        "python_today": str(python_today),
+        "db_now": str(db_now),
+        "db_current_date": str(db_date),
+        "db_timezone": db_timezone,
+        "timezone_match": str(python_today) == str(db_date),
+        "recent_predictions": [
+            {"id": r[0], "created_at": str(r[1]), "date": str(r[2]),
+             "bet_type": r[3], "match": f"{r[4]} vs {r[5]}"}
+            for r in recent_preds
+        ],
+        "daily_predictions_14d": [
+            {"date": str(r[0]), "count": r[1]} for r in daily_preds
+        ],
+        "daily_registrations_14d": [
+            {"date": str(r[0]), "count": r[1]} for r in daily_regs
+        ],
+    }
+
+
 @router.get("/ml")
 async def get_ml_stats(
     admin: dict = Depends(get_current_admin),
