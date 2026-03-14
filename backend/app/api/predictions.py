@@ -613,15 +613,37 @@ async def save_prediction(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Save a prediction to the database"""
+    """Save a prediction to the database (upsert: skip if same user+match already exists)."""
+    user_id = current_user["user_id"]
+    match_id_str = str(req.match_id)
+
+    # Check if prediction already exists for this user + match
+    existing = (await db.execute(
+        select(Prediction).where(
+            Prediction.user_id == user_id,
+            Prediction.match_id == match_id_str,
+        )
+    )).scalar_one_or_none()
+
+    if existing:
+        # Update AI analysis if it was missing
+        if req.ai_analysis and not existing.ai_analysis:
+            existing.ai_analysis = req.ai_analysis
+            try:
+                await db.commit()
+                await db.refresh(existing)
+            except Exception:
+                await db.rollback()
+        return existing
+
     # Strip timezone info — DB uses TIMESTAMP WITHOUT TIME ZONE
     match_date = req.match_date
     if match_date and match_date.tzinfo is not None:
         match_date = match_date.replace(tzinfo=None)
 
     prediction = Prediction(
-        user_id=current_user["user_id"],
-        match_id=str(req.match_id),
+        user_id=user_id,
+        match_id=match_id_str,
         home_team=req.home_team,
         away_team=req.away_team,
         league=req.league,
@@ -640,6 +662,7 @@ async def save_prediction(
         logger.error(f"DB error saving prediction: {e}")
         await db.rollback()
         raise HTTPException(status_code=503, detail="Database error saving prediction")
+    logger.info(f"Prediction saved: user={user_id}, match={match_id_str}, bet={req.bet_type}")
     return prediction
 
 

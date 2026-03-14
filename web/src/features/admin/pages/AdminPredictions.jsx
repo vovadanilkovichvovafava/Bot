@@ -55,40 +55,6 @@ export default function AdminPredictions() {
   const [stats, setStats] = useState(null)
   const [overview, setOverview] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [testResult, setTestResult] = useState(null)
-  const [testing, setTesting] = useState(false)
-
-  const testSavePrediction = async () => {
-    setTesting(true)
-    setTestResult(null)
-    try {
-      // Use user API (not admin) to test the actual save endpoint
-      const token = localStorage.getItem('access_token')
-      const apiUrl = window.__APP_CONFIG__?.API_URL || 'https://appbot-production-152e.up.railway.app/api/v1'
-      const res = await fetch(`${apiUrl}/predictions/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          match_id: 999999,
-          home_team: 'DEBUG_Test_Home',
-          away_team: 'DEBUG_Test_Away',
-          league: 'Debug League',
-          bet_type: 'test',
-          confidence: 50.0,
-        }),
-      })
-      const text = await res.text()
-      let data
-      try { data = JSON.parse(text) } catch { data = text }
-      setTestResult({ status: res.status, ok: res.ok, data })
-    } catch (e) {
-      setTestResult({ status: 'NETWORK_ERROR', ok: false, data: e.message })
-    }
-    setTesting(false)
-  }
 
   useEffect(() => {
     Promise.all([
@@ -246,63 +212,6 @@ export default function AdminPredictions() {
         </div>
       )}
 
-      {/* Debug info — temporary */}
-      {stats?._debug && (
-        <div className="bg-red-950/30 border border-red-800/50 rounded-xl p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-red-400">Debug Info (temporary)</h3>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <div><span className="text-slate-500">Python now:</span> <span className="text-slate-300">{stats._debug.python_now}</span></div>
-            <div><span className="text-slate-500">DB now:</span> <span className="text-slate-300">{stats._debug.db_now}</span></div>
-            <div><span className="text-slate-500">DB date:</span> <span className="text-slate-300">{stats._debug.db_date}</span></div>
-            <div><span className="text-slate-500">DB timezone:</span> <span className="text-slate-300">{stats._debug.db_timezone}</span></div>
-            <div><span className="text-slate-500">Total (all time):</span> <span className="text-slate-300">{stats._debug.total_predictions_all_time}</span></div>
-            <div><span className="text-slate-500">NULL created_at:</span> <span className="text-red-400 font-bold">{stats._debug.predictions_with_null_created_at}</span></div>
-            <div className="col-span-2"><span className="text-slate-500">Filter:</span> <span className="text-slate-300">created_at &gt;= {stats._debug.filter_used}</span></div>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Last 5 predictions (by ID desc):</p>
-            <div className="space-y-1">
-              {(stats._debug.recent_5_predictions || []).map(p => (
-                <div key={p.id} className="text-[11px] font-mono text-slate-400 bg-slate-900 rounded px-2 py-1">
-                  #{p.id} | created_at: <span className={p.created_at === 'None' ? 'text-red-400 font-bold' : 'text-green-400'}>{p.created_at}</span> | {p.match}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Daily counts (raw SQL, last 14d):</p>
-            <div className="flex flex-wrap gap-2">
-              {(stats._debug.daily_14d_raw_sql || []).map(d => (
-                <span key={d.date} className="text-[11px] font-mono bg-slate-900 rounded px-2 py-1 text-slate-300">
-                  {d.date}: <span className="text-green-400 font-bold">{d.count}</span>
-                </span>
-              ))}
-              {!stats._debug.daily_14d_raw_sql?.length && (
-                <span className="text-[11px] text-red-400">No predictions in last 14 days (raw SQL)</span>
-              )}
-            </div>
-          </div>
-          <div className="pt-3 border-t border-red-800/30">
-            <button
-              onClick={testSavePrediction}
-              disabled={testing}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-medium disabled:opacity-50"
-            >
-              {testing ? 'Saving...' : 'Test Save Prediction'}
-            </button>
-            {testResult && (
-              <div className={`mt-2 p-3 rounded-lg text-xs font-mono ${testResult.ok ? 'bg-green-900/30 border border-green-800/50' : 'bg-red-900/50 border border-red-700/50'}`}>
-                <p className={testResult.ok ? 'text-green-400' : 'text-red-400'}>
-                  Status: {testResult.status} {testResult.ok ? 'OK' : 'FAILED'}
-                </p>
-                <pre className="text-slate-300 mt-1 whitespace-pre-wrap text-[10px] max-h-40 overflow-auto">
-                  {typeof testResult.data === 'string' ? testResult.data : JSON.stringify(testResult.data, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
