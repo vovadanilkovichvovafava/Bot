@@ -78,6 +78,7 @@ export const adminApi = {
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
   getMLStats: () => request('/stats/ml'),
+  triggerTraining: () => request('/stats/ml/train', { method: 'POST' }),
   getSupportStats: () => request('/stats/support'),
 
   // Chats
