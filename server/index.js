@@ -13,13 +13,13 @@ const PORT = process.env.PORT || 3001;
 const CONFIG = {
   // Bookmaker partner info
   BOOKMAKER_NAME: process.env.BOOKMAKER_NAME || '1xBet',
-  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || 'your_affiliate_id',
+  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || (() => { throw new Error('BOOKMAKER_AFFILIATE_ID environment variable is not set'); })(),
 
   // Main API backend
   MAIN_API_URL: process.env.MAIN_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1',
 
   // Postback secret for verification
-  POSTBACK_SECRET: process.env.POSTBACK_SECRET || 'your_postback_secret_key',
+  POSTBACK_SECRET: process.env.POSTBACK_SECRET || (() => { throw new Error('POSTBACK_SECRET environment variable is not set'); })(),
 
   // Countries where bookmaker is blocked (ISO 3166-1 alpha-2 codes)
   BLOCKED_COUNTRIES: (process.env.BLOCKED_COUNTRIES || 'RU,BY,UA,KZ,AZ,AM,GE,MD,KG,TJ,TM,UZ').split(','),

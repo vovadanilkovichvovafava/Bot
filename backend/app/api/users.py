@@ -14,9 +14,10 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-# Internal secret for server-to-server calls
-# Falls back to default for development, but should be set in production
-INTERNAL_SECRET = os.getenv("POSTBACK_SECRET") or "your_postback_secret_key"
+# Internal secret for server-to-server calls — must be set via environment variable
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET")
+if not INTERNAL_SECRET:
+    raise RuntimeError("POSTBACK_SECRET environment variable is not set")
 
 router = APIRouter()
 

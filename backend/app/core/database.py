@@ -15,9 +15,9 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-# Fallback for local development
+# Require DATABASE_URL in production — no hardcoded credentials
 if not DATABASE_URL:
-    DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/betting_bot"
+    raise RuntimeError("DATABASE_URL environment variable is not set")
 
 engine = create_async_engine(
     DATABASE_URL,

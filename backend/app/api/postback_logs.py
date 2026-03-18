@@ -20,7 +20,9 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-INTERNAL_SECRET = os.getenv("POSTBACK_SECRET") or "your_postback_secret_key"
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET")
+if not INTERNAL_SECRET:
+    raise RuntimeError("POSTBACK_SECRET environment variable is not set")
 
 router = APIRouter()
 
