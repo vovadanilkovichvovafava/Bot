@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
 import { generateExpressShareText, sharePrediction } from '../../predictions/services/shareUtils';
+import { getTrackingLink } from '../services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import api from '../../../shared/api';
 
@@ -344,6 +345,8 @@ export default function ExpressBet() {
                     onToggle={() => setExpandedKey(expandedKey === express.key ? null : express.key)}
                     trackClick={trackClick}
                     userId={user?.id}
+                    userFunnel={user?.funnel}
+                    canUseDeeplink={isFonbetUser}
                     referralCode={user?.referral_code}
                     bonus={advertiser?.bonusBanner?.bonus || '€75'}
                     navigate={navigate}
@@ -361,7 +364,15 @@ export default function ExpressBet() {
           <div
             className="rounded-2xl overflow-hidden shadow-lg cursor-pointer"
             style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
-            onClick={() => { trackClick(user?.id, 'express_free_bet_banner'); navigate('/promo'); }}
+            onClick={() => {
+              trackClick(user?.id, 'express_free_bet_banner');
+              if (isFonbetUser) {
+                const link = getTrackingLink(user?.id, 'express_free_bet_banner', user?.funnel);
+                if (link) window.open(link, '_blank', 'noopener,noreferrer');
+              } else {
+                navigate('/promo');
+              }
+            }}
           >
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 80%)', animation: 'shimmer 5s infinite', backgroundSize: '200% 100%' }} />
             <div className="relative px-4 py-4">
@@ -422,7 +433,7 @@ export default function ExpressBet() {
 }
 
 
-function ExpressPresetCard({ express, isExpanded, onToggle, trackClick, userId, referralCode, bonus, navigate, t, isPro }) {
+function ExpressPresetCard({ express, isExpanded, onToggle, trackClick, userId, userFunnel, canUseDeeplink, referralCode, bonus, navigate, t, isPro }) {
   const style = PRESET_STYLES[express.key] || PRESET_STYLES.value;
 
   // PRO-gate: risky (7 legs) is PRO only
@@ -517,7 +528,15 @@ function ExpressPresetCard({ express, isExpanded, onToggle, trackClick, userId, 
           {/* Bet Now + Share buttons */}
           <div className="px-4 py-3 bg-gray-50 space-y-2">
             <button
-              onClick={() => { trackClick?.(userId, 'express_bet'); navigate('/promo'); }}
+              onClick={() => {
+                trackClick?.(userId, 'express_bet');
+                if (canUseDeeplink) {
+                  const link = getTrackingLink(userId, 'express_bet', userFunnel);
+                  if (link) window.open(link, '_blank', 'noopener,noreferrer');
+                } else {
+                  navigate('/promo');
+                }
+              }}
               className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
