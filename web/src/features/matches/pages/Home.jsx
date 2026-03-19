@@ -38,6 +38,7 @@ export default function Home() {
   const [aiLimit, setAiLimit] = useState(FREE_AI_LIMIT);
   const [smartBet, setSmartBet] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [streak, setStreak] = useState(null); // { current_streak, streak_type }
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
   useEffect(() => {
@@ -71,6 +72,13 @@ export default function Home() {
           promises.push(fetchSmartBet());
         }
       } catch { promises.push(fetchSmartBet()); }
+
+      // Fetch streak data for PRO users
+      promises.push(
+        api.getPredictionStats()
+          .then(data => { if (data?.current_streak >= 2 && data?.streak_type === 'win') setStreak(data); })
+          .catch(() => {})
+      );
     }
 
     Promise.all(promises).catch(() => {});
@@ -451,6 +459,27 @@ export default function Home() {
             <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
           )}
         </div>
+
+        {/* Winning Streak Badge */}
+        {streak && streak.current_streak >= 2 && (
+          <div
+            onClick={() => navigate('/statistics')}
+            className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-3 flex items-center gap-3 cursor-pointer shadow-md"
+          >
+            <span className="text-2xl">{streak.current_streak >= 5 ? '🏆' : streak.current_streak >= 3 ? '🔥' : '⚡'}</span>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">
+                {streak.current_streak} {t('statistics.winStreak', { defaultValue: 'Win Streak!' })}
+              </p>
+              <p className="text-white/70 text-[10px]">
+                {t('statistics.tapToSeeStats', { defaultValue: 'Tap to see your full stats' })}
+              </p>
+            </div>
+            <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        )}
 
         {/* Pro Tools */}
         <div>
