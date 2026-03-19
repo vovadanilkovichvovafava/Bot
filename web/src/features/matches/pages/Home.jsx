@@ -92,27 +92,6 @@ export default function Home() {
     } catch {}
   }, []);
 
-  // Daily digest push notification for PRO users — once per day
-  useEffect(() => {
-    if (!smartBet?.found || !isPremium) return;
-    if (getPermissionStatus() !== 'granted') return;
-
-    const today = new Date().toISOString().slice(0, 10);
-    if (localStorage.getItem(DAILY_DIGEST_KEY) === today) return;
-    localStorage.setItem(DAILY_DIGEST_KEY, today);
-
-    const bet = smartBet.bet;
-    const teams = `${smartBet.home?.name || ''} vs ${smartBet.away?.name || ''}`;
-    showLocalNotification(
-      t('home.dailyDigestTitle', { defaultValue: 'Best Bet Today' }),
-      {
-        body: `${teams} — ${bet?.market || ''} @ ${bet?.odds || ''} (${bet?.confidence || ''}% ${t('aiChat.aiConfidence', { defaultValue: 'confidence' })})`,
-        tag: `daily-digest-${today}`,
-        data: { type: 'daily_digest', url: '/' },
-      }
-    );
-  }, [smartBet, isPremium, t]);
-
   const processFixtures = (fixtures) => {
     return (fixtures || [])
       .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
@@ -179,6 +158,27 @@ export default function Home() {
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3 && !isFunnel4);
   const remaining = (isPremium || isFunnel2 || isFunnel4) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+
+  // Daily digest push notification for PRO users — once per day
+  useEffect(() => {
+    if (!smartBet?.found || !isPremium) return;
+    if (getPermissionStatus() !== 'granted') return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(DAILY_DIGEST_KEY) === today) return;
+    localStorage.setItem(DAILY_DIGEST_KEY, today);
+
+    const bet = smartBet.bet;
+    const teams = `${smartBet.home?.name || ''} vs ${smartBet.away?.name || ''}`;
+    showLocalNotification(
+      t('home.dailyDigestTitle', { defaultValue: 'Best Bet Today' }),
+      {
+        body: `${teams} — ${bet?.market || ''} @ ${bet?.odds || ''} (${bet?.confidence || ''}% ${t('aiChat.aiConfidence', { defaultValue: 'confidence' })})`,
+        tag: `daily-digest-${today}`,
+        data: { type: 'daily_digest', url: '/' },
+      }
+    );
+  }, [smartBet, isPremium, t]);
 
   // Show full-screen splash while loading matches
   if (loading) {
