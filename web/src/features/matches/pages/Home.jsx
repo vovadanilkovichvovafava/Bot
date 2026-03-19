@@ -11,8 +11,10 @@ import FootballSpinner from '../../../shared/components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
-import { getTrackingLink } from '../../betting/services/trackingService';
+import { getTrackingLink, openTrackingLink } from '../../betting/services/trackingService';
+import { showLocalNotification, getPermissionStatus } from '../../../shared/services/pushNotificationService';
 
+const DAILY_DIGEST_KEY = 'daily_digest_shown';
 
 
 const FREE_AI_LIMIT = 3;
@@ -36,6 +38,7 @@ export default function Home() {
   const [aiLimit, setAiLimit] = useState(FREE_AI_LIMIT);
   const [smartBet, setSmartBet] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [streak, setStreak] = useState(null); // { current_streak, streak_type }
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
   useEffect(() => {
@@ -69,6 +72,13 @@ export default function Home() {
           promises.push(fetchSmartBet());
         }
       } catch { promises.push(fetchSmartBet()); }
+
+      // Fetch streak data for PRO users
+      promises.push(
+        api.getPredictionStats()
+          .then(data => { if (data?.current_streak >= 2 && data?.streak_type === 'win') setStreak(data); })
+          .catch(() => {})
+      );
     }
 
     Promise.all(promises).catch(() => {});
@@ -81,6 +91,27 @@ export default function Home() {
       }
     } catch {}
   }, []);
+
+  // Daily digest push notification for PRO users — once per day
+  useEffect(() => {
+    if (!smartBet?.found || !isPremium) return;
+    if (getPermissionStatus() !== 'granted') return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(DAILY_DIGEST_KEY) === today) return;
+    localStorage.setItem(DAILY_DIGEST_KEY, today);
+
+    const bet = smartBet.bet;
+    const teams = `${smartBet.home?.name || ''} vs ${smartBet.away?.name || ''}`;
+    showLocalNotification(
+      t('home.dailyDigestTitle', { defaultValue: 'Best Bet Today' }),
+      {
+        body: `${teams} — ${bet?.market || ''} @ ${bet?.odds || ''} (${bet?.confidence || ''}% ${t('aiChat.aiConfidence', { defaultValue: 'confidence' })})`,
+        tag: `daily-digest-${today}`,
+        data: { type: 'daily_digest', url: '/' },
+      }
+    );
+  }, [smartBet, isPremium, t]);
 
   const processFixtures = (fixtures) => {
     return (fixtures || [])
@@ -319,6 +350,7 @@ export default function Home() {
           advertiser={advertiser}
           trackClick={trackClick}
           userId={user?.id}
+          userFunnel={user?.funnel}
           isPremium={isPremium}
           smartBet={smartBet}
         />
@@ -427,6 +459,27 @@ export default function Home() {
             <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
           )}
         </div>
+
+        {/* Winning Streak Badge */}
+        {streak && streak.current_streak >= 2 && (
+          <div
+            onClick={() => navigate('/statistics')}
+            className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-3 flex items-center gap-3 cursor-pointer shadow-md"
+          >
+            <span className="text-2xl">{streak.current_streak >= 5 ? '🏆' : streak.current_streak >= 3 ? '🔥' : '⚡'}</span>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">
+                {streak.current_streak} {t('statistics.winStreak', { defaultValue: 'Win Streak!' })}
+              </p>
+              <p className="text-white/70 text-[10px]">
+                {t('statistics.tapToSeeStats', { defaultValue: 'Tap to see your full stats' })}
+              </p>
+            </div>
+            <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        )}
 
         {/* Pro Tools */}
         <div>
@@ -597,7 +650,7 @@ function HomeMatchCard({ fixture, navigate }) {
 }
 
 // Featured Match Promo Banner with team logos and diagonal split
-function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremium, smartBet }) {
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, userFunnel, isPremium, smartBet }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -613,9 +666,13 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
 
   // PRO: click goes directly to bookmaker. Free: click goes to promo page
   const handleClick = () => {
-    if (isPremium && advertiser?.link) {
-      if (userId) trackClick(userId, smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match');
-      navigate('/promo');
+    const banner = smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match';
+    if (isPremium) {
+      if (userId) trackClick(userId, banner);
+      const bet = smartBet?.bet;
+      openTrackingLink(userId, banner, userFunnel, {
+        meta: bet ? { market: bet.market, odds: bet.odds, confidence: bet.confidence } : {},
+      });
     } else {
       navigate('/promo?banner=home_featured_match');
     }

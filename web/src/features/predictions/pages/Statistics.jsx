@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getPredictions, getStats, verifyPredictions, boostAccuracy } from '../services/predictionStore';
+import api from '../../../shared/api';
 
 export default function Statistics() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { advertiser } = useAdvertiser();
   const [recentPreds, setRecentPreds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setLocalStats] = useState(null);
+  const [serverStats, setServerStats] = useState(null);
 
   // Use local prediction store stats (boosted) with fallback to user profile
   const localStats = stats || { total: 0, verified: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 };
@@ -33,6 +37,12 @@ export default function Statistics() {
     setLocalStats(getStats());
     setRecentPreds(getPredictions().slice(0, 5));
     setLoading(false);
+
+    // Load server-side stats (streak, by_bet_type, by_league)
+    try {
+      const data = await api.getPredictionStats();
+      if (data) setServerStats(data);
+    } catch {}
   };
 
   // Calculate circle progress
@@ -97,6 +107,90 @@ export default function Statistics() {
             </div>
           </div>
         </div>
+
+        {/* Streak & Virtual P&L — gamification */}
+        {serverStats && (serverStats.current_streak > 0 || serverStats.total > 0) && (
+          <div className="space-y-4">
+            {/* Winning Streak */}
+            {serverStats.current_streak >= 2 && serverStats.streak_type === 'win' && (
+              <div className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-4 text-white shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
+                    {serverStats.current_streak >= 5 ? '🏆' : serverStats.current_streak >= 3 ? '🔥' : '⚡'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-lg">
+                      {serverStats.current_streak} {t('statistics.winStreak', { defaultValue: 'Win Streak!' })}
+                    </p>
+                    <p className="text-white/80 text-sm">
+                      {serverStats.current_streak >= 5
+                        ? t('statistics.streakLegendary', { defaultValue: 'Legendary! You\'re on fire!' })
+                        : serverStats.current_streak >= 3
+                        ? t('statistics.streakHot', { defaultValue: 'Hot streak! Keep it going!' })
+                        : t('statistics.streakGood', { defaultValue: 'Great start! Build your streak!' })
+                      }
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-black">{serverStats.current_streak}</p>
+                    <p className="text-[10px] text-white/70 uppercase">{t('statistics.inARow', { defaultValue: 'in a row' })}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Virtual P&L — "If you had bet €10 on each prediction" */}
+            {serverStats.total >= 3 && (
+              (() => {
+                const stake = 10;
+                const currency = advertiser?.currency || '€';
+                const avgOdds = 1.85; // average odds for typical bets
+                const profit = Math.round(serverStats.correct * stake * (avgOdds - 1) - serverStats.wrong * stake);
+                const roi = serverStats.total > 0 ? ((profit / (serverStats.total * stake)) * 100).toFixed(1) : 0;
+                const isPositive = profit > 0;
+
+                return (
+                  <div className="card">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+                      </svg>
+                      <span className="font-bold">{t('statistics.virtualPnL', { defaultValue: 'Virtual P&L' })}</span>
+                      <span className="text-[10px] text-gray-400 ml-auto">
+                        {t('statistics.ifYouBet', { stake: `${currency}${stake}`, defaultValue: `If you bet ${currency}${stake} per pick` })}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className={`text-xl font-black ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPositive ? '+' : ''}{currency}{profit}
+                        </p>
+                        <p className="text-[10px] text-gray-500 uppercase">{t('statistics.profit', { defaultValue: 'Profit' })}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className={`text-xl font-black ${parseFloat(roi) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {parseFloat(roi) > 0 ? '+' : ''}{roi}%
+                        </p>
+                        <p className="text-[10px] text-gray-500 uppercase">ROI</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xl font-black text-gray-700">{currency}{serverStats.total * stake}</p>
+                        <p className="text-[10px] text-gray-500 uppercase">{t('statistics.totalStaked', { defaultValue: 'Staked' })}</p>
+                      </div>
+                    </div>
+
+                    {isPositive && (
+                      <p className="text-xs text-green-600 mt-2 text-center font-medium">
+                        {t('statistics.profitNote', { profit: `${currency}${profit}`, defaultValue: `You would have earned ${currency}${profit} following our picks!` })}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        )}
 
         {/* Recent Predictions */}
         <div className="card">

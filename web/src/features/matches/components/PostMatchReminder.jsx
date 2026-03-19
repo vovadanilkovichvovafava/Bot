@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { getTrackingLink } from '../../betting/services/trackingService';
+import { getTrackingLink, openTrackingLink } from '../../betting/services/trackingService';
 import { useTranslation } from 'react-i18next';
 import { generatePostMatchShareText, sharePrediction } from '../../predictions/services/shareUtils';
+import { showLocalNotification, getPermissionStatus } from '../../../shared/services/pushNotificationService';
 import api from '../../../shared/api';
 
 const STORAGE_KEY = 'post_match_reminders';
@@ -54,12 +55,29 @@ export default function PostMatchReminder() {
       const next = data.predictions.find(p => !shown.ids.includes(p.id));
       if (!next) return;
 
+      // Send local push notification if permission granted (works even when app is in background tab)
+      if (getPermissionStatus() === 'granted') {
+        const notifKey = `win_notif_${next.id}`;
+        if (!sessionStorage.getItem(notifKey)) {
+          sessionStorage.setItem(notifKey, '1');
+          showLocalNotification(
+            `${next.home_team} vs ${next.away_team}`,
+            {
+              body: `${next.bet_name || next.bet_type} @ ${next.odds?.toFixed(2)} — ${t('postMatch.predictionCorrect', { defaultValue: 'Prediction correct!' })}`,
+              tag: `win-${next.id}`,
+              data: { type: 'prediction_won', predictionId: next.id, url: '/' },
+              requireInteraction: true,
+            }
+          );
+        }
+      }
+
       setReminder(next);
       setTimeout(() => setVisible(true), 500);
     } catch {
       // silently fail
     }
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     const timer = setTimeout(checkReminders, 5000);
@@ -85,8 +103,14 @@ export default function PostMatchReminder() {
   const handlePlaceBet = () => {
     if (reminder) markShown(reminder.id);
     trackClick(user?.id, 'post_match_reminder');
-    const link = getTrackingLink(user?.id, 'post_match_reminder', user?.funnel) || advertiser?.link;
-    if (link) window.open(link, '_blank', 'noopener,noreferrer');
+    openTrackingLink(user?.id, 'post_match_reminder', user?.funnel, {
+      meta: {
+        bet_type: reminder.bet_type,
+        odds: reminder.odds,
+        match: `${reminder.home_team} vs ${reminder.away_team}`,
+        prediction_won: true,
+      },
+    });
     setVisible(false);
     setTimeout(() => setReminder(null), 300);
   };

@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl, openTrackingLink } from '../../betting/services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -454,7 +454,17 @@ export default function AIChat() {
                           return (
                             <div
                               key={idx}
-                              onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                              onClick={() => {
+                                trackClick(user?.id, 'aichat_bet_card');
+                                if (canUseDeeplink) {
+                                  openTrackingLink(user?.id, 'aichat_bet_card', user?.funnel, {
+                                    deeplink: bet.fonbetDeeplink || null,
+                                    meta: { bet_type: bet.type, odds: bet.odds },
+                                  });
+                                } else {
+                                  navigate('/promo');
+                                }
+                              }}
                               className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                               <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -476,7 +486,14 @@ export default function AIChat() {
                 {/* Simple promo link for messages without bet recommendation */}
                 {!msg.bets?.length && msg.role === 'assistant' && msg.id !== 'welcome' && (
                   <button
-                    onClick={() => { trackClick(user?.id, 'aichat_promo_link'); navigate('/promo'); }}
+                    onClick={() => {
+                      trackClick(user?.id, 'aichat_promo_link');
+                      if (canUseDeeplink) {
+                        openTrackingLink(user?.id, 'aichat_promo_link', user?.funnel);
+                      } else {
+                        navigate('/promo');
+                      }
+                    }}
                     className="mt-3 pt-2 border-t border-gray-100 w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-medium hover:text-emerald-700"
                   >
                     {isPremium ? t('aiChat.turnInsightsIntoWins', { defaultValue: 'Turn insights into wins' }) : t('advertiser.freeBet', { bonus: advertiser?.bonusBanner?.bonus })}
@@ -491,7 +508,12 @@ export default function AIChat() {
             {msg.showAd && (
               canUseDeeplink ? (
                 <div
-                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); navigate('/promo'); }}
+                  onClick={() => {
+                    trackClick(user?.id, 'aichat_ad_place_bet');
+                    openTrackingLink(user?.id, 'aichat_ad_place_bet', user?.funnel, {
+                      deeplink: msg.fonbetDeeplink || null,
+                    });
+                  }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">
@@ -587,7 +609,10 @@ export default function AIChat() {
 
                     {/* CTA button */}
                     <button
-                      onClick={() => { trackClick(user?.id, 'aichat_ad_get_bonus'); navigate('/promo'); }}
+                      onClick={() => {
+                        trackClick(user?.id, 'aichat_ad_get_bonus');
+                        navigate('/promo');
+                      }}
                       className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
                       style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
                     >

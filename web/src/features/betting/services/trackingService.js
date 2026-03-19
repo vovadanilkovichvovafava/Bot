@@ -268,3 +268,45 @@ export function addTrackingToUrl(url, userId, banner = '') {
     return url;
   }
 }
+
+/**
+ * Open affiliate link and track the conversion event.
+ * Centralizes: build link → track analytics → open in new tab.
+ *
+ * @param {string|number} userId
+ * @param {string} banner - источник клика (aichat_bet_card, express_bet, smart_bet_banner и т.д.)
+ * @param {string} funnel - user.funnel
+ * @param {object} [options]
+ * @param {string} [options.deeplink] - Fonbet deeplink URL (если есть)
+ * @param {object} [options.meta] - доп. метаданные для аналитики
+ */
+export function openTrackingLink(userId, banner, funnel, options = {}) {
+  const { deeplink, meta = {} } = options;
+
+  // Build the final URL
+  let url;
+  if (deeplink) {
+    url = addTrackingToUrl(deeplink, userId, banner);
+  } else {
+    url = getTrackingLink(userId, banner, funnel);
+  }
+
+  if (!url) return;
+
+  // Fire-and-forget analytics event
+  try {
+    const body = {
+      event: 'affiliate_link_clicked',
+      page: window.location.pathname,
+      user_id: String(userId),
+      metadata: { banner, funnel, has_deeplink: !!deeplink, ...meta },
+    };
+    fetch(`${ENV.API_URL}/analytics/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+  } catch {}
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
