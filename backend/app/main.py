@@ -338,6 +338,18 @@ async def debug_registrations():
     ]
 
 
+def _check_ml_deps():
+    """Check if ML dependencies are available."""
+    deps = {}
+    for mod in ["xgboost", "sklearn", "joblib", "numpy"]:
+        try:
+            __import__(mod)
+            deps[mod] = "ok"
+        except ImportError as e:
+            deps[mod] = f"MISSING: {e}"
+    return deps
+
+
 @app.get("/debug/ml-pipeline")
 async def debug_ml_pipeline():
     """Quick ML pipeline status check — no auth required."""
@@ -399,7 +411,7 @@ async def debug_ml_pipeline():
                 "pending_enrichment": pending_enrichment,
                 "active_models": active_models,
                 "teams_tracked": teams,
-                "can_train": enriched >= 50,
+                "can_train": enriched >= 30,
             },
             "last_events": {
                 "last_training": {
@@ -415,6 +427,7 @@ async def debug_ml_pipeline():
                 "API_FOOTBALL_KEY": "set" if os.getenv("API_FOOTBALL_KEY") else "MISSING",
                 "DATABASE_URL": "set" if os.getenv("DATABASE_URL") else "localhost",
             },
+            "ml_deps": _check_ml_deps(),
             "health": "ready" if active_models > 0 else (
                 "enriching" if pending_enrichment > 0 else (
                     "collecting" if total < 100 else "waiting_for_training"
@@ -425,6 +438,34 @@ async def debug_ml_pipeline():
         status = {"error": str(e)}
 
     return status
+
+
+@app.post("/debug/ml-train")
+async def debug_trigger_training():
+    """Force-trigger ML training. No auth — for debugging cold start issues."""
+    import asyncio
+
+    # First check deps
+    deps = _check_ml_deps()
+    missing = [k for k, v in deps.items() if v != "ok"]
+    if missing:
+        return {"error": "ML dependencies missing", "deps": deps}
+
+    from app.services.ml_trainer import train_all_models
+    from app.services.feature_engineer import process_verified_matches
+
+    async def _run():
+        try:
+            enriched = await process_verified_matches()
+            count = await train_all_models()
+            import logging
+            logging.getLogger(__name__).info(f"Debug train: enriched={enriched}, models={count}")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Debug train error: {e}", exc_info=True)
+
+    asyncio.create_task(_run())
+    return {"status": "training_started", "deps": deps, "message": "Check /debug/ml-pipeline for results"}
 
 
 @app.get("/debug/football-api")
