@@ -529,24 +529,24 @@ def _safe_int(val) -> Optional[int]:
 async def collect_and_enrich_daily(date_str: str = None):
     """
     Full daily collection: fixtures + enrichment (odds, predictions, stats).
+    Also enriches fixtures that previously failed enrichment (retry).
     """
     collected = await collect_daily_fixtures(date_str)
 
-    if collected == 0:
-        return 0
-
-    # Enrich recently collected fixtures
+    # Enrich recently collected fixtures AND retry previously failed ones
     async with async_session_maker() as db:
         # Get fixtures that haven't been enriched yet (no odds data)
+        # Include older fixtures (up to 7 days) to retry failed enrichments
         result = await db.execute(
             select(MatchFeature.fixture_id).where(
                 MatchFeature.odds_home.is_(None),
-                MatchFeature.match_date >= datetime.utcnow() - timedelta(days=2),
-            ).limit(50)
+                MatchFeature.match_date >= datetime.utcnow() - timedelta(days=7),
+            ).order_by(MatchFeature.match_date.desc()).limit(80)
         )
         fixture_ids = [r[0] for r in result.all()]
 
     enriched = 0
+    errors = 0
     for fid in fixture_ids:
         try:
             await enrich_fixture_data(fid)
@@ -554,9 +554,14 @@ async def collect_and_enrich_daily(date_str: str = None):
             # Rate limiting between enrichment calls
             await asyncio.sleep(2)
         except Exception as e:
+            errors += 1
             logger.error(f"Error enriching fixture {fid}: {e}")
+            if errors > 10:
+                logger.warning("Too many enrichment errors, stopping batch")
+                break
 
-    logger.info(f"Collection complete: {collected} new fixtures, {enriched} enriched")
+    if enriched > 0 or collected > 0:
+        logger.info(f"Collection complete: {collected} new fixtures, {enriched} enriched, {errors} errors")
     return collected
 
 
