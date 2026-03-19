@@ -1,6 +1,6 @@
 // Build version — changes on every deploy to trigger SW update
 // IMPORTANT: Update this on each deployment or use build tool to inject
-const SW_VERSION = 'mm1txb7t';
+const SW_VERSION = 'mmxd3xyu';
 const CACHE_NAME = 'ai-betting-bot-' + SW_VERSION;
 
 const STATIC_ASSETS = [
@@ -89,7 +89,7 @@ self.addEventListener('fetch', event => {
 // Receive push notification
 self.addEventListener('push', event => {
   let data = {
-    title: 'PVA Betting',
+    title: 'PreScore AI',
     body: 'You have a new notification',
     icon: '/icon.svg',
     badge: '/icon.svg',

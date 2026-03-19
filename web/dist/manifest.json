@@ -1,6 +1,6 @@
 {
-  "name": "PVA Betting",
-  "short_name": "PVA Bet",
+  "name": "PreScore AI - betting tips",
+  "short_name": "PreScore AI",
   "description": "Football predictions powered by AI",
   "start_url": "/",
   "display": "standalone",
