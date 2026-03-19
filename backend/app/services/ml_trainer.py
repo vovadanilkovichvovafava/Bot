@@ -256,7 +256,7 @@ async def train_all_models():
         import numpy as np  # noqa: F401
         logger.info("ML dependencies (xgboost, sklearn, joblib, numpy) OK")
     except ImportError as e:
-        logger.error(f"ML dependencies NOT available: {e}. Training cannot proceed.")
+        logger.error(f"ML dependencies NOT available: {e}. Training cannot proceed. Install: pip install xgboost scikit-learn joblib numpy")
         return 0
 
     features, targets = await get_training_data()

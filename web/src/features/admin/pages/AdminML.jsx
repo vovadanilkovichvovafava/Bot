@@ -97,12 +97,22 @@ export default function AdminML() {
     setTrainResult(null)
     try {
       const result = await adminApi.triggerTraining()
+      if (result.status === 'error') {
+        setTrainResult({ ok: false, message: result.message || 'Training failed' })
+        setTraining(false)
+        return
+      }
       setTrainResult({ ok: true, message: result.message || 'Training started' })
-      // Refresh stats after a delay to show progress
-      setTimeout(reload, 5000)
+      // Auto-poll for results every 8s for 2 minutes
+      let polls = 0
+      const interval = setInterval(() => {
+        polls++
+        reload()
+        if (polls >= 15) clearInterval(interval)
+      }, 8000)
+      setTimeout(() => { setTraining(false); clearInterval(interval) }, 8000)
     } catch (e) {
       setTrainResult({ ok: false, message: e.message || 'Training failed' })
-    } finally {
       setTraining(false)
     }
   }
@@ -377,6 +387,7 @@ export default function AdminML() {
             const colors = {
               train_start: 'bg-blue-500/20 text-blue-400',
               train_complete: 'bg-green-500/20 text-green-400',
+              train_error: 'bg-red-500/20 text-red-400',
               predict: 'bg-purple-500/20 text-purple-400',
               verify: 'bg-amber-500/20 text-amber-400',
               data_collect: 'bg-cyan-500/20 text-cyan-400',
@@ -417,6 +428,10 @@ export default function AdminML() {
                 if (parsed.samples) parts.push(`${parsed.samples} samples`)
                 if (parsed.duration) parts.push(`${parsed.duration}s`)
                 return parts.join(' \u00b7 ') || JSON.stringify(parsed).slice(0, 120)
+              }
+
+              if (l.event === 'train_error') {
+                return parsed.error || JSON.stringify(parsed).slice(0, 200)
               }
 
               if (l.event === 'elo_update') {

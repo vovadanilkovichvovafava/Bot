@@ -1237,12 +1237,44 @@ async def trigger_ml_training(
     import asyncio
     from app.services.ml_trainer import train_all_models
     from app.services.feature_engineer import process_verified_matches
+    from app.core.database import async_session_maker
+    from app.models.ml_models import LearningLog
+    import json as _json
 
     logger.info(f"Manual training triggered by admin")
+
+    # Pre-flight check: ML dependencies must be installed
+    missing_deps = []
+    for dep_name, dep_import in [
+        ("xgboost", "xgboost"),
+        ("scikit-learn", "sklearn"),
+        ("numpy", "numpy"),
+        ("joblib", "joblib"),
+    ]:
+        try:
+            __import__(dep_import)
+        except ImportError:
+            missing_deps.append(dep_name)
+
+    if missing_deps:
+        error_msg = f"ML dependencies not installed: {', '.join(missing_deps)}. Run: pip install {' '.join(missing_deps)}"
+        logger.error(error_msg)
+        return {
+            "status": "error",
+            "message": error_msg,
+        }
 
     # Run enrichment + training in background so the request doesn't timeout
     async def _run_full_pipeline():
         try:
+            # Log training start
+            async with async_session_maker() as db:
+                db.add(LearningLog(
+                    event_type="train_start",
+                    details_json=_json.dumps({"trigger": "manual"}),
+                ))
+                await db.commit()
+
             # Step 1: Ensure all verified matches are enriched
             enriched = await process_verified_matches()
             logger.info(f"Pre-training enrichment: {enriched} matches enriched")
@@ -1250,8 +1282,32 @@ async def trigger_ml_training(
             # Step 2: Train models
             count = await train_all_models()
             logger.info(f"Manual training finished: {count} models trained")
+
+            if count == 0:
+                async with async_session_maker() as db:
+                    db.add(LearningLog(
+                        event_type="train_error",
+                        details_json=_json.dumps({
+                            "error": "Training produced 0 models",
+                            "enriched": enriched,
+                            "hint": "Check data quality: verified matches need home_elo and home_goals",
+                        }),
+                    ))
+                    await db.commit()
         except Exception as e:
             logger.error(f"Manual training error: {e}", exc_info=True)
+            try:
+                async with async_session_maker() as db:
+                    db.add(LearningLog(
+                        event_type="train_error",
+                        details_json=_json.dumps({
+                            "error": str(e)[:500],
+                            "trigger": "manual",
+                        }),
+                    ))
+                    await db.commit()
+            except Exception:
+                pass  # DB error logging failed, already logged to stderr
 
     asyncio.create_task(_run_full_pipeline())
 
