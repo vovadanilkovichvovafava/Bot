@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl, openTrackingLink } from '../../betting/services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -457,10 +457,10 @@ export default function AIChat() {
                               onClick={() => {
                                 trackClick(user?.id, 'aichat_bet_card');
                                 if (canUseDeeplink) {
-                                  const deeplink = bet.fonbetDeeplink
-                                    ? addTrackingToUrl(bet.fonbetDeeplink, user?.id, 'aichat_bet_card')
-                                    : getTrackingLink(user?.id, 'aichat_bet_card', user?.funnel);
-                                  if (deeplink) window.open(deeplink, '_blank', 'noopener,noreferrer');
+                                  openTrackingLink(user?.id, 'aichat_bet_card', user?.funnel, {
+                                    deeplink: bet.fonbetDeeplink || null,
+                                    meta: { bet_type: bet.type, odds: bet.odds },
+                                  });
                                 } else {
                                   navigate('/promo');
                                 }
@@ -489,8 +489,7 @@ export default function AIChat() {
                     onClick={() => {
                       trackClick(user?.id, 'aichat_promo_link');
                       if (canUseDeeplink) {
-                        const link = getTrackingLink(user?.id, 'aichat_promo_link', user?.funnel);
-                        if (link) window.open(link, '_blank', 'noopener,noreferrer');
+                        openTrackingLink(user?.id, 'aichat_promo_link', user?.funnel);
                       } else {
                         navigate('/promo');
                       }
@@ -511,10 +510,9 @@ export default function AIChat() {
                 <div
                   onClick={() => {
                     trackClick(user?.id, 'aichat_ad_place_bet');
-                    const deeplink = msg.fonbetDeeplink
-                      ? addTrackingToUrl(msg.fonbetDeeplink, user?.id, 'aichat_ad_place_bet')
-                      : getTrackingLink(user?.id, 'aichat_ad_place_bet', user?.funnel);
-                    if (deeplink) window.open(deeplink, '_blank', 'noopener,noreferrer');
+                    openTrackingLink(user?.id, 'aichat_ad_place_bet', user?.funnel, {
+                      deeplink: msg.fonbetDeeplink || null,
+                    });
                   }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >

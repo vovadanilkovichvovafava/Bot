@@ -11,7 +11,7 @@ import FootballSpinner from '../../../shared/components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
-import { getTrackingLink } from '../../betting/services/trackingService';
+import { getTrackingLink, openTrackingLink } from '../../betting/services/trackingService';
 import { showLocalNotification, getPermissionStatus } from '../../../shared/services/pushNotificationService';
 
 const DAILY_DIGEST_KEY = 'daily_digest_shown';
@@ -640,12 +640,10 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, userFunn
     const banner = smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match';
     if (isPremium) {
       if (userId) trackClick(userId, banner);
-      const link = getTrackingLink(userId, banner, userFunnel);
-      if (link) {
-        window.open(link, '_blank', 'noopener,noreferrer');
-      } else {
-        navigate('/promo');
-      }
+      const bet = smartBet?.bet;
+      openTrackingLink(userId, banner, userFunnel, {
+        meta: bet ? { market: bet.market, odds: bet.odds, confidence: bet.confidence } : {},
+      });
     } else {
       navigate('/promo?banner=home_featured_match');
     }

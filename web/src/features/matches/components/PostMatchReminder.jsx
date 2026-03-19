@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { getTrackingLink } from '../../betting/services/trackingService';
+import { getTrackingLink, openTrackingLink } from '../../betting/services/trackingService';
 import { useTranslation } from 'react-i18next';
 import { generatePostMatchShareText, sharePrediction } from '../../predictions/services/shareUtils';
 import { showLocalNotification, getPermissionStatus } from '../../../shared/services/pushNotificationService';
@@ -103,8 +103,14 @@ export default function PostMatchReminder() {
   const handlePlaceBet = () => {
     if (reminder) markShown(reminder.id);
     trackClick(user?.id, 'post_match_reminder');
-    const link = getTrackingLink(user?.id, 'post_match_reminder', user?.funnel) || advertiser?.link;
-    if (link) window.open(link, '_blank', 'noopener,noreferrer');
+    openTrackingLink(user?.id, 'post_match_reminder', user?.funnel, {
+      meta: {
+        bet_type: reminder.bet_type,
+        odds: reminder.odds,
+        match: `${reminder.home_team} vs ${reminder.away_team}`,
+        prediction_won: true,
+      },
+    });
     setVisible(false);
     setTimeout(() => setReminder(null), 300);
   };

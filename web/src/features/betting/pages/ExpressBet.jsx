@@ -5,7 +5,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { loadExpressBets, loadFonbetMap, buildExpressFromBets } from '../../../services/valueBetService';
 import { generateExpressShareText, sharePrediction } from '../../predictions/services/shareUtils';
-import { getTrackingLink } from '../services/trackingService';
+import { getTrackingLink, openTrackingLink } from '../services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import api from '../../../shared/api';
 
@@ -367,8 +367,7 @@ export default function ExpressBet() {
             onClick={() => {
               trackClick(user?.id, 'express_free_bet_banner');
               if (isFonbetUser) {
-                const link = getTrackingLink(user?.id, 'express_free_bet_banner', user?.funnel);
-                if (link) window.open(link, '_blank', 'noopener,noreferrer');
+                openTrackingLink(user?.id, 'express_free_bet_banner', user?.funnel);
               } else {
                 navigate('/promo');
               }
@@ -531,8 +530,9 @@ function ExpressPresetCard({ express, isExpanded, onToggle, trackClick, userId, 
               onClick={() => {
                 trackClick?.(userId, 'express_bet');
                 if (canUseDeeplink) {
-                  const link = getTrackingLink(userId, 'express_bet', userFunnel);
-                  if (link) window.open(link, '_blank', 'noopener,noreferrer');
+                  openTrackingLink(userId, 'express_bet', userFunnel, {
+                    meta: { total_odds: express.total_odds, leg_count: express.leg_count },
+                  });
                 } else {
                   navigate('/promo');
                 }
