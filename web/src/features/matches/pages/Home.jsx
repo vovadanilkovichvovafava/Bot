@@ -12,7 +12,9 @@ import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
+import { showLocalNotification, getPermissionStatus } from '../../../shared/services/pushNotificationService';
 
+const DAILY_DIGEST_KEY = 'daily_digest_shown';
 
 
 const FREE_AI_LIMIT = 3;
@@ -81,6 +83,27 @@ export default function Home() {
       }
     } catch {}
   }, []);
+
+  // Daily digest push notification for PRO users — once per day
+  useEffect(() => {
+    if (!smartBet?.found || !isPremium) return;
+    if (getPermissionStatus() !== 'granted') return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(DAILY_DIGEST_KEY) === today) return;
+    localStorage.setItem(DAILY_DIGEST_KEY, today);
+
+    const bet = smartBet.bet;
+    const teams = `${smartBet.home?.name || ''} vs ${smartBet.away?.name || ''}`;
+    showLocalNotification(
+      t('home.dailyDigestTitle', { defaultValue: 'Best Bet Today' }),
+      {
+        body: `${teams} — ${bet?.market || ''} @ ${bet?.odds || ''} (${bet?.confidence || ''}% ${t('aiChat.aiConfidence', { defaultValue: 'confidence' })})`,
+        tag: `daily-digest-${today}`,
+        data: { type: 'daily_digest', url: '/' },
+      }
+    );
+  }, [smartBet, isPremium, t]);
 
   const processFixtures = (fixtures) => {
     return (fixtures || [])
@@ -319,6 +342,7 @@ export default function Home() {
           advertiser={advertiser}
           trackClick={trackClick}
           userId={user?.id}
+          userFunnel={user?.funnel}
           isPremium={isPremium}
           smartBet={smartBet}
         />
@@ -597,7 +621,7 @@ function HomeMatchCard({ fixture, navigate }) {
 }
 
 // Featured Match Promo Banner with team logos and diagonal split
-function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremium, smartBet }) {
+function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, userFunnel, isPremium, smartBet }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -613,9 +637,15 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, isPremiu
 
   // PRO: click goes directly to bookmaker. Free: click goes to promo page
   const handleClick = () => {
-    if (isPremium && advertiser?.link) {
-      if (userId) trackClick(userId, smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match');
-      navigate('/promo');
+    const banner = smartBet?.found ? 'smart_bet_banner' : 'pro_featured_match';
+    if (isPremium) {
+      if (userId) trackClick(userId, banner);
+      const link = getTrackingLink(userId, banner, userFunnel);
+      if (link) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate('/promo');
+      }
     } else {
       navigate('/promo?banner=home_featured_match');
     }
