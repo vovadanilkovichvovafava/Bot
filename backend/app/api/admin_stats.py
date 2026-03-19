@@ -1376,21 +1376,21 @@ async def get_ml_diagnostics(
     diag["enrichment"] = {
         "teams_with_elo": elo_teams,
         "leagues_covered": leagues_covered,
-        "min_training_samples": 50,
+        "min_training_samples": 30,
     }
 
     # 4. Training readiness
-    can_train = enriched_matches >= 50
+    can_train = enriched_matches >= 30
     diag["training_readiness"] = {
         "usable_samples": enriched_matches,
-        "minimum_required": 50,
+        "minimum_required": 30,
         "can_train": can_train,
-        "status": "READY" if can_train else f"NEED {50 - enriched_matches} MORE enriched matches",
+        "status": "READY" if can_train else f"NEED {30 - enriched_matches} MORE enriched matches",
     }
     if not can_train:
         diag["bottlenecks"].append(
-            f"Only {enriched_matches}/50 usable training samples. "
-            f"Need {50 - enriched_matches} more enriched+verified matches."
+            f"Only {enriched_matches}/30 usable training samples. "
+            f"Need {30 - enriched_matches} more enriched+verified matches."
         )
 
     # 5. Active models

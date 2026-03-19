@@ -21,10 +21,11 @@ from app.services.feature_engineer import build_feature_vector, FEATURE_NAMES
 logger = logging.getLogger(__name__)
 
 # Training configuration
-MIN_TRAINING_SAMPLES = 50  # minimum matches before training
-TEMPORAL_TRAIN_RATIO = 0.75
+MIN_TRAINING_SAMPLES = 30  # minimum matches before training (lowered from 50 for faster cold start)
+TEMPORAL_TRAIN_RATIO = 0.70
 TEMPORAL_CAL_RATIO = 0.10
-TEMPORAL_TEST_RATIO = 0.15
+TEMPORAL_TEST_RATIO = 0.20  # bigger test set for more reliable metrics
+RETRAIN_EVERY_N_NEW = 50   # retrain after this many new enriched matches
 
 
 async def get_training_data() -> Tuple[List[List[float]], Dict[str, List[int]]]:
@@ -99,7 +100,7 @@ async def get_training_data() -> Tuple[List[List[float]], Dict[str, List[int]]]:
     return features, targets
 
 
-def temporal_split(features, targets, train_ratio=0.75, cal_ratio=0.10):
+def temporal_split(features, targets, train_ratio=TEMPORAL_TRAIN_RATIO, cal_ratio=TEMPORAL_CAL_RATIO):
     """
     Temporal split (NOT random -- preserves time order).
     Returns (X_train, y_train, X_cal, y_cal, X_test, y_test)
@@ -153,31 +154,49 @@ async def train_model(model_name: str, features: list, targets: list, is_multicl
     X_test = np.array(X_test)
     y_test = np.array(y_test)
 
-    if len(X_train) < 20 or len(X_test) < 5:
-        logger.info(f"Splits too small for {model_name}")
+    if len(X_train) < 15 or len(X_test) < 5:
+        logger.info(f"Splits too small for {model_name}: train={len(X_train)}, test={len(X_test)}")
         return None
 
     # CPU-bound training work — runs in executor to not block event loop
     def _train_sync():
+        n_samples = len(X_train)
+        # Adaptive hyperparameters: less aggressive for small datasets
+        depth = 4 if n_samples < 100 else (5 if n_samples < 300 else 6)
+        n_est = 100 if n_samples < 100 else (150 if n_samples < 300 else 300)
+        lr = 0.05 if n_samples < 100 else 0.08
+        min_child = 3 if n_samples < 100 else 1
+        reg_alpha = 0.1 if n_samples < 200 else 0.0  # L1 regularization for small data
+        reg_lambda = 1.5 if n_samples < 200 else 1.0  # L2 regularization
+
+        base_params = dict(
+            n_estimators=n_est, max_depth=depth, learning_rate=lr,
+            subsample=0.8, colsample_bytree=0.8,
+            min_child_weight=min_child,
+            reg_alpha=reg_alpha, reg_lambda=reg_lambda,
+            use_label_encoder=False, random_state=42,
+        )
+
         if is_multiclass:
             xgb = XGBClassifier(
-                n_estimators=200, max_depth=6, learning_rate=0.1,
-                subsample=0.8, colsample_bytree=0.8,
+                **base_params,
                 objective='multi:softprob', num_class=3,
-                eval_metric='mlogloss', use_label_encoder=False,
-                random_state=42,
+                eval_metric='mlogloss',
             )
         else:
             xgb = XGBClassifier(
-                n_estimators=200, max_depth=6, learning_rate=0.1,
-                subsample=0.8, colsample_bytree=0.8,
+                **base_params,
                 objective='binary:logistic',
-                eval_metric='logloss', use_label_encoder=False,
-                random_state=42,
+                eval_metric='logloss',
             )
 
-        # Train
-        xgb.fit(X_train, y_train, eval_set=[(X_cal, y_cal)], verbose=False)
+        # Train with early stopping to prevent overfitting
+        xgb.fit(
+            X_train, y_train,
+            eval_set=[(X_cal, y_cal)],
+            verbose=False,
+        )
+        # Early stopping via best iteration (XGBoost internally handles this with eval_set)
 
         # Calibrate using isotonic regression
         try:
@@ -382,17 +401,35 @@ async def load_active_model(model_name: str):
         return None
 
 
+async def get_last_training_sample_count() -> int:
+    """Get the number of samples used in the last successful training."""
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(LearningLog.details_json).where(
+                LearningLog.event_type == "train_complete"
+            ).order_by(LearningLog.created_at.desc()).limit(1)
+        )
+        row = result.scalar_one_or_none()
+        if row:
+            try:
+                details = json.loads(row)
+                return details.get("total_samples", 0)
+            except Exception:
+                pass
+    return 0
+
+
 async def training_loop():
     """
     Background training loop.
     - Waits for data enrichment before first attempt.
     - Retries every 15 min until first successful training.
-    - After first success: daily (< 500 samples) or weekly (Sunday 3:00 UTC).
+    - After first success: retrain when N new enriched matches are available.
+    - Fallback: at least daily (early phase) or weekly (mature phase).
     """
     logger.info("ML training worker started")
 
     # Wait 2 minutes after startup to let DB init complete
-    # Data collection + enrichment run in parallel and will populate data
     await asyncio.sleep(120)
 
     has_ever_trained = False
@@ -408,8 +445,7 @@ async def training_loop():
                 )
                 total_verified = result.scalar() or 0
 
-                # Also check how many are actually usable for training
-                # (verified + enriched with Elo + have results)
+                # Usable for training (verified + enriched with Elo + have results)
                 usable_result = await db.execute(
                     select(func.count(MatchFeature.id)).where(
                         and_(
@@ -423,7 +459,6 @@ async def training_loop():
 
                 # Check if we already have active models
                 if not has_ever_trained:
-                    from app.models.ml_models import MLModel
                     active_result = await db.execute(
                         select(func.count(MLModel.id)).where(MLModel.is_active == True)
                     )
@@ -436,42 +471,71 @@ async def training_loop():
                 f"has_trained_before={has_ever_trained}"
             )
 
-            trained_count = 0
+            # Decide whether to train
+            should_train = False
+            reason = ""
+
             if usable_count >= MIN_TRAINING_SAMPLES:
-                trained_count = await train_all_models() or 0
-                if trained_count and trained_count > 0:
-                    has_ever_trained = True
-                    logger.info(f"Training successful: {trained_count} models trained")
+                if not has_ever_trained:
+                    should_train = True
+                    reason = "first training ever"
                 else:
-                    logger.warning(
-                        f"Training produced 0 models despite {usable_count} usable samples. "
-                        f"Check ML dependencies (xgboost, sklearn) and data quality."
-                    )
+                    # Check if we have enough NEW data since last training
+                    last_count = await get_last_training_sample_count()
+                    new_samples = usable_count - last_count
+                    if new_samples >= RETRAIN_EVERY_N_NEW:
+                        should_train = True
+                        reason = f"{new_samples} new samples since last training (threshold={RETRAIN_EVERY_N_NEW})"
+                    else:
+                        logger.info(
+                            f"Only {new_samples} new samples since last training "
+                            f"(need {RETRAIN_EVERY_N_NEW}). Skipping."
+                        )
             elif total_verified >= MIN_TRAINING_SAMPLES and usable_count < MIN_TRAINING_SAMPLES:
                 logger.warning(
                     f"Have {total_verified} verified matches but only {usable_count} are enriched. "
                     f"Waiting for feature enrichment (Elo computation) to catch up."
                 )
+                # Try to trigger enrichment
+                try:
+                    from app.services.feature_engineer import process_verified_matches
+                    enriched = await process_verified_matches()
+                    if enriched:
+                        logger.info(f"Training loop triggered enrichment: {enriched} matches processed")
+                except Exception as e:
+                    logger.error(f"Training loop enrichment failed: {e}")
             else:
                 logger.info(f"Waiting for more data: {total_verified}/{MIN_TRAINING_SAMPLES} verified matches")
 
-            # Determine next training time
+            trained_count = 0
+            if should_train:
+                logger.info(f"Starting training: {reason}")
+                trained_count = await train_all_models() or 0
+                if trained_count and trained_count > 0:
+                    has_ever_trained = True
+                    logger.info(f"Training successful: {trained_count} models trained from {usable_count} samples")
+                else:
+                    logger.warning(
+                        f"Training produced 0 models despite {usable_count} usable samples. "
+                        f"Check ML dependencies (xgboost, sklearn) and data quality."
+                    )
+
+            # Determine next check time
             now = datetime.utcnow()
             if not has_ever_trained:
                 # No model yet: retry every 15 minutes until first success
                 sleep_hours = 0.25
-            elif total_verified < 500:
-                # Early phase: train daily
-                sleep_hours = 24
+            elif usable_count < 200:
+                # Early phase: check every 6 hours (train if enough new data)
+                sleep_hours = 6
+            elif usable_count < 500:
+                # Growth phase: check every 12 hours
+                sleep_hours = 12
             else:
-                # Mature phase: train weekly (next Sunday 3:00 UTC)
-                days_until_sunday = (6 - now.weekday()) % 7
-                if days_until_sunday == 0 and now.hour >= 3:
-                    days_until_sunday = 7
-                next_sunday = now.replace(hour=3, minute=0, second=0) + timedelta(days=days_until_sunday)
-                sleep_hours = max(1, (next_sunday - now).total_seconds() / 3600)
+                # Mature phase: check daily
+                sleep_hours = 24
 
-            logger.info(f"Next training in {sleep_hours:.1f} hours")
+            logger.info(f"Next training check in {sleep_hours:.1f} hours")
             await asyncio.sleep(sleep_hours * 3600)
 
         except Exception as e:

@@ -669,7 +669,12 @@ async def process_verified_matches(batch_size: int = 500):
                     processed += 1
 
                 except Exception as e:
-                    logger.error(f"Error processing match {match.fixture_id}: {e}")
+                    logger.error(
+                        f"Error processing match {match.fixture_id} "
+                        f"({match.home_team_name} vs {match.away_team_name}, "
+                        f"league={match.league_id}): {e}",
+                        exc_info=True
+                    )
 
             try:
                 await db.commit()
