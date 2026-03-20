@@ -437,6 +437,28 @@ export default function AdminPredictions() {
         </Card>
       </div>
 
+      {/* ── By Source ── */}
+      {stats?.by_source?.length > 0 && (
+        <Card title="By Source" subtitle="Where predictions originated">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {stats.by_source.map(s => (
+              <div key={s.source} className="bg-slate-800/50 rounded-lg p-4 text-center">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
+                  {s.source === 'ai_chat' ? 'AI Chat' : s.source === 'api' ? 'API' : s.source === 'bot' ? 'Bot' : 'Unknown'}
+                </p>
+                <p className="text-xl font-bold text-slate-100">{s.total.toLocaleString()}</p>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <span className="text-[10px] text-slate-500">{s.verified} verified</span>
+                  <span className={`text-xs font-bold font-mono ${
+                    s.accuracy >= 60 ? 'text-emerald-400' : s.accuracy >= 45 ? 'text-amber-400' : s.accuracy > 0 ? 'text-red-400' : 'text-slate-500'
+                  }`}>{s.accuracy}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* ── ROI Analytics ── */}
       {stats?.roi?.length > 0 && (
         <Card title="ROI Analytics" subtitle="Return on investment by period">

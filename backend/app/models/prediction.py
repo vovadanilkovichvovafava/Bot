@@ -39,6 +39,7 @@ class Prediction(Base):
     # AI analysis
     ai_analysis = Column(Text, nullable=True)
     api_prediction = Column(Text, nullable=True)  # JSON string from API-Football
+    source = Column(String, nullable=True)  # 'ai_chat', 'api', 'bot' — where prediction originated
 
     # Actual result (filled after match)
     actual_home_score = Column(Integer, nullable=True)
