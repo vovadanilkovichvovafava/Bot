@@ -1,226 +1,9 @@
 import { useState, useEffect } from 'react'
 import { adminApi } from '../api'
-
-/* ── Reusable chart components ─────────────────────────────────── */
-
-function BarChart({ data, color = 'green', height = 'h-40', valueKey = 'count', labelKey = 'date', formatLabel }) {
-  if (!data.length) return <p className="text-xs text-slate-600 text-center py-8">No data</p>
-  const max = Math.max(...data.map(d => d[valueKey]), 1)
-  const colors = {
-    green: { bg: 'bg-emerald-500/50', hover: 'hover:bg-emerald-400/70', text: 'text-emerald-400' },
-    blue: { bg: 'bg-blue-500/50', hover: 'hover:bg-blue-400/70', text: 'text-blue-400' },
-    amber: { bg: 'bg-amber-500/50', hover: 'hover:bg-amber-400/70', text: 'text-amber-400' },
-    purple: { bg: 'bg-purple-500/50', hover: 'hover:bg-purple-400/70', text: 'text-purple-400' },
-    cyan: { bg: 'bg-cyan-500/50', hover: 'hover:bg-cyan-400/70', text: 'text-cyan-400' },
-  }
-  const c = colors[color] || colors.green
-  const ticks = [0, Math.round(max / 3), Math.round((max * 2) / 3), max]
-  const step = Math.max(1, Math.floor((data.length - 1) / 5))
-  const xLabels = data.reduce((acc, d, i) => {
-    if (i === 0 || i === data.length - 1 || i % step === 0) {
-      const lbl = formatLabel ? formatLabel(d[labelKey]) : (d[labelKey]?.slice?.(5) || d[labelKey])
-      acc.push({ i, label: lbl })
-    }
-    return acc
-  }, [])
-
-  return (
-    <div className="flex">
-      <div className={`flex flex-col justify-between items-end pr-2 ${height} py-0.5`}>
-        {[...ticks].reverse().map((t, i) => (
-          <span key={i} className="text-[10px] text-slate-500 font-mono leading-none">{t}</span>
-        ))}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className={`flex items-end gap-[2px] ${height} border-l border-b border-slate-700/40`}>
-          {data.map((d, i) => (
-            <div
-              key={i}
-              className={`flex-1 ${c.bg} rounded-t-sm min-w-[3px] ${c.hover} transition-all cursor-default`}
-              style={{ height: `${Math.max((d[valueKey] / max) * 100, 1.5)}%` }}
-              title={`${d[labelKey]}: ${d[valueKey]}`}
-            />
-          ))}
-        </div>
-        <div className="relative h-5 mt-1">
-          {xLabels.map(({ i, label }) => (
-            <span
-              key={i}
-              className="absolute text-[10px] text-slate-500 font-mono -translate-x-1/2"
-              style={{ left: `${(i / (data.length - 1)) * 100}%` }}
-            >{label}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function LineChart({ data, height = 'h-40', valueKey = 'accuracy', labelKey = 'date', formatLabel, suffix = '%', color = 'cyan' }) {
-  if (!data.length) return <p className="text-xs text-slate-600 text-center py-8">No data</p>
-  const values = data.map(d => d[valueKey])
-  const max = Math.max(...values, 1)
-  const min = Math.min(...values, 0)
-  const range = max - min || 1
-  const colors = {
-    cyan: { stroke: '#22d3ee', fill: 'rgba(34,211,238,0.08)', dot: '#22d3ee' },
-    green: { stroke: '#34d399', fill: 'rgba(52,211,153,0.08)', dot: '#34d399' },
-    amber: { stroke: '#fbbf24', fill: 'rgba(251,191,36,0.08)', dot: '#fbbf24' },
-    purple: { stroke: '#a78bfa', fill: 'rgba(167,139,250,0.08)', dot: '#a78bfa' },
-  }
-  const c = colors[color] || colors.cyan
-  const w = 500
-  const h = 120
-  const pad = { t: 10, b: 5, l: 0, r: 0 }
-  const pw = w - pad.l - pad.r
-  const ph = h - pad.t - pad.b
-  const points = data.map((d, i) => ({
-    x: pad.l + (i / (data.length - 1 || 1)) * pw,
-    y: pad.t + ph - ((d[valueKey] - min) / range) * ph,
-    d,
-  }))
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const area = `${line} L ${points[points.length - 1].x} ${h - pad.b} L ${points[0].x} ${h - pad.b} Z`
-
-  const ticks = [min, min + range / 2, max].map(v => Math.round(v * 10) / 10)
-  const step = Math.max(1, Math.floor((data.length - 1) / 5))
-  const xLabels = data.reduce((acc, d, i) => {
-    if (i === 0 || i === data.length - 1 || i % step === 0) {
-      const lbl = formatLabel ? formatLabel(d[labelKey]) : (d[labelKey]?.slice?.(5) || d[labelKey])
-      acc.push({ i, label: lbl, x: points[i].x })
-    }
-    return acc
-  }, [])
-
-  return (
-    <div className="flex">
-      <div className={`flex flex-col justify-between items-end pr-2 ${height} py-0.5`}>
-        {[...ticks].reverse().map((t, i) => (
-          <span key={i} className="text-[10px] text-slate-500 font-mono leading-none">{t}{suffix}</span>
-        ))}
-      </div>
-      <div className="flex-1 min-w-0">
-        <svg viewBox={`0 0 ${w} ${h}`} className={`w-full ${height}`} preserveAspectRatio="none">
-          <path d={area} fill={c.fill} />
-          <path d={line} fill="none" stroke={c.stroke} strokeWidth="2" strokeLinejoin="round" />
-          {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="3" fill={c.dot} opacity="0.7">
-              <title>{`${p.d[labelKey]}: ${p.d[valueKey]}${suffix}`}</title>
-            </circle>
-          ))}
-        </svg>
-        <div className="relative h-5 mt-1">
-          {xLabels.map(({ i, label, x }) => (
-            <span
-              key={i}
-              className="absolute text-[10px] text-slate-500 font-mono -translate-x-1/2"
-              style={{ left: `${(x / w) * 100}%` }}
-            >{label}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function DonutChart({ data, size = 140 }) {
-  const total = data.reduce((s, d) => s + d.value, 0)
-  if (!total) return <p className="text-xs text-slate-600 text-center py-8">No data</p>
-  const cx = size / 2
-  const cy = size / 2
-  const r = size / 2 - 12
-  const strokeWidth = 22
-  const circumference = 2 * Math.PI * r
-  let offset = 0
-
-  return (
-    <div className="flex items-center gap-6">
-      <svg width={size} height={size} className="flex-shrink-0">
-        {data.map((d, i) => {
-          const pct = d.value / total
-          const dash = pct * circumference
-          const gap = circumference - dash
-          const rotation = (offset / total) * 360 - 90
-          offset += d.value
-          return (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill="none"
-              stroke={d.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={`${dash} ${gap}`}
-              transform={`rotate(${rotation} ${cx} ${cy})`}
-              className="transition-all"
-            >
-              <title>{`${d.label}: ${d.value} (${(pct * 100).toFixed(1)}%)`}</title>
-            </circle>
-          )
-        })}
-        <text x={cx} y={cy - 6} textAnchor="middle" className="fill-white text-lg font-bold">{total.toLocaleString()}</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" className="fill-slate-400 text-[10px]">total</text>
-      </svg>
-      <div className="space-y-2">
-        {data.map((d, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
-            <span className="text-xs text-slate-300">{d.label}</span>
-            <span className="text-xs text-slate-500 font-mono ml-auto">{d.value.toLocaleString()}</span>
-            <span className="text-[10px] text-slate-500 font-mono w-10 text-right">{(d.value / total * 100).toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function HeatmapRow({ data, labelKey = 'day', valueKey = 'total', secondaryKey = 'accuracy', unit = '' }) {
-  if (!data.length) return null
-  const max = Math.max(...data.map(d => d[valueKey]), 1)
-  return (
-    <div className="flex gap-2 items-end">
-      {data.map((d, i) => {
-        const intensity = d[valueKey] / max
-        return (
-          <div key={i} className="flex-1 text-center">
-            <div
-              className="rounded-lg mx-auto transition-all mb-2 flex items-center justify-center"
-              style={{
-                height: '52px',
-                backgroundColor: `rgba(52, 211, 153, ${Math.max(intensity * 0.7, 0.05)})`,
-              }}
-              title={`${d[labelKey]}: ${d[valueKey]} predictions, ${d[secondaryKey]}% accuracy`}
-            >
-              <span className="text-xs font-bold text-white/80">{d[valueKey]}</span>
-            </div>
-            {d[secondaryKey] !== undefined && (
-              <p className={`text-[10px] font-mono mb-1 ${
-                d[secondaryKey] >= 60 ? 'text-emerald-400' : d[secondaryKey] >= 45 ? 'text-amber-400' : d[secondaryKey] > 0 ? 'text-red-400' : 'text-slate-600'
-              }`}>{d[secondaryKey] > 0 ? `${d[secondaryKey]}%` : '—'}</p>
-            )}
-            <p className="text-[10px] text-slate-500 font-medium">{d[labelKey]}</p>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ── Card wrapper ────────────────────────────────────────────── */
-
-function Card({ title, subtitle, children, className = '' }) {
-  return (
-    <div className={`bg-slate-900 border border-slate-800 rounded-xl p-5 ${className}`}>
-      {title && <h3 className="text-sm font-semibold mb-0.5">{title}</h3>}
-      {subtitle && <p className="text-[11px] text-slate-500 mb-4">{subtitle}</p>}
-      {children}
-    </div>
-  )
-}
-
-/* ── Main page ───────────────────────────────────────────────── */
+import {
+  StatCard, Card, BarChart, AreaChart, DonutChart, HeatmapRow,
+  RankingList, DataTable, Badge, StackedBar, Empty,
+} from '../components/AdminCharts'
 
 export default function AdminPredictions() {
   const [stats, setStats] = useState(null)
@@ -254,6 +37,8 @@ export default function AdminPredictions() {
 
   const p = overview?.predictions || {}
   const sb = stats?.status_breakdown || {}
+  const totalVerified = (sb.correct || 0) + (sb.incorrect || 0)
+  const pendingPct = p.total > 0 ? Math.round((sb.pending || 0) / p.total * 100) : 0
 
   return (
     <div className="space-y-6">
@@ -263,22 +48,32 @@ export default function AdminPredictions() {
       </div>
 
       {/* ── Top KPI cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-        {[
-          { label: 'Total', value: p.total?.toLocaleString() || '0', color: 'text-slate-100', icon: '📊' },
-          { label: 'Verified', value: p.verified?.toLocaleString() || '0', color: 'text-blue-400', icon: '✓' },
-          { label: 'Correct', value: p.correct?.toLocaleString() || '0', color: 'text-emerald-400', icon: '✅' },
-          { label: 'Accuracy', value: `${p.accuracy || 0}%`, color: p.accuracy >= 50 ? 'text-emerald-400' : 'text-amber-400', icon: '🎯' },
-          { label: 'Today', value: p.today?.toLocaleString() || '0', color: 'text-cyan-400', icon: '📅' },
-          { label: 'Yesterday', value: p.yesterday?.toLocaleString() || '0', color: 'text-slate-400', icon: '📆' },
-        ].map(s => (
-          <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">{s.label}</p>
-            </div>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Total" value={p.total?.toLocaleString() || '0'} color="blue"
+          sub={`${totalVerified} verified`}
+          sparkData={stats?.daily_predictions}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/></svg>}
+        />
+        <StatCard label="Accuracy" value={`${p.accuracy || 0}%`}
+          color={p.accuracy >= 55 ? 'green' : p.accuracy >= 45 ? 'amber' : 'rose'}
+          sub={`${sb.correct || 0} correct / ${totalVerified || 0} verified`}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+        />
+        <StatCard label="Correct" value={sb.correct?.toLocaleString() || '0'} color="green"
+          sub={totalVerified > 0 ? `${Math.round(sb.correct / totalVerified * 100)}% win rate` : '—'}
+          subColor="green"
+        />
+        <StatCard label="Incorrect" value={sb.incorrect?.toLocaleString() || '0'} color="rose"
+          sub={totalVerified > 0 ? `${Math.round(sb.incorrect / totalVerified * 100)}% loss rate` : '—'}
+          subColor="red"
+        />
+        <StatCard label="Pending" value={sb.pending?.toLocaleString() || '0'} color="slate"
+          sub={`${pendingPct}% awaiting result`}
+        />
+        <StatCard label="Today" value={p.today?.toLocaleString() || '0'} color="cyan"
+          sub={`Yesterday: ${p.yesterday || 0}`}
+          sparkData={stats?.daily_predictions?.slice(-7)}
+        />
       </div>
 
       {/* ── Status donut + Day-of-week heatmap ── */}
@@ -289,27 +84,94 @@ export default function AdminPredictions() {
             { label: 'Incorrect', value: sb.incorrect || 0, color: '#f87171' },
             { label: 'Pending', value: sb.pending || 0, color: '#64748b' },
           ]} />
+          {totalVerified > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-800">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-[10px] text-slate-500 mb-1">Verification Rate</p>
+                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${Math.round(totalVerified / (p.total || 1) * 100)}%` }} />
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-blue-400">{Math.round(totalVerified / (p.total || 1) * 100)}%</span>
+              </div>
+            </div>
+          )}
         </Card>
 
         <Card title="By Day of Week" subtitle="Volume & accuracy per weekday">
           <HeatmapRow data={stats?.by_day_of_week || []} />
+          {stats?.by_day_of_week?.some(d => d.total > 0) && (
+            <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3">
+              {(() => {
+                const days = stats.by_day_of_week.filter(d => d.total > 0)
+                const best = days.reduce((a, b) => (b.accuracy > a.accuracy ? b : a), days[0])
+                const busiest = days.reduce((a, b) => (b.total > a.total ? b : a), days[0])
+                return (
+                  <>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Best accuracy</p>
+                      <p className="text-sm font-semibold text-emerald-400">{best?.day} ({best?.accuracy}%)</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Most active</p>
+                      <p className="text-sm font-semibold text-blue-400">{busiest?.day} ({busiest?.total} preds)</p>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          )}
         </Card>
       </div>
 
-      {/* ── Daily Volume + Daily Accuracy line ── */}
+      {/* ── Daily Volume + Daily Accuracy ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Daily Predictions Volume" subtitle="Last 30 days">
-          <BarChart data={stats?.daily_predictions || []} color="green" height="h-36" />
+          <BarChart data={stats?.daily_predictions || []} color="green" height="h-36" showGrid />
+          {stats?.daily_predictions?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[10px] text-slate-500">
+                Avg: <span className="text-slate-300 font-mono">{Math.round(stats.daily_predictions.reduce((s, d) => s + d.count, 0) / stats.daily_predictions.length)}/day</span>
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Peak: <span className="text-emerald-400 font-mono">{Math.max(...stats.daily_predictions.map(d => d.count))}</span>
+              </span>
+            </div>
+          )}
         </Card>
 
         <Card title="Daily Accuracy Trend" subtitle="Last 30 days (verified only)">
-          <LineChart
+          <AreaChart
             data={(stats?.daily_accuracy || []).filter(d => d.verified > 0)}
             color="cyan"
             height="h-36"
             valueKey="accuracy"
             suffix="%"
           />
+          {stats?.daily_accuracy?.filter(d => d.verified > 0).length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">
+              {(() => {
+                const days = stats.daily_accuracy.filter(d => d.verified > 0)
+                const avg = Math.round(days.reduce((s, d) => s + d.accuracy, 0) / days.length)
+                const trend = days.length >= 7
+                  ? Math.round(days.slice(-7).reduce((s, d) => s + d.accuracy, 0) / 7 - days.slice(0, 7).reduce((s, d) => s + d.accuracy, 0) / Math.min(7, days.length))
+                  : null
+                return (
+                  <>
+                    <span className="text-[10px] text-slate-500">
+                      Avg: <span className={`font-mono ${avg >= 55 ? 'text-emerald-400' : 'text-amber-400'}`}>{avg}%</span>
+                    </span>
+                    {trend !== null && (
+                      <span className={`text-[10px] font-mono ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% 7d trend
+                      </span>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          )}
         </Card>
       </div>
 
@@ -317,7 +179,7 @@ export default function AdminPredictions() {
       <Card title="Weekly Accuracy Trend" subtitle="Last 12 weeks">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <LineChart
+            <AreaChart
               data={stats?.weekly_accuracy || []}
               color="green"
               height="h-44"
@@ -333,12 +195,13 @@ export default function AdminPredictions() {
               <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-slate-800/50">
                 <span className="text-slate-400 font-mono">{w.week?.slice(5)}</span>
                 <span className="text-slate-500">{w.total} preds</span>
-                <span className="text-slate-500">{w.verified} verified</span>
+                <span className="text-slate-500">{w.verified} ver.</span>
                 <span className={`font-bold font-mono ${
                   w.accuracy >= 60 ? 'text-emerald-400' : w.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'
                 }`}>{w.accuracy}%</span>
               </div>
             ))}
+            {!stats?.weekly_accuracy?.length && <Empty />}
           </div>
         </div>
       </Card>
@@ -353,101 +216,84 @@ export default function AdminPredictions() {
             valueKey="total"
             labelKey="bucket"
             formatLabel={v => v}
+            showGrid
           />
           <div className="space-y-3">
-            {(stats?.confidence_dist || []).map((b, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs text-slate-300 font-mono w-14">{b.bucket}%</span>
-                <div className="flex-1 h-6 bg-slate-800 rounded-md overflow-hidden relative">
-                  <div
-                    className="h-full bg-purple-500/40 rounded-md transition-all"
-                    style={{ width: `${Math.min((b.total / Math.max(...(stats?.confidence_dist || []).map(x => x.total), 1)) * 100, 100)}%` }}
-                  />
-                  <span className="absolute inset-0 flex items-center px-2 text-[10px] text-slate-300 font-mono">
-                    {b.total} total &middot; {b.verified} verified &middot;
-                    <span className={`ml-1 font-bold ${
-                      b.accuracy >= 60 ? 'text-emerald-400' : b.accuracy >= 45 ? 'text-amber-400' : b.accuracy > 0 ? 'text-red-400' : 'text-slate-500'
-                    }`}>{b.accuracy}% acc</span>
-                  </span>
+            {(stats?.confidence_dist || []).map((b, i) => {
+              const maxTotal = Math.max(...(stats?.confidence_dist || []).map(x => x.total), 1)
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-slate-300 font-mono w-14">{b.bucket}%</span>
+                  <div className="flex-1 h-6 bg-slate-800 rounded-md overflow-hidden relative">
+                    <div className="h-full bg-purple-500/40 rounded-md transition-all"
+                      style={{ width: `${Math.min((b.total / maxTotal) * 100, 100)}%` }} />
+                    <span className="absolute inset-0 flex items-center px-2 text-[10px] text-slate-300 font-mono">
+                      {b.total} total &middot; {b.verified} ver. &middot;
+                      <span className={`ml-1 font-bold ${
+                        b.accuracy >= 60 ? 'text-emerald-400' : b.accuracy >= 45 ? 'text-amber-400' : b.accuracy > 0 ? 'text-red-400' : 'text-slate-500'
+                      }`}>{b.accuracy}% acc</span>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
+            {!stats?.confidence_dist?.length && <Empty />}
           </div>
         </div>
+        {/* Insight: optimal confidence range */}
+        {stats?.confidence_dist?.length > 0 && (() => {
+          const best = [...(stats.confidence_dist || [])].filter(b => b.verified > 2).sort((a, b) => b.accuracy - a.accuracy)[0]
+          return best ? (
+            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-2">
+              <Badge color="purple">Insight</Badge>
+              <span className="text-xs text-slate-400">
+                Best accuracy at <span className="text-purple-400 font-mono font-semibold">{best.bucket}%</span> confidence
+                ({best.accuracy}% accuracy from {best.verified} verified)
+              </span>
+            </div>
+          ) : null
+        })()}
       </Card>
 
       {/* ── By Bet Type + By League ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="By Bet Type" subtitle="Top 10 bet types by volume">
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-            {(stats?.by_bet_type || []).map((b, i) => (
-              <div key={b.bet_type}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500 font-mono w-4">{i + 1}</span>
-                    <span className="text-xs text-slate-300 truncate max-w-[160px]">{b.bet_type}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-slate-500 font-mono">{b.correct}/{b.total}</span>
-                    <span className={`text-xs font-bold font-mono min-w-[40px] text-right ${
-                      b.accuracy >= 60 ? 'text-emerald-400' : b.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'
-                    }`}>{b.accuracy}%</span>
-                  </div>
-                </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      b.accuracy >= 60 ? 'bg-emerald-500/60' : b.accuracy >= 45 ? 'bg-amber-500/60' : 'bg-red-500/60'
-                    }`}
-                    style={{ width: `${Math.min(b.accuracy, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-            {(!stats?.by_bet_type?.length) && (
-              <p className="text-xs text-slate-600 text-center py-6">No prediction data yet</p>
-            )}
-          </div>
+          <RankingList
+            data={(stats?.by_bet_type || []).map(b => ({ label: b.bet_type, value: b.total, accuracy: b.accuracy, correct: b.correct }))}
+            labelKey="label"
+            valueKey="value"
+            secondaryKey="accuracy"
+            color="auto"
+            formatValue={v => `${v} preds`}
+          />
+          {!stats?.by_bet_type?.length && <Empty text="No prediction data yet" />}
         </Card>
 
         <Card title="By League" subtitle="Top 10 leagues by volume">
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-            {(stats?.by_league || []).map((l, i) => (
-              <div key={l.league}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500 font-mono w-4">{i + 1}</span>
-                    <span className="text-xs text-slate-300 truncate max-w-[160px]">{l.league}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-slate-500 font-mono">{l.correct}/{l.total}</span>
-                    <span className={`text-xs font-bold font-mono min-w-[40px] text-right ${
-                      l.accuracy >= 60 ? 'text-emerald-400' : l.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'
-                    }`}>{l.accuracy}%</span>
-                  </div>
-                </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      l.accuracy >= 60 ? 'bg-emerald-500/60' : l.accuracy >= 45 ? 'bg-amber-500/60' : 'bg-red-500/60'
-                    }`}
-                    style={{ width: `${Math.min(l.accuracy, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-            {(!stats?.by_league?.length) && (
-              <p className="text-xs text-slate-600 text-center py-6">No league data yet</p>
-            )}
-          </div>
+          <RankingList
+            data={(stats?.by_league || []).map(l => ({ label: l.league, value: l.total, accuracy: l.accuracy, correct: l.correct }))}
+            labelKey="label"
+            valueKey="value"
+            secondaryKey="accuracy"
+            color="auto"
+            formatValue={v => `${v} preds`}
+          />
+          {!stats?.by_league?.length && <Empty text="No league data yet" />}
         </Card>
       </div>
 
       {/* ── By Source ── */}
       {stats?.by_source?.length > 0 && (
         <Card title="By Source" subtitle="Where predictions originated">
+          <div className="mb-4">
+            <StackedBar segments={stats.by_source.map((s, i) => ({
+              label: s.source === 'ai_chat' ? 'AI Chat' : s.source === 'api' ? 'API' : s.source === 'bot' ? 'Bot' : 'Unknown',
+              value: s.total,
+              color: ['#22d3ee', '#3b82f6', '#a78bfa', '#64748b'][i] || '#64748b',
+            }))} height="h-4" />
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {stats.by_source.map(s => (
+            {stats.by_source.map((s, i) => (
               <div key={s.source} className="bg-slate-800/50 rounded-lg p-4 text-center">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                   {s.source === 'ai_chat' ? 'AI Chat' : s.source === 'api' ? 'API' : s.source === 'bot' ? 'Bot' : 'Unknown'}
@@ -468,37 +314,23 @@ export default function AdminPredictions() {
       {/* ── ROI Analytics ── */}
       {stats?.roi?.length > 0 && (
         <Card title="ROI Analytics" subtitle="Return on investment by period">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-500 text-xs">
-                  <th className="text-left px-4 py-3 font-medium">Period</th>
-                  <th className="text-right px-3 py-3 font-medium">Predictions</th>
-                  <th className="text-right px-3 py-3 font-medium">Accuracy</th>
-                  <th className="text-right px-4 py-3 font-medium">ROI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {stats.roi.map((r, i) => (
-                  <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-4 py-3 text-xs">
-                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded mr-2">{r.period}</span>
-                      {r.start}
-                    </td>
-                    <td className="px-3 py-3 text-right font-mono text-xs text-slate-400">{r.predictions}</td>
-                    <td className="px-3 py-3 text-right font-mono text-xs">
-                      <span className={r.accuracy >= 50 ? 'text-emerald-400' : 'text-amber-400'}>{r.accuracy}%</span>
-                    </td>
-                    <td className={`px-4 py-3 text-right font-mono text-xs font-bold ${
-                      r.roi >= 0 ? 'text-emerald-400' : 'text-red-400'
-                    }`}>
-                      {r.roi >= 0 ? '+' : ''}{r.roi}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[
+              { key: 'period', label: 'Period', render: r => (
+                <span><Badge color={r.period === 'daily' ? 'blue' : r.period === 'weekly' ? 'green' : 'purple'}>{r.period}</Badge> <span className="text-slate-400 ml-1">{r.start}</span></span>
+              )},
+              { key: 'predictions', label: 'Predictions', align: 'right', mono: true },
+              { key: 'accuracy', label: 'Accuracy', align: 'right', mono: true, render: r => (
+                <span className={r.accuracy >= 50 ? 'text-emerald-400' : 'text-amber-400'}>{r.accuracy}%</span>
+              )},
+              { key: 'roi', label: 'ROI', align: 'right', mono: true, render: r => (
+                <span className={`font-bold ${r.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {r.roi >= 0 ? '+' : ''}{r.roi}%
+                </span>
+              )},
+            ]}
+            rows={stats.roi}
+          />
         </Card>
       )}
     </div>

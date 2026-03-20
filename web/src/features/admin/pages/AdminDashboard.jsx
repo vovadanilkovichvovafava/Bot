@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { adminApi } from '../api'
+import {
+  StatCard, Card, BarChart, AreaChart, DonutChart, FunnelChart,
+  RankingList, DataTable, Badge, StackedBar, HeatmapRow, Empty,
+  MiniSparkline, ComparisonBars,
+} from '../components/AdminCharts'
 
 const COUNTRY_CODES = {
   'Italy': 'IT', 'Germany': 'DE', 'Spain': 'ES', 'France': 'FR', 'United Kingdom': 'GB',
@@ -20,166 +25,6 @@ function countryFlag(name) {
   const code = COUNTRY_CODES[name]
   if (!code) return ''
   return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65))
-}
-
-function StatCard({ label, value, sub, subColor, color = 'blue', icon }) {
-  const colors = {
-    blue: 'from-blue-600/20 to-blue-600/5 border-blue-500/20',
-    green: 'from-green-600/20 to-green-600/5 border-green-500/20',
-    purple: 'from-purple-600/20 to-purple-600/5 border-purple-500/20',
-    amber: 'from-amber-600/20 to-amber-600/5 border-amber-500/20',
-    cyan: 'from-cyan-600/20 to-cyan-600/5 border-cyan-500/20',
-    rose: 'from-rose-600/20 to-rose-600/5 border-rose-500/20',
-  }
-  const textColors = {
-    blue: 'text-blue-400',
-    green: 'text-green-400',
-    purple: 'text-purple-400',
-    amber: 'text-amber-400',
-    cyan: 'text-cyan-400',
-    rose: 'text-rose-400',
-  }
-  const subClr = subColor === 'green' ? 'text-emerald-400' : subColor === 'amber' ? 'text-amber-400' : 'text-slate-500'
-
-  return (
-    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs text-slate-400 font-medium">{label}</p>
-        <span className={textColors[color]}>{icon}</span>
-      </div>
-      <p className="text-2xl font-bold text-slate-100">{value}</p>
-      {sub && <p className={`text-[11px] mt-1 ${subClr}`}>{sub}</p>}
-    </div>
-  )
-}
-
-function BarChart({ data, color = 'blue' }) {
-  if (!data.length) return null
-  const items = data.slice(-14)
-  const max = Math.max(...items.map(d => d.count), 1)
-  // Y-axis: 4 ticks
-  const yTicks = [max, Math.round(max * 0.66), Math.round(max * 0.33), 0]
-  const barColor = color === 'green' ? 'bg-emerald-500/50 hover:bg-emerald-400/70' : 'bg-blue-500/50 hover:bg-blue-400/70'
-
-  return (
-    <div className="flex gap-0">
-      {/* Y axis */}
-      <div className="flex flex-col justify-between h-32 pr-2 shrink-0">
-        {yTicks.map((v, i) => (
-          <span key={i} className="text-[9px] text-slate-500 font-mono leading-none text-right min-w-[24px]">{v}</span>
-        ))}
-      </div>
-      {/* Chart area */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex items-end gap-[3px] h-32 border-l border-b border-slate-700/50 pl-1 pb-1">
-          {items.map((d, i) => (
-            <div
-              key={i}
-              className={`flex-1 ${barColor} rounded-t min-w-[6px] transition-all relative group`}
-              style={{ height: `${Math.max((d.count / max) * 100, 3)}%` }}
-            >
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 font-mono">
-                {d.count}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* X axis */}
-        <div className="flex justify-between mt-1.5 pl-1">
-          {items.map((d, i) => {
-            // Show label for first, last, and every ~3rd bar
-            const show = i === 0 || i === items.length - 1 || i % 3 === 0
-            const label = d.date ? d.date.slice(5) : '' // "MM-DD"
-            return (
-              <span key={i} className="flex-1 text-center text-[8px] text-slate-500 font-mono">
-                {show ? label : ''}
-              </span>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function RetentionTable({ cohorts }) {
-  if (!cohorts?.length) return <p className="text-xs text-slate-600 text-center py-6">No cohort data</p>
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-slate-800 text-slate-500">
-            <th className="text-left px-3 py-2 font-medium">Week</th>
-            <th className="text-right px-3 py-2 font-medium">Registered</th>
-            <th className="text-right px-3 py-2 font-medium">Activated</th>
-            <th className="text-right px-3 py-2 font-medium">Retained</th>
-            <th className="text-right px-3 py-2 font-medium">Converted</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-800/50">
-          {cohorts.map(c => (
-            <tr key={c.week} className="hover:bg-slate-800/20">
-              <td className="px-3 py-2 font-mono text-slate-300">{c.week}</td>
-              <td className="px-3 py-2 text-right font-mono text-slate-400">{c.registered}</td>
-              <td className="px-3 py-2 text-right font-mono">
-                <span className="text-slate-400">{c.made_prediction}</span>
-                {c.activation_pct > 0 && <span className="text-blue-400 ml-1">({c.activation_pct}%)</span>}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">
-                <span className="text-slate-400">{c.returned_week1}</span>
-                {c.retention_pct > 0 && (
-                  <span className={`ml-1 ${c.retention_pct >= 30 ? 'text-green-400' : c.retention_pct >= 15 ? 'text-amber-400' : 'text-red-400'}`}>
-                    ({c.retention_pct}%)
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">
-                <span className="text-slate-400">{c.converted_pro}</span>
-                {c.conversion_pct > 0 && <span className="text-purple-400 ml-1">({c.conversion_pct}%)</span>}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function ConversionFunnel({ funnel }) {
-  if (!funnel) return null
-  const steps = [
-    { label: 'Registered', value: funnel.registered, color: 'bg-blue-500' },
-    { label: 'Activated', value: funnel.activated, color: 'bg-green-500' },
-    { label: 'PRO', value: funnel.converted_pro, color: 'bg-purple-500' },
-  ]
-  const max = Math.max(funnel.registered, 1)
-
-  return (
-    <div className="space-y-3">
-      {steps.map((s, i) => {
-        const pct = Math.round((s.value / max) * 100)
-        const prevValue = i > 0 ? steps[i - 1].value : null
-        const convRate = prevValue && prevValue > 0 ? Math.round((s.value / prevValue) * 100) : null
-        return (
-          <div key={s.label}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-300">{s.label}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-slate-400">{s.value}</span>
-                {convRate !== null && (
-                  <span className="text-[10px] text-slate-500">{convRate}% conv</span>
-                )}
-              </div>
-            </div>
-            <div className="h-5 bg-slate-800 rounded-full overflow-hidden">
-              <div className={`h-full ${s.color}/40 rounded-full transition-all`} style={{ width: `${Math.max(pct, 2)}%` }} />
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 export default function AdminDashboard() {
@@ -230,7 +75,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -238,50 +82,39 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats grid */}
+      {/* ── Stats grid ── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard
-          label="Total Users"
-          value={o.users.total?.toLocaleString() || '0'}
+        <StatCard label="Total Users" value={o.users.total?.toLocaleString() || '0'}
           sub={`+${o.users.new_today || 0} today`}
           subColor={o.users.new_today > 0 ? 'green' : undefined}
           color="blue"
+          sparkData={usersStats?.daily_registrations}
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>}
         />
-        <StatCard
-          label="PRO Users"
-          value={o.users.pro?.toLocaleString() || '0'}
+        <StatCard label="PRO Users" value={o.users.pro?.toLocaleString() || '0'}
           sub={o.users.pro_new_today > 0 ? `+${o.users.pro_new_today} today` : 'No new today'}
           subColor={o.users.pro_new_today > 0 ? 'green' : undefined}
           color="purple"
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>}
         />
-        <StatCard
-          label="Online Users"
-          value={o.users.online?.toLocaleString() || '0'}
-          sub="Active last 15 min"
-          color="cyan"
+        <StatCard label="Online Now" value={o.users.online?.toLocaleString() || '0'}
+          sub="Active last 15 min" color="cyan"
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/></svg>}
         />
-        <StatCard
-          label="Predictions"
-          value={o.predictions.total?.toLocaleString() || '0'}
+        <StatCard label="Predictions" value={o.predictions.total?.toLocaleString() || '0'}
           sub={`+${o.predictions.today || 0} today · ${o.predictions.accuracy || 0}% acc`}
           subColor={o.predictions.today > 0 ? 'green' : undefined}
           color="green"
+          sparkData={predStats?.daily_predictions}
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/></svg>}
         />
-        <StatCard
-          label="Support Sessions"
-          value={o.support_sessions?.toLocaleString() || '0'}
+        <StatCard label="Support" value={o.support_sessions?.toLocaleString() || '0'}
           sub={o.support_sessions_today > 0 ? `+${o.support_sessions_today} today` : 'None today'}
           subColor={o.support_sessions_today > 0 ? 'amber' : undefined}
           color="rose"
-          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.712 4.33a9.027 9.027 0 011.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 00-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 010 9.424m-4.138-5.976a3.736 3.736 0 00-.88-1.388 3.737 3.737 0 00-1.388-.88m2.268 2.268a3.765 3.765 0 010 2.528m-2.268-4.796l-3.448 4.138m3.448-4.138a3.736 3.736 0 00-5.528 0m2.28 4.138L7.288 19.67m0 0a9.024 9.024 0 01-1.652-1.306 9.027 9.027 0 01-1.306-1.652m4.138-3.448a3.765 3.765 0 010 2.528M4.33 16.712a9.014 9.014 0 010-9.424m4.138 5.976a3.765 3.765 0 01-2.528 0"/></svg>}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>}
         />
-        <StatCard
-          label="Football API"
-          value={o.football_api?.used?.toLocaleString() || '0'}
+        <StatCard label="Football API" value={o.football_api?.used?.toLocaleString() || '0'}
           sub={o.football_api?.limit ? `Limit: ${o.football_api.limit.toLocaleString()}/day` : 'No key set'}
           subColor={o.football_api?.limit && o.football_api.used > o.football_api.limit * 0.8 ? 'amber' : 'green'}
           color="amber"
@@ -289,162 +122,95 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Charts row */}
+      {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Registration trend */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold">User Registrations</h3>
-              <p className="text-[11px] text-slate-500">Last 14 days</p>
+        <Card title="User Registrations" subtitle="Last 14 days"
+          action={<Link to="/admin/users" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>}>
+          <BarChart data={(usersStats?.daily_registrations || []).slice(-14)} color="blue" height="h-32" />
+          {usersStats?.daily_registrations?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
+              <span>Avg: <span className="text-slate-300 font-mono">
+                {Math.round(usersStats.daily_registrations.slice(-14).reduce((s, d) => s + d.count, 0) / Math.min(14, usersStats.daily_registrations.length))}/day
+              </span></span>
+              <span>Total 14d: <span className="text-blue-400 font-mono">
+                {usersStats.daily_registrations.slice(-14).reduce((s, d) => s + d.count, 0)}
+              </span></span>
             </div>
-            <Link to="/admin/users" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>
-          </div>
-          <BarChart data={usersStats?.daily_registrations || []} color="blue" />
-        </div>
+          )}
+        </Card>
 
-        {/* Predictions trend */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold">Daily Predictions</h3>
-              <p className="text-[11px] text-slate-500">Last 14 days</p>
+        <Card title="Daily Predictions" subtitle="Last 14 days"
+          action={<Link to="/admin/predictions" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>}>
+          <BarChart data={(predStats?.daily_predictions || []).slice(-14)} color="green" height="h-32" />
+          {predStats?.daily_predictions?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
+              <span>Accuracy: <span className={`font-mono font-semibold ${(o.predictions.accuracy || 0) >= 55 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {o.predictions.accuracy || 0}%
+              </span></span>
+              <span>Verified: <span className="text-green-400 font-mono">{o.predictions.verified || 0}</span></span>
             </div>
-            <Link to="/admin/predictions" className="text-[11px] text-blue-400 hover:text-blue-300">View all</Link>
-          </div>
-          <BarChart data={predStats?.daily_predictions || []} color="green" />
-        </div>
+          )}
+        </Card>
       </div>
 
-      {/* Recent Registrations */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-semibold">Recent Registrations</h3>
-            <p className="text-[11px] text-slate-500">Today & yesterday details</p>
-          </div>
-          <button
-            onClick={loadRecentRegistrations}
-            disabled={recentRegsLoading}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg font-medium disabled:opacity-50 transition-colors"
-          >
+      {/* ── Recent Registrations ── */}
+      <Card title="Recent Registrations" subtitle="Today & yesterday details"
+        action={
+          <button onClick={loadRecentRegistrations} disabled={recentRegsLoading}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg font-medium disabled:opacity-50 transition-colors">
             {recentRegsLoading ? 'Loading...' : recentRegs ? 'Refresh' : 'Load'}
           </button>
-        </div>
-
-        {recentRegs && (
+        }>
+        {recentRegs ? (
           <div className="space-y-4">
-            {/* Today */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold text-green-400">Today ({recentRegs.today_date})</span>
-                <span className="text-xs text-slate-500 font-mono">{recentRegs.today_count} users</span>
-              </div>
-              {recentRegs.today.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-500">
-                        <th className="text-left px-2 py-1.5 font-medium">Time</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Phone</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Country</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Source</th>
-                        <th className="text-left px-2 py-1.5 font-medium">PRO</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {recentRegs.today.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-800/30">
-                          <td className="px-2 py-1.5 font-mono text-slate-300">{u.time}</td>
-                          <td className="px-2 py-1.5 text-slate-300">{u.phone || u.email || '—'}</td>
-                          <td className="px-2 py-1.5 text-slate-400">{u.country ? `${countryFlag(u.country)} ${u.country}` : '—'}</td>
-                          <td className="px-2 py-1.5 text-slate-400">{u.source || '—'}</td>
-                          <td className="px-2 py-1.5">{u.is_premium ? <span className="text-purple-400 font-semibold">PRO</span> : <span className="text-slate-600">—</span>}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {[
+              { label: 'Today', date: recentRegs.today_date, count: recentRegs.today_count, data: recentRegs.today, color: 'text-green-400' },
+              { label: 'Yesterday', date: recentRegs.yesterday_date, count: recentRegs.yesterday_count, data: recentRegs.yesterday, color: 'text-blue-400' },
+            ].map(section => (
+              <div key={section.label}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-semibold ${section.color}`}>{section.label} ({section.date})</span>
+                  <span className="text-xs text-slate-500 font-mono">{section.count} users</span>
                 </div>
-              ) : (
-                <p className="text-xs text-slate-600 text-center py-3">No registrations today</p>
-              )}
-            </div>
-
-            {/* Yesterday */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold text-blue-400">Yesterday ({recentRegs.yesterday_date})</span>
-                <span className="text-xs text-slate-500 font-mono">{recentRegs.yesterday_count} users</span>
+                {section.data?.length > 0 ? (
+                  <DataTable
+                    maxHeight="max-h-[200px]"
+                    columns={[
+                      { key: 'time', label: 'Time', mono: true, className: () => 'text-slate-300' },
+                      { key: 'phone', label: 'Contact', render: r => <span className="text-slate-300">{r.phone || r.email || '—'}</span> },
+                      { key: 'country', label: 'Country', render: r => r.country ? <span>{countryFlag(r.country)} {r.country}</span> : <span className="text-slate-600">—</span> },
+                      { key: 'source', label: 'Source', render: r => r.source ? <Badge color="blue">{r.source}</Badge> : <span className="text-slate-600">—</span> },
+                      { key: 'is_premium', label: 'PRO', render: r => r.is_premium ? <Badge color="purple">PRO</Badge> : <span className="text-slate-600">—</span> },
+                    ]}
+                    rows={section.data}
+                  />
+                ) : <Empty text={`No registrations ${section.label.toLowerCase()}`} />}
               </div>
-              {recentRegs.yesterday.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-500">
-                        <th className="text-left px-2 py-1.5 font-medium">Time</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Phone</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Country</th>
-                        <th className="text-left px-2 py-1.5 font-medium">Source</th>
-                        <th className="text-left px-2 py-1.5 font-medium">PRO</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/50">
-                      {recentRegs.yesterday.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-800/30">
-                          <td className="px-2 py-1.5 font-mono text-slate-300">{u.time}</td>
-                          <td className="px-2 py-1.5 text-slate-300">{u.phone || u.email || '—'}</td>
-                          <td className="px-2 py-1.5 text-slate-400">{u.country ? `${countryFlag(u.country)} ${u.country}` : '—'}</td>
-                          <td className="px-2 py-1.5 text-slate-400">{u.source || '—'}</td>
-                          <td className="px-2 py-1.5">{u.is_premium ? <span className="text-purple-400 font-semibold">PRO</span> : <span className="text-slate-600">—</span>}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-600 text-center py-3">No registrations yesterday</p>
-              )}
-            </div>
+            ))}
           </div>
-        )}
-      </div>
+        ) : <Empty text="Click Load to view recent registrations" />}
+      </Card>
 
-      {/* Peak Online — 24h */}
+      {/* ── Peak Online — 24h ── */}
       {onlineHistory?.hours?.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold">Online Users — Last 24h</h3>
-              <p className="text-[11px] text-slate-500">
-                Peak: <span className="text-cyan-400 font-mono font-semibold">{onlineHistory.peak_users}</span> at <span className="text-slate-300 font-mono">{onlineHistory.peak_hour || '—'}</span>
-                {' · '}Now: <span className="text-green-400 font-mono font-semibold">{onlineHistory.current_online}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Bar visualization */}
+        <Card title="Online Users — Last 24h"
+          subtitle={<>Peak: <span className="text-cyan-400 font-mono font-semibold">{onlineHistory.peak_users}</span> at <span className="text-slate-300 font-mono">{onlineHistory.peak_hour || '—'}</span> · Now: <span className="text-green-400 font-mono font-semibold">{onlineHistory.current_online}</span></>}>
           <div className="flex items-end gap-[2px] h-24 mb-2">
             {onlineHistory.hours.map((h, i) => {
               const max = onlineHistory.peak_users || 1
               const pct = Math.max((h.unique_users / max) * 100, 3)
               const isPeak = h.unique_users === onlineHistory.peak_users
               return (
-                <div
-                  key={i}
-                  className={`flex-1 rounded-t min-w-[4px] transition-all relative group ${
-                    isPeak ? 'bg-cyan-400' : 'bg-cyan-500/40 hover:bg-cyan-400/60'
-                  }`}
-                  style={{ height: `${pct}%` }}
-                >
-                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 font-mono">
+                <div key={i}
+                  className={`flex-1 rounded-t min-w-[4px] transition-all relative group ${isPeak ? 'bg-cyan-400' : 'bg-cyan-500/40 hover:bg-cyan-400/60'}`}
+                  style={{ height: `${pct}%` }}>
+                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] text-slate-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 font-mono border border-slate-700">
                     {h.hour}: {h.unique_users} users
                   </div>
                 </div>
               )
             })}
           </div>
-
-          {/* X-axis labels */}
           <div className="flex gap-[2px]">
             {onlineHistory.hours.map((h, i) => (
               <div key={i} className="flex-1 text-center">
@@ -452,135 +218,71 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-
-          {/* Table */}
-          <div className="mt-4 max-h-48 overflow-y-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-500">
-                  <th className="text-left px-2 py-1.5 font-medium">Hour</th>
-                  <th className="text-right px-2 py-1.5 font-medium">Users</th>
-                  <th className="text-right px-2 py-1.5 font-medium">Events</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {[...onlineHistory.hours].reverse().map((h, i) => {
-                  const isPeak = h.unique_users === onlineHistory.peak_users
-                  return (
-                    <tr key={i} className={isPeak ? 'bg-cyan-500/10' : 'hover:bg-slate-800/30'}>
-                      <td className="px-2 py-1.5 font-mono text-slate-300">{h.hour}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">
-                        <span className={isPeak ? 'text-cyan-400 font-semibold' : 'text-slate-400'}>{h.unique_users}</span>
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-slate-500">{h.total_events}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        </Card>
       )}
 
-      {/* Bottom row */}
+      {/* ── Bottom row — Countries, Bet Types, Languages ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Top countries */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-3">Top Countries</h3>
-          <div className="space-y-2.5">
-            {(() => {
-              const countries = (usersStats?.by_country || []).slice(0, 6)
-              const maxCount = countries[0]?.count || 1
-              return countries.map((c, i) => (
-                <div key={c.country}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 w-4">{i + 1}</span>
-                      <span className="text-sm">{countryFlag(c.country)} {c.country || 'Unknown'}</span>
+        <Card title="Top Countries">
+          <RankingList
+            data={(usersStats?.by_country || []).slice(0, 8).map(c => ({
+              label: `${countryFlag(c.country)} ${c.country || 'Unknown'}`,
+              value: c.count,
+            }))}
+            maxItems={8}
+            color="blue"
+          />
+        </Card>
+
+        <Card title="Bet Types Accuracy">
+          <RankingList
+            data={(predStats?.by_bet_type || []).slice(0, 6).map(b => ({
+              label: b.bet_type, value: b.total, accuracy: b.accuracy,
+            }))}
+            secondaryKey="accuracy"
+            color="auto"
+            maxItems={6}
+          />
+        </Card>
+
+        <Card title="Languages">
+          {(() => {
+            const langs = usersStats?.by_language || []
+            const total = langs.reduce((s, x) => s + x.count, 0) || 1
+            return langs.length > 0 ? (
+              <>
+                <StackedBar segments={langs.map((l, i) => ({
+                  label: l.language?.toUpperCase() || '??',
+                  value: l.count,
+                  color: ['#3b82f6', '#34d399', '#fbbf24', '#a78bfa', '#fb7185', '#22d3ee'][i % 6],
+                }))} height="h-4" />
+                <div className="space-y-2 mt-4">
+                  {langs.map((l, i) => (
+                    <div key={l.language} className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: ['#3b82f6', '#34d399', '#fbbf24', '#a78bfa', '#fb7185', '#22d3ee'][i % 6] }} />
+                      <span className="text-xs font-mono text-slate-400 uppercase w-6">{l.language || '??'}</span>
+                      <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${Math.round(l.count / total * 100)}%` }} />
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono w-14 text-right">{l.count} ({Math.round(l.count / total * 100)}%)</span>
                     </div>
-                    <span className="text-xs text-slate-400 font-mono">{c.count}</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden ml-6">
-                    <div
-                      className="h-full bg-blue-500/50 rounded-full transition-all"
-                      style={{ width: `${Math.round((c.count / maxCount) * 100)}%` }}
-                    />
-                  </div>
+                  ))}
                 </div>
-              ))
-            })()}
-            {(!usersStats?.by_country?.length) && (
-              <p className="text-xs text-slate-600 text-center py-4">No data</p>
-            )}
-          </div>
-        </div>
-
-        {/* Top bet types */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-3">Bet Types Accuracy</h3>
-          <div className="space-y-2.5">
-            {(predStats?.by_bet_type || []).slice(0, 6).map(b => (
-              <div key={b.bet_type}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-300 truncate max-w-[120px]">{b.bet_type}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-600">({b.total})</span>
-                    <span className={`text-xs font-mono font-semibold ${
-                      b.accuracy >= 60 ? 'text-green-400' : b.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'
-                    }`}>{b.accuracy}%</span>
-                  </div>
-                </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      b.accuracy >= 60 ? 'bg-green-500' : b.accuracy >= 45 ? 'bg-amber-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min(b.accuracy, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-            {(!predStats?.by_bet_type?.length) && (
-              <p className="text-xs text-slate-600 text-center py-4">No data</p>
-            )}
-          </div>
-        </div>
-
-        {/* Languages */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-3">Languages</h3>
-          <div className="space-y-2">
-            {(usersStats?.by_language || []).map(l => {
-              const total = (usersStats?.by_language || []).reduce((s, x) => s + x.count, 0) || 1
-              const pct = Math.round(l.count / total * 100)
-              return (
-                <div key={l.language} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-slate-400 w-6 uppercase">{l.language || '??'}</span>
-                  <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[11px] text-slate-500 w-10 text-right">{pct}%</span>
-                </div>
-              )
-            })}
-            {(!usersStats?.by_language?.length) && (
-              <p className="text-xs text-slate-600 text-center py-4">No data</p>
-            )}
-          </div>
-        </div>
+              </>
+            ) : <Empty />
+          })()}
+        </Card>
       </div>
 
-      {/* Retention & Conversion */}
+      {/* ── Retention & Conversion ── */}
       {retention && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Conversion funnel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-semibold">Conversion Funnel</h3>
-              <span className="text-[10px] text-slate-500">Last 30 days</span>
-            </div>
-            <p className="text-[11px] text-slate-500 mb-4">Registered &rarr; Activated &rarr; PRO</p>
-            <ConversionFunnel funnel={retention.funnel_30d} />
+          <Card title="Conversion Funnel" subtitle="Last 30 days — Registered → Activated → PRO">
+            <FunnelChart steps={[
+              { label: 'Registered', value: retention.funnel_30d?.registered || 0, color: 'bg-blue-500/40' },
+              { label: 'Activated', value: retention.funnel_30d?.activated || 0, color: 'bg-green-500/40' },
+              { label: 'PRO', value: retention.funnel_30d?.converted_pro || 0, color: 'bg-purple-500/40' },
+            ]} />
             {retention.overall && (
               <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800">
                 <div>
@@ -593,31 +295,46 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Cohort retention */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <h3 className="text-sm font-semibold mb-1">Weekly Cohorts</h3>
-            <p className="text-[11px] text-slate-500 mb-3">Retention, activation, and conversion by registration week</p>
-            <RetentionTable cohorts={retention.cohorts} />
-          </div>
+          <Card title="Weekly Cohorts" subtitle="Retention, activation, and conversion by week">
+            <DataTable
+              maxHeight="max-h-[300px]"
+              columns={[
+                { key: 'week', label: 'Week', mono: true, className: () => 'text-slate-300' },
+                { key: 'registered', label: 'Reg.', align: 'right', mono: true },
+                { key: 'made_prediction', label: 'Activated', align: 'right', render: r => (
+                  <span>{r.made_prediction} {r.activation_pct > 0 && <span className="text-blue-400">({r.activation_pct}%)</span>}</span>
+                )},
+                { key: 'returned_week1', label: 'Retained', align: 'right', render: r => (
+                  <span>{r.returned_week1} {r.retention_pct > 0 && (
+                    <span className={r.retention_pct >= 30 ? 'text-green-400' : r.retention_pct >= 15 ? 'text-amber-400' : 'text-red-400'}>({r.retention_pct}%)</span>
+                  )}</span>
+                )},
+                { key: 'converted_pro', label: 'PRO', align: 'right', render: r => (
+                  <span>{r.converted_pro} {r.conversion_pct > 0 && <span className="text-purple-400">({r.conversion_pct}%)</span>}</span>
+                )},
+              ]}
+              rows={retention.cohorts || []}
+            />
+          </Card>
         </div>
       )}
 
-      {/* Quick links */}
+      {/* ── Quick links ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { to: '/admin/users', label: 'Manage Users', desc: 'View & search users' },
-          { to: '/admin/predictions', label: 'Analytics', desc: 'Bet types & leagues' },
+          { to: '/admin/users', label: 'Manage Users', desc: 'View & search users', badge: `${o.users.total || 0}` },
+          { to: '/admin/predictions', label: 'Analytics', desc: 'Bet types & leagues', badge: `${o.predictions.accuracy || 0}%` },
           { to: '/admin/chats', label: 'Chats', desc: 'Support & AI conversations' },
-          { to: '/admin/team', label: 'Team', desc: 'Manage admin access' },
+          { to: '/admin/ml', label: 'ML Pipeline', desc: 'Model training & features' },
         ].map(item => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className="bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-colors group"
-          >
-            <p className="text-sm font-medium group-hover:text-blue-400 transition-colors">{item.label}</p>
+          <Link key={item.to} to={item.to}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-colors group">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium group-hover:text-blue-400 transition-colors">{item.label}</p>
+              {item.badge && <span className="text-[10px] text-slate-500 font-mono">{item.badge}</span>}
+            </div>
             <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
           </Link>
         ))}
