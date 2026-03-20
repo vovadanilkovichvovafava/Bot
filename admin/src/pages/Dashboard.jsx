@@ -182,7 +182,7 @@ export default function Dashboard() {
               <h3 className="text-sm font-semibold">User Registrations</h3>
               <p className="text-[10px] text-dark-500">Last 14 days</p>
             </div>
-            <a href="#/users" className="text-xs text-blue-400 hover:underline">View all</a>
+            <a href="/users" className="text-xs text-blue-400 hover:underline">View all</a>
           </div>
           <MiniBarChart
             data={usersStats?.daily_registrations}
@@ -197,7 +197,7 @@ export default function Dashboard() {
               <h3 className="text-sm font-semibold">Daily Predictions</h3>
               <p className="text-[10px] text-dark-500">Last 14 days</p>
             </div>
-            <a href="#/predictions" className="text-xs text-blue-400 hover:underline">View all</a>
+            <a href="/" className="text-xs text-blue-400 hover:underline">Details</a>
           </div>
           <MiniBarChart
             data={predsStats?.daily_predictions}

@@ -274,23 +274,35 @@ async def get_online_history(
             ORDER BY hour
         """), {"since": day_ago})).all()
 
+        # Build lookup from DB rows
+        db_hours = {}
+        for r in rows:
+            if r[0]:
+                db_hours[r[0].replace(minute=0, second=0, microsecond=0)] = {
+                    "unique_users": r[1],
+                    "total_events": r[2],
+                }
+
+        # Fill all 24 hours (including gaps with 0)
         hours = []
         peak_users = 0
         peak_hour = None
+        current_hour = day_ago.replace(minute=0, second=0, microsecond=0)
+        end_hour = now.replace(minute=0, second=0, microsecond=0)
 
-        for r in rows:
-            h = r[0]
-            users = r[1]
-            events = r[2]
+        while current_hour <= end_hour:
+            entry = db_hours.get(current_hour, {"unique_users": 0, "total_events": 0})
+            users = entry["unique_users"]
             hours.append({
-                "hour": h.strftime("%H:%M") if h else "?",
-                "hour_full": h.isoformat() if h else None,
+                "hour": current_hour.strftime("%H:%M"),
+                "hour_full": current_hour.isoformat(),
                 "unique_users": users,
-                "total_events": events,
+                "total_events": entry["total_events"],
             })
             if users > peak_users:
                 peak_users = users
-                peak_hour = h.strftime("%H:%M") if h else None
+                peak_hour = current_hour.strftime("%H:%M")
+            current_hour += timedelta(hours=1)
 
         result = {
             "hours": hours,

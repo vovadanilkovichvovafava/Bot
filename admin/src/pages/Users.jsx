@@ -155,10 +155,10 @@ export default function Users() {
           {analytics ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total Users', value: analytics.total_users ?? '—' },
-                { label: 'PRO Users', value: analytics.pro_users ?? '—' },
-                { label: 'Today Registrations', value: analytics.today_registrations ?? '—' },
-                { label: 'Active Today', value: analytics.active_today ?? '—' },
+                { label: 'Total Users', value: analytics.users?.total ?? '—' },
+                { label: 'PRO Users', value: analytics.users?.pro ?? '—' },
+                { label: 'Today Registrations', value: analytics.users?.new_today ?? '—' },
+                { label: 'Online Now', value: analytics.users?.online ?? '—' },
               ].map(s => (
                 <div key={s.label} className="bg-dark-800 rounded-xl p-4 border border-dark-700">
                   <p className="text-2xl font-bold">{s.value}</p>

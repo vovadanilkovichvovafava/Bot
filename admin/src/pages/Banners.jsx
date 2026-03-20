@@ -103,8 +103,7 @@ export default function Banners() {
         <div className="bg-dark-800 rounded-xl border border-dark-700 p-4">
           <h2 className="text-sm font-medium mb-3">Daily clicks (30 days)</h2>
           <div className="flex items-end gap-1 h-32">
-            {data.daily.map(d => {
-              const maxDaily = Math.max(...data.daily.map(x => x.clicks), 1)
+            {(() => { const maxDaily = Math.max(...data.daily.map(x => x.clicks), 1); return data.daily.map(d => {
               const h = Math.max(Math.round(d.clicks / maxDaily * 100), 2)
               return (
                 <div key={d.date} className="flex-1 flex flex-col items-center group relative">
@@ -117,7 +116,7 @@ export default function Banners() {
                   </div>
                 </div>
               )
-            })}
+            }) })()}
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-[10px] text-dark-500">{data.daily[0]?.date}</span>
