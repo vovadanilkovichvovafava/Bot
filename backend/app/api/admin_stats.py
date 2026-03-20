@@ -1028,10 +1028,10 @@ async def get_predictions_stats(
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Prediction analytics."""
+    """Prediction analytics — extended."""
     now = datetime.now()
 
-    # By bet type
+    # By bet type (top 10)
     bet_rows = (await db.execute(
         select(
             Prediction.bet_type,
@@ -1089,6 +1089,119 @@ async def get_predictions_stats(
         for r in league_rows
     ]
 
+    # Weekly accuracy trend — last 12 weeks
+    weekly_rows = (await db.execute(text("""
+        SELECT
+            date_trunc('week', created_at)::date AS week_start,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct
+        FROM predictions
+        WHERE created_at >= :since
+        GROUP BY week_start
+        ORDER BY week_start
+    """), {"since": now - timedelta(weeks=12)})).all()
+    weekly_accuracy = [
+        {
+            "week": str(r[0]),
+            "total": r[1],
+            "verified": r[2],
+            "correct": r[3],
+            "accuracy": round(r[3] / r[2] * 100, 1) if r[2] > 0 else 0,
+        }
+        for r in weekly_rows
+    ]
+
+    # Confidence distribution — buckets: 0-20, 20-40, 40-60, 60-80, 80-100
+    conf_rows = (await db.execute(text("""
+        SELECT
+            CASE
+                WHEN confidence < 20 THEN '0-20'
+                WHEN confidence < 40 THEN '20-40'
+                WHEN confidence < 60 THEN '40-60'
+                WHEN confidence < 80 THEN '60-80'
+                ELSE '80-100'
+            END AS bucket,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct
+        FROM predictions
+        GROUP BY bucket
+        ORDER BY bucket
+    """))).all()
+    confidence_dist = [
+        {
+            "bucket": r[0],
+            "total": r[1],
+            "verified": r[2],
+            "correct": r[3],
+            "accuracy": round(r[3] / r[2] * 100, 1) if r[2] > 0 else 0,
+        }
+        for r in conf_rows
+    ]
+
+    # Predictions by day of week (Mon=0 .. Sun=6)
+    dow_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    dow_rows = (await db.execute(text("""
+        SELECT
+            EXTRACT(DOW FROM created_at)::int AS dow,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct,
+            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified
+        FROM predictions
+        GROUP BY dow
+        ORDER BY dow
+    """))).all()
+    # PostgreSQL DOW: 0=Sun, 1=Mon ... 6=Sat → remap to Mon=0
+    by_day_of_week = [{"day": d, "total": 0, "correct": 0, "verified": 0, "accuracy": 0} for d in dow_names]
+    for r in dow_rows:
+        pg_dow = r[0]  # 0=Sun
+        idx = (pg_dow - 1) % 7  # remap: Mon=0, Sun=6
+        by_day_of_week[idx] = {
+            "day": dow_names[idx],
+            "total": r[1],
+            "correct": r[2],
+            "verified": r[3],
+            "accuracy": round(r[2] / r[3] * 100, 1) if r[3] > 0 else 0,
+        }
+
+    # Daily accuracy — last 30 days (for accuracy line chart)
+    daily_acc_rows = (await db.execute(text("""
+        SELECT
+            created_at::date AS day,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_correct IS NOT NULL) AS verified,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct
+        FROM predictions
+        WHERE created_at >= :since
+        GROUP BY day
+        ORDER BY day
+    """), {"since": now - timedelta(days=30)})).all()
+    daily_accuracy = [
+        {
+            "date": str(r[0]),
+            "total": r[1],
+            "verified": r[2],
+            "correct": r[3],
+            "accuracy": round(r[3] / r[2] * 100, 1) if r[2] > 0 else 0,
+        }
+        for r in daily_acc_rows
+    ]
+
+    # Overall status breakdown (pending / correct / incorrect)
+    status_row = (await db.execute(text("""
+        SELECT
+            COUNT(*) FILTER (WHERE is_correct IS NULL) AS pending,
+            COUNT(*) FILTER (WHERE is_correct = true) AS correct,
+            COUNT(*) FILTER (WHERE is_correct = false) AS incorrect
+        FROM predictions
+    """))).one()
+    status_breakdown = {
+        "pending": status_row[0],
+        "correct": status_row[1],
+        "incorrect": status_row[2],
+    }
+
     # ROI data
     roi_rows = (await db.execute(
         select(ROIAnalytics)
@@ -1110,6 +1223,11 @@ async def get_predictions_stats(
         "by_bet_type": by_bet_type,
         "by_league": by_league,
         "daily_predictions": daily_predictions,
+        "weekly_accuracy": weekly_accuracy,
+        "confidence_dist": confidence_dist,
+        "by_day_of_week": by_day_of_week,
+        "daily_accuracy": daily_accuracy,
+        "status_breakdown": status_breakdown,
         "roi": roi_data,
     }
 
