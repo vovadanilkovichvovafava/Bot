@@ -229,8 +229,14 @@ export default function AdminPredictions() {
 
   useEffect(() => {
     Promise.all([
-      adminApi.getPredictionsStats().catch(() => null),
-      adminApi.getOverview().catch(() => null),
+      adminApi.getPredictionsStats().catch(e => {
+        console.error('[AdminPredictions] Failed to fetch prediction stats:', e)
+        return null
+      }),
+      adminApi.getOverview().catch(e => {
+        console.error('[AdminPredictions] Failed to fetch overview:', e)
+        return null
+      }),
     ]).then(([ps, ov]) => {
       setStats(ps)
       setOverview(ov)
