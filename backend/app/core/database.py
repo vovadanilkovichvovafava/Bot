@@ -82,6 +82,7 @@ async def init_db():
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_home_score INTEGER",
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS actual_away_score INTEGER",
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS source VARCHAR",
             # ML Pipeline tables — additional indexes
             "CREATE INDEX IF NOT EXISTS ix_ml_training_fixture ON ml_training_data(fixture_id)",
             "CREATE INDEX IF NOT EXISTS ix_ml_training_home_team ON ml_training_data(home_team_id)",

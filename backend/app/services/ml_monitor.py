@@ -28,13 +28,13 @@ async def calculate_roi(period: str = "weekly") -> Optional[Dict]:
     now = datetime.utcnow()
 
     if period == "daily":
-        period_start = now - timedelta(days=1)
+        period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "weekly":
-        period_start = now - timedelta(days=7)
+        period_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "monthly":
-        period_start = now - timedelta(days=30)
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     else:
-        period_start = now - timedelta(days=7)
+        period_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
 
     async with async_session_maker() as db:
         try:
@@ -142,22 +142,41 @@ async def calculate_roi(period: str = "weekly") -> Optional[Dict]:
                     "accuracy": round((lg_correct / lg_total) * 100, 1) if lg_total > 0 else 0,
                 })
 
-            # Save to ROI analytics
-            analytics = ROIAnalytics(
-                period=period,
-                period_start=period_start,
-                period_end=now,
-                total_predictions=total,
-                total_recommended=total_bets_with_odds,
-                correct_predictions=correct,
-                accuracy=accuracy,
-                total_staked=float(total_bets_with_odds),
-                total_returned=float(total_bets_with_odds + profit),
-                roi_percent=roi_percent,
-                by_bet_type_json=json.dumps(by_bet_type),
-                by_league_json=json.dumps(by_league),
-            )
-            db.add(analytics)
+            # Save to ROI analytics (upsert — update if exists for same period+start)
+            existing_roi = (await db.execute(
+                select(ROIAnalytics).where(
+                    ROIAnalytics.period == period,
+                    ROIAnalytics.period_start == period_start,
+                )
+            )).scalar_one_or_none()
+
+            if existing_roi:
+                existing_roi.period_end = now
+                existing_roi.total_predictions = total
+                existing_roi.total_recommended = total_bets_with_odds
+                existing_roi.correct_predictions = correct
+                existing_roi.accuracy = accuracy
+                existing_roi.total_staked = float(total_bets_with_odds)
+                existing_roi.total_returned = float(total_bets_with_odds + profit)
+                existing_roi.roi_percent = roi_percent
+                existing_roi.by_bet_type_json = json.dumps(by_bet_type)
+                existing_roi.by_league_json = json.dumps(by_league)
+            else:
+                analytics = ROIAnalytics(
+                    period=period,
+                    period_start=period_start,
+                    period_end=now,
+                    total_predictions=total,
+                    total_recommended=total_bets_with_odds,
+                    correct_predictions=correct,
+                    accuracy=accuracy,
+                    total_staked=float(total_bets_with_odds),
+                    total_returned=float(total_bets_with_odds + profit),
+                    roi_percent=roi_percent,
+                    by_bet_type_json=json.dumps(by_bet_type),
+                    by_league_json=json.dumps(by_league),
+                )
+                db.add(analytics)
             await db.commit()
 
             stats = {

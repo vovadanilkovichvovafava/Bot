@@ -587,6 +587,7 @@ class SavePredictionRequest(BaseModel):
     confidence: Optional[float] = None
     ai_analysis: Optional[str] = None
     api_prediction: Optional[dict] = None
+    source: Optional[str] = None  # 'ai_chat', 'api', 'bot'
 
 
 class SavedPredictionResponse(BaseModel):
@@ -653,6 +654,7 @@ async def save_prediction(
         confidence=req.confidence or 0.0,
         ai_analysis=req.ai_analysis,
         api_prediction=json.dumps(req.api_prediction) if req.api_prediction else None,
+        source=req.source,
     )
     db.add(prediction)
     try:

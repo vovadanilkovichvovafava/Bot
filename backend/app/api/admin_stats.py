@@ -1219,6 +1219,28 @@ async def get_predictions_stats(
         for r in roi_rows
     ]
 
+    # By source (ai_chat, api, bot, null)
+    source_rows = (await db.execute(
+        select(
+            func.coalesce(Prediction.source, 'unknown').label("src"),
+            func.count(Prediction.id).label("total"),
+            func.count(case((Prediction.is_correct == True, 1))).label("correct"),
+            func.count(case((Prediction.is_correct.isnot(None), 1))).label("verified"),
+        )
+        .group_by(func.coalesce(Prediction.source, 'unknown'))
+        .order_by(func.count(Prediction.id).desc())
+    )).all()
+    by_source = [
+        {
+            "source": r[0],
+            "total": r[1],
+            "correct": r[2],
+            "verified": r[3],
+            "accuracy": round(r[2] / r[3] * 100, 1) if r[3] > 0 else 0,
+        }
+        for r in source_rows
+    ]
+
     return {
         "by_bet_type": by_bet_type,
         "by_league": by_league,
@@ -1229,6 +1251,7 @@ async def get_predictions_stats(
         "daily_accuracy": daily_accuracy,
         "status_breakdown": status_breakdown,
         "roi": roi_data,
+        "by_source": by_source,
     }
 
 

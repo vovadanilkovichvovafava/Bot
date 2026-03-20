@@ -104,23 +104,39 @@ export function savePrediction({
   const winner = pred?.winner;
   const percent = pred?.percent;
 
-  // Determine betType from winner prediction or Claude analysis
-  let betType = 'Unknown';
+  // Determine betType — store the type of bet, not the team name
+  let betType = 'Match Winner';
+  let winnerName = null;
+
   if (winner?.name) {
-    betType = winner.name;
+    winnerName = winner.name;
+    betType = 'Match Winner';
   } else if (percent) {
     const h = parseInt(percent.home) || 0;
     const d = parseInt(percent.draw) || 0;
     const a = parseInt(percent.away) || 0;
-    if (h >= d && h >= a) betType = homeTeam?.name || 'Home';
-    else if (a >= d && a >= h) betType = awayTeam?.name || 'Away';
-    else betType = 'Draw';
+    if (d >= h && d >= a) {
+      betType = 'Draw';
+      winnerName = 'Draw';
+    } else if (h >= a) {
+      betType = 'Match Winner';
+      winnerName = homeTeam?.name || 'Home';
+    } else {
+      betType = 'Match Winner';
+      winnerName = awayTeam?.name || 'Away';
+    }
   } else if (claudeAnalysis) {
-    // Try to extract bet recommendation from Claude's response
+    // Try to extract bet type from Claude's response
     const lower = claudeAnalysis.toLowerCase();
-    if (lower.includes(homeTeam?.name?.toLowerCase())) betType = homeTeam.name;
-    else if (lower.includes(awayTeam?.name?.toLowerCase())) betType = awayTeam.name;
-    else if (lower.includes('draw') || lower.includes('ничья')) betType = 'Draw';
+    if (lower.includes('over') || lower.includes('under') || lower.includes('тотал')) betType = 'Over/Under';
+    else if (lower.includes('btts') || lower.includes('both teams to score') || lower.includes('обе забьют')) betType = 'BTTS';
+    else if (lower.includes('handicap') || lower.includes('фора')) betType = 'Handicap';
+    else if (lower.includes('draw') || lower.includes('ничья')) { betType = 'Draw'; winnerName = 'Draw'; }
+    else {
+      betType = 'Match Winner';
+      if (lower.includes(homeTeam?.name?.toLowerCase())) winnerName = homeTeam.name;
+      else if (lower.includes(awayTeam?.name?.toLowerCase())) winnerName = awayTeam.name;
+    }
   }
 
   // Determine confidence from percentages
@@ -141,7 +157,7 @@ export function savePrediction({
       betType,
       confidence,
       advice: pred?.advice || '',
-      winnerName: winner?.name || betType,
+      winnerName: winnerName || winner?.name || betType,
       winnerComment: winner?.comment || '',
       homePct: parseInt(percent?.home) || 0,
       drawPct: parseInt(percent?.draw) || 0,
@@ -194,6 +210,7 @@ function syncToDB(entry) {
         drawPct: entry.prediction.drawPct,
         awayPct: entry.prediction.awayPct,
       } : null,
+      source: entry.claudeAnalysis ? 'ai_chat' : 'api',
     };
     return api.savePredictionToDB(payload).catch((e) => {
       console.error('[syncToDB] FAILED to save prediction to DB:', e?.message || e);
