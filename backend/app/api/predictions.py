@@ -1,6 +1,7 @@
 """Predictions endpoints - real AI analysis via Claude + degressive limits"""
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -144,6 +145,109 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
         "is_premium": False,
         "funnel": funnel,
     }
+
+
+async def auto_save_chat_predictions(
+    user_id: int,
+    response: str,
+    match_context: str | None,
+    db: AsyncSession,
+):
+    """
+    Parse [BET] tags from Claude AI response and auto-create Prediction records.
+    Format: [BET] Over 2.5 Goals @ 1.85
+    Also extracts match info (teams, league) from match_context.
+    """
+    if not response:
+        return
+
+    # Parse all [BET] tags: [BET] <bet_type> @ <odds>
+    bet_pattern = re.compile(r"\[BET\]\s*(.+?)\s*@\s*([\d.]+)", re.IGNORECASE)
+    bets = bet_pattern.findall(response)
+    if not bets:
+        return
+
+    # Extract match info from match_context (format: "TeamA vs TeamB", league lines)
+    home_team = "Unknown"
+    away_team = "Unknown"
+    league = None
+    match_date_str = None
+
+    ctx = match_context or ""
+    # Look for "Team vs Team" pattern in context or response
+    vs_pattern = re.compile(
+        r"(?:^|\|)\s*\*{0,2}([^*\n|]+?)\s+vs\.?\s+([^*\n|]+?)\*{0,2}\s*(?:$|\[|\(|\|)",
+        re.MULTILINE | re.IGNORECASE,
+    )
+    vs_match = vs_pattern.search(ctx) or vs_pattern.search(response)
+    if vs_match:
+        home_team = vs_match.group(1).strip()[:80]
+        away_team = vs_match.group(2).strip()[:80]
+    else:
+        # Simpler fallback: "X vs Y" anywhere
+        simple_vs = re.search(r"([A-Z][A-Za-z\s.'-]+?)\s+vs\.?\s+([A-Z][A-Za-z\s.'-]+)", ctx or response)
+        if simple_vs:
+            home_team = simple_vs.group(1).strip()[:80]
+            away_team = simple_vs.group(2).strip()[:80]
+
+    # Extract league from context (common patterns)
+    league_match = re.search(
+        r"(?:League|Liga|Serie|Ligue|Bundesliga|Championship|Premier|Cup|Champions)[^|\n]*",
+        ctx, re.IGNORECASE,
+    )
+    if league_match:
+        league = league_match.group(0).strip()[:100]
+
+    try:
+        for bet_type_raw, odds_str in bets:
+            bet_type = bet_type_raw.strip()[:100]
+            try:
+                odds = float(odds_str)
+            except ValueError:
+                odds = None
+
+            # Determine confidence from odds (higher odds = lower confidence)
+            confidence = 0.0
+            if odds and odds > 1.0:
+                # Simple heuristic: implied probability as confidence
+                confidence = min(round((1.0 / odds) * 100, 1), 99.0)
+
+            # Generate a stable match_id from teams + date to avoid duplicates
+            match_key = f"chat_{home_team}_{away_team}_{datetime.utcnow().strftime('%Y%m%d')}"
+            match_id = str(abs(hash(match_key)) % 10**9)
+
+            # Check if this exact bet already exists for this user today
+            existing = (await db.execute(
+                select(Prediction).where(
+                    Prediction.user_id == user_id,
+                    Prediction.match_id == match_id,
+                    Prediction.bet_type == bet_type,
+                )
+            )).scalar_one_or_none()
+
+            if existing:
+                continue
+
+            prediction = Prediction(
+                user_id=user_id,
+                match_id=match_id,
+                home_team=home_team,
+                away_team=away_team,
+                league=league,
+                match_date=datetime.utcnow(),
+                bet_type=bet_type,
+                predicted_odds=odds,
+                confidence=confidence,
+                ai_analysis=response[:500],
+                source="ai_chat",
+            )
+            db.add(prediction)
+
+        await db.commit()
+        logger.info(f"Auto-saved {len(bets)} prediction(s) from AI chat for user {user_id}")
+    except Exception as e:
+        logger.warning(f"Failed to auto-save chat predictions: {e}")
+        await db.rollback()
 
 
 async def increment_chat_usage(user_id: int, db: AsyncSession):
@@ -370,6 +474,9 @@ async def ai_chat(
     except Exception as e:
         logger.warning(f"Failed to save AI chat message: {e}")
 
+    # Auto-save predictions from [BET] tags in Claude's response
+    await auto_save_chat_predictions(user_id, response, req.match_context, db)
+
     # Get updated limits to return to frontend
     updated_limits = await check_and_update_limits(user_id, db)
 
@@ -563,6 +670,9 @@ async def reanalyze_chat(
         await db.commit()
     except Exception as e:
         logger.warning(f"Failed to save reanalyze chat: {e}")
+
+    # Auto-save predictions from [BET] tags
+    await auto_save_chat_predictions(user_id, response, req.match_context, db)
 
     updated_limits = await check_and_update_limits(user_id, db)
 
