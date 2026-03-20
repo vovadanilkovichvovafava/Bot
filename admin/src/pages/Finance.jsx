@@ -149,8 +149,7 @@ export default function Finance() {
         <div className="bg-dark-800 rounded-xl border border-dark-700 p-4">
           <h2 className="text-sm font-medium mb-3">Daily Revenue (30 days)</h2>
           <div className="flex items-end gap-1 h-32">
-            {data.daily.map(d => {
-              const maxRev = Math.max(...data.daily.map(x => x.revenue), 1)
+            {(() => { const maxRev = Math.max(...data.daily.map(x => x.revenue), 1); return data.daily.map(d => {
               const h = Math.max(Math.round(d.revenue / maxRev * 100), 2)
               return (
                 <div key={d.date} className="flex-1 flex flex-col items-center group relative">
@@ -163,7 +162,7 @@ export default function Finance() {
                   </div>
                 </div>
               )
-            })}
+            }) })()}
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-[10px] text-dark-500">{data.daily[0]?.date}</span>
