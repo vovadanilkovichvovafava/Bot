@@ -77,6 +77,7 @@ const Matches = lazy(() => import('./features/matches/pages/Matches'));
 const MatchDetail = lazy(() => import('./features/matches/pages/MatchDetail'));
 const AIChat = lazy(() => import('./features/predictions/pages/AIChat'));
 const ProTools = lazy(() => import('./features/tools/pages/ProTools'));
+const WorldCup = lazy(() => import('./features/worldcup/pages/WorldCup'));
 const Settings = lazy(() => import('./features/tools/pages/Settings'));
 const Statistics = lazy(() => import('./features/predictions/pages/Statistics'));
 const Favourites = lazy(() => import('./features/matches/pages/Favourites'));
@@ -217,6 +218,7 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="matches" element={<Matches />} />
           <Route path="ai-chat" element={<AIChat />} />
+          <Route path="world-cup" element={<WorldCup />} />
           <Route path="pro-tools" element={<ProTools />} />
           <Route path="settings" element={<Settings />} />
         </Route>

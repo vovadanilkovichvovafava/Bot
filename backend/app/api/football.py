@@ -86,6 +86,16 @@ async def get_league_fixtures(league_id: int, next_count: int = Query(20, ge=1, 
         raise HTTPException(status_code=502, detail="Failed to fetch league fixtures")
 
 
+@router.get("/fixtures/league/{league_id}/season/{season}")
+async def get_league_season_fixtures(league_id: int, season: int) -> List[Dict]:
+    """Get ALL fixtures for a league+season (group stage + knockouts). Used for tournament views like the World Cup."""
+    try:
+        return await api_football.get_league_season_fixtures(league_id, season)
+    except Exception as e:
+        logger.error(f"Error fetching all fixtures for league {league_id}, season {season}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch tournament fixtures")
+
+
 @router.get("/fixtures/team/{team_id}")
 async def get_fixtures_by_team(
     team_id: int,

@@ -175,6 +175,10 @@ class ApiFootballService:
         """Get upcoming fixtures for a specific team"""
         return await self._request("/fixtures", {"team": team_id, "season": season, "next": next_count}, "fixtures")
 
+    async def get_league_season_fixtures(self, league_id: int, season: int) -> List[Dict]:
+        """Get ALL fixtures for a league+season (group stage + knockouts). Used for tournament views like the World Cup."""
+        return await self._request("/fixtures", {"league": league_id, "season": season}, "fixtures")
+
     # === Statistics ===
 
     async def get_fixture_statistics(self, fixture_id: int) -> List[Dict]:

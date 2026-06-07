@@ -50,8 +50,19 @@
     "tools": "Tools",
     "settings": "Settings",
     "proTools": "Pro Tools",
+    "worldCup": "World Cup",
     "aiChat": "AI Chat",
     "express": "Express"
+  },
+  "worldCup": {
+    "subtitle": "48 teams · 12 groups · groups & knockout bracket",
+    "groups": "Groups",
+    "bracket": "Bracket",
+    "qualifyNote": "Top 2 of each group + 8 best third-placed teams advance",
+    "groupsSoonTitle": "Groups not available yet",
+    "groupsSoonText": "Group tables appear once the tournament data goes live. Check back closer to kickoff.",
+    "bracketSoonTitle": "Bracket not set yet",
+    "bracketSoonText": "The knockout bracket fills in automatically once the group stage finishes (Round of 32 onward)."
   },
   "home": {
     "welcome": "Welcome",

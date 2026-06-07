@@ -381,6 +381,30 @@ class FootballApiService {
     return res[0]?.league?.standings?.[0] || [];
   }
 
+  // Returns ALL standings groups (array of group tables) — for tournaments like the World Cup with 12 groups
+  async getAllStandings(leagueId, season) {
+    try {
+      if (this.useBackend) {
+        const res = await this.backendRequest(`/standings/${leagueId}/${season}`);
+        return res[0]?.league?.standings || [];
+      }
+    } catch {}
+
+    const res = await this.directRequest('/standings', { league: leagueId, season });
+    return res[0]?.league?.standings || [];
+  }
+
+  // Returns ALL fixtures for a league+season (group stage + knockouts) — for tournament brackets
+  async getTournamentFixtures(leagueId, season) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/fixtures/league/${leagueId}/season/${season}`);
+      }
+    } catch {}
+
+    return this.directRequest('/fixtures', { league: leagueId, season });
+  }
+
   // === Head to Head ===
 
   async getHeadToHead(team1Id, team2Id, last = 10) {
