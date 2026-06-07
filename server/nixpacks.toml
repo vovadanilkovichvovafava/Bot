@@ -1,8 +1,9 @@
 [phases.setup]
 nixPkgs = ["nodejs_18"]
 
+# npm ci requires a committed package-lock.json (none here) — use npm install
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm install --omit=dev"]
 
 [start]
 cmd = "node index.js"

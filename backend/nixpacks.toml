@@ -1,5 +1,5 @@
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
-
+# Let Nixpacks auto-detect the Python install phase (it creates the venv and
+# runs `pip install -r requirements.txt`). Overriding install here previously
+# skipped venv creation, so `pip` was missing on PATH (build exit 127).
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
