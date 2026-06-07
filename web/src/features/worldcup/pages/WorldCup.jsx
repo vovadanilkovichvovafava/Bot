@@ -7,6 +7,30 @@ import footballApi from '../../matches/api/footballApi';
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
 
+// Fallback group data from the official draw (Dec 5, 2025)
+function mkRow(group, rank, name, code) {
+  return {
+    rank, group,
+    team: { name, logo: `https://flagcdn.com/w40/${code}.png` },
+    points: 0, goalsDiff: 0, all: { played: 0, win: 0, draw: 0, lose: 0 },
+  };
+}
+
+const WC2026_GROUPS = [
+  [mkRow('Group A', 1, 'Mexico', 'mx'), mkRow('Group A', 2, 'South Africa', 'za'), mkRow('Group A', 3, 'South Korea', 'kr'), mkRow('Group A', 4, 'Czech Republic', 'cz')],
+  [mkRow('Group B', 1, 'Canada', 'ca'), mkRow('Group B', 2, 'Bosnia & Herzegovina', 'ba'), mkRow('Group B', 3, 'Qatar', 'qa'), mkRow('Group B', 4, 'Switzerland', 'ch')],
+  [mkRow('Group C', 1, 'Brazil', 'br'), mkRow('Group C', 2, 'Morocco', 'ma'), mkRow('Group C', 3, 'Haiti', 'ht'), mkRow('Group C', 4, 'Scotland', 'gb-sct')],
+  [mkRow('Group D', 1, 'United States', 'us'), mkRow('Group D', 2, 'Paraguay', 'py'), mkRow('Group D', 3, 'Australia', 'au'), mkRow('Group D', 4, 'Türkiye', 'tr')],
+  [mkRow('Group E', 1, 'Germany', 'de'), mkRow('Group E', 2, 'Curaçao', 'cw'), mkRow('Group E', 3, 'Ivory Coast', 'ci'), mkRow('Group E', 4, 'Ecuador', 'ec')],
+  [mkRow('Group F', 1, 'Netherlands', 'nl'), mkRow('Group F', 2, 'Japan', 'jp'), mkRow('Group F', 3, 'Sweden', 'se'), mkRow('Group F', 4, 'Tunisia', 'tn')],
+  [mkRow('Group G', 1, 'Belgium', 'be'), mkRow('Group G', 2, 'Egypt', 'eg'), mkRow('Group G', 3, 'Iran', 'ir'), mkRow('Group G', 4, 'New Zealand', 'nz')],
+  [mkRow('Group H', 1, 'Spain', 'es'), mkRow('Group H', 2, 'Cape Verde', 'cv'), mkRow('Group H', 3, 'Saudi Arabia', 'sa'), mkRow('Group H', 4, 'Uruguay', 'uy')],
+  [mkRow('Group I', 1, 'France', 'fr'), mkRow('Group I', 2, 'Senegal', 'sn'), mkRow('Group I', 3, 'Iraq', 'iq'), mkRow('Group I', 4, 'Norway', 'no')],
+  [mkRow('Group J', 1, 'Argentina', 'ar'), mkRow('Group J', 2, 'Algeria', 'dz'), mkRow('Group J', 3, 'Austria', 'at'), mkRow('Group J', 4, 'Jordan', 'jo')],
+  [mkRow('Group K', 1, 'Portugal', 'pt'), mkRow('Group K', 2, 'DR Congo', 'cd'), mkRow('Group K', 3, 'Uzbekistan', 'uz'), mkRow('Group K', 4, 'Colombia', 'co')],
+  [mkRow('Group L', 1, 'England', 'gb-eng'), mkRow('Group L', 2, 'Croatia', 'hr'), mkRow('Group L', 3, 'Ghana', 'gh'), mkRow('Group L', 4, 'Panama', 'pa')],
+];
+
 // Knockout round order (as named by API-Football), outermost → final
 const KNOCKOUT_ROUNDS = [
   { key: 'Round of 32', short: 'R32' },
@@ -59,10 +83,12 @@ export default function WorldCup() {
           footballApi.getTournamentFixtures(WC_LEAGUE_ID, WC_SEASON),
         ]);
         if (!alive) return;
-        setGroups(g.status === 'fulfilled' ? (g.value || []) : []);
+        const apiGroups = g.status === 'fulfilled' ? (g.value || []) : [];
+        // Use API standings when available (has live points/GD), fall back to draw data
+        setGroups(apiGroups.length > 0 ? apiGroups : WC2026_GROUPS);
         setFixtures(f.status === 'fulfilled' ? (f.value || []) : []);
       } catch {
-        if (alive) { setGroups([]); setFixtures([]); }
+        if (alive) { setGroups(WC2026_GROUPS); setFixtures([]); }
       } finally {
         if (alive) setLoading(false);
       }
@@ -142,25 +168,6 @@ export default function WorldCup() {
 /* ============================ GROUPS ============================ */
 
 function GroupsView({ groups, fixtures, onOpenMatch, t }) {
-  if (!groups.length) {
-    return (
-      <EmptyState
-        title={t('worldCup.groupsSoonTitle', { defaultValue: 'Groups not available yet' })}
-        text={t('worldCup.groupsSoonText', { defaultValue: 'Group tables appear once the tournament data goes live. Check back closer to kickoff.' })}
-      />
-    );
-  }
-
-  // Group upcoming/recent group-stage fixtures by group letter for a quick "fixtures" peek
-  const groupFixtures = {};
-  for (const f of fixtures) {
-    const round = f.league?.round || '';
-    if (round.toLowerCase().includes('group')) {
-      // API encodes group inside round sometimes; otherwise infer from teams' group via standings
-      // We'll attach by matching team ids below
-    }
-  }
-
   return (
     <div className="space-y-4">
       {groups.map((group, idx) => (
