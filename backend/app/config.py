@@ -1,11 +1,21 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import List
 import os
 
 
 class Settings(BaseSettings):
     APP_NAME: str = "AI Betting Bot API"
-    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    DEBUG: bool = False
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, v):
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "yes")
+        return bool(v)
 
     # JWT - SECRET_KEY is required in production
     @property
