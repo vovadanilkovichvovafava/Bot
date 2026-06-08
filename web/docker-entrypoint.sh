@@ -1,14 +1,22 @@
 #!/bin/sh
-# Generate runtime config from environment variables
-cat > /app/dist/config.js <<EOF
+set -e
+
+# Defaults for internal Saturn networking
+BACKEND_URL="${BACKEND_URL:-http://localhost:8000}"
+GEO_SERVER_URL="${GEO_SERVER_URL:-${SERVER_URL:-http://localhost:3001}}"
+PORT="${PORT:-3000}"
+export BACKEND_URL GEO_SERVER_URL PORT
+
+# Generate runtime config — API calls go through nginx proxy on same origin
+cat > /usr/share/nginx/html/config.js <<EOF
 window.__APP_CONFIG__ = {
-  API_URL: "${API_URL:-}",
-  GEO_SERVER_URL: "${GEO_SERVER_URL:-}",
-  TRACKING_API: "${TRACKING_API:-}",
+  API_URL: "/api/v1",
+  GEO_SERVER_URL: "/geo",
+  TRACKING_API: "/geo",
   OFFER_URL: "${OFFER_URL:-}",
   OFFER_URL_GOOGLE: "${OFFER_URL_GOOGLE:-}",
   OFFER_URL_F2: "${OFFER_URL_F2:-}",
-  BKPROXY_URL: "${BKPROXY_URL:-}",
+  BKPROXY_URL: "/geo",
   VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}",
   BOOKMAKER_NAME: "${BOOKMAKER_NAME:-}",
   BOOKMAKER_LINK: "${BOOKMAKER_LINK:-}",
@@ -19,4 +27,9 @@ window.__APP_CONFIG__ = {
 };
 EOF
 
-exec serve dist -s -p ${PORT:-3000}
+# Render nginx config from template (substitute env vars)
+envsubst '${PORT} ${BACKEND_URL} ${GEO_SERVER_URL}' \
+  < /etc/nginx/conf.d/default.conf.template \
+  > /etc/nginx/conf.d/default.conf
+
+exec nginx -g 'daemon off;'
