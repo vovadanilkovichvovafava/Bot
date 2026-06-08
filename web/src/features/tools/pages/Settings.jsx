@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../../shared/i18n';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
@@ -17,6 +18,7 @@ export default function Settings() {
   const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
   const isPremium = user?.is_premium && !isFunnel2;
   const navigate = useNavigate();
+  const [showLangModal, setShowLangModal] = useState(false);
   const [showOddsModal, setShowOddsModal] = useState(null);
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
@@ -295,6 +297,13 @@ export default function Settings() {
         )}
 
         <SettingsItem
+          icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802"/></svg>}
+          label={t('settings.language', { defaultValue: 'Language' })}
+          value={{ en: 'English', es: 'Español', pt: 'Português', fr: 'Français', it: 'Italiano', pl: 'Polski', de: 'Deutsch' }[i18n.language] || i18n.language}
+          onClick={() => setShowLangModal(true)}
+        />
+
+        <SettingsItem
           icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>}
           label={t('settings.about')}
           value="Version 1.0.2"
@@ -312,6 +321,48 @@ export default function Settings() {
           {t('settings.signOut')}
         </button>
       </div>
+
+      {/* Language Modal */}
+      {showLangModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowLangModal(false)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">{t('settings.language', { defaultValue: 'Language' })}</h3>
+            <div className="space-y-1">
+              {[
+                { code: 'en', flag: '🇬🇧', name: 'English' },
+                { code: 'es', flag: '🇪🇸', name: 'Español' },
+                { code: 'pt', flag: '🇵🇹', name: 'Português' },
+                { code: 'fr', flag: '🇫🇷', name: 'Français' },
+                { code: 'it', flag: '🇮🇹', name: 'Italiano' },
+                { code: 'pl', flag: '🇵🇱', name: 'Polski' },
+                { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
+              ].map(lang => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    i18n.changeLanguage(lang.code);
+                    try { localStorage.setItem('i18nManualLang', lang.code); } catch {}
+                    setShowLangModal(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                    i18n.language === lang.code
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-xl">{lang.flag}</span>
+                  <span>{lang.name}</span>
+                  {i18n.language === lang.code && (
+                    <svg className="w-5 h-5 ml-auto text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd"/>
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Risk Level Modal */}
       {showRiskModal && (
