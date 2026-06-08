@@ -259,7 +259,7 @@ export default function Home() {
         {/* Best Bet Today — blurred for free users */}
         <div data-tour="best-bet">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-black text-gray-900">
+            <h3 className="text-lg font-black text-gray-900 italic">
               {t('home.bestBetToday', { defaultValue: 'Best Bet of the Day' })}
             </h3>
             <span className="text-xs font-bold text-[#1B2138] border border-gray-300 rounded-full px-3 py-1 uppercase tracking-wide">
@@ -426,7 +426,7 @@ export default function Home() {
         {/* Today's Matches */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-black text-gray-900">{t('home.todaysMatches')}</h3>
+            <h3 className="text-lg font-black text-gray-900 italic">{t('home.todaysMatches')}</h3>
             <button onClick={() => navigate('/matches')} className="text-primary-600 text-xs font-bold uppercase tracking-wide">
               {t('home.seeAll')}
             </button>
@@ -437,26 +437,9 @@ export default function Home() {
               <p className="text-gray-500">{t('home.noMatchesToday')}</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {matches.map((f, idx) => (
-                <React.Fragment key={f.fixture.id}>
-                  <HomeMatchCard fixture={f} navigate={navigate} />
-                  {/* Inline bonus banner after 3rd match for funnel-2 */}
-                  {isFunnel2 && idx === 2 && (
-                    <div
-                      onClick={() => { trackClick(user?.id, 'home_inline_bonus'); navigate('/promo'); }}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"
-                      style={{ background: 'linear-gradient(135deg, #FFFBF0, #FEF3C7)' }}
-                    >
-                      <span className="text-lg">🎁</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900">{t('advertiser.freeBetLabel')} {advertiser?.bonusBanner?.bonus}</p>
-                        <p className="text-[10px] text-gray-500">{t('home.claimNow', { defaultValue: 'Claim your free bet now' })}</p>
-                      </div>
-                      <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-                    </div>
-                  )}
-                </React.Fragment>
+            <div className="space-y-3">
+              {matches.map((f) => (
+                <HomeMatchCard key={f.fixture.id} fixture={f} navigate={navigate} />
               ))}
             </div>
           )}
@@ -500,13 +483,13 @@ export default function Home() {
 function BestBetTodayCard({ matches, smartBet, navigate, t, locked, advertiser, trackClick, userId, isPremium }) {
   const sb = smartBet?.found ? smartBet : null;
   const home = sb?.home || matches?.[0]?.teams?.home?.name || 'Real Madrid';
-  const away = sb?.away || matches?.[0]?.teams?.away?.name || 'Barcelona';
+  const away = sb?.away || matches?.[0]?.teams?.away?.name || 'Man City';
   const homeLogo = matches?.[0]?.teams?.home?.logo;
   const awayLogo = matches?.[0]?.teams?.away?.logo;
   const odds = parseFloat(sb?.odds || '2.10');
   const fixtureId = sb?.fixture_id || matches?.[0]?.fixture?.id;
 
-  let time = '--:--';
+  let time = '21:00';
   try {
     const d = matches?.[0]?.fixture?.date;
     if (d) time = new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -528,57 +511,52 @@ function BestBetTodayCard({ matches, smartBet, navigate, t, locked, advertiser, 
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
       {/* Teams + VS + time */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-3">
+      <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div className="flex flex-col items-center gap-2 w-24">
-          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden">
-            {homeLogo ? (
-              <img src={homeLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-            ) : (
-              <span className="text-gray-400 text-lg font-bold">{home[0]}</span>
-            )}
+          <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+            {homeLogo
+              ? <img src={homeLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+              : <span className="text-gray-400 text-lg font-bold">{home[0]}</span>}
           </div>
-          <span className="text-sm font-bold text-gray-900 text-center leading-tight">{home}</span>
+          <span className="text-[13px] font-bold text-gray-900 text-center leading-tight">{home}</span>
         </div>
+
         <div className="flex flex-col items-center gap-1.5">
           <span className="text-sm font-semibold text-gray-400">VS</span>
-          <span className="bg-emerald-600 text-white text-xs font-bold px-3.5 py-1 rounded-full">{time}</span>
+          <span className="bg-[#1B5E3B] text-white text-xs font-bold px-4 py-1 rounded-full">{time}</span>
         </div>
+
         <div className="flex flex-col items-center gap-2 w-24">
-          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden">
-            {awayLogo ? (
-              <img src={awayLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-            ) : (
-              <span className="text-gray-400 text-lg font-bold">{away[0]}</span>
-            )}
+          <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+            {awayLogo
+              ? <img src={awayLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+              : <span className="text-gray-400 text-lg font-bold">{away[0]}</span>}
           </div>
-          <span className="text-sm font-bold text-gray-900 text-center leading-tight">{away}</span>
+          <span className="text-[13px] font-bold text-gray-900 text-center leading-tight">{away}</span>
         </div>
       </div>
 
-      {/* Odds buttons */}
-      <div className="flex gap-3 px-5 py-3">
-        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-          <p className="text-xs text-gray-400 mb-1">{t('home.oddsHome', { defaultValue: 'Home' })}</p>
-          <p className="text-lg font-bold text-[#1B2138]">{homeOdds}</p>
+      {/* Odds row */}
+      <div className="flex gap-3 px-5 pb-4">
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center">
+          <p className="text-[11px] text-gray-400 mb-0.5">{t('home.oddsHome', { defaultValue: 'Home' })}</p>
+          <p className="text-[17px] font-bold text-[#1B2138]">{homeOdds}</p>
         </div>
-        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-          <p className="text-xs text-gray-400 mb-1">{t('home.oddsDraw', { defaultValue: 'Draw' })}</p>
-          <p className="text-lg font-bold text-[#1B2138]">{drawOdds}</p>
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center">
+          <p className="text-[11px] text-gray-400 mb-0.5">{t('home.oddsDraw', { defaultValue: 'Draw' })}</p>
+          <p className="text-[17px] font-bold text-[#1B2138]">{drawOdds}</p>
         </div>
-        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-          <p className="text-xs text-gray-400 mb-1">{t('home.oddsAway', { defaultValue: 'Away' })}</p>
-          <p className="text-lg font-bold text-[#1B2138]">{awayOdds}</p>
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center">
+          <p className="text-[11px] text-gray-400 mb-0.5">{t('home.oddsAway', { defaultValue: 'Away' })}</p>
+          <p className="text-[17px] font-bold text-[#1B2138]">{awayOdds}</p>
         </div>
       </div>
 
-      {/* Place bet button */}
-      <div className="px-5 pb-5 pt-1">
-        <button
-          onClick={handlePlaceBet}
-          className="w-full bg-[#1B5E3B] hover:bg-[#174F32] text-white font-bold py-3.5 rounded-xl text-base transition-colors"
-        >
+      {/* Place bet */}
+      <div className="px-5 pb-5">
+        <button onClick={handlePlaceBet} className="w-full bg-[#1B5E3B] text-white font-bold py-3.5 rounded-xl text-[15px]">
           {t('home.placeBet', { defaultValue: 'Place bet' })}
         </button>
       </div>
@@ -597,32 +575,38 @@ function HomeMatchCard({ fixture, navigate }) {
   return (
     <div
       onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
-      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
     >
-      <div className="flex items-center py-3.5 px-4">
+      <div className="flex items-center py-4 px-5">
+        {/* Teams */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-2">
-            <img src={f.teams.home.logo || ''} alt="" className="w-5 h-5 object-contain flex-shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
-            <span className="text-sm font-medium text-gray-900 truncate">{f.teams.home.name || '?'}</span>
+          <div className="flex items-center gap-3 mb-2.5">
+            <img src={f.teams.home.logo || ''} alt="" className="w-6 h-6 object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="text-[14px] font-medium text-gray-900 truncate">{f.teams.home.name || '?'}</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <img src={f.teams.away.logo || ''} alt="" className="w-5 h-5 object-contain flex-shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
-            <span className="text-sm font-medium text-gray-900 truncate">{f.teams.away.name || '?'}</span>
+          <div className="flex items-center gap-3">
+            <img src={f.teams.away.logo || ''} alt="" className="w-6 h-6 object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="text-[14px] font-medium text-gray-900 truncate">{f.teams.away.name || '?'}</span>
           </div>
         </div>
-        <div className="flex-shrink-0 text-right ml-3">
+
+        {/* Divider */}
+        <div className="w-px h-12 bg-gray-200 mx-4 shrink-0" />
+
+        {/* Score / Time */}
+        <div className="shrink-0 text-right min-w-[70px]">
           {isLive ? (
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-lg font-black text-gray-900">{f.goals?.home ?? 0} - {f.goals?.away ?? 0}</span>
-              <span className="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl font-black text-gray-900">{f.goals?.home ?? 0} - {f.goals?.away ?? 0}</span>
+              <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-600 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
                 LIVE {elapsed ? `${elapsed}'` : ''}
               </span>
             </div>
           ) : (
-            <div className="flex flex-col items-end">
-              <span className="text-sm text-gray-400">Scheduled</span>
-              <span className="text-lg font-bold text-gray-900">{time}</span>
+            <div className="flex flex-col items-center">
+              <span className="text-[11px] text-gray-400 font-medium">Today</span>
+              <span className="text-xl font-black text-gray-900">{time}</span>
             </div>
           )}
         </div>
