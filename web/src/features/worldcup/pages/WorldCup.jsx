@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import footballApi from '../../matches/api/footballApi';
 
-// FIFA World Cup 2026 — API-Football league id 1, season 2026
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
+const WC_START = new Date('2026-06-11T20:00:00Z');
 
-// Fallback group data from the official draw (Dec 5, 2025)
 function mkRow(group, rank, name, code) {
   return {
     rank, group,
-    team: { name, logo: `https://flagcdn.com/w40/${code}.png` },
+    team: { name, logo: `https://flagcdn.com/w80/${code}.png` },
     points: 0, goalsDiff: 0, all: { played: 0, win: 0, draw: 0, lose: 0 },
   };
 }
@@ -31,7 +30,6 @@ const WC2026_GROUPS = [
   [mkRow('Group L', 1, 'England', 'gb-eng'), mkRow('Group L', 2, 'Croatia', 'hr'), mkRow('Group L', 3, 'Ghana', 'gh'), mkRow('Group L', 4, 'Panama', 'pa')],
 ];
 
-// Knockout round order (as named by API-Football), outermost → final
 const KNOCKOUT_ROUNDS = [
   { key: 'Round of 32', short: 'R32' },
   { key: 'Round of 16', short: 'R16' },
@@ -40,8 +38,28 @@ const KNOCKOUT_ROUNDS = [
   { key: 'Final', short: 'Final' },
 ];
 
+const GROUP_COLORS = [
+  'from-rose-500/20 to-rose-600/5',
+  'from-sky-500/20 to-sky-600/5',
+  'from-emerald-500/20 to-emerald-600/5',
+  'from-violet-500/20 to-violet-600/5',
+  'from-amber-500/20 to-amber-600/5',
+  'from-cyan-500/20 to-cyan-600/5',
+  'from-pink-500/20 to-pink-600/5',
+  'from-indigo-500/20 to-indigo-600/5',
+  'from-orange-500/20 to-orange-600/5',
+  'from-teal-500/20 to-teal-600/5',
+  'from-fuchsia-500/20 to-fuchsia-600/5',
+  'from-lime-500/20 to-lime-600/5',
+];
+
+const GROUP_ACCENT = [
+  'bg-rose-400', 'bg-sky-400', 'bg-emerald-400', 'bg-violet-400',
+  'bg-amber-400', 'bg-cyan-400', 'bg-pink-400', 'bg-indigo-400',
+  'bg-orange-400', 'bg-teal-400', 'bg-fuchsia-400', 'bg-lime-400',
+];
+
 function tStatusShort(s) {
-  // Map API status to a short label
   const short = s?.short;
   if (!short) return '';
   if (['1H', '2H', 'ET', 'LIVE', 'P'].includes(short)) return `${s.elapsed || ''}'`;
@@ -50,12 +68,8 @@ function tStatusShort(s) {
   return '';
 }
 
-function isFinished(s) {
-  return ['FT', 'AET', 'PEN'].includes(s?.short);
-}
-function isLive(s) {
-  return ['1H', '2H', 'ET', 'HT', 'LIVE', 'P', 'BT'].includes(s?.short);
-}
+function isFinished(s) { return ['FT', 'AET', 'PEN'].includes(s?.short); }
+function isLive(s) { return ['1H', '2H', 'ET', 'HT', 'LIVE', 'P', 'BT'].includes(s?.short); }
 
 function formatKickoff(iso) {
   if (!iso) return '';
@@ -64,11 +78,28 @@ function formatKickoff(iso) {
     ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+function useCountdown(target) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = Math.max(0, target - now);
+  return {
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    minutes: Math.floor((diff % 3600000) / 60000),
+    seconds: Math.floor((diff % 60000) / 1000),
+    started: diff <= 0,
+  };
+}
+
 export default function WorldCup() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const countdown = useCountdown(WC_START);
 
-  const [tab, setTab] = useState('groups'); // 'groups' | 'bracket'
+  const [tab, setTab] = useState('groups');
   const [groups, setGroups] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +115,6 @@ export default function WorldCup() {
         ]);
         if (!alive) return;
         const apiGroups = g.status === 'fulfilled' ? (g.value || []) : [];
-        // Use API standings when available (has live points/GD), fall back to draw data
         setGroups(apiGroups.length > 0 ? apiGroups : WC2026_GROUPS);
         setFixtures(f.status === 'fulfilled' ? (f.value || []) : []);
       } catch {
@@ -101,58 +131,134 @@ export default function WorldCup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white pb-24">
-      {/* ===== WC26 Branded Header ===== */}
+    <div className="min-h-screen bg-[#070710] text-white pb-24">
+      {/* ===== EPIC HEADER ===== */}
       <div className="relative overflow-hidden">
-        {/* Host-country color stripe: Canada red · Mexico green · USA blue */}
-        <div className="h-1 w-full flex">
-          <div className="flex-1 bg-[#E4002B]" />
-          <div className="flex-1 bg-[#006847]" />
-          <div className="flex-1 bg-[#0A3161]" />
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a2e] via-[#0d1b2a] to-[#070710]" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: 'radial-gradient(circle at 20% 50%, #FFC72C33 0%, transparent 50%), radial-gradient(circle at 80% 20%, #E4002B22 0%, transparent 40%), radial-gradient(circle at 60% 80%, #00684722 0%, transparent 40%)',
+        }} />
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'linear-gradient(110deg, transparent 25%, rgba(255,199,44,0.06) 45%, rgba(255,199,44,0.12) 50%, rgba(255,199,44,0.06) 55%, transparent 75%)',
+          animation: 'shimmer 4s ease-in-out infinite',
+          backgroundSize: '200% 100%',
+        }} />
+
+        {/* Host country flag stripe */}
+        <div className="h-1.5 w-full flex relative z-10">
+          <div className="flex-1 bg-gradient-to-r from-[#E4002B] to-[#E4002B]/80" />
+          <div className="flex-1 bg-gradient-to-r from-[#006847]/80 via-[#006847] to-[#006847]/80" />
+          <div className="flex-1 bg-gradient-to-r from-[#0A3161]/80 to-[#0A3161]" />
         </div>
-        <div className="bg-gradient-to-br from-[#11111A] via-[#0A0A0F] to-[#11111A] px-5 pt-6 pb-5">
-          <div className="flex items-center gap-3">
-            <TrophyMark />
-            <div>
-              <h1 className="text-2xl font-black tracking-tight leading-none">
+
+        <div className="relative z-10 px-5 pt-8 pb-6">
+          {/* Back button */}
+          <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors text-sm">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            {t('common.back', { defaultValue: 'Back' })}
+          </button>
+
+          {/* Title */}
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FFC72C] via-[#FFD700] to-[#E0A800] flex items-center justify-center shrink-0 shadow-lg shadow-[#FFC72C]/20">
+              <svg className="w-9 h-9" fill="#1a0a2e" viewBox="0 0 24 24">
+                <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl font-black tracking-tight leading-none">
                 FIFA WORLD CUP
-                <span className="text-[#FFC72C]"> 26</span>
-                <span className="align-super text-[10px] text-white/40">™</span>
               </h1>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-white/50 mt-1">
-                Canada · Mexico · USA
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-4xl font-black text-[#FFC72C] leading-none">2026</span>
+                <span className="text-[10px] text-white/30 align-super">™</span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-white/10 text-white/70 font-medium">
+                  🇨🇦 🇲🇽 🇺🇸
+                </span>
+                <span className="text-xs text-white/40">48 teams · 12 groups</span>
+              </div>
             </div>
           </div>
-          <p className="text-sm text-white/40 mt-3">
-            {t('worldCup.subtitle', { defaultValue: '48 teams · 12 groups · groups & knockout bracket' })}
-          </p>
+
+          {/* Countdown */}
+          {!countdown.started ? (
+            <div className="mt-6 bg-white/[0.06] backdrop-blur rounded-2xl border border-white/10 p-4">
+              <p className="text-[11px] uppercase tracking-[0.15em] text-[#FFC72C] font-semibold mb-3 text-center">
+                {t('worldCup.kickoffIn', { defaultValue: 'Kickoff in' })}
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }) },
+                  { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }) },
+                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }) },
+                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }) },
+                ].map((u) => (
+                  <div key={u.label} className="text-center">
+                    <div className="bg-gradient-to-b from-white/10 to-white/5 rounded-xl py-2.5 border border-white/10">
+                      <span className="text-2xl font-black tabular-nums text-white">
+                        {String(u.val).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-white/40 mt-1.5 uppercase tracking-wider">{u.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 rounded-xl py-3 border border-emerald-500/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-sm font-bold text-emerald-400">
+                {t('worldCup.tournamentLive', { defaultValue: 'TOURNAMENT IS LIVE' })}
+              </span>
+            </div>
+          )}
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            {[
+              { val: '48', label: t('worldCup.teams', { defaultValue: 'Teams' }), icon: '🏟️' },
+              { val: '104', label: t('worldCup.matches', { defaultValue: 'Matches' }), icon: '⚽' },
+              { val: '16', label: t('worldCup.venues', { defaultValue: 'Venues' }), icon: '📍' },
+            ].map((s) => (
+              <div key={s.label} className="bg-white/[0.04] rounded-xl p-3 text-center border border-white/5">
+                <span className="text-lg">{s.icon}</span>
+                <p className="text-lg font-black text-white mt-0.5">{s.val}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ===== Tab switcher ===== */}
-      <div className="sticky top-0 z-10 bg-[#0A0A0F]/95 backdrop-blur px-5 pt-3 pb-2 border-b border-white/5">
+      <div className="sticky top-0 z-10 bg-[#070710]/95 backdrop-blur-lg px-5 pt-3 pb-2 border-b border-white/5">
         <div className="flex gap-2">
           {[
-            { key: 'groups', label: t('worldCup.groups', { defaultValue: 'Groups' }) },
-            { key: 'bracket', label: t('worldCup.bracket', { defaultValue: 'Bracket' }) },
+            { key: 'groups', label: t('worldCup.groups', { defaultValue: 'Groups' }), icon: '📊' },
+            { key: 'bracket', label: t('worldCup.bracket', { defaultValue: 'Bracket' }), icon: '🏆' },
           ].map((tb) => (
             <button
               key={tb.key}
               onClick={() => setTab(tb.key)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 tab === tb.key
-                  ? 'bg-[#FFC72C] text-black'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  ? 'bg-gradient-to-r from-[#FFC72C] to-[#FFD700] text-[#1a0a2e] shadow-lg shadow-[#FFC72C]/20'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
               }`}
             >
+              <span>{tb.icon}</span>
               {tb.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="px-5 pt-4">
+      <div className="px-4 pt-4">
         {loading ? (
           <LoadingState />
         ) : tab === 'groups' ? (
@@ -170,54 +276,82 @@ export default function WorldCup() {
 function GroupsView({ groups, fixtures, onOpenMatch, t }) {
   return (
     <div className="space-y-4">
-      {groups.map((group, idx) => (
-        <GroupCard key={idx} rows={group} onOpenMatch={onOpenMatch} t={t} />
-      ))}
-      <p className="text-[11px] text-white/30 text-center pt-2">
-        {t('worldCup.qualifyNote', { defaultValue: 'Top 2 of each group + 8 best third-placed teams advance' })}
-      </p>
+      <div className="grid grid-cols-1 gap-4">
+        {groups.map((group, idx) => (
+          <GroupCard key={idx} rows={group} colorIdx={idx} onOpenMatch={onOpenMatch} t={t} />
+        ))}
+      </div>
+      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5 text-center">
+        <p className="text-[11px] text-white/40">
+          🟡 {t('worldCup.qualifyTop2', { defaultValue: 'Top 2 advance' })}
+          {' · '}
+          ⚪ {t('worldCup.qualifyThird', { defaultValue: '8 best 3rd-placed advance' })}
+        </p>
+      </div>
     </div>
   );
 }
 
-function GroupCard({ rows, onOpenMatch, t }) {
+function GroupCard({ rows, colorIdx = 0, onOpenMatch, t }) {
   if (!rows?.length) return null;
   const groupName = rows[0]?.group || 'Group';
+  const letter = groupName.replace('Group ', '');
 
   return (
-    <div className="bg-[#13131D] rounded-2xl overflow-hidden border border-white/5">
-      <div className="px-4 py-3 bg-white/[0.03] flex items-center justify-between">
-        <h3 className="font-bold text-sm tracking-wide">{groupName}</h3>
-        <div className="flex items-center gap-3 text-[10px] text-white/40">
-          <span>P</span><span>GD</span><span className="text-[#FFC72C] font-semibold">Pts</span>
+    <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-[#0d0d18]">
+      {/* Group header */}
+      <div className={`px-4 py-3 bg-gradient-to-r ${GROUP_COLORS[colorIdx]} flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg ${GROUP_ACCENT[colorIdx]} flex items-center justify-center`}>
+            <span className="text-sm font-black text-white">{letter}</span>
+          </div>
+          <h3 className="font-bold text-sm tracking-wide text-white">{groupName}</h3>
+        </div>
+        <div className="flex items-center gap-4 text-[10px] text-white/40 font-semibold uppercase tracking-wider">
+          <span className="w-5 text-center">P</span>
+          <span className="w-5 text-center">W</span>
+          <span className="w-5 text-center">D</span>
+          <span className="w-5 text-center">L</span>
+          <span className="w-6 text-center">GD</span>
+          <span className="w-6 text-center text-[#FFC72C]">Pts</span>
         </div>
       </div>
-      <div className="divide-y divide-white/5">
+      {/* Rows */}
+      <div className="divide-y divide-white/[0.04]">
         {rows.map((row, i) => {
           const qualified = i < 2;
           const playoff = i === 2;
           return (
-            <button
+            <div
               key={row.team?.id || i}
-              onClick={() => onOpenMatch(null)}
-              className="w-full flex items-center px-4 py-2.5 hover:bg-white/[0.03] transition-colors text-left"
+              className={`flex items-center px-4 py-3 transition-colors hover:bg-white/[0.03] ${
+                qualified ? 'bg-[#FFC72C]/[0.03]' : ''
+              }`}
             >
-              <div className={`w-1 h-6 rounded-full mr-3 shrink-0 ${
-                qualified ? 'bg-[#FFC72C]' : playoff ? 'bg-white/30' : 'bg-transparent'
+              <div className={`w-1 h-8 rounded-full mr-3 shrink-0 ${
+                qualified ? 'bg-[#FFC72C]' : playoff ? 'bg-white/20' : 'bg-transparent'
               }`} />
-              <span className="text-xs text-white/40 w-4 shrink-0">{row.rank ?? i + 1}</span>
+              <span className="text-xs text-white/30 w-5 shrink-0 font-bold">{row.rank ?? i + 1}</span>
               {row.team?.logo && (
-                <img src={row.team.logo} alt="" className="w-5 h-5 rounded-full object-cover mx-2 shrink-0 bg-white/10" />
+                <img
+                  src={row.team.logo}
+                  alt=""
+                  className="w-7 h-5 object-contain mx-2 shrink-0 rounded-sm"
+                  loading="lazy"
+                />
               )}
-              <span className="flex-1 text-sm font-medium truncate">{row.team?.name}</span>
-              <div className="flex items-center gap-3 text-xs tabular-nums">
-                <span className="w-4 text-center text-white/50">{row.all?.played ?? 0}</span>
-                <span className="w-6 text-center text-white/50">
+              <span className="flex-1 text-sm font-semibold truncate text-white/90">{row.team?.name}</span>
+              <div className="flex items-center gap-4 text-xs tabular-nums">
+                <span className="w-5 text-center text-white/40">{row.all?.played ?? 0}</span>
+                <span className="w-5 text-center text-white/40">{row.all?.win ?? 0}</span>
+                <span className="w-5 text-center text-white/40">{row.all?.draw ?? 0}</span>
+                <span className="w-5 text-center text-white/40">{row.all?.lose ?? 0}</span>
+                <span className="w-6 text-center text-white/50 font-medium">
                   {row.goalsDiff > 0 ? `+${row.goalsDiff}` : (row.goalsDiff ?? 0)}
                 </span>
-                <span className="w-6 text-center font-bold text-[#FFC72C]">{row.points ?? 0}</span>
+                <span className="w-6 text-center font-black text-[#FFC72C]">{row.points ?? 0}</span>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -228,10 +362,8 @@ function GroupCard({ rows, onOpenMatch, t }) {
 /* ============================ BRACKET ============================ */
 
 function BracketView({ fixtures, onOpenMatch, t }) {
-  // Filter only knockout fixtures, bucket by round
   const byRound = {};
   for (const r of KNOCKOUT_ROUNDS) byRound[r.key] = [];
-
   for (const f of fixtures) {
     const round = f.league?.round || '';
     const match = KNOCKOUT_ROUNDS.find(r => round.toLowerCase() === r.key.toLowerCase());
@@ -243,22 +375,22 @@ function BracketView({ fixtures, onOpenMatch, t }) {
   if (!hasAny) {
     return (
       <EmptyState
-        title={t('worldCup.bracketSoonTitle', { defaultValue: 'Bracket not set yet' })}
-        text={t('worldCup.bracketSoonText', { defaultValue: 'The knockout bracket fills in automatically once the group stage finishes (Round of 32 onward).' })}
+        title={t('worldCup.bracketSoonTitle', { defaultValue: 'Knockout stage coming soon' })}
+        text={t('worldCup.bracketSoonText', { defaultValue: 'The bracket fills in after the group stage. 32 teams advance to the knockouts.' })}
       />
     );
   }
 
   return (
-    <div className="overflow-x-auto -mx-5 px-5 pb-4">
-      <div className="flex gap-4 min-w-max">
+    <div className="overflow-x-auto -mx-4 px-4 pb-4">
+      <div className="flex gap-3 min-w-max">
         {KNOCKOUT_ROUNDS.map((r) => {
           const ties = byRound[r.key];
           if (!ties.length) return null;
           return (
-            <div key={r.key} className="w-[180px] shrink-0">
-              <div className="text-center mb-3">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-[#FFC72C]">
+            <div key={r.key} className="w-[190px] shrink-0">
+              <div className="text-center mb-3 py-2 bg-gradient-to-r from-transparent via-[#FFC72C]/10 to-transparent rounded-lg">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC72C]">
                   {r.short}
                 </span>
               </div>
@@ -285,16 +417,23 @@ function BracketTie({ fixture, onOpenMatch }) {
   return (
     <button
       onClick={() => onOpenMatch(fx?.id)}
-      className="w-full bg-[#13131D] rounded-xl border border-white/5 overflow-hidden hover:border-[#FFC72C]/30 transition-colors text-left"
+      className={`w-full rounded-xl border overflow-hidden transition-all text-left ${
+        live
+          ? 'bg-[#0d0d18] border-red-500/30 shadow-lg shadow-red-500/10'
+          : 'bg-[#0d0d18] border-white/[0.08] hover:border-[#FFC72C]/30'
+      }`}
     >
       <TeamRow team={teams?.home} score={goals?.home} winner={homeWin} dim={done && !homeWin} />
       <div className="h-px bg-white/5" />
       <TeamRow team={teams?.away} score={goals?.away} winner={awayWin} dim={done && !awayWin} />
-      <div className="px-2.5 py-1 bg-white/[0.02] text-center">
+      <div className="px-2.5 py-1.5 bg-white/[0.02] text-center border-t border-white/5">
         {live ? (
-          <span className="text-[10px] font-bold text-red-400">● {tStatusShort(fx?.status)}</span>
+          <span className="text-[10px] font-bold text-red-400 flex items-center justify-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+            {tStatusShort(fx?.status)}
+          </span>
         ) : done ? (
-          <span className="text-[10px] text-white/40">{tStatusShort(fx?.status)}</span>
+          <span className="text-[10px] text-white/40 font-medium">{tStatusShort(fx?.status)}</span>
         ) : (
           <span className="text-[10px] text-white/40">{formatKickoff(fx?.date)}</span>
         )}
@@ -305,16 +444,16 @@ function BracketTie({ fixture, onOpenMatch }) {
 
 function TeamRow({ team, score, winner, dim }) {
   return (
-    <div className={`flex items-center px-2.5 py-2 gap-2 ${dim ? 'opacity-50' : ''}`}>
+    <div className={`flex items-center px-3 py-2.5 gap-2 ${dim ? 'opacity-40' : ''}`}>
       {team?.logo ? (
-        <img src={team.logo} alt="" className="w-4 h-4 rounded-full object-cover shrink-0 bg-white/10" />
+        <img src={team.logo} alt="" className="w-5 h-3.5 object-contain shrink-0 rounded-sm" loading="lazy" />
       ) : (
-        <div className="w-4 h-4 rounded-full bg-white/10 shrink-0" />
+        <div className="w-5 h-3.5 rounded-sm bg-white/10 shrink-0" />
       )}
       <span className={`flex-1 text-xs truncate ${winner ? 'font-bold text-white' : 'text-white/70'}`}>
         {team?.name || 'TBD'}
       </span>
-      <span className={`text-xs tabular-nums ${winner ? 'font-bold text-[#FFC72C]' : 'text-white/50'}`}>
+      <span className={`text-xs tabular-nums font-bold ${winner ? 'text-[#FFC72C]' : 'text-white/50'}`}>
         {score ?? '-'}
       </span>
     </div>
@@ -327,38 +466,28 @@ function LoadingState() {
   return (
     <div className="space-y-4">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="bg-[#13131D] rounded-2xl border border-white/5 overflow-hidden">
-          <div className="h-10 bg-white/[0.03] animate-pulse" />
+        <div key={i} className="bg-[#0d0d18] rounded-2xl border border-white/[0.08] overflow-hidden">
+          <div className="h-12 bg-white/[0.03] shimmer-wc" />
           {[0, 1, 2, 3].map((j) => (
-            <div key={j} className="h-11 border-t border-white/5 animate-pulse" />
+            <div key={j} className="h-14 border-t border-white/[0.04] shimmer-wc" style={{ animationDelay: `${j * 150}ms` }} />
           ))}
         </div>
       ))}
+      <style>{`.shimmer-wc { animation: pulse 1.5s ease-in-out infinite; background: linear-gradient(90deg, transparent, rgba(255,199,44,0.03), transparent); background-size: 200% 100%; }`}</style>
     </div>
   );
 }
 
 function EmptyState({ title, text }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-        <TrophyMark small />
+    <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#FFC72C]/20 to-[#FFC72C]/5 border border-[#FFC72C]/20 flex items-center justify-center mb-5">
+        <svg className="w-10 h-10 text-[#FFC72C]" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z"/>
+        </svg>
       </div>
-      <h3 className="font-bold text-white mb-2">{title}</h3>
-      <p className="text-sm text-white/40 max-w-xs">{text}</p>
-    </div>
-  );
-}
-
-/* ============================ ICONS ============================ */
-
-function TrophyMark({ small }) {
-  const size = small ? 'w-7 h-7' : 'w-10 h-10';
-  return (
-    <div className={`${size} rounded-xl bg-gradient-to-br from-[#FFC72C] to-[#E0A800] flex items-center justify-center shrink-0`}>
-      <svg className={small ? 'w-4 h-4' : 'w-6 h-6'} fill="#0A0A0F" viewBox="0 0 24 24">
-        <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z"/>
-      </svg>
+      <h3 className="font-bold text-lg text-white mb-2">{title}</h3>
+      <p className="text-sm text-white/40 max-w-xs leading-relaxed">{text}</p>
     </div>
   );
 }

@@ -323,63 +323,80 @@ export default function Home() {
           smartBet={smartBet}
         />
 
-        {/* AI Express card — shown for all users */}
+        {/* 🏆 FIFA World Cup 2026 — Main Event Banner */}
         <div
-          onClick={() => navigate('/express')}
-          className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/world-cup')}
+          className="relative overflow-hidden rounded-2xl cursor-pointer shadow-lg"
+          style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #0d1b3a 40%, #1a0a2e 100%)' }}
         >
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
-              </svg>
-            </div>
-            {(isPremium || isFunnel2) ? (
-              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
-                {t('home.unlimitedLabel', { defaultValue: 'Unlimited' })}
-              </span>
-            ) : isFunnel1 ? (
-              <span className="bg-green-400 text-green-900 text-xs font-bold px-2 py-1 rounded-full">
-                {t('home.freeWeekly', { defaultValue: '1x / week free' })}
-              </span>
-            ) : isFunnel3 ? (
-              <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
-                {t('home.expressTokenCost', { defaultValue: '3 tokens' })}
-              </span>
-            ) : null}
+          {/* Animated gold shimmer */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'linear-gradient(110deg, transparent 20%, rgba(255,199,44,0.08) 35%, rgba(255,199,44,0.15) 50%, rgba(255,199,44,0.08) 65%, transparent 80%)',
+            animation: 'shimmer 3s ease-in-out infinite',
+            backgroundSize: '200% 100%',
+          }} />
+          {/* Decorative glow */}
+          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-[#FFC72C]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-[#E4002B]/10 blur-3xl pointer-events-none" />
+
+          {/* Host country stripe top */}
+          <div className="h-1 w-full flex">
+            <div className="flex-1 bg-[#E4002B]" />
+            <div className="flex-1 bg-[#006847]" />
+            <div className="flex-1 bg-[#0A3161]" />
           </div>
 
-          <h3 className="text-xl font-bold text-white mb-2">{t('home.aiExpress', { defaultValue: 'AI Express' })}</h3>
-          <p className="text-white/80 text-sm mb-4">
-            {t('home.aiExpressDesc', { defaultValue: 'AI builds accumulators from the best value bets. 3 presets: safe, balanced, and high-odds.' })}
-          </p>
+          <div className="relative p-5">
+            <div className="flex items-start gap-4">
+              {/* Trophy */}
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FFC72C] via-[#FFD700] to-[#E0A800] flex items-center justify-center shrink-0 shadow-lg shadow-[#FFC72C]/30">
+                <svg className="w-8 h-8" fill="#1a0a2e" viewBox="0 0 24 24">
+                  <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-[#FFC72C] text-[#1a0a2e] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    {t('home.wcLive', { defaultValue: 'Main Event' })}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-white leading-tight">
+                  FIFA WORLD CUP
+                  <span className="text-[#FFC72C]"> 2026</span>
+                </h3>
+                <p className="text-white/50 text-xs mt-1">
+                  🇨🇦 🇲🇽 🇺🇸 · 48 {t('home.wcTeams', { defaultValue: 'teams' })} · 104 {t('home.wcMatches', { defaultValue: 'matches' })}
+                </p>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">3</p>
-              <p className="text-white/60 text-xs">{t('home.expressPresets', { defaultValue: 'Presets' })}</p>
-            </div>
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">3-7</p>
-              <p className="text-white/60 text-xs">{t('home.expressLegs', { defaultValue: 'Legs' })}</p>
-            </div>
-            <div className="bg-white/10 rounded-lg p-2 text-center">
-              <p className="text-white font-bold text-lg">AI</p>
-              <p className="text-white/60 text-xs">{t('home.expressPowered', { defaultValue: 'Powered' })}</p>
-            </div>
-          </div>
+            {/* Countdown / Live indicator */}
+            <WorldCupCountdownStrip t={t} />
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white/70 text-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-              </svg>
-              {t('home.expressInfo', { defaultValue: 'Top leagues, best odds' })}
+            {/* Featured groups preview */}
+            <div className="flex gap-2 mt-3">
+              {[
+                { flag: '🇦🇷', name: 'ARG' },
+                { flag: '🇧🇷', name: 'BRA' },
+                { flag: '🇩🇪', name: 'GER' },
+                { flag: '🇫🇷', name: 'FRA' },
+                { flag: '🇪🇸', name: 'ESP' },
+                { flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'ENG' },
+              ].map((team) => (
+                <div key={team.name} className="flex-1 bg-white/[0.06] rounded-lg py-2 text-center border border-white/[0.06]">
+                  <span className="text-lg leading-none">{team.flag}</span>
+                  <p className="text-[9px] text-white/40 mt-0.5 font-semibold tracking-wider">{team.name}</p>
+                </div>
+              ))}
             </div>
-            <div className="bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-1">
-              {t('home.openExpress', { defaultValue: 'Open Express' })}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+
+            {/* CTA */}
+            <div className="mt-4 flex items-center justify-between bg-gradient-to-r from-[#FFC72C] to-[#FFD700] rounded-xl px-4 py-3 shadow-lg shadow-[#FFC72C]/20">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚽</span>
+                <span className="text-sm font-bold text-[#1a0a2e]">{t('home.wcCta', { defaultValue: 'Groups, Bracket & Predictions' })}</span>
+              </div>
+              <svg className="w-5 h-5 text-[#1a0a2e]/60" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
               </svg>
             </div>
@@ -939,6 +956,49 @@ function HomeBonusBanner({ advertiser, userId, trackClick }) {
           {t('advertiser.bannerCtaSub', { deposit: bb.deposit, bonus: bb.bonus, total: bb.total })}
         </p>
       </div>
+    </div>
+  );
+}
+
+const WC_START = new Date('2026-06-11T20:00:00Z');
+
+function WorldCupCountdownStrip({ t }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diff = Math.max(0, WC_START - now);
+  const started = diff <= 0;
+
+  if (started) {
+    return (
+      <div className="mt-3 flex items-center justify-center gap-2 bg-emerald-500/10 rounded-xl py-2.5 border border-emerald-500/20">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-xs font-bold text-emerald-400">{t('home.wcTournamentLive', { defaultValue: 'TOURNAMENT IS LIVE' })}</span>
+      </div>
+    );
+  }
+
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  const secs = Math.floor((diff % 60000) / 1000);
+
+  return (
+    <div className="mt-3 grid grid-cols-4 gap-1.5">
+      {[
+        { val: days, label: t('home.wcDays', { defaultValue: 'days' }) },
+        { val: hours, label: t('home.wcHrs', { defaultValue: 'hrs' }) },
+        { val: mins, label: t('home.wcMin', { defaultValue: 'min' }) },
+        { val: secs, label: t('home.wcSec', { defaultValue: 'sec' }) },
+      ].map((u) => (
+        <div key={u.label} className="bg-white/[0.06] rounded-lg py-2 text-center border border-white/[0.06]">
+          <span className="text-lg font-black tabular-nums text-white">{String(u.val).padStart(2, '0')}</span>
+          <p className="text-[8px] text-white/30 uppercase tracking-wider mt-0.5">{u.label}</p>
+        </div>
+      ))}
     </div>
   );
 }
