@@ -215,6 +215,10 @@ class ApiFootballService:
         """Search teams by name"""
         return await self._request("/teams", {"search": name}, "teams")
 
+    async def get_squad(self, team_id: int) -> List[Dict]:
+        """Get current squad (player list) for a team"""
+        return await self._request("/players/squads", {"team": team_id}, "teams")
+
     # === Injuries ===
 
     async def get_injuries(self, fixture_id: int) -> List[Dict]:

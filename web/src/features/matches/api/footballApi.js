@@ -326,6 +326,17 @@ class FootballApiService {
     return res[0] || null;
   }
 
+  async getSquad(teamId) {
+    // Returns array like [{ team, players: [...] }]
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/teams/${teamId}/squad`);
+      }
+    } catch {}
+
+    return this.directRequest('/players/squads', { team: teamId });
+  }
+
   async searchTeam(name) {
     try {
       if (this.useBackend) {

@@ -130,6 +130,11 @@ export default function WorldCup() {
     if (fixtureId) navigate(`/match/${fixtureId}`);
   };
 
+  const openTeam = (team) => {
+    if (!team?.name) return;
+    navigate(`/world-cup/team/${team.id || 'na'}`, { state: { team } });
+  };
+
   return (
     <div className="min-h-screen bg-[#070710] text-white pb-24">
       {/* ===== HEADER ===== */}
@@ -246,7 +251,7 @@ export default function WorldCup() {
         {loading ? (
           <LoadingState />
         ) : tab === 'groups' ? (
-          <GroupsView groups={groups} fixtures={fixtures} onOpenMatch={openMatch} t={t} />
+          <GroupsView groups={groups} fixtures={fixtures} onOpenMatch={openMatch} onOpenTeam={openTeam} t={t} />
         ) : (
           <BracketView fixtures={fixtures} onOpenMatch={openMatch} t={t} />
         )}
@@ -257,12 +262,12 @@ export default function WorldCup() {
 
 /* ============================ GROUPS ============================ */
 
-function GroupsView({ groups, fixtures, onOpenMatch, t }) {
+function GroupsView({ groups, fixtures, onOpenMatch, onOpenTeam, t }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4">
         {groups.map((group, idx) => (
-          <GroupCard key={idx} rows={group} colorIdx={idx} onOpenMatch={onOpenMatch} t={t} />
+          <GroupCard key={idx} rows={group} colorIdx={idx} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} t={t} />
         ))}
       </div>
       <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5 text-center">
@@ -276,7 +281,7 @@ function GroupsView({ groups, fixtures, onOpenMatch, t }) {
   );
 }
 
-function GroupCard({ rows, colorIdx = 0, onOpenMatch, t }) {
+function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
   if (!rows?.length) return null;
   const groupName = rows[0]?.group || 'Group';
   const letter = groupName.replace('Group ', '');
@@ -308,7 +313,8 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, t }) {
           return (
             <div
               key={row.team?.id || i}
-              className={`flex items-center px-4 py-3 transition-colors hover:bg-white/[0.03] ${
+              onClick={() => onOpenTeam?.(row.team)}
+              className={`flex items-center px-4 py-3 transition-colors cursor-pointer hover:bg-white/[0.05] active:bg-white/[0.07] ${
                 qualified ? 'bg-[#FFC72C]/[0.03]' : ''
               }`}
             >
@@ -325,6 +331,9 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, t }) {
                 />
               )}
               <span className="flex-1 text-sm font-semibold truncate text-white/90">{row.team?.name}</span>
+              <svg className="w-3.5 h-3.5 text-white/20 mr-2 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
               <div className="flex items-center gap-4 text-xs tabular-nums">
                 <span className="w-5 text-center text-white/40">{row.all?.played ?? 0}</span>
                 <span className="w-5 text-center text-white/40">{row.all?.win ?? 0}</span>

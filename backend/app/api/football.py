@@ -170,6 +170,16 @@ async def get_team(team_id: int) -> Optional[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch team")
 
 
+@router.get("/teams/{team_id}/squad")
+async def get_squad(team_id: int) -> List[Dict]:
+    """Get current squad (player list) for a team"""
+    try:
+        return await api_football.get_squad(team_id)
+    except Exception as e:
+        logger.error(f"Error fetching squad for team {team_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch squad")
+
+
 # === Injuries ===
 
 @router.get("/fixtures/{fixture_id}/injuries")
