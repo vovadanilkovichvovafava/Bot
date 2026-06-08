@@ -61,7 +61,7 @@ def verify_bet(bet_type: str, home_goals: int, away_goals: int) -> Optional[bool
     bt = bet_type.lower().strip()
 
     # Generic win patterns
-    if "home" in bt or "win" in bt and "away" not in bt:
+    if ("home" in bt or "win" in bt) and "away" not in bt:
         return home_goals > away_goals
     if "away" in bt:
         return away_goals > home_goals

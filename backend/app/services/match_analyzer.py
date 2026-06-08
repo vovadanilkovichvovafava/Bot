@@ -76,7 +76,7 @@ class MatchAnalyzer:
     def __init__(self):
         self.claude_client = None
         if settings.CLAUDE_API_KEY:
-            self.claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+            self.claude_client = anthropic.AsyncAnthropic(api_key=settings.CLAUDE_API_KEY)
 
     async def analyze_match(self, match_id: int) -> Optional[Dict[str, Any]]:
         """Analyze a match and return AI prediction (with caching)"""
@@ -211,7 +211,7 @@ class MatchAnalyzer:
 
         try:
             logger.info(f"Calling Claude API with {len(messages)} messages")
-            response = self.claude_client.messages.create(
+            response = await self.claude_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=1500,
                 system=system,
@@ -372,7 +372,7 @@ If ML model predictions are provided above, use them as a strong quantitative ba
 Be realistic with confidence - rarely above 85%. Only respond with JSON."""
 
         try:
-            response = self.claude_client.messages.create(
+            response = await self.claude_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=500,
                 messages=[{"role": "user", "content": prompt}],

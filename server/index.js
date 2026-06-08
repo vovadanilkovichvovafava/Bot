@@ -13,13 +13,13 @@ const PORT = process.env.PORT || 3001;
 const CONFIG = {
   // Bookmaker partner info
   BOOKMAKER_NAME: process.env.BOOKMAKER_NAME || '1xBet',
-  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || (() => { throw new Error('BOOKMAKER_AFFILIATE_ID environment variable is not set'); })(),
+  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || '',
 
   // Main API backend
   MAIN_API_URL: process.env.MAIN_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1',
 
   // Postback secret for verification
-  POSTBACK_SECRET: process.env.POSTBACK_SECRET || (() => { throw new Error('POSTBACK_SECRET environment variable is not set'); })(),
+  POSTBACK_SECRET: process.env.POSTBACK_SECRET || '',
 
   // Countries where bookmaker is blocked (ISO 3166-1 alpha-2 codes)
   BLOCKED_COUNTRIES: (process.env.BLOCKED_COUNTRIES || 'RU,BY,UA,KZ,AZ,AM,GE,MD,KG,TJ,TM,UZ').split(','),
@@ -30,6 +30,18 @@ const CONFIG = {
   // Safe landing page for blocked countries
   SAFE_LANDING: process.env.SAFE_LANDING || '/blocked',
 };
+
+// Startup validation
+const requiredEnvVars = ['POSTBACK_SECRET'];
+for (const envVar of requiredEnvVars) {
+  if (!CONFIG[envVar]) {
+    console.error(`[STARTUP] Missing required env var: ${envVar}`);
+    process.exit(1);
+  }
+}
+if (!CONFIG.BOOKMAKER_AFFILIATE_ID) {
+  console.warn('[STARTUP] BOOKMAKER_AFFILIATE_ID not set — affiliate links will be empty');
+}
 
 // In-memory storage for demo (use Redis/DB in production)
 const postbackStore = new Map();
@@ -188,9 +200,9 @@ app.get('/api/postback', async (req, res) => {
 
   console.log(`[POSTBACK] Received: click_id=${actualClickId}, user_id=${user_id}, external_id=${external_id}, sub_id_10=${sub_id_10}, status=${actualStatus}, amount=${actualAmount}`);
 
-  // Verify postback secret (optional but recommended)
-  if (secret && secret !== CONFIG.POSTBACK_SECRET) {
-    console.log('[POSTBACK] Invalid secret');
+  // Verify postback secret
+  if (!secret || secret !== CONFIG.POSTBACK_SECRET) {
+    console.log('[POSTBACK] Missing or invalid secret');
     return res.status(403).json({ error: 'Invalid secret' });
   }
 
@@ -282,11 +294,10 @@ app.get('/api/postback', async (req, res) => {
  * Alternative POST endpoint for postbacks
  */
 app.post('/api/postback', express.json(), async (req, res) => {
-  const { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret } = req.body;
-
-  // Reuse GET logic - support both original and Keitaro param names
-  req.query = { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret };
-  return app._router.handle(req, res, () => {});
+  // Merge body params into query so the redirect uses the same GET handler
+  Object.assign(req.query, req.body);
+  req.method = 'GET';
+  app.handle(req, res);
 });
 
 /**
@@ -294,7 +305,8 @@ app.post('/api/postback', express.json(), async (req, res) => {
  */
 async function logPostback(data) {
   try {
-    await fetch(`${CONFIG.MAIN_API_URL.replace('/users', '').replace('/api/v1', '/api/v1/postbacks')}/log`, {
+    const baseUrl = new URL(CONFIG.MAIN_API_URL).origin;
+    await fetch(`${baseUrl}/api/v1/postbacks/log`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -698,7 +710,8 @@ app.post('/api/keitaro/postback', async (req, res) => {
   req.query = { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id };
 
   // Forward to GET handler
-  return app._router.handle({ ...req, method: 'GET' }, res, () => {});
+  req.method = 'GET';
+  app.handle(req, res);
 });
 
 // ============================================

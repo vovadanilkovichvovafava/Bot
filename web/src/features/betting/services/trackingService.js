@@ -151,16 +151,16 @@ const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 const OFFER_BASE_URL_GOOGLE = ENV.OFFER_URL_GOOGLE || '';
 
 export function getTrackingLink(userId, banner = '', funnel = '') {
-  // Определяем base URL: Google offer > Funnel-2 offer > Default offer
-  const utmSource = new URLSearchParams(window.location.search).get('utm_source')
-    || sessionStorage.getItem('tracking_utm_source') || '';
-  const isGoogle = OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google';
-  const baseUrl = isGoogle
-    ? OFFER_BASE_URL_GOOGLE
-    : (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
   if (!userId) return null;
 
   try {
+    // Определяем base URL: Google offer > Funnel-2 offer > Default offer
+    const utmSource = new URLSearchParams(window.location.search).get('utm_source')
+      || sessionStorage.getItem('tracking_utm_source') || '';
+    const isGoogle = OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google';
+    const baseUrl = isGoogle
+      ? OFFER_BASE_URL_GOOGLE
+      : (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
     const params = new URLSearchParams();
     const urlParams = new URLSearchParams(window.location.search);
     const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';

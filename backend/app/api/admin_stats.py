@@ -2235,8 +2235,8 @@ async def get_chat_insights(
         idx_map.append({"session_id": sid, "type": src})
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        resp = client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        resp = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=3000,
             messages=[{

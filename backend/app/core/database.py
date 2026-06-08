@@ -109,6 +109,20 @@ async def init_db():
             "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
             # Admin reply flag for AI chat messages
             "ALTER TABLE ai_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
+            # ── analytics_events table (must precede its indexes) ──
+            """CREATE TABLE IF NOT EXISTS analytics_events (
+                id SERIAL PRIMARY KEY,
+                event VARCHAR NOT NULL,
+                page VARCHAR,
+                user_id VARCHAR,
+                session_id VARCHAR,
+                ip VARCHAR,
+                country VARCHAR,
+                user_agent VARCHAR,
+                referrer VARCHAR,
+                metadata JSONB,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
             # ── Performance indexes ──────────────────────────────────
             "CREATE INDEX IF NOT EXISTS ix_predictions_user_created ON predictions(user_id, created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_predictions_bet_accuracy ON predictions(bet_type, is_correct)",
@@ -192,7 +206,7 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_match_chat_match ON match_chat_messages(match_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_user ON match_chat_messages(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_created ON match_chat_messages(created_at DESC)",
-            # ── analytics_events indexes (heavily queried by admin dashboard) ──
+            # ── analytics_events indexes ──
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
         ]

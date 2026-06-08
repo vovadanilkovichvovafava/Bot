@@ -490,8 +490,8 @@ IMPORTANT: You MUST pick a market from the real bookmaker odds list above. Prefe
 Only respond with JSON."""
 
     try:
-        client = anthropic.Anthropic(api_key=claude_key)
-        response = client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=claude_key)
+        response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],

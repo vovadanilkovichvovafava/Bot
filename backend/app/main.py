@@ -14,6 +14,7 @@ from app.services.data_collector import data_collection_loop
 from app.services.ml_trainer import training_loop
 from app.services.ml_monitor import monitoring_loop
 from app.services.match_analyzer import prewarm_cache_loop
+from app.services.football_api import fetch_matches
 from app.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,

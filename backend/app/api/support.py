@@ -637,10 +637,10 @@ async def support_chat(
         if not api_key:
             raise HTTPException(status_code=503, detail="AI service not configured")
 
-        client = anthropic.Anthropic(api_key=api_key)
+        client = anthropic.AsyncAnthropic(api_key=api_key)
 
         logger.info(f"Support chat: user={user_id}, lang={lang}, pro={is_pro}, msgs={len(messages)}")
-        response = client.messages.create(
+        response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=350,
             system=system_prompt,
@@ -784,8 +784,8 @@ async def guest_support_chat(
         if not api_key:
             raise HTTPException(status_code=503, detail="AI service not configured")
 
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=300,
             system=system_prompt,
