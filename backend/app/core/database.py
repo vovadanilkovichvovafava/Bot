@@ -47,6 +47,11 @@ Base = declarative_base()
 async def init_db():
     """Create all tables and run migrations"""
     # Import all models so they register with Base.metadata
+    import app.models.user  # noqa: F401
+    import app.models.prediction  # noqa: F401
+    import app.models.support_chat  # noqa: F401
+    import app.models.postback_log  # noqa: F401
+    import app.models.banner_click  # noqa: F401
     import app.models.ml_models  # noqa: F401
     import app.models.admin  # noqa: F401
     import app.models.ai_chat  # noqa: F401

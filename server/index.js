@@ -785,6 +785,9 @@ app.get('/api/admin/test-postback', async (req, res) => {
 
   // Manually process
   const clickRecord = postbackStore.get(clickId);
+  if (!clickRecord) {
+    return res.status(404).json({ error: 'Click record not found. Register first, then test postback.' });
+  }
   clickRecord.status = 'first_deposit';
   clickRecord.deposits.push({ amount: 100, currency: 'USD', timestamp: new Date().toISOString() });
 

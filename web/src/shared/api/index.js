@@ -166,7 +166,6 @@ class ApiService {
   }
 
   async register(phone, password, referralCode = null) {
-    const { ENV } = await import('../config/env');
     const body = { phone, password };
     if (referralCode) body.referral_code = referralCode;
     // Attach traffic source: ENV > URL param > localStorage > auto-detect from hostname
