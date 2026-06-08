@@ -9,7 +9,7 @@
 
 import { ENV } from '../shared/config/env';
 
-const API_BASE = ENV.API_URL; // e.g. https://pwa-production-20b5.up.railway.app/api/v1
+const API_BASE = ENV.API_URL;
 
 // ---------------------------------------------------------------------------
 // Client-side cache
@@ -178,7 +178,7 @@ function generateDeeplink(tournamentId, eventId) {
  * @returns {string}
  */
 function generateProxyDeeplink(tournamentId, eventId) {
-  return `https://iframe-proxy-poc-production.up.railway.app/fonbet/sports/football/${tournamentId}/${eventId}`;
+  return `${ENV.BKPROXY_URL}/fonbet/sports/football/${tournamentId}/${eventId}`;
 }
 
 /**

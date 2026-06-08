@@ -184,6 +184,7 @@ CORS_ORIGINS = [
     "https://pwa-production-20b5.up.railway.app",
     "https://pwa-2-production.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
+    "https://bot-kwojmg.saturn.ac",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
