@@ -196,18 +196,29 @@ class MatchAnalyzer:
         # Build messages array with conversation history
         messages = []
         if history:
-            # Include last 6 messages for context (3 turns)
             for msg in history[-6:]:
                 role = msg.get("role", "user")
                 if role in ("user", "assistant"):
-                    messages.append({"role": role, "content": msg["content"]})
+                    content = msg.get("content", "")
+                    if not content:
+                        continue
+                    if messages and messages[-1]["role"] == role:
+                        messages[-1]["content"] += "\n" + content
+                    else:
+                        messages.append({"role": role, "content": content})
 
         # Build current message with optional context
         prompt = message
         if match_context:
             prompt = f"[Real-time match data]\n{match_context}\n\n[User question]\n{message}"
 
-        messages.append({"role": "user", "content": prompt})
+        if messages and messages[-1]["role"] == "user":
+            messages[-1]["content"] += "\n" + prompt
+        else:
+            messages.append({"role": "user", "content": prompt})
+
+        if messages and messages[0]["role"] != "user":
+            messages.insert(0, {"role": "user", "content": "Hello"})
 
         try:
             logger.info(f"Calling Claude API with {len(messages)} messages")
