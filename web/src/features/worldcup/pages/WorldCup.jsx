@@ -161,19 +161,23 @@ export default function WorldCup() {
             {t('common.back', { defaultValue: 'Back' })}
           </button>
 
-          {/* Title */}
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FFC72C] via-[#FFD700] to-[#E0A800] flex items-center justify-center shrink-0 shadow-lg shadow-[#FFC72C]/20">
-              <svg className="w-9 h-9" fill="#1a0a2e" viewBox="0 0 24 24">
-                <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z"/>
-              </svg>
+          {/* Title — official "26" lockup */}
+          <div className="flex items-center gap-4">
+            {/* White lozenge with stacked "26" + nested trophy */}
+            <div className="relative shrink-0 bg-white rounded-[30px] px-3.5 pt-2.5 pb-3.5 shadow-2xl">
+              <div className="relative flex flex-col items-center leading-[0.7]">
+                <span className="wc-num text-[#0A0A0A] text-6xl">2</span>
+                <span className="wc-num text-[#0A0A0A] text-6xl">6</span>
+                <span className="wc-float absolute inset-0 flex items-center justify-center text-4xl drop-shadow">🏆</span>
+              </div>
+              <p className="text-center text-[#0A0A0A] font-black text-[11px] tracking-[0.15em] -mt-0.5">FIFA</p>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-black tracking-tight leading-none">
+              <h1 className="text-2xl font-black tracking-[0.12em] leading-tight" style={{ transform: 'skewX(-5deg)' }}>
                 FIFA WORLD CUP
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-4xl font-black text-[#FFC72C] leading-none">2026</span>
+                <span className="wc-num text-5xl text-[#FFC72C] leading-none">26</span>
                 <span className="text-[10px] text-white/30 align-super">™</span>
               </div>
               <div className="flex items-center gap-2 mt-2">
@@ -185,26 +189,26 @@ export default function WorldCup() {
             </div>
           </div>
 
-          {/* Countdown */}
+          {/* Countdown — scoreboard with signature offset color shadows */}
           {!countdown.started ? (
-            <div className="mt-6 bg-white/[0.06] backdrop-blur rounded-2xl border border-white/10 p-4">
-              <p className="text-[11px] uppercase tracking-[0.15em] text-[#FFC72C] font-semibold mb-3 text-center">
+            <div className="mt-6">
+              <p className="text-[11px] uppercase tracking-[0.15em] text-white/60 font-semibold mb-3 text-center">
                 {t('worldCup.kickoffIn', { defaultValue: 'Kickoff in' })}
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2.5">
                 {[
-                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }) },
-                  { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }) },
-                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }) },
-                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }) },
+                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }), c: '#FF5252' },
+                  { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }), c: '#2EE6D6' },
+                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }), c: '#9D5CFF' },
+                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }), c: '#C6FF3D' },
                 ].map((u) => (
                   <div key={u.label} className="text-center">
-                    <div className="bg-gradient-to-b from-white/10 to-white/5 rounded-xl py-2.5 border border-white/10">
-                      <span className="text-2xl font-black tabular-nums text-white">
+                    <div className="rounded-xl py-2.5 bg-[#0A0A0A]" style={{ boxShadow: `5px 5px 0 ${u.c}` }}>
+                      <span className="wc-num text-2xl text-white">
                         {String(u.val).padStart(2, '0')}
                       </span>
                     </div>
-                    <p className="text-[10px] text-white/40 mt-1.5 uppercase tracking-wider">{u.label}</p>
+                    <p className="text-[10px] mt-1.5 uppercase tracking-wider font-bold" style={{ color: u.c }}>{u.label}</p>
                   </div>
                 ))}
               </div>

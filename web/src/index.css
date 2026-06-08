@@ -127,3 +127,51 @@ input, select, textarea {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ===== FIFA World Cup 2026 brand motion ===== */
+/* Rounded "pill" numerals — approximates the custom FWC 26 typeface */
+.wc-num {
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-weight: 800;
+  font-feature-settings: 'tnum';
+}
+
+/* Signature offset multicolor shadow shift on the hero "26" */
+@keyframes wc26Shadow {
+  0%, 100% {
+    text-shadow:
+      5px 5px 0 #FF5252,
+      10px 10px 0 #2EE6D6,
+      15px 15px 0 #9D5CFF,
+      20px 20px 0 #C6FF3D;
+  }
+  50% {
+    text-shadow:
+      5px 5px 0 #C6FF3D,
+      10px 10px 0 #9D5CFF,
+      15px 15px 0 #2EE6D6,
+      20px 20px 0 #FF5252;
+  }
+}
+.wc26-hero {
+  animation: wc26Shadow 6s ease-in-out infinite;
+}
+
+/* Diagonal sweep of the four accent colors */
+@keyframes wcStripeSlide {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+.wc-stripe {
+  background-size: 200% 100%;
+  animation: wcStripeSlide 8s linear infinite;
+}
+
+/* Gentle float for the trophy mark */
+@keyframes wcFloat {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+.wc-float {
+  animation: wcFloat 4s ease-in-out infinite;
+}
