@@ -29,6 +29,11 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Runtime config — must not be cached (generated at container start)
+    location = /config.js {
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+
     # SPA fallback — serve index.html for all non-file routes
     location / {
         try_files $uri $uri/ /index.html;
