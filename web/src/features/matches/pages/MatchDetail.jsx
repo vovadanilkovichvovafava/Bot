@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
+import ProBlur from '../../../shared/components/ProBlur';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import { savePrediction, getSavedAnalysis, updatePredictionAnalysis } from '../../predictions/services/predictionStore';
@@ -19,7 +20,7 @@ const TAB_KEYS = ['overview', 'fans', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
-const FREE_AI_LIMIT = 3;
+const FREE_AI_LIMIT = 5;
 
 // Helper functions for prediction caching
 const getCachedPrediction = (matchId) => {
@@ -69,6 +70,9 @@ export default function MatchDetail() {
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
   const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
+  const isFunnel2Top = user?.funnel === 'funnel-2';
+  const isFunnel4Top = user?.funnel === 'funnel-4';
+  const isPremiumTop = user?.is_premium && !isFunnel2Top && !isFunnel4Top;
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -750,10 +754,22 @@ export default function MatchDetail() {
           />
         )}
         {activeTab === 'stats' && (
-          <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
+          isPremiumTop || isFunnel2Top ? (
+            <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
+          ) : (
+            <ProBlur feature="match-stats" label={t('matchDetail.statsPro', { defaultValue: 'Match Statistics' })}>
+              <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
+            </ProBlur>
+          )
         )}
         {activeTab === 'lineups' && (
-          <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
+          isPremiumTop || isFunnel2Top ? (
+            <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
+          ) : (
+            <ProBlur feature="lineups" label={t('matchDetail.lineupsPro', { defaultValue: 'Starting Lineups' })}>
+              <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
+            </ProBlur>
+          )
         )}
         {activeTab === 'fans' && (
           <FansAreaTab matchId={id} match={match} t={t} />
@@ -1150,10 +1166,22 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
       <TeamFormCard enriched={enriched} match={match} t={t} />
 
       {/* H2H Matches */}
-      <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
+      {isPremium || isFunnel2 ? (
+        <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
+      ) : (
+        <ProBlur feature="h2h" label={t('matchDetail.h2hPro', { defaultValue: 'Head-to-Head History' })}>
+          <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
+        </ProBlur>
+      )}
 
       {/* League Standings */}
-      <StandingsTable enriched={enriched} match={match} t={t} />
+      {isPremium || isFunnel2 ? (
+        <StandingsTable enriched={enriched} match={match} t={t} />
+      ) : (
+        <ProBlur feature="standings" label={t('matchDetail.standingsPro', { defaultValue: 'League Standings' })}>
+          <StandingsTable enriched={enriched} match={match} t={t} />
+        </ProBlur>
+      )}
 
       {/* Match Info */}
       <div className="card border border-gray-100">

@@ -15,7 +15,7 @@ import { getTrackingLink } from '../../betting/services/trackingService';
 
 
 
-const FREE_AI_LIMIT = 3;
+const FREE_AI_LIMIT = 5;
 const SMART_BET_CACHE_KEY = 'smart_bet_cache';
 const SMART_BET_TTL = 45 * 60 * 1000; // 45 minutes
 const HOME_MATCHES_CACHE = 'home_matches_cache';
@@ -377,6 +377,29 @@ export default function Home() {
             <div className="flex-1 bg-[#5B16E8]" />
           </div>
         </div>
+
+        {/* PRO Upgrade Card — free users only */}
+        {!isPremium && !isFunnel2 && !isFunnel4 && (
+          <div
+            onClick={() => navigate('/pro-access?reason=upgrade&feature=home-banner')}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-4 cursor-pointer active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 13.14 2 8.27l6.91-1.01L12 1z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-black text-sm">{t('home.upgradePro', { defaultValue: 'Upgrade to PRO' })}</p>
+                <p className="text-white/80 text-[11px] mt-0.5">{t('home.upgradeProDesc', { defaultValue: 'H2H, stats, lineups, all dates, deeper AI analysis' })}</p>
+              </div>
+              <svg className="w-5 h-5 text-white/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>

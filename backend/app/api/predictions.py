@@ -30,9 +30,9 @@ BET_NAMES = {
 
 # Degressive limits for funnel-1: day_number -> max_requests
 DEGRESSIVE_LIMITS = {
-    1: 3,  # First day of usage: 3 free requests
-    2: 2,  # Second day: 2 free requests
-    3: 1,  # Third day+: 1 free request per day
+    1: 5,  # First day of usage: 5 free requests
+    2: 5,  # Second day: 5 free requests
+    3: 5,  # Third day+: 5 free requests per day
 }
 
 # Fixed daily limit for funnel-3

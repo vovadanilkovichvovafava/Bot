@@ -354,7 +354,17 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
 
 /* ============================ BRACKET ============================ */
 
+const ROUND_COLORS = {
+  'Round of 32': '#5B16E8',
+  'Round of 16': '#E10600',
+  'Quarter-finals': '#00B140',
+  'Semi-finals': '#B4E600',
+  'Final': '#FFC72C',
+};
+
 function BracketView({ fixtures, onOpenMatch, t }) {
+  const [activeRound, setActiveRound] = useState(null);
+
   const byRound = {};
   for (const r of KNOCKOUT_ROUNDS) byRound[r.key] = [];
   for (const f of fixtures) {
@@ -364,43 +374,114 @@ function BracketView({ fixtures, onOpenMatch, t }) {
   }
 
   const hasAny = Object.values(byRound).some(arr => arr.length > 0);
+  const availableRounds = KNOCKOUT_ROUNDS.filter(r => byRound[r.key].length > 0);
+  const selected = activeRound || availableRounds[0]?.key || null;
 
   if (!hasAny) {
     return (
-      <EmptyState
-        title={t('worldCup.bracketSoonTitle', { defaultValue: 'Knockout stage coming soon' })}
-        text={t('worldCup.bracketSoonText', { defaultValue: 'The bracket fills in after the group stage. 32 teams advance to the knockouts.' })}
-      />
+      <div className="space-y-4">
+        {/* Visual bracket placeholder */}
+        <div className="text-center py-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-white/30">
+            {t('worldCup.knockoutStage', { defaultValue: 'Knockout Stage' })}
+          </p>
+        </div>
+        <div className="grid grid-cols-5 gap-1 mb-6">
+          {KNOCKOUT_ROUNDS.map((r) => (
+            <div key={r.key} className="text-center">
+              <div className="h-1 rounded-full mb-2" style={{ backgroundColor: ROUND_COLORS[r.key] || '#555' }} />
+              <p className="text-[10px] font-bold text-white/30">{r.short}</p>
+              <p className="text-[9px] text-white/15 mt-0.5">
+                {r.key === 'Round of 32' ? '16' : r.key === 'Round of 16' ? '8' : r.key === 'Quarter-finals' ? '4' : r.key === 'Semi-finals' ? '2' : '1'}
+              </p>
+            </div>
+          ))}
+        </div>
+        <EmptyState
+          title={t('worldCup.bracketSoonTitle', { defaultValue: 'Knockout stage coming soon' })}
+          text={t('worldCup.bracketSoonText', { defaultValue: 'The bracket fills in after the group stage. 32 teams advance to the knockouts.' })}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto -mx-4 px-4 pb-4">
-      <div className="flex gap-3 min-w-max">
+    <div className="space-y-4">
+      {/* Round selector pills — horizontal scroll on mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
         {KNOCKOUT_ROUNDS.map((r) => {
-          const ties = byRound[r.key];
-          if (!ties.length) return null;
+          const count = byRound[r.key].length;
+          const isActive = selected === r.key;
+          const color = ROUND_COLORS[r.key] || '#555';
           return (
-            <div key={r.key} className="w-[190px] shrink-0">
-              <div className="text-center mb-3 py-2 bg-gradient-to-r from-transparent via-[#FFC72C]/10 to-transparent rounded-lg">
-                <span className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC72C]">
-                  {r.short}
+            <button
+              key={r.key}
+              onClick={() => count > 0 && setActiveRound(r.key)}
+              disabled={count === 0}
+              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                isActive
+                  ? 'text-white'
+                  : count > 0
+                    ? 'bg-white/5 text-white/50 hover:bg-white/10'
+                    : 'bg-white/[0.02] text-white/15 cursor-default'
+              }`}
+              style={isActive ? { backgroundColor: color } : undefined}
+            >
+              <span>{r.short}</span>
+              {count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isActive ? 'bg-white/20' : 'bg-white/[0.08]'
+                }`}>
+                  {count}
                 </span>
-              </div>
-              <div className="space-y-3">
-                {ties.map((f) => (
-                  <BracketTie key={f.fixture?.id} fixture={f} onOpenMatch={onOpenMatch} />
-                ))}
-              </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="grid grid-cols-5 gap-1">
+        {KNOCKOUT_ROUNDS.map((r) => {
+          const count = byRound[r.key].length;
+          const allDone = count > 0 && byRound[r.key].every(f => isFinished(f.fixture?.status));
+          return (
+            <div key={r.key} className="h-1 rounded-full overflow-hidden bg-white/[0.06]">
+              {count > 0 && (
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    backgroundColor: ROUND_COLORS[r.key],
+                    width: allDone ? '100%' : '50%',
+                    opacity: allDone ? 1 : 0.5,
+                  }}
+                />
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* Matches for selected round */}
+      {selected && (
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2 px-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ROUND_COLORS[selected] }} />
+            <h3 className="text-sm font-bold text-white/70">
+              {KNOCKOUT_ROUNDS.find(r => r.key === selected)?.key}
+            </h3>
+            <span className="text-xs text-white/30 ml-auto">{byRound[selected].length} {t('worldCup.matches', { defaultValue: 'matches' })}</span>
+          </div>
+          {byRound[selected].map((f) => (
+            <BracketTie key={f.fixture?.id} fixture={f} onOpenMatch={onOpenMatch} roundColor={ROUND_COLORS[selected]} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function BracketTie({ fixture, onOpenMatch }) {
+function BracketTie({ fixture, onOpenMatch, roundColor }) {
   const { teams, goals, fixture: fx } = fixture;
   const live = isLive(fx?.status);
   const done = isFinished(fx?.status);
@@ -410,18 +491,22 @@ function BracketTie({ fixture, onOpenMatch }) {
   return (
     <button
       onClick={() => onOpenMatch(fx?.id)}
-      className={`w-full rounded-xl border overflow-hidden transition-all text-left ${
+      className={`w-full rounded-2xl border overflow-hidden transition-all text-left ${
         live
           ? 'bg-[#0d0d18] border-red-500/30 shadow-lg shadow-red-500/10'
-          : 'bg-[#0d0d18] border-white/[0.08] hover:border-[#FFC72C]/30'
+          : 'bg-[#0d0d18] border-white/[0.08] hover:border-white/20 active:bg-white/[0.04]'
       }`}
     >
-      <TeamRow team={teams?.home} score={goals?.home} winner={homeWin} dim={done && !homeWin} />
-      <div className="h-px bg-white/5" />
-      <TeamRow team={teams?.away} score={goals?.away} winner={awayWin} dim={done && !awayWin} />
-      <div className="px-2.5 py-1.5 bg-white/[0.02] text-center border-t border-white/5">
+      {/* Round accent bar */}
+      <div className="h-0.5" style={{ backgroundColor: roundColor || '#555' }} />
+      <div className="p-3 space-y-1">
+        <BracketTeamRow team={teams?.home} score={goals?.home} winner={homeWin} dim={done && !homeWin} />
+        <div className="h-px bg-white/5 mx-1" />
+        <BracketTeamRow team={teams?.away} score={goals?.away} winner={awayWin} dim={done && !awayWin} />
+      </div>
+      <div className="px-3 py-1.5 bg-white/[0.02] border-t border-white/5 flex items-center justify-center">
         {live ? (
-          <span className="text-[10px] font-bold text-red-400 flex items-center justify-center gap-1">
+          <span className="text-[10px] font-bold text-red-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
             {tStatusShort(fx?.status)}
           </span>
@@ -435,18 +520,20 @@ function BracketTie({ fixture, onOpenMatch }) {
   );
 }
 
-function TeamRow({ team, score, winner, dim }) {
+function BracketTeamRow({ team, score, winner, dim }) {
   return (
-    <div className={`flex items-center px-3 py-2.5 gap-2 ${dim ? 'opacity-40' : ''}`}>
+    <div className={`flex items-center gap-2.5 py-1.5 ${dim ? 'opacity-35' : ''}`}>
       {team?.logo ? (
-        <img src={team.logo} alt="" className="w-5 h-3.5 object-contain shrink-0 rounded-sm" loading="lazy" />
+        <img src={team.logo} alt="" className="w-6 h-4 object-contain shrink-0 rounded-sm" loading="lazy" />
       ) : (
-        <div className="w-5 h-3.5 rounded-sm bg-white/10 shrink-0" />
+        <div className="w-6 h-4 rounded-sm bg-white/10 shrink-0" />
       )}
-      <span className={`flex-1 text-xs truncate ${winner ? 'font-bold text-white' : 'text-white/70'}`}>
+      <span className={`flex-1 text-sm truncate ${winner ? 'font-bold text-white' : 'text-white/70'}`}>
         {team?.name || 'TBD'}
       </span>
-      <span className={`text-xs tabular-nums font-bold ${winner ? 'text-[#FFC72C]' : 'text-white/50'}`}>
+      <span className={`text-sm tabular-nums font-black min-w-[20px] text-center ${
+        winner ? 'text-[#FFC72C]' : 'text-white/50'
+      }`}>
         {score ?? '-'}
       </span>
     </div>

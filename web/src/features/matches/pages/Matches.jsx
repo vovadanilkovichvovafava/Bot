@@ -13,6 +13,7 @@ import {
   isTeamFavourite,
 } from '../services/favouritesStore';
 import { addTrackingToUrl, getTrackingLink } from '../../betting/services/trackingService';
+import ProBlur from '../../../shared/components/ProBlur';
 
 // Popular league IDs for API-Football
 const POPULAR_LEAGUE_IDS = [
@@ -52,15 +53,29 @@ const LEAGUES_INFO = {
   ],
 };
 
+function fmtDate(d) { return d.toISOString().split('T')[0]; }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function shortLabel(d, t) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d); target.setHours(0,0,0,0);
+  const diff = Math.round((target - today) / 86400000);
+  if (diff === 0) return t('matches.today');
+  if (diff === -1) return t('matches.yesterday', { defaultValue: 'Yesterday' });
+  if (diff === 1) return t('matches.tomorrow', { defaultValue: 'Tomorrow' });
+  return target.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
 export default function Matches() {
   const [tab, setTab] = useState('today');
+  const [dateOffset, setDateOffset] = useState(0);
+  const [dateFixtures, setDateFixtures] = useState([]);
   const [todayFixtures, setTodayFixtures] = useState([]);
   const [liveFixtures, setLiveFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [liveLoading, setLiveLoading] = useState(true);
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
-  const [fonbetMap, setFonbetMap] = useState({}); // team1_team2 → fonbet event
+  const [fonbetMap, setFonbetMap] = useState({});
   const [favouriteTeamIds, setFavouriteTeamIds] = useState([]);
   const [favouriteLeagueIds, setFavouriteLeagueIds] = useState([]);
   const navigate = useNavigate();
@@ -69,6 +84,8 @@ export default function Matches() {
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
   const isFunnel2 = user?.funnel === 'funnel-2';
+  const isFunnel4 = user?.funnel === 'funnel-4';
+  const isPremium = user?.is_premium && !isFunnel2 && !isFunnel4;
 
   // Load favourite IDs on mount
   useEffect(() => {
@@ -81,11 +98,12 @@ export default function Matches() {
   useEffect(() => {
     if (tab === 'today') loadTodayMatches();
     if (tab === 'live') loadLive();
+    if (tab === 'date') loadDateMatches();
 
     return () => {
       if (liveInterval.current) clearInterval(liveInterval.current);
     };
-  }, [tab]);
+  }, [tab, dateOffset]);
 
   const loadTodayMatches = async () => {
     setLoading(true);
@@ -111,6 +129,20 @@ export default function Matches() {
         setFonbetMap(map);
       }
     } catch (_) { /* Fonbet unavailable — app works fine without it */ }
+  };
+
+  const loadDateMatches = async () => {
+    if (dateOffset === 0) return;
+    setLoading(true);
+    try {
+      const target = addDays(new Date(), dateOffset);
+      const data = await footballApi.getFixturesByDate(fmtDate(target));
+      setDateFixtures(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadLive = async () => {
@@ -187,13 +219,16 @@ export default function Matches() {
 
   const todayGrouped = groupFixtures(todayFixtures, showFavouritesOnly);
   const liveGrouped = groupFixtures(liveFixtures, showFavouritesOnly);
+  const dateGrouped = groupFixtures(dateFixtures, showFavouritesOnly);
   const hasFavourites = favouriteTeamIds.length > 0 || favouriteLeagueIds.length > 0;
 
-  const tabs = [
+  const mainTabs = [
     { key: 'today', label: t('matches.today'), count: todayFixtures.length },
     { key: 'live', label: t('matches.live'), count: liveFixtures.length, isLive: true },
     { key: 'leagues', label: t('matches.leagues') },
   ];
+
+  const dateDays = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7];
 
   return (
     <div className="pb-4">
@@ -201,28 +236,65 @@ export default function Matches() {
       <div className="bg-white px-5 pt-6 pb-0 sticky top-0 z-10">
         <h1 className="text-xl font-bold text-center mb-4">{t('matches.title')}</h1>
         <div className="flex border-b border-gray-100">
-          {tabs.map(t => (
+          {mainTabs.map(tb => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={tb.key}
+              onClick={() => { setTab(tb.key); setDateOffset(0); }}
               className={`flex-1 py-3 text-sm font-medium relative flex items-center justify-center gap-1.5 ${
-                tab === t.key ? 'text-primary-600' : 'text-gray-400'
+                (tab === tb.key || (tb.key === 'today' && tab === 'date')) ? 'text-primary-600' : 'text-gray-400'
               }`}
             >
-              {t.label}
-              {t.count > 0 && (
+              {tb.label}
+              {tb.count > 0 && (
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  t.isLive ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600'
+                  tb.isLive ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
-                  {t.count}
+                  {tb.count}
                 </span>
               )}
-              {tab === t.key && (
+              {(tab === tb.key || (tb.key === 'today' && tab === 'date')) && (
                 <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-600 rounded-full"/>
               )}
             </button>
           ))}
         </div>
+
+        {/* Date row — scroll horizontally */}
+        {(tab === 'today' || tab === 'date') && (
+          <div className="flex gap-1 overflow-x-auto py-2 px-1 -mx-1 scrollbar-none">
+            {dateDays.map((offset) => {
+              const isToday = offset === 0;
+              const isActive = tab === 'today' ? isToday : dateOffset === offset;
+              const needsPro = !isPremium && !isFunnel2 && !isFunnel4 && offset !== 0;
+              return (
+                <button
+                  key={offset}
+                  onClick={() => {
+                    if (needsPro) { navigate('/pro-access?reason=upgrade&feature=matches-dates'); return; }
+                    if (offset === 0) { setTab('today'); setDateOffset(0); }
+                    else { setTab('date'); setDateOffset(offset); }
+                  }}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors relative ${
+                    isActive
+                      ? 'bg-primary-600 text-white'
+                      : needsPro
+                        ? 'bg-gray-100 text-gray-300'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {shortLabel(addDays(new Date(), offset), t)}
+                  {needsPro && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 13.14 2 8.27l6.91-1.01L12 1z" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="px-5 pt-4">
@@ -331,6 +403,56 @@ export default function Matches() {
                     collapsed
                     fonbetMap={fonbetMap}
                     userId={user?.id}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* DATE TAB (other days — PRO only) */}
+        {tab === 'date' && (
+          <>
+            {loading ? (
+              <LoadingSkeleton />
+            ) : dateFixtures.length === 0 ? (
+              <EmptyState
+                title={t('matches.noMatchesDate', { defaultValue: 'No matches on this day' })}
+                subtitle={t('matches.checkBackLater')}
+              />
+            ) : (
+              <>
+                <FilterToggle
+                  showAll={showAllLeagues}
+                  setShowAll={setShowAllLeagues}
+                  popularCount={dateGrouped.popularCount}
+                  otherCount={dateGrouped.otherCount}
+                  showFavouritesOnly={showFavouritesOnly}
+                  setShowFavouritesOnly={setShowFavouritesOnly}
+                  hasFavourites={hasFavourites}
+                  navigate={navigate}
+                />
+                {Object.keys(dateGrouped.popular).length > 0 && (
+                  <LeagueSection
+                    leagues={dateGrouped.popular}
+                    navigate={navigate}
+                    isLive={false}
+                    isPopular={true}
+                    fonbetMap={{}}
+                    showFavouritesOnly={showFavouritesOnly}
+                    favouriteTeamIds={favouriteTeamIds}
+                    favouriteLeagueIds={favouriteLeagueIds}
+                  />
+                )}
+                {showAllLeagues && Object.keys(dateGrouped.other).length > 0 && (
+                  <LeagueSection
+                    leagues={dateGrouped.other}
+                    navigate={navigate}
+                    isLive={false}
+                    fonbetMap={{}}
+                    showFavouritesOnly={showFavouritesOnly}
+                    favouriteTeamIds={favouriteTeamIds}
+                    favouriteLeagueIds={favouriteLeagueIds}
                   />
                 )}
               </>
