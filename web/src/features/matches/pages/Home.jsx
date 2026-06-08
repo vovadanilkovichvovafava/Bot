@@ -161,29 +161,52 @@ export default function Home() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white px-5 pt-6 pb-5 rounded-b-3xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-primary-100 text-sm">{getGreeting()}</p>
-            <h1 className="text-2xl font-bold">{user?.username || user?.email?.split('@')[0] || 'User'}</h1>
+      {/* Header — dark navy */}
+      <div className="bg-[#1B2138] text-white px-5 pt-6 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 bg-white/20 rounded-full flex items-center justify-center shrink-0 ring-2 ring-white/10">
+            <span className="text-white font-bold text-lg">
+              {(user?.username || 'U')[0].toUpperCase()}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="bg-white/15 rounded-xl px-3 py-2 flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-              </svg>
-              <span className="font-bold text-sm">{(isPremium || isFunnel2 || isFunnel4) ? '∞' : remaining}</span>
-            </div>
-            <button onClick={() => navigate('/settings')} className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </button>
-          </div>
+          <h1 className="text-xl font-black uppercase tracking-wide flex-1 truncate">
+            {user?.username || user?.email?.split('@')[0] || 'User'}
+          </h1>
+          <button
+            onClick={() => navigate('/settings')}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-full px-3.5 py-2 shrink-0"
+          >
+            <span className="text-white font-bold text-sm">
+              {(isPremium || isFunnel2 || isFunnel4) ? '∞' : remaining} PTS
+            </span>
+            <svg className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* Bonus banner — stadium style */}
+      {!isPremium && !isFunnel2 && !isFunnel4 && (
+        <div
+          onClick={() => { trackClick(user?.id, 'home_bonus_banner'); navigate('/promo?banner=home_bonus_banner'); }}
+          className="mx-5 mt-4 rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+          style={{ background: 'linear-gradient(135deg, #1a2744 0%, #0d3320 50%, #1a3828 100%)' }}
+        >
+          <div className="relative p-5 flex items-center gap-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" style={{ animation: 'shine 6s infinite' }} />
+            <div className="relative flex-1 min-w-0">
+              <p className="text-white text-sm font-medium">{t('home.getBonusTitle', { defaultValue: 'Get a bonus' })}</p>
+              <p className="text-emerald-400 text-3xl font-black mt-0.5">{advertiser?.bonusBanner?.bonus || '100€'}</p>
+              <p className="text-white/60 text-xs mt-1">{t('home.getBonusSubtitle', { defaultValue: 'Start winning with the best odds' })}</p>
+            </div>
+            <div className="relative bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shrink-0">
+              {t('home.getBonusCta', { defaultValue: 'Get bonus' })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-5 pt-4 space-y-4">
         {/* Express-First Hero Card — funnel-4 */}
@@ -235,15 +258,16 @@ export default function Home() {
 
         {/* Best Bet Today — blurred for free users */}
         <div data-tour="best-bet">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🔥</span>
-            <h3 className="section-title">{t('home.bestBetToday', { defaultValue: 'Best Bet of the Day' })}</h3>
-            {!isPremium && !isFunnel2 && !isFunnel4 && (
-              <span className="badge-pro ml-auto">PRO</span>
-            )}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-black text-gray-900">
+              {t('home.bestBetToday', { defaultValue: 'Best Bet of the Day' })}
+            </h3>
+            <span className="text-xs font-bold text-[#1B2138] border border-gray-300 rounded-full px-3 py-1 uppercase tracking-wide">
+              {smartBet?.confidence || 94}% {t('home.accuracy', { defaultValue: 'Accuracy' })}
+            </span>
           </div>
           {(isPremium || isFunnel2 || isFunnel4) ? (
-            <BestBetTodayCard matches={matches} smartBet={smartBet} navigate={navigate} t={t} />
+            <BestBetTodayCard matches={matches} smartBet={smartBet} navigate={navigate} t={t} advertiser={advertiser} trackClick={trackClick} userId={user?.id} isPremium={isPremium} />
           ) : (
             <ProBlur feature="best-bet-today" reason="upgrade" label={t('home.bestBetTodayPro', { defaultValue: 'Best Bet of the Day' })}>
               <BestBetTodayCard matches={matches} smartBet={null} navigate={navigate} t={t} locked />
@@ -402,12 +426,9 @@ export default function Home() {
         {/* Today's Matches */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="section-title">{t('home.todaysMatches')}</h3>
-            <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-medium flex items-center gap-1">
+            <h3 className="text-lg font-black text-gray-900">{t('home.todaysMatches')}</h3>
+            <button onClick={() => navigate('/matches')} className="text-primary-600 text-xs font-bold uppercase tracking-wide">
               {t('home.seeAll')}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-              </svg>
             </button>
           </div>
 
@@ -476,65 +497,90 @@ export default function Home() {
   );
 }
 
-function BestBetTodayCard({ matches, smartBet, navigate, t, locked }) {
-  // PRO with real smart bet → use it. Otherwise tease with first top match.
+function BestBetTodayCard({ matches, smartBet, navigate, t, locked, advertiser, trackClick, userId, isPremium }) {
   const sb = smartBet?.found ? smartBet : null;
   const home = sb?.home || matches?.[0]?.teams?.home?.name || 'Real Madrid';
   const away = sb?.away || matches?.[0]?.teams?.away?.name || 'Barcelona';
   const homeLogo = matches?.[0]?.teams?.home?.logo;
   const awayLogo = matches?.[0]?.teams?.away?.logo;
-  const pick = sb?.bet || t('home.bestBetSamplePick', { defaultValue: 'Home Win & Over 1.5' });
-  const confidence = sb?.confidence || 87;
-  const odds = sb?.odds || '1.95';
+  const odds = parseFloat(sb?.odds || '2.10');
   const fixtureId = sb?.fixture_id || matches?.[0]?.fixture?.id;
 
-  const handleClick = () => {
-    if (locked) return; // ProBlur handles the upsell
-    if (fixtureId) navigate(`/match/${fixtureId}`);
+  let time = '--:--';
+  try {
+    const d = matches?.[0]?.fixture?.date;
+    if (d) time = new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {}
+
+  const homeOdds = odds.toFixed(2);
+  const drawOdds = (odds + 1.35).toFixed(2);
+  const awayOdds = (odds + 0.75).toFixed(2);
+
+  const handlePlaceBet = () => {
+    if (locked) return;
+    if (trackClick) trackClick(userId, 'best_bet_place');
+    if (isPremium && advertiser?.link) {
+      const link = getTrackingLink(userId, 'best_bet_place') || advertiser.link;
+      window.open(link, '_blank', 'noopener,noreferrer');
+    } else if (fixtureId) {
+      navigate(`/match/${fixtureId}`);
+    }
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className="relative overflow-hidden rounded-2xl p-5 text-white cursor-pointer shadow-lg"
-      style={{ background: 'linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%)' }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🔥</span>
-          <h3 className="font-black text-base">{t('home.bestBetToday', { defaultValue: 'Best Bet of the Day' })}</h3>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Teams + VS + time */}
+      <div className="flex items-center justify-between px-6 pt-5 pb-3">
+        <div className="flex flex-col items-center gap-2 w-24">
+          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden">
+            {homeLogo ? (
+              <img src={homeLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              <span className="text-gray-400 text-lg font-bold">{home[0]}</span>
+            )}
+          </div>
+          <span className="text-sm font-bold text-gray-900 text-center leading-tight">{home}</span>
         </div>
-        <span className="bg-amber-400 text-gray-900 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">AI Pick</span>
-      </div>
-
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {homeLogo && <img src={homeLogo} alt="" className="w-6 h-6 object-contain" />}
-          <span className="text-sm font-bold truncate">{home}</span>
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-sm font-semibold text-gray-400">VS</span>
+          <span className="bg-emerald-600 text-white text-xs font-bold px-3.5 py-1 rounded-full">{time}</span>
         </div>
-        <span className="text-xs text-white/40 px-2 font-semibold">VS</span>
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className="text-sm font-bold truncate text-right">{away}</span>
-          {awayLogo && <img src={awayLogo} alt="" className="w-6 h-6 object-contain" />}
-        </div>
-      </div>
-
-      <div className="bg-white/10 rounded-xl p-3 flex items-center justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('home.bestBetPick', { defaultValue: 'Recommended pick' })}</p>
-          <p className="text-sm font-bold truncate">{pick}</p>
-        </div>
-        <div className="text-right shrink-0 ml-3">
-          <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('home.bestBetOdds', { defaultValue: 'Odds' })}</p>
-          <p className="text-sm font-black text-amber-400">{odds}</p>
+        <div className="flex flex-col items-center gap-2 w-24">
+          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden">
+            {awayLogo ? (
+              <img src={awayLogo} alt="" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              <span className="text-gray-400 text-lg font-bold">{away[0]}</span>
+            )}
+          </div>
+          <span className="text-sm font-bold text-gray-900 text-center leading-tight">{away}</span>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
-          <div className="h-full bg-green-400 rounded-full" style={{ width: `${confidence}%` }} />
+      {/* Odds buttons */}
+      <div className="flex gap-3 px-5 py-3">
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+          <p className="text-xs text-gray-400 mb-1">{t('home.oddsHome', { defaultValue: 'Home' })}</p>
+          <p className="text-lg font-bold text-[#1B2138]">{homeOdds}</p>
         </div>
-        <span className="text-xs font-bold text-green-400">{confidence}%</span>
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+          <p className="text-xs text-gray-400 mb-1">{t('home.oddsDraw', { defaultValue: 'Draw' })}</p>
+          <p className="text-lg font-bold text-[#1B2138]">{drawOdds}</p>
+        </div>
+        <div className="flex-1 border border-gray-200 rounded-xl py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+          <p className="text-xs text-gray-400 mb-1">{t('home.oddsAway', { defaultValue: 'Away' })}</p>
+          <p className="text-lg font-bold text-[#1B2138]">{awayOdds}</p>
+        </div>
+      </div>
+
+      {/* Place bet button */}
+      <div className="px-5 pb-5 pt-1">
+        <button
+          onClick={handlePlaceBet}
+          className="w-full bg-[#1B5E3B] hover:bg-[#174F32] text-white font-bold py-3.5 rounded-xl text-base transition-colors"
+        >
+          {t('home.placeBet', { defaultValue: 'Place bet' })}
+        </button>
       </div>
     </div>
   );
@@ -546,51 +592,38 @@ function HomeMatchCard({ fixture, navigate }) {
   let time = '';
   try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
   const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
+  const elapsed = f.fixture?.status?.elapsed;
 
   return (
     <div
       onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
       className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
     >
-      <div className="flex items-center py-3 px-4">
-        {/* Teams column */}
+      <div className="flex items-center py-3.5 px-4">
         <div className="flex-1 min-w-0">
-          {/* Home team */}
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <img
-              src={f.teams.home.logo || ''}
-              alt=""
-              className="w-5 h-5 object-contain flex-shrink-0"
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
-            <span className="text-sm text-gray-900 truncate">{f.teams.home.name || '?'}</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <img src={f.teams.home.logo || ''} alt="" className="w-5 h-5 object-contain flex-shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="text-sm font-medium text-gray-900 truncate">{f.teams.home.name || '?'}</span>
           </div>
-          {/* Away team */}
           <div className="flex items-center gap-2.5">
-            <img
-              src={f.teams.away.logo || ''}
-              alt=""
-              className="w-5 h-5 object-contain flex-shrink-0"
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
-            <span className="text-sm text-gray-900 truncate">{f.teams.away.name || '?'}</span>
+            <img src={f.teams.away.logo || ''} alt="" className="w-5 h-5 object-contain flex-shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="text-sm font-medium text-gray-900 truncate">{f.teams.away.name || '?'}</span>
           </div>
         </div>
-
-        {/* Time/Score column */}
         <div className="flex-shrink-0 text-right ml-3">
           {isLive ? (
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-sm font-bold text-gray-900">{f.goals?.home ?? 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-gray-900">{f.goals?.away ?? 0}</span>
-              </div>
-              <span className="text-[10px] text-red-500 font-medium mt-0.5">LIVE</span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-lg font-black text-gray-900">{f.goals?.home ?? 0} - {f.goals?.away ?? 0}</span>
+              <span className="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                LIVE {elapsed ? `${elapsed}'` : ''}
+              </span>
             </div>
           ) : (
-            <span className="text-sm text-gray-500">{time}</span>
+            <div className="flex flex-col items-end">
+              <span className="text-sm text-gray-400">Scheduled</span>
+              <span className="text-lg font-bold text-gray-900">{time}</span>
+            </div>
           )}
         </div>
       </div>
