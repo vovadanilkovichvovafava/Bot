@@ -132,55 +132,38 @@ export default function WorldCup() {
 
   return (
     <div className="min-h-screen bg-[#070710] text-white pb-24">
-      {/* ===== EPIC HEADER ===== */}
+      {/* ===== HEADER ===== */}
       <div className="relative overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a2e] via-[#0d1b2a] to-[#070710]" />
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 50%, #FFC72C33 0%, transparent 50%), radial-gradient(circle at 80% 20%, #E4002B22 0%, transparent 40%), radial-gradient(circle at 60% 80%, #00684722 0%, transparent 40%)',
-        }} />
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(110deg, transparent 25%, rgba(255,199,44,0.06) 45%, rgba(255,199,44,0.12) 50%, rgba(255,199,44,0.06) 55%, transparent 75%)',
-          animation: 'shimmer 4s ease-in-out infinite',
-          backgroundSize: '200% 100%',
-        }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#12122B] to-[#070710]" />
 
-        {/* Host country flag stripe */}
-        <div className="h-1.5 w-full flex relative z-10">
-          <div className="flex-1 bg-gradient-to-r from-[#E4002B] to-[#E4002B]/80" />
-          <div className="flex-1 bg-gradient-to-r from-[#006847]/80 via-[#006847] to-[#006847]/80" />
-          <div className="flex-1 bg-gradient-to-r from-[#0A3161]/80 to-[#0A3161]" />
+        <div className="flex h-1.5 relative z-10">
+          <div className="flex-1 bg-[#5B16E8]" />
+          <div className="flex-1 bg-[#E10600]" />
+          <div className="flex-1 bg-[#00B140]" />
+          <div className="flex-1 bg-[#B4E600]" />
         </div>
 
-        <div className="relative z-10 px-5 pt-8 pb-6">
-          {/* Back button */}
-          <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors text-sm">
+        <div className="relative z-10 px-5 pt-6 pb-6">
+          <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors text-sm">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             {t('common.back', { defaultValue: 'Back' })}
           </button>
 
-          {/* Title — official "26" lockup */}
-          <div className="flex items-center gap-4">
-            {/* White lozenge with stacked "26" + nested trophy */}
-            <div className="relative shrink-0 bg-white rounded-[30px] px-3.5 pt-2.5 pb-3.5 shadow-2xl">
-              <div className="relative flex flex-col items-center leading-[0.7]">
-                <span className="wc-num text-[#0A0A0A] text-6xl">2</span>
-                <span className="wc-num text-[#0A0A0A] text-6xl">6</span>
-                <span className="wc-float absolute inset-0 flex items-center justify-center text-4xl drop-shadow">🏆</span>
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 bg-white rounded-[28px] w-[84px] flex flex-col items-center pt-2.5 pb-2">
+              <div className="flex flex-col items-center leading-[0.72]">
+                <span className="wc-num text-[54px] text-[#0A0A0A]">2</span>
+                <span className="wc-num text-[54px] text-[#0A0A0A]">6</span>
               </div>
-              <p className="text-center text-[#0A0A0A] font-black text-[11px] tracking-[0.15em] -mt-0.5">FIFA</p>
+              <p className="text-[9px] font-black text-[#0A0A0A] tracking-[0.18em] mt-0.5">FIFA</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-black tracking-[0.12em] leading-tight" style={{ transform: 'skewX(-5deg)' }}>
-                FIFA WORLD CUP
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="text-xl font-black tracking-wide leading-tight">
+                FIFA WORLD CUP 26™
               </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="wc-num text-5xl text-[#FFC72C] leading-none">26</span>
-                <span className="text-[10px] text-white/30 align-super">™</span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2.5">
                 <span className="text-xs px-2.5 py-1 rounded-full bg-white/10 text-white/70 font-medium">
                   🇨🇦 🇲🇽 🇺🇸
                 </span>
@@ -189,32 +172,31 @@ export default function WorldCup() {
             </div>
           </div>
 
-          {/* Countdown — scoreboard with signature offset color shadows */}
           {!countdown.started ? (
             <div className="mt-6">
-              <p className="text-[11px] uppercase tracking-[0.15em] text-white/60 font-semibold mb-3 text-center">
+              <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-semibold mb-3 text-center">
                 {t('worldCup.kickoffIn', { defaultValue: 'Kickoff in' })}
               </p>
               <div className="grid grid-cols-4 gap-2.5">
                 {[
-                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }), c: '#FF5252' },
-                  { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }), c: '#2EE6D6' },
-                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }), c: '#9D5CFF' },
-                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }), c: '#C6FF3D' },
+                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }), c: '#5B16E8' },
+                  { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }), c: '#E10600' },
+                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }), c: '#00B140' },
+                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }), c: '#B4E600' },
                 ].map((u) => (
                   <div key={u.label} className="text-center">
-                    <div className="rounded-xl py-2.5 bg-[#0A0A0A]" style={{ boxShadow: `5px 5px 0 ${u.c}` }}>
-                      <span className="wc-num text-2xl text-white">
+                    <div className="rounded-xl py-2.5 bg-white/[0.06] border border-white/[0.06]">
+                      <span className="wc-num text-2xl" style={{ color: u.c }}>
                         {String(u.val).padStart(2, '0')}
                       </span>
                     </div>
-                    <p className="text-[10px] mt-1.5 uppercase tracking-wider font-bold" style={{ color: u.c }}>{u.label}</p>
+                    <p className="text-[10px] mt-1.5 uppercase tracking-wider font-semibold text-white/35">{u.label}</p>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 rounded-xl py-3 border border-emerald-500/20">
+            <div className="mt-6 flex items-center justify-center gap-2 bg-emerald-500/10 rounded-xl py-3 border border-emerald-500/20">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-sm font-bold text-emerald-400">
                 {t('worldCup.tournamentLive', { defaultValue: 'TOURNAMENT IS LIVE' })}
@@ -222,16 +204,14 @@ export default function WorldCup() {
             </div>
           )}
 
-          {/* Quick stats */}
           <div className="grid grid-cols-3 gap-2 mt-4">
             {[
-              { val: '48', label: t('worldCup.teams', { defaultValue: 'Teams' }), icon: '🏟️' },
-              { val: '104', label: t('worldCup.matches', { defaultValue: 'Matches' }), icon: '⚽' },
-              { val: '16', label: t('worldCup.venues', { defaultValue: 'Venues' }), icon: '📍' },
+              { val: '48', label: t('worldCup.teams', { defaultValue: 'Teams' }) },
+              { val: '104', label: t('worldCup.matches', { defaultValue: 'Matches' }) },
+              { val: '16', label: t('worldCup.venues', { defaultValue: 'Venues' }) },
             ].map((s) => (
               <div key={s.label} className="bg-white/[0.04] rounded-xl p-3 text-center border border-white/5">
-                <span className="text-lg">{s.icon}</span>
-                <p className="text-lg font-black text-white mt-0.5">{s.val}</p>
+                <p className="text-lg font-black text-white">{s.val}</p>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">{s.label}</p>
               </div>
             ))}
@@ -251,7 +231,7 @@ export default function WorldCup() {
               onClick={() => setTab(tb.key)}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 tab === tb.key
-                  ? 'bg-gradient-to-r from-[#FFC72C] to-[#FFD700] text-[#1a0a2e] shadow-lg shadow-[#FFC72C]/20'
+                  ? 'bg-white text-[#0A0A0A]'
                   : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
               }`}
             >
