@@ -1,18 +1,21 @@
 import { useState, useLayoutEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * ProductTour — interactive spotlight coach-marks.
- * Instead of a static slideshow, it highlights the real UI elements the user
- * will actually tap (Best Bet card + bottom-nav tabs) with a short explanation,
- * so people learn by seeing where things are.
- *
- * Anchors are matched via [data-tour="..."] attributes on real elements.
- */
+const SPOT_SELECTORS = [
+  null,
+  '[data-tour="best-bet"]',
+  '[data-tour="nav-matches"]',
+  '[data-tour="nav-ai-chat"]',
+  '[data-tour="nav-bet"]',
+  null,
+];
+
 export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hidePro, expressFirst }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState(null);
+
+  const selector = SPOT_SELECTORS[step] || null;
 
   const steps = [
     {
@@ -28,25 +31,21 @@ export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hideP
     },
     {
       type: 'spot',
-      selector: '[data-tour="best-bet"]',
       title: t('tour.bestBetTitle', { defaultValue: "AI's Best Bet of the Day" }),
       desc: t('tour.bestBetDesc', { defaultValue: 'The single highest-confidence pick our AI found today. Tap it to see the full analysis.' }),
     },
     {
       type: 'spot',
-      selector: '[data-tour="nav-matches"]',
       title: t('tour.matchesTitle', { defaultValue: 'All matches, 900+ leagues' }),
       desc: t('tour.matchesDesc', { defaultValue: 'Browse any match and tap it to get a free AI prediction with confidence %, H2H and stats.' }),
     },
     {
       type: 'spot',
-      selector: '[data-tour="nav-ai-chat"]',
       title: t('tour.aiChatTitle', { defaultValue: 'Ask the AI anything' }),
       desc: t('tour.aiChatDesc', { defaultValue: 'Try "best bets today" or "Real vs Barça prediction" — answers use real-time data.' }),
     },
     {
       type: 'spot',
-      selector: '[data-tour="nav-bet"]',
       title: t('tour.betTitle', { defaultValue: 'Place your bet' }),
       desc: t('tour.betDesc', { defaultValue: 'When a pick looks good, tap here to bet it with the best odds — in one tap.' }),
     },
@@ -69,15 +68,15 @@ export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hideP
   const current = steps[step];
 
   const measure = useCallback(() => {
-    if (!current || current.type !== 'spot') { setRect(null); return; }
-    const el = document.querySelector(current.selector);
+    if (!selector) { setRect(null); return; }
+    const el = document.querySelector(selector);
     if (!el) { setRect(null); return; }
     setRect(el.getBoundingClientRect());
-  }, [current]);
+  }, [selector]);
 
   useLayoutEffect(() => {
-    if (!current || current.type !== 'spot') { setRect(null); return; }
-    const el = document.querySelector(current.selector);
+    if (!selector) { setRect(null); return; }
+    const el = document.querySelector(selector);
     if (!el) { setRect(null); return; }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     measure();
@@ -89,7 +88,7 @@ export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hideP
       window.removeEventListener('resize', measure);
       window.removeEventListener('scroll', measure, true);
     };
-  }, [step, current, measure]);
+  }, [selector, measure]);
 
   const next = () => { if (step < lastStep) setStep(step + 1); };
   const skip = () => onClose();
