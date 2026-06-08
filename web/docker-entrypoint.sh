@@ -27,6 +27,10 @@ window.__APP_CONFIG__ = {
 };
 EOF
 
+# Cache-bust config.js in index.html so CDN serves fresh version
+CACHE_BUST=$(date +%s)
+sed -i "s|/config.js|/config.js?v=${CACHE_BUST}|g" /usr/share/nginx/html/index.html
+
 # Render nginx config from template (substitute env vars)
 envsubst '${PORT} ${BACKEND_URL} ${GEO_SERVER_URL}' \
   < /etc/nginx/conf.d/default.conf.template \
