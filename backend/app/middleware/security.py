@@ -41,7 +41,7 @@ _SECURITY_HEADERS = {
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
-        "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org https://mc.yandex.ru; "
+        "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://mc.yandex.ru; "
         "frame-ancestors https://webvisor.com https://*.webvisor.com https://metrika.yandex.ru https://*.metrika.yandex.ru; "
         "base-uri 'self'; "
         "form-action 'self';"

@@ -39,11 +39,8 @@ def check_security_config():
     if not os.getenv("CLAUDE_API_KEY"):
         warnings.append("WARNING: CLAUDE_API_KEY not set. AI features will be unavailable.")
 
-    if not os.getenv("FOOTBALL_API_KEY"):
-        warnings.append("WARNING: FOOTBALL_API_KEY not set. Match data may be limited.")
-
     if not os.getenv("API_FOOTBALL_KEY"):
-        warnings.append("WARNING: API_FOOTBALL_KEY not set. Live data will be unavailable.")
+        warnings.append("WARNING: API_FOOTBALL_KEY not set. Match and live data will be unavailable.")
 
     for warning in warnings:
         logger.warning(f"\n{'='*60}\n{warning}\n{'='*60}")
@@ -255,7 +252,6 @@ async def root():
 async def health_check():
     from app.core.database import async_session_maker
     from sqlalchemy import text
-    from app.services.football_api import get_football_api_key
     from app.services.api_football import get_api_football_key
     import os
 
@@ -271,7 +267,6 @@ async def health_check():
         "version": "1.0.2",
         "database": db_status,
         "apis": {
-            "football_data": "configured" if get_football_api_key() else "missing",
             "api_football": "configured" if get_api_football_key() else "missing",
             "claude": "configured" if os.getenv("CLAUDE_API_KEY") else "missing",
         }
@@ -433,51 +428,19 @@ async def debug_football_api():
     import os
     import httpx
     import traceback
-    from app.services.football_api import fetch_matches, get_football_api_key
     from app.services.api_football import get_api_football_key
     from datetime import datetime
 
-    # Check all API keys
-    football_data_key = get_football_api_key()
     api_football_key = get_api_football_key()
     claude_key = os.getenv("CLAUDE_API_KEY", "")
 
     result = {
         "env_vars": {
-            "FOOTBALL_API_KEY": {"exists": bool(football_data_key), "length": len(football_data_key)},
             "API_FOOTBALL_KEY": {"exists": bool(api_football_key), "length": len(api_football_key)},
             "CLAUDE_API_KEY": {"exists": bool(claude_key), "length": len(claude_key)},
         },
-        "football_data_org": {"status": "not_tested"},
         "api_football": {"status": "not_tested"},
     }
-
-    # Test Football-Data.org API
-    if football_data_key:
-        try:
-            headers = {"X-Auth-Token": football_data_key}
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    "https://api.football-data.org/v4/competitions/PL/matches",
-                    headers=headers,
-                    params={"status": "SCHEDULED"},
-                    timeout=15.0
-                )
-                result["football_data_org"]["status_code"] = response.status_code
-
-                if response.status_code == 200:
-                    data = response.json()
-                    result["football_data_org"]["status"] = "working"
-                    result["football_data_org"]["matches_count"] = len(data.get("matches", []))
-                    result["football_data_org"]["competition"] = data.get("competition", {}).get("name")
-                else:
-                    result["football_data_org"]["status"] = "error"
-                    result["football_data_org"]["error"] = response.text[:300]
-        except Exception as e:
-            result["football_data_org"]["status"] = "error"
-            result["football_data_org"]["error"] = f"{type(e).__name__}: {str(e)}"
-    else:
-        result["football_data_org"]["status"] = "no_key"
 
     # Test API-Football
     if api_football_key:

@@ -32,14 +32,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 365  # 1 year
 
-    # External APIs - read at access time for Railway compatibility
-    FOOTBALL_API_URL: str = "https://api.football-data.org/v4"
-
-    @property
-    def FOOTBALL_API_KEY(self) -> str:
-        """Read at access time, not at module load"""
-        return os.getenv("FOOTBALL_API_KEY", "")
-
     @property
     def CLAUDE_API_KEY(self) -> str:
         """Read at access time, not at module load"""

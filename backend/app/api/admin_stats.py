@@ -1377,7 +1377,6 @@ async def get_ml_diagnostics(
     diag["environment"] = {
         "API_FOOTBALL_KEY": "set" if api_football_key else "MISSING — data collection will fail!",
         "API_FOOTBALL_KEY_length": len(api_football_key),
-        "FOOTBALL_API_KEY": "set" if os.getenv("FOOTBALL_API_KEY") else "missing",
         "DATABASE_URL": "set" if os.getenv("DATABASE_URL") else "using default localhost",
     }
     if not api_football_key:
