@@ -91,6 +91,7 @@ export default function BottomNav() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
+              data-tour={`nav-${item.path === '/' ? 'home' : item.path.slice(1)}`}
               className={`bottom-nav-item flex-1 py-1 ${isActive ? 'active' : ''}`}
             >
               <div className={`${isActive ? 'bg-primary-50 rounded-full p-1.5' : 'p-1.5'}`}>
@@ -106,6 +107,7 @@ export default function BottomNav() {
         {/* Bet tab */}
         <button
           onClick={handleBetClick}
+          data-tour="nav-bet"
           className="bottom-nav-item flex-1 py-1"
         >
           <div className="p-1.5 bg-emerald-50 rounded-full">

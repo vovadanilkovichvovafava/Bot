@@ -1481,6 +1481,27 @@
     "draw": "Draw",
     "win2": "W2"
   },
+  "tour": {
+    "introTitle": "Quick 30-second tour",
+    "introDesc": "Let's show you the 4 things you need to start winning with AI.",
+    "bestBetTitle": "AI's Best Bet of the Day",
+    "bestBetDesc": "The single highest-confidence pick our AI found today. Tap it to see the full analysis.",
+    "matchesTitle": "All matches, 900+ leagues",
+    "matchesDesc": "Browse any match and tap it to get a free AI prediction with confidence %, H2H and stats.",
+    "aiChatTitle": "Ask the AI anything",
+    "aiChatDesc": "Try \"best bets today\" or \"Real vs Barça prediction\" — answers use real-time data.",
+    "betTitle": "Place your bet",
+    "betDesc": "When a pick looks good, tap here to bet it with the best odds — in one tap.",
+    "doneTitle": "You're all set!",
+    "doneDesc": "You get 5 free AI predictions every day. Pick a match and try your first one!",
+    "doneDescFree": "Pick a match and try your first AI prediction now.",
+    "start": "Start exploring",
+    "seeExpress": "See AI Express Bets",
+    "discoverPro": "Discover PRO (free)",
+    "next": "Next",
+    "finish": "Finish",
+    "skip": "Skip"
+  },
   "matchChat": {
     "title": "Match Chat",
     "messages": "messages",

@@ -9,7 +9,7 @@ import { getStats } from '../../predictions/services/predictionStore';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import ProBlur from '../../../shared/components/ProBlur';
-import WelcomeModal from '../components/WelcomeModal';
+import ProductTour from '../components/ProductTour';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
@@ -246,13 +246,15 @@ export default function Home() {
         )}
 
         {/* Best Bet Today — blurred for free users */}
-        {(isPremium || isFunnel2 || isFunnel4) ? (
-          <BestBetTodayCard matches={matches} smartBet={smartBet} navigate={navigate} t={t} />
-        ) : (
-          <ProBlur feature="best-bet-today" reason="upgrade" label={t('home.bestBetTodayPro', { defaultValue: 'Best Bet of the Day' })}>
-            <BestBetTodayCard matches={matches} smartBet={null} navigate={navigate} t={t} locked />
-          </ProBlur>
-        )}
+        <div data-tour="best-bet">
+          {(isPremium || isFunnel2 || isFunnel4) ? (
+            <BestBetTodayCard matches={matches} smartBet={smartBet} navigate={navigate} t={t} />
+          ) : (
+            <ProBlur feature="best-bet-today" reason="upgrade" label={t('home.bestBetTodayPro', { defaultValue: 'Best Bet of the Day' })}>
+              <BestBetTodayCard matches={matches} smartBet={null} navigate={navigate} t={t} locked />
+            </ProBlur>
+          )}
+        </div>
 
         {/* PRO Guide - Only for PRO users who already have deposit */}
         {isPremium && !isFunnel2 && (
@@ -447,9 +449,9 @@ export default function Home() {
         <div className="h-4"/>
       </div>
 
-      {/* Welcome modal for new registrations */}
+      {/* Interactive product tour for new registrations */}
       {showWelcome && (
-        <WelcomeModal
+        <ProductTour
           onClose={() => setShowWelcome(false)}
           onGoToPromo={() => {
             setShowWelcome(false);

@@ -1471,6 +1471,27 @@
     "draw": "X",
     "win2": "2"
   },
+  "tour": {
+    "introTitle": "Tour rápido de 30 segundos",
+    "introDesc": "Te mostramos las 4 cosas que necesitas para empezar a ganar con la IA.",
+    "bestBetTitle": "La Mejor Apuesta del Día de la IA",
+    "bestBetDesc": "La selección con mayor confianza que la IA encontró hoy. Tócala para ver el análisis completo.",
+    "matchesTitle": "Todos los partidos, 900+ ligas",
+    "matchesDesc": "Explora cualquier partido y tócalo para obtener una predicción IA gratis con % de confianza, H2H y estadísticas.",
+    "aiChatTitle": "Pregúntale lo que sea a la IA",
+    "aiChatDesc": "Prueba \"mejores apuestas hoy\" o \"predicción Real vs Barça\" — respuestas con datos en tiempo real.",
+    "betTitle": "Haz tu apuesta",
+    "betDesc": "Cuando una selección te guste, toca aquí para apostarla con las mejores cuotas — en un toque.",
+    "doneTitle": "¡Todo listo!",
+    "doneDesc": "Tienes 5 predicciones IA gratis cada día. ¡Elige un partido y prueba la primera!",
+    "doneDescFree": "Elige un partido y prueba tu primera predicción IA ahora.",
+    "start": "Empezar a explorar",
+    "seeExpress": "Ver Apuestas AI Express",
+    "discoverPro": "Descubrir PRO (gratis)",
+    "next": "Siguiente",
+    "finish": "Finalizar",
+    "skip": "Saltar"
+  },
   "matchChat": {
     "title": "Chat del partido",
     "messages": "mensajes",
