@@ -31,6 +31,7 @@ const POPULAR_LEAGUE_IDS = [
 // League info for display with logo URLs from API-Football
 const LEAGUES_INFO = {
   popular: [
+    { id: 1, code: 'WC', name: 'FIFA World Cup', country: 'World', logo: 'https://media.api-sports.io/football/leagues/1.png' },
     { id: 39, code: 'PL', name: 'Premier League', country: 'England', logo: 'https://media.api-sports.io/football/leagues/39.png' },
     { id: 140, code: 'PD', name: 'La Liga', country: 'Spain', logo: 'https://media.api-sports.io/football/leagues/140.png' },
     { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Germany', logo: 'https://media.api-sports.io/football/leagues/78.png' },

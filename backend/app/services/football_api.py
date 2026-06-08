@@ -17,6 +17,7 @@ FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
 
 # League codes mapping
 LEAGUE_IDS = {
+    "WC": 2000,    # FIFA World Cup
     "PL": 2021,    # Premier League
     "PD": 2014,    # La Liga
     "BL1": 2002,   # Bundesliga
@@ -32,6 +33,7 @@ LEAGUE_IDS = {
 
 # Football-Data.org competition ID → API-Football league ID
 _FDO_TO_AF_LEAGUE = {
+    2000: 1,    # FIFA World Cup
     2021: 39,   # Premier League
     2014: 140,  # La Liga
     2002: 78,   # Bundesliga
@@ -111,7 +113,7 @@ async def fetch_matches(date_from: str = None, date_to: str = None, league: str 
         leagues_to_fetch = [league]
     else:
         # Free tier: fetch from top leagues individually
-        leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1"]
+        leagues_to_fetch = ["WC", "PL", "PD", "BL1", "SA", "FL1"]
 
     async with httpx.AsyncClient() as client:
         async def _fetch_league(lg_code: str) -> List[Dict]:
@@ -296,6 +298,7 @@ async def fetch_leagues() -> List[Dict]:
         return cached
 
     leagues = [
+        {"code": "WC", "name": "FIFA World Cup", "country": "World", "icon": "world"},
         {"code": "PL", "name": "Premier League", "country": "England", "icon": "england"},
         {"code": "PD", "name": "La Liga", "country": "Spain", "icon": "spain"},
         {"code": "BL1", "name": "Bundesliga", "country": "Germany", "icon": "germany"},
@@ -393,7 +396,7 @@ async def fetch_fixtures_fallback(date: str) -> List[Dict]:
 
     headers = {"X-Auth-Token": api_key}
     all_fixtures = []
-    leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+    leagues_to_fetch = ["WC", "PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
 
     async with httpx.AsyncClient() as client:
         async def _fetch_league_fixtures(lg_code: str) -> List[Dict]:
@@ -443,7 +446,7 @@ async def fetch_live_fallback() -> List[Dict]:
 
     headers = {"X-Auth-Token": api_key}
     live_fixtures = []
-    leagues_to_fetch = ["PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
+    leagues_to_fetch = ["WC", "PL", "PD", "BL1", "SA", "FL1", "CL", "EL"]
 
     async with httpx.AsyncClient() as client:
         async def _fetch_live_league(lg_code: str) -> List[Dict]:
