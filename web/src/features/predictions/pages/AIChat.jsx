@@ -126,8 +126,8 @@ export default function AIChat() {
       return;
     }
     api.getChatLimit()
-      .then(data => setRemaining(data.remaining ?? data.limit ?? 3))
-      .catch(() => setRemaining(3)); // Fallback to 3 on error
+      .then(data => setRemaining(data.remaining ?? data.limit ?? 5))
+      .catch(() => setRemaining(5)); // Fallback to 5 on error
   }, [isPremium, isFunnel2]);
 
   // Load cached chat history from localStorage

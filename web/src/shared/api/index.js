@@ -298,7 +298,7 @@ class ApiService {
     });
   }
 
-  // AI Chat limit (degressive system: Day1=3, Day2=2, Day3+=1/day)
+  // AI Chat limit (free tier: 5 requests/day)
   async getChatLimit() {
     return this.request('/predictions/chat/limit');
   }

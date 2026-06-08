@@ -8,6 +8,7 @@ import api from '../../../shared/api';
 import { getStats } from '../../predictions/services/predictionStore';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
+import ProBlur from '../../../shared/components/ProBlur';
 import WelcomeModal from '../components/WelcomeModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
@@ -244,46 +245,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* AI Assistant Card */}
-        <div
-          onClick={() => navigate('/ai-chat')}
-          className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 rounded-2xl p-5 text-white cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">{t('home.askAI')}</h3>
-                <p className="text-white/80 text-sm">{t('home.askAIDesc')}</p>
-              </div>
-            </div>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-            </svg>
-          </div>
-        </div>
-
-        {/* Beginner Guide - Hidden for PRO users */}
-        {!isPremium && (
-          <div
-            onClick={() => navigate('/guide')}
-            className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 flex items-center gap-4 cursor-pointer border border-gray-100"
-          >
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
-              <span className="text-xl">📚</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 text-sm">{t('home.beginnersGuide')}</p>
-              <p className="text-xs text-gray-500">{t('home.tipsToStart')}</p>
-            </div>
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </div>
+        {/* Best Bet Today — blurred for free users */}
+        {(isPremium || isFunnel2 || isFunnel4) ? (
+          <BestBetTodayCard matches={matches} smartBet={smartBet} navigate={navigate} t={t} />
+        ) : (
+          <ProBlur feature="best-bet-today" reason="upgrade" label={t('home.bestBetTodayPro', { defaultValue: 'Best Bet of the Day' })}>
+            <BestBetTodayCard matches={matches} smartBet={null} navigate={navigate} t={t} locked />
+          </ProBlur>
         )}
 
         {/* PRO Guide - Only for PRO users who already have deposit */}
@@ -401,48 +369,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900">{t('home.yourStats')}</h3>
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-primary-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{localStats.total}</p>
-              <p className="text-xs text-gray-500">{t('home.predictions')}</p>
-            </div>
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-green-500">{localStats.correct}</p>
-              <p className="text-xs text-gray-500">{t('home.wins')}</p>
-            </div>
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-green-500">{localStats.accuracy}%</p>
-              <p className="text-xs text-gray-500">{t('home.accuracy')}</p>
-            </div>
-          </div>
-          {localStats.pending > 0 && (
-            <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
-          )}
-        </div>
-
         {/* Pro Tools */}
         <div>
           <h3 className="section-title mb-3">{t('home.proTools')}</h3>
@@ -549,6 +475,70 @@ export default function Home() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function BestBetTodayCard({ matches, smartBet, navigate, t, locked }) {
+  // PRO with real smart bet → use it. Otherwise tease with first top match.
+  const sb = smartBet?.found ? smartBet : null;
+  const home = sb?.home || matches?.[0]?.teams?.home?.name || 'Real Madrid';
+  const away = sb?.away || matches?.[0]?.teams?.away?.name || 'Barcelona';
+  const homeLogo = matches?.[0]?.teams?.home?.logo;
+  const awayLogo = matches?.[0]?.teams?.away?.logo;
+  const pick = sb?.bet || t('home.bestBetSamplePick', { defaultValue: 'Home Win & Over 1.5' });
+  const confidence = sb?.confidence || 87;
+  const odds = sb?.odds || '1.95';
+  const fixtureId = sb?.fixture_id || matches?.[0]?.fixture?.id;
+
+  const handleClick = () => {
+    if (locked) return; // ProBlur handles the upsell
+    if (fixtureId) navigate(`/match/${fixtureId}`);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="relative overflow-hidden rounded-2xl p-5 text-white cursor-pointer shadow-lg"
+      style={{ background: 'linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%)' }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🔥</span>
+          <h3 className="font-black text-base">{t('home.bestBetToday', { defaultValue: 'Best Bet of the Day' })}</h3>
+        </div>
+        <span className="bg-amber-400 text-gray-900 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">AI Pick</span>
+      </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {homeLogo && <img src={homeLogo} alt="" className="w-6 h-6 object-contain" />}
+          <span className="text-sm font-bold truncate">{home}</span>
+        </div>
+        <span className="text-xs text-white/40 px-2 font-semibold">VS</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span className="text-sm font-bold truncate text-right">{away}</span>
+          {awayLogo && <img src={awayLogo} alt="" className="w-6 h-6 object-contain" />}
+        </div>
+      </div>
+
+      <div className="bg-white/10 rounded-xl p-3 flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('home.bestBetPick', { defaultValue: 'Recommended pick' })}</p>
+          <p className="text-sm font-bold truncate">{pick}</p>
+        </div>
+        <div className="text-right shrink-0 ml-3">
+          <p className="text-[10px] text-white/50 uppercase tracking-wide">{t('home.bestBetOdds', { defaultValue: 'Odds' })}</p>
+          <p className="text-sm font-black text-amber-400">{odds}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
+          <div className="h-full bg-green-400 rounded-full" style={{ width: `${confidence}%` }} />
+        </div>
+        <span className="text-xs font-bold text-green-400">{confidence}%</span>
+      </div>
     </div>
   );
 }
