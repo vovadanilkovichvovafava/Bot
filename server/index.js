@@ -16,7 +16,7 @@ const CONFIG = {
   BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || '',
 
   // Main API backend
-  MAIN_API_URL: process.env.MAIN_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1',
+  MAIN_API_URL: process.env.MAIN_API_URL || 'http://563fed01-57d2-4dc6-9148-0cddbd48c02d:8000/api/v1',
 
   // Postback secret for verification
   POSTBACK_SECRET: process.env.POSTBACK_SECRET || '',

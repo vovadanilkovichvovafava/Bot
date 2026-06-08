@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-# Defaults for internal Saturn networking
-BACKEND_URL="${BACKEND_URL:-http://localhost:8000}"
-GEO_SERVER_URL="${GEO_SERVER_URL:-${SERVER_URL:-http://localhost:3001}}"
+# Defaults for internal Saturn networking (UUIDs are Saturn app container hostnames)
+BACKEND_URL="${BACKEND_URL:-http://563fed01-57d2-4dc6-9148-0cddbd48c02d:8000}"
+GEO_SERVER_URL="${GEO_SERVER_URL:-${SERVER_URL:-http://43782e2c-7c44-4f9c-a4a7-58424363e3ef:3001}}"
 PORT="${PORT:-3000}"
 export BACKEND_URL GEO_SERVER_URL PORT
 
