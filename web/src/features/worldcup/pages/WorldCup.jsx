@@ -38,25 +38,17 @@ const KNOCKOUT_ROUNDS = [
   { key: 'Final', short: 'Final' },
 ];
 
-const GROUP_COLORS = [
-  'from-rose-500/20 to-rose-600/5',
-  'from-sky-500/20 to-sky-600/5',
-  'from-emerald-500/20 to-emerald-600/5',
-  'from-violet-500/20 to-violet-600/5',
-  'from-amber-500/20 to-amber-600/5',
-  'from-cyan-500/20 to-cyan-600/5',
-  'from-pink-500/20 to-pink-600/5',
-  'from-indigo-500/20 to-indigo-600/5',
-  'from-orange-500/20 to-orange-600/5',
-  'from-teal-500/20 to-teal-600/5',
-  'from-fuchsia-500/20 to-fuchsia-600/5',
-  'from-lime-500/20 to-lime-600/5',
-];
-
 const GROUP_ACCENT = [
   'bg-rose-400', 'bg-sky-400', 'bg-emerald-400', 'bg-violet-400',
   'bg-amber-400', 'bg-cyan-400', 'bg-pink-400', 'bg-indigo-400',
   'bg-orange-400', 'bg-teal-400', 'bg-fuchsia-400', 'bg-lime-400',
+];
+
+// Solid hex for the card's left accent border (matches GROUP_ACCENT)
+const GROUP_BORDER = [
+  '#FB7185', '#38BDF8', '#34D399', '#A78BFA',
+  '#FBBF24', '#22D3EE', '#F472B6', '#818CF8',
+  '#FB923C', '#2DD4BF', '#E879F9', '#A3E635',
 ];
 
 function tStatusShort(s) {
@@ -149,13 +141,6 @@ export default function WorldCup() {
         </div>
 
         <div className="relative z-10 px-5 pt-6 pb-6">
-          <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors text-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-            {t('common.back', { defaultValue: 'Back' })}
-          </button>
-
           <div className="flex items-start gap-4">
             <div className="shrink-0 bg-white rounded-[28px] w-[84px] flex flex-col items-center pt-2.5 pb-2">
               <div className="flex flex-col items-center leading-[0.72]">
@@ -184,10 +169,10 @@ export default function WorldCup() {
               </p>
               <div className="grid grid-cols-4 gap-2.5">
                 {[
-                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }), c: '#5B16E8' },
+                  { val: countdown.days, label: t('worldCup.days', { defaultValue: 'Days' }), c: '#16A34A' },
                   { val: countdown.hours, label: t('worldCup.hours', { defaultValue: 'Hours' }), c: '#E10600' },
-                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }), c: '#00B140' },
-                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }), c: '#B4E600' },
+                  { val: countdown.minutes, label: t('worldCup.mins', { defaultValue: 'Mins' }), c: '#16A34A' },
+                  { val: countdown.seconds, label: t('worldCup.secs', { defaultValue: 'Secs' }), c: '#FFC72C' },
                 ].map((u) => (
                   <div key={u.label} className="text-center">
                     <div className="rounded-xl py-2.5 bg-white/[0.06] border border-white/[0.06]">
@@ -228,22 +213,41 @@ export default function WorldCup() {
       <div className="sticky top-0 z-10 bg-[#070710]/95 backdrop-blur-lg px-5 pt-3 pb-2 border-b border-white/5">
         <div className="flex gap-2">
           {[
-            { key: 'groups', label: t('worldCup.groups', { defaultValue: 'Groups' }), icon: '📊' },
-            { key: 'bracket', label: t('worldCup.bracket', { defaultValue: 'Bracket' }), icon: '🏆' },
-          ].map((tb) => (
-            <button
-              key={tb.key}
-              onClick={() => setTab(tb.key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                tab === tb.key
-                  ? 'bg-white text-[#0A0A0A]'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
-              }`}
-            >
-              <span>{tb.icon}</span>
-              {tb.label}
-            </button>
-          ))}
+            {
+              key: 'groups',
+              label: t('worldCup.groups', { defaultValue: 'Groups' }),
+              icon: (active) => (
+                <svg className={`w-4 h-4 ${active ? 'text-[#1565C0]' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                </svg>
+              ),
+            },
+            {
+              key: 'bracket',
+              label: t('worldCup.bracket', { defaultValue: 'Bracket' }),
+              icon: (active) => (
+                <svg className={`w-4 h-4 ${active ? 'text-[#1565C0]' : 'text-white/40'}`} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z" />
+                </svg>
+              ),
+            },
+          ].map((tb) => {
+            const active = tab === tb.key;
+            return (
+              <button
+                key={tb.key}
+                onClick={() => setTab(tb.key)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${
+                  active
+                    ? 'bg-white text-[#1565C0] shadow-lg'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                }`}
+              >
+                {tb.icon(active)}
+                {tb.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -287,9 +291,12 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
   const letter = groupName.replace('Group ', '');
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-white/[0.08] bg-[#0d0d18]">
+    <div
+      className="rounded-2xl overflow-hidden bg-[#0d0d18] border border-white/[0.08]"
+      style={{ borderLeft: `4px solid ${GROUP_BORDER[colorIdx]}` }}
+    >
       {/* Group header */}
-      <div className={`px-4 py-3 bg-gradient-to-r ${GROUP_COLORS[colorIdx]} flex items-center justify-between`}>
+      <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-lg ${GROUP_ACCENT[colorIdx]} flex items-center justify-center`}>
             <span className="text-sm font-black text-white">{letter}</span>
@@ -302,25 +309,21 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
           <span className="w-5 text-center">D</span>
           <span className="w-5 text-center">L</span>
           <span className="w-6 text-center">GD</span>
-          <span className="w-6 text-center text-[#FFC72C]">Pts</span>
+          <span className="w-6 text-center text-[#16A34A]">PTS</span>
         </div>
       </div>
       {/* Rows */}
       <div className="divide-y divide-white/[0.04]">
         {rows.map((row, i) => {
           const qualified = i < 2;
-          const playoff = i === 2;
           return (
             <div
               key={row.team?.id || i}
               onClick={() => onOpenTeam?.(row.team)}
               className={`flex items-center px-4 py-3 transition-colors cursor-pointer hover:bg-white/[0.05] active:bg-white/[0.07] ${
-                qualified ? 'bg-[#FFC72C]/[0.03]' : ''
+                qualified ? 'bg-white/[0.02]' : ''
               }`}
             >
-              <div className={`w-1 h-8 rounded-full mr-3 shrink-0 ${
-                qualified ? 'bg-[#FFC72C]' : playoff ? 'bg-white/20' : 'bg-transparent'
-              }`} />
               <span className="text-xs text-white/30 w-5 shrink-0 font-bold">{row.rank ?? i + 1}</span>
               {row.team?.logo && (
                 <img
@@ -331,9 +334,6 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
                 />
               )}
               <span className="flex-1 text-sm font-semibold truncate text-white/90">{row.team?.name}</span>
-              <svg className="w-3.5 h-3.5 text-white/20 mr-2 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
               <div className="flex items-center gap-4 text-xs tabular-nums">
                 <span className="w-5 text-center text-white/40">{row.all?.played ?? 0}</span>
                 <span className="w-5 text-center text-white/40">{row.all?.win ?? 0}</span>
@@ -342,7 +342,7 @@ function GroupCard({ rows, colorIdx = 0, onOpenMatch, onOpenTeam, t }) {
                 <span className="w-6 text-center text-white/50 font-medium">
                   {row.goalsDiff > 0 ? `+${row.goalsDiff}` : (row.goalsDiff ?? 0)}
                 </span>
-                <span className="w-6 text-center font-black text-[#FFC72C]">{row.points ?? 0}</span>
+                <span className="w-6 text-center font-black text-[#16A34A]">{row.points ?? 0}</span>
               </div>
             </div>
           );
