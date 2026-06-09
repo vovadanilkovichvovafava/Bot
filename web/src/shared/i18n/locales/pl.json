@@ -157,7 +157,10 @@
     "topLeagues": "Top ligi",
     "otherLeagues": "Inne ligi",
     "all": "Wszystkie",
-    "matchesCount": "meczów"
+    "matchesCount": "meczów",
+    "filterAll": "Wszystkie",
+    "filterUpcoming": "Nadchodzące",
+    "filterFinished": "Zakończone"
   },
   "betting": {
     "placeBet": "Postaw Zakład",

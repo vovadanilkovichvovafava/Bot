@@ -185,7 +185,10 @@
     "topLeagues": "Top Leagues",
     "otherLeagues": "Other Leagues",
     "all": "All",
-    "matchesCount": "matches"
+    "matchesCount": "matches",
+    "filterAll": "All",
+    "filterUpcoming": "Upcoming",
+    "filterFinished": "Finished"
   },
   "betting": {
     "placeBet": "Place Bet",

@@ -157,7 +157,10 @@
     "topLeagues": "Ligues Majeures",
     "otherLeagues": "Autres Ligues",
     "all": "Tous",
-    "matchesCount": "matchs"
+    "matchesCount": "matchs",
+    "filterAll": "Tous",
+    "filterUpcoming": "À venir",
+    "filterFinished": "Terminés"
   },
   "betting": {
     "placeBet": "Parier",

@@ -158,7 +158,10 @@
     "topLeagues": "Top campionati",
     "otherLeagues": "Altri campionati",
     "all": "Tutti",
-    "matchesCount": "partite"
+    "matchesCount": "partite",
+    "filterAll": "Tutti",
+    "filterUpcoming": "In arrivo",
+    "filterFinished": "Finite"
   },
   "betting": {
     "placeBet": "Piazza Scommessa",

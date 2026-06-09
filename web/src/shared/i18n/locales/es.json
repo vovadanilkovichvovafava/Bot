@@ -157,7 +157,10 @@
     "topLeagues": "Ligas Principales",
     "otherLeagues": "Otras Ligas",
     "all": "Todos",
-    "matchesCount": "partidos"
+    "matchesCount": "partidos",
+    "filterAll": "Todos",
+    "filterUpcoming": "Próximos",
+    "filterFinished": "Finalizados"
   },
   "betting": {
     "placeBet": "Apostar",
