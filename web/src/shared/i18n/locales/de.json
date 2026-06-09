@@ -658,7 +658,10 @@
     "reanalyzing": "Neu analysieren...",
     "newAnalysis": "Neue Analyse",
     "messagesCount": "{{count}} Nachrichten",
-    "backToChat": "Zurück zum Chat"
+    "backToChat": "Zurück zum Chat",
+    "analysis": "Analyse",
+    "placeBet": "Wetten",
+    "aiPicks": "KI-Tipps"
   },
   "proTools": {
     "getPro": "PRO holen",

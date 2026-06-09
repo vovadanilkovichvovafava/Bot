@@ -193,7 +193,7 @@ export default function AIChat() {
       medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
       high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
     };
-    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT: If you recommend bets, end with a FINAL RECOMMENDATIONS section with 2-3 bets from different markets. Each line: [BET] Bet Type @ Odds. Example:\n**FINAL RECOMMENDATIONS**\n1. [BET] Over 2.5 Goals @ 1.85\n2. [BET] Home Win @ 2.10\n3. [BET] Both Teams to Score @ 1.75\nAll odds must be between ${minOdds} and ${maxOdds}.]`;
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT OUTPUT FORMAT: Keep the reply SHORT — do NOT write long analysis paragraphs or intros. If you recommend bets, reply with ONLY 2-3 bets from different markets, one per line, in this EXACT format:\n[BET] <Bet Type> @ <Odds> | <one short sentence explaining why this bet>\nExample:\n[BET] Over 2.5 Goals @ 1.85 | Both teams average 1.6 goals and the last 4 H2H went over.\n[BET] Home Win @ 2.10 | Hosts unbeaten in 7 home games with their key striker back.\nDo NOT add commentary before or after the list. All odds must be between ${minOdds} and ${maxOdds}.]`;
   };
 
   // Parse bets from AI response (multiple [BET] tags)
@@ -202,20 +202,20 @@ export default function AIChat() {
     const bets = [];
     const seen = new Set();
 
-    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85
-    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
+    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85 | reason
+    const betTagRe = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
     let m;
     while ((m = betTagRe.exec(content)) !== null) {
       const key = m[1].trim().toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
-        bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) });
+        bets.push({ type: m[1].trim(), odds: parseFloat(m[2]), reason: (m[3] || '').trim() });
       }
     }
 
-    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85" or "1. **Over 2.5 Goals** @ 1.85"
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85 | reason"
     if (bets.length === 0) {
-      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*([^\n@–—|]+?)\**\s*[@–—-]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = numberedRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
@@ -223,15 +223,15 @@ export default function AIChat() {
           const key = type.toLowerCase();
           if (!seen.has(key)) {
             seen.add(key);
-            bets.push({ type, odds });
+            bets.push({ type, odds, reason: (m[3] || '').trim() });
           }
         }
       }
     }
 
-    // 3) Fallback: "Bet Type @ odds" or "Bet Type — odds" anywhere in text
+    // 3) Fallback: "Bet Type @ odds | reason" anywhere in text
     if (bets.length === 0) {
-      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**([^\n@–—|]+?)\**\s*[@–—]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = fallbackRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
@@ -239,7 +239,7 @@ export default function AIChat() {
           const key = type.toLowerCase();
           if (!seen.has(key)) {
             seen.add(key);
-            bets.push({ type, odds });
+            bets.push({ type, odds, reason: (m[3] || '').trim() });
           }
         }
       }
@@ -434,42 +434,22 @@ export default function AIChat() {
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-600 font-medium">{t('aiChat.aiAnalysis')}</span>
                   </div>
                 )}
-                <MessageContent content={msg.content} isUser={msg.role === 'user'} />
+                {!(msg.role === 'assistant' && msg.bets?.length > 0) && (
+                  <MessageContent content={msg.content} isUser={msg.role === 'user'} />
+                )}
 
-                {/* Best bets list — clean white card style */}
+                {/* Bets-first: clean picks with a per-bet Analysis toggle */}
                 {msg.bets?.length > 0 && msg.role === 'assistant' && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="rounded-xl border border-gray-100 overflow-hidden">
-                      {/* Header */}
-                      <div className="px-3 pt-3 pb-2">
-                        <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-                          <span>🔥</span>
-                          {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
-                        </p>
-                      </div>
-                      {/* Bet rows */}
-                      <div className="px-3 pb-3 space-y-2">
-                        {msg.bets.slice(0, 3).map((bet, idx) => {
-                          const conf = bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26);
-                          return (
-                            <div
-                              key={idx}
-                              onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
-                              className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
-                            >
-                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                                </div>
-                              </div>
-                              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mb-2.5">
+                      <span>🔥</span>{t('aiChat.aiPicks', { defaultValue: 'AI Picks' })}
+                    </p>
+                    <BetList
+                      bets={msg.bets}
+                      fallback={stripBets(msg.content)}
+                      t={t}
+                      onPlace={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                    />
                   </div>
                 )}
 
@@ -794,6 +774,75 @@ export default function AIChat() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Strip [BET] lines and the FINAL RECOMMENDATIONS header — used as fallback analysis text.
+ */
+function stripBets(content) {
+  return (content || '')
+    .replace(/\[BET\][^\n]*/gi, '')
+    .replace(/\*\*?FINAL RECOMMENDATIONS\*\*?/gi, '')
+    .replace(/FINAL RECOMMENDATIONS/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Bets-first list: each pick shows odds + confidence, with an "Analysis" button
+ * that expands the explanation of why the AI recommends this bet.
+ */
+function BetList({ bets, fallback, t, onPlace }) {
+  const [openIdx, setOpenIdx] = useState(null);
+  return (
+    <div className="space-y-2.5">
+      {bets.slice(0, 4).map((bet, idx) => {
+        const conf = bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26);
+        const analysis = bet.reason || fallback;
+        const isOpen = openIdx === idx;
+        return (
+          <div key={idx} className="rounded-xl border border-gray-100 overflow-hidden bg-white">
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                </div>
+              </div>
+              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+            </div>
+
+            <div className="flex gap-2 px-3 pb-3">
+              <button
+                onClick={() => setOpenIdx(isOpen ? null : idx)}
+                className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 rounded-lg py-2 transition-colors"
+              >
+                {t('aiChat.analysis', { defaultValue: 'Analysis' })}
+                <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              <button
+                onClick={onPlace}
+                className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2 transition-colors"
+              >
+                {t('aiChat.placeBet', { defaultValue: 'Place bet' })}
+              </button>
+            </div>
+
+            {isOpen && analysis && (
+              <div className="px-3 pb-3 -mt-0.5">
+                <div className="bg-gray-50 rounded-lg p-3 text-[13px] text-gray-700 leading-relaxed border-l-2 border-primary-500 whitespace-pre-line">
+                  {analysis}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

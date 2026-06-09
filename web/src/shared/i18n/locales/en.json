@@ -740,7 +740,10 @@
     "reanalyzing": "Re-analyzing...",
     "newAnalysis": "New analysis",
     "messagesCount": "{{count}} messages",
-    "backToChat": "Back to chat"
+    "backToChat": "Back to chat",
+    "analysis": "Analysis",
+    "placeBet": "Place bet",
+    "aiPicks": "AI Picks"
   },
   "proTools": {
     "getPro": "Get PRO",

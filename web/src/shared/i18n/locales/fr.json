@@ -709,7 +709,10 @@
     "reanalyzing": "Ré-analyse...",
     "newAnalysis": "Nouvelle analyse",
     "messagesCount": "{{count}} messages",
-    "backToChat": "Retour au chat"
+    "backToChat": "Retour au chat",
+    "analysis": "Analyse",
+    "placeBet": "Parier",
+    "aiPicks": "Picks de l'IA"
   },
   "proTools": {
     "getPro": "Obtenir PRO",

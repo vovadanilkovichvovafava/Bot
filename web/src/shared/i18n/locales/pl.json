@@ -712,7 +712,10 @@
     "reanalyzing": "Ponowna analiza...",
     "newAnalysis": "Nowa analiza",
     "messagesCount": "{{count}} wiadomości",
-    "backToChat": "Powrót do czatu"
+    "backToChat": "Powrót do czatu",
+    "analysis": "Analiza",
+    "placeBet": "Postaw",
+    "aiPicks": "Typy AI"
   },
   "proTools": {
     "getPro": "Zdobądź PRO",
