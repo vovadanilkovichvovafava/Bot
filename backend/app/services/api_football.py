@@ -204,6 +204,47 @@ class ApiFootballService:
         """Get betting odds for fixture"""
         return await self._request("/odds", {"fixture": fixture_id}, "odds")
 
+    async def get_odds_map_by_date(self, date: str) -> Dict[int, Dict]:
+        """Batch 1X2 odds for all fixtures on a date → {fixture_id: {home, draw, away}}.
+
+        Uses API-Football /odds?date=&bet=1 (Match Winner) with pagination.
+        Bounded to 8 pages to cap quota cost; result cached server-side (odds TTL).
+        """
+        cache_key = f"odds_map:{date}"
+        cached = _get_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        odds_map: Dict[int, Dict] = {}
+        for page in range(1, 9):
+            try:
+                resp = await self._request("/odds", {"date": date, "bet": 1, "page": page}, "odds")
+            except Exception:
+                break
+            if not resp:
+                break
+            for item in resp:
+                try:
+                    fid = (item.get("fixture") or {}).get("id")
+                    bookmakers = item.get("bookmakers") or []
+                    if not fid or fid in odds_map or not bookmakers:
+                        continue
+                    bets = bookmakers[0].get("bets") or []
+                    mw = next((b for b in bets if b.get("id") == 1 or b.get("name") == "Match Winner"), None)
+                    if not mw:
+                        continue
+                    vals = {v.get("value"): v.get("odd") for v in (mw.get("values") or [])}
+                    home = vals.get("Home")
+                    if home:
+                        odds_map[fid] = {"home": home, "draw": vals.get("Draw"), "away": vals.get("Away")}
+                except Exception:
+                    continue
+            if len(resp) < 10:  # last page
+                break
+
+        _set_cache(cache_key, odds_map, "odds")
+        return odds_map
+
     # === Teams ===
 
     async def get_team(self, team_id: int) -> Optional[Dict]:

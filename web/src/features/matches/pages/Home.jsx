@@ -41,6 +41,7 @@ export default function Home() {
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
+  const [oddsMap, setOddsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [aiRemaining, setAiRemaining] = useState(null);
   const [smartBet, setSmartBet] = useState(null);
@@ -116,6 +117,9 @@ export default function Home() {
       try {
         localStorage.setItem(HOME_MATCHES_CACHE, JSON.stringify({ data: upcoming, ts: Date.now() }));
       } catch {}
+      // Real 1X2 odds for today (cached backend batch); falls back to synthetic.
+      footballApi.getOddsMapForDate(new Date().toISOString().split('T')[0])
+        .then(setOddsMap).catch(() => {});
     } catch (e) {
       console.error('Failed to load matches', e);
     } finally {
@@ -219,7 +223,7 @@ export default function Home() {
           ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
               {matches.map((f) => (
-                <TopMatchCard key={f.fixture.id} fixture={f} navigate={navigate} t={t} />
+                <TopMatchCard key={f.fixture.id} fixture={f} navigate={navigate} t={t} realOdds={oddsMap[f.fixture.id]} />
               ))}
             </div>
           )}
@@ -233,6 +237,7 @@ export default function Home() {
             smartBet={smartBet}
             navigate={navigate}
             t={t}
+            realOdds={oddsMap}
             locked={!unlocked}
             advertiser={advertiser}
             trackClick={trackClick}
@@ -383,13 +388,13 @@ function BonoBanner({ advertiser, t, onClick }) {
 }
 
 /* ===== Top match card (horizontal scroll) ===== */
-function TopMatchCard({ fixture, navigate, t }) {
+function TopMatchCard({ fixture, navigate, t, realOdds }) {
   const f = fixture;
   if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
   const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
   let time = '--:--';
   try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch {}
-  const odds = genOdds(f.fixture.id);
+  const odds = (realOdds && realOdds.home) ? realOdds : genOdds(f.fixture.id);
   const league = f.league?.name || '';
   // Highlight derby/classic when both teams are top European clubs in the same league
   const elClasico = /clasico|clásico|derby|derbi/i.test(f.fixture?.status?.long || '') ? true : false;
@@ -447,15 +452,16 @@ function TopMatchCard({ fixture, navigate, t }) {
 }
 
 /* ===== Mejor Pick del Día (AI pick, blurred selection for free users) ===== */
-function MejorPickCard({ matches, smartBet, navigate, t, locked, advertiser, trackClick, userId, isPremium }) {
+function MejorPickCard({ matches, smartBet, navigate, t, locked, advertiser, trackClick, userId, isPremium, realOdds }) {
   const sb = smartBet?.found ? smartBet : null;
   const m0 = matches?.[0];
   const home = sb?.home || m0?.teams?.home?.name || 'Benfica';
   const away = sb?.away || m0?.teams?.away?.name || 'Porto';
   const league = sb?.league || m0?.league?.name || 'Primeira Liga';
   const confidence = sb?.confidence || 96;
-  const odds = parseFloat(sb?.odds || genOdds(m0?.fixture?.id || 1).home);
   const fixtureId = sb?.fixture_id || m0?.fixture?.id;
+  const realHome = realOdds?.[fixtureId]?.home;
+  const odds = parseFloat(sb?.odds || realHome || genOdds(m0?.fixture?.id || 1).home);
   const selection = sb?.bet?.market || t('home.pickHomeWin', { defaultValue: 'Home Win' });
 
   const handleCta = () => {

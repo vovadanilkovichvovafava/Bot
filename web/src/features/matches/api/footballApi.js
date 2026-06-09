@@ -313,6 +313,18 @@ class FootballApiService {
     return this.directRequest('/odds/live', { fixture: fixtureId });
   }
 
+  // Batch 1X2 odds for a whole date → { [fixtureId]: { home, draw, away } }
+  // Backend-only (server paginates + caches). Returns {} on any failure so
+  // callers fall back to synthetic odds without breaking.
+  async getOddsMapForDate(date) {
+    try {
+      const data = await this.backendRequest(`/odds/date/${date}`);
+      return data && typeof data === 'object' ? data : {};
+    } catch {
+      return {};
+    }
+  }
+
   // === Teams ===
 
   async getTeam(teamId) {

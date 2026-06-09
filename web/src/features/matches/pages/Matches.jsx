@@ -50,6 +50,7 @@ export default function Matches() {
   const [dateOffset, setDateOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState('all');
   const [fixtures, setFixtures] = useState([]);
+  const [oddsMap, setOddsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [favIds, setFavIds] = useState([]);
   const [cartCount, setCartCount] = useState(getBetslipCount());
@@ -59,17 +60,20 @@ export default function Matches() {
 
   useEffect(() => {
     let alive = true;
+    const dateStr = fmtDate(addDays(new Date(), dateOffset));
     const load = async () => {
       setLoading(true);
       try {
         const data = dateOffset === 0
           ? await footballApi.getTodayFixtures()
-          : await footballApi.getFixturesByDate(fmtDate(addDays(new Date(), dateOffset)));
+          : await footballApi.getFixturesByDate(dateStr);
         if (alive) setFixtures(data || []);
       } catch (e) { console.error(e); }
       finally { if (alive) setLoading(false); }
     };
     load();
+    // Real 1X2 odds for the whole day (one cached backend batch). Falls back to synthetic.
+    footballApi.getOddsMapForDate(dateStr).then((m) => { if (alive) setOddsMap(m || {}); }).catch(() => {});
     if (pollRef.current) clearInterval(pollRef.current);
     if (dateOffset === 0) pollRef.current = setInterval(load, 60000);
     return () => { alive = false; if (pollRef.current) clearInterval(pollRef.current); };
@@ -211,6 +215,7 @@ export default function Matches() {
               onStar={onStar}
               onAddOdds={onAddOdds}
               matchStatus={matchStatus}
+              oddsMap={oddsMap}
             />
           ))
         )}
@@ -230,7 +235,7 @@ export default function Matches() {
   );
 }
 
-function LeagueGroup({ league, fixtures, navigate, t, favIds, onStar, onAddOdds, matchStatus }) {
+function LeagueGroup({ league, fixtures, navigate, t, favIds, onStar, onAddOdds, matchStatus, oddsMap }) {
   const [open, setOpen] = useState(true);
   return (
     <div>
@@ -242,7 +247,7 @@ function LeagueGroup({ league, fixtures, navigate, t, favIds, onStar, onAddOdds,
       {open && (
         <div className="space-y-3">
           {fixtures.map((f) => (
-            <MatchCardNew key={f.fixture.id} fixture={f} st={matchStatus(f)} navigate={navigate} t={t} fav={favIds.includes(f.teams.home.id)} onStar={onStar} onAddOdds={onAddOdds} />
+            <MatchCardNew key={f.fixture.id} fixture={f} st={matchStatus(f)} navigate={navigate} t={t} fav={favIds.includes(f.teams.home.id)} onStar={onStar} onAddOdds={onAddOdds} realOdds={oddsMap[f.fixture.id]} />
           ))}
         </div>
       )}
@@ -261,7 +266,7 @@ function TeamCol({ team }) {
   );
 }
 
-function MatchCardNew({ fixture, st, navigate, t, fav, onStar, onAddOdds }) {
+function MatchCardNew({ fixture, st, navigate, t, fav, onStar, onAddOdds, realOdds }) {
   const f = fixture;
   const elapsed = f.fixture?.status?.elapsed;
   const short = f.fixture?.status?.short;
@@ -270,7 +275,7 @@ function MatchCardNew({ fixture, st, navigate, t, fav, onStar, onAddOdds }) {
   const ht = f.score?.halftime;
   let time = '--:--';
   try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch {}
-  const odds = genOdds(f.fixture.id);
+  const odds = (realOdds && realOdds.home) ? realOdds : genOdds(f.fixture.id);
   const goTo = () => navigate(st === 'live' ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`);
 
   return (

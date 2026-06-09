@@ -148,6 +148,16 @@ async def get_odds(fixture_id: int) -> List[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch odds")
 
 
+@router.get("/odds/date/{date}")
+async def get_odds_map_by_date(date: str) -> Dict:
+    """Batch 1X2 odds for all fixtures on a date → {fixture_id: {home, draw, away}}."""
+    try:
+        return await api_football.get_odds_map_by_date(date)
+    except Exception as e:
+        logger.error(f"Error fetching odds map for date {date}: {e}")
+        return {}
+
+
 # === Teams ===
 
 @router.get("/teams/search")
