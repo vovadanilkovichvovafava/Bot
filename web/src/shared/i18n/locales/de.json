@@ -1489,5 +1489,23 @@
     "empty": "Noch keine Nachrichten",
     "beFirst": "Sei der Erste, der dieses Spiel kommentiert!",
     "placeholder": "Nachricht schreiben..."
+  },
+  "predict": {
+    "fantasy": "Fantasy-Tipp",
+    "question": "Wer gewinnt die WM?",
+    "ctaSub": "Fülle das Tableau aus und wähle deinen Sieger",
+    "yourChampion": "Dein Sieger",
+    "tbd": "Noch offen",
+    "progress": "Fortschritt",
+    "predictionComplete": "Tipp komplett!",
+    "championMsg": "Du hast {{team}} zum Sieger gewählt.",
+    "r32": "Sechzehntelfinale",
+    "r16": "Achtelfinale",
+    "qf": "Viertelfinale",
+    "sf": "Halbfinale",
+    "final": "Finale",
+    "match": "Spiel",
+    "matches": "Spiele",
+    "reset": "Tableau zurücksetzen"
   }
 }

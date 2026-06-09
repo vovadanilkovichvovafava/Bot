@@ -1504,5 +1504,23 @@
     "empty": "Pas encore de messages",
     "beFirst": "Soyez le premier à commenter ce match !",
     "placeholder": "Écrire un message..."
+  },
+  "predict": {
+    "fantasy": "Pronostic Fantasy",
+    "question": "Qui va gagner la Coupe du Monde ?",
+    "ctaSub": "Remplis le tableau et choisis ton champion",
+    "yourChampion": "Ton champion",
+    "tbd": "À décider",
+    "progress": "Progression",
+    "predictionComplete": "Pronostic terminé !",
+    "championMsg": "Tu as choisi {{team}} comme vainqueur.",
+    "r32": "16es de finale",
+    "r16": "8es de finale",
+    "qf": "Quarts",
+    "sf": "Demi-finales",
+    "final": "Finale",
+    "match": "match",
+    "matches": "matchs",
+    "reset": "Réinitialiser"
   }
 }

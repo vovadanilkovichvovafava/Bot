@@ -1686,5 +1686,23 @@
     "proCustomAvailable": "Express personalizado disponível",
     "dailyFreeCustomPro": "Grátis diário · Personalizado com PRO",
     "openExpress": "Abrir"
+  },
+  "predict": {
+    "fantasy": "Palpite Fantasy",
+    "question": "Quem vai ganhar o Mundial?",
+    "ctaSub": "Preenche o quadro e escolhe o teu campeão",
+    "yourChampion": "O teu campeão",
+    "tbd": "A decidir",
+    "progress": "Progresso",
+    "predictionComplete": "Palpite completo!",
+    "championMsg": "Escolheste {{team}} para ganhar tudo.",
+    "r32": "16-avos",
+    "r16": "Oitavos",
+    "qf": "Quartos",
+    "sf": "Meias-finais",
+    "final": "Final",
+    "match": "jogo",
+    "matches": "jogos",
+    "reset": "Reiniciar quadro"
   }
 }

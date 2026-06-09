@@ -1543,5 +1543,23 @@
     "empty": "Brak wiadomości",
     "beFirst": "Bądź pierwszy, który skomentuje ten mecz!",
     "placeholder": "Napisz wiadomość..."
+  },
+  "predict": {
+    "fantasy": "Typuj Fantasy",
+    "question": "Kto wygra Mistrzostwa Świata?",
+    "ctaSub": "Wypełnij drabinkę i wybierz mistrza",
+    "yourChampion": "Twój mistrz",
+    "tbd": "Do ustalenia",
+    "progress": "Postęp",
+    "predictionComplete": "Typ gotowy!",
+    "championMsg": "Wytypowałeś {{team}} na zwycięzcę.",
+    "r32": "1/16 finału",
+    "r16": "1/8 finału",
+    "qf": "Ćwierćfinały",
+    "sf": "Półfinały",
+    "final": "Finał",
+    "match": "mecz",
+    "matches": "mecze",
+    "reset": "Resetuj drabinkę"
   }
 }

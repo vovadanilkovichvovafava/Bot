@@ -1525,5 +1525,23 @@
     "empty": "Aún no hay mensajes",
     "beFirst": "¡Sé el primero en comentar este partido!",
     "placeholder": "Escribe un mensaje..."
+  },
+  "predict": {
+    "fantasy": "Pronóstico Fantasy",
+    "question": "¿Quién ganará el Mundial?",
+    "ctaSub": "Completa el cuadro y elige tu campeón",
+    "yourChampion": "Tu campeón",
+    "tbd": "Por decidir",
+    "progress": "Progreso",
+    "predictionComplete": "¡Pronóstico completo!",
+    "championMsg": "Elegiste a {{team}} como campeón.",
+    "r32": "Dieciseisavos",
+    "r16": "Octavos",
+    "qf": "Cuartos",
+    "sf": "Semifinales",
+    "final": "Final",
+    "match": "partido",
+    "matches": "partidos",
+    "reset": "Reiniciar cuadro"
   }
 }

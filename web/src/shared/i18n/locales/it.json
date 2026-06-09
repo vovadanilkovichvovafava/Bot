@@ -1563,5 +1563,23 @@
     "proCustomAvailable": "Express personalizzato disponibile",
     "dailyFreeCustomPro": "Giornaliero gratis · Custom con PRO",
     "openExpress": "Apri"
+  },
+  "predict": {
+    "fantasy": "Pronostico Fantasy",
+    "question": "Chi vincerà il Mondiale?",
+    "ctaSub": "Completa il tabellone e scegli il campione",
+    "yourChampion": "Il tuo campione",
+    "tbd": "Da decidere",
+    "progress": "Avanzamento",
+    "predictionComplete": "Pronostico completato!",
+    "championMsg": "Hai scelto {{team}} come vincitore.",
+    "r32": "Sedicesimi",
+    "r16": "Ottavi",
+    "qf": "Quarti",
+    "sf": "Semifinali",
+    "final": "Finale",
+    "match": "partita",
+    "matches": "partite",
+    "reset": "Reimposta tabellone"
   }
 }

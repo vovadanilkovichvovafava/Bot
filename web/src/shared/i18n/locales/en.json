@@ -1581,5 +1581,23 @@
     "proCustomAvailable": "Custom express available",
     "dailyFreeCustomPro": "Daily free · Custom with PRO",
     "openExpress": "Open"
+  },
+  "predict": {
+    "fantasy": "Fantasy Predict",
+    "question": "Who will win the World Cup?",
+    "ctaSub": "Fill in the bracket & pick your champion",
+    "yourChampion": "Your champion",
+    "tbd": "To be decided",
+    "progress": "Progress",
+    "predictionComplete": "Prediction complete!",
+    "championMsg": "You picked {{team}} to win it all.",
+    "r32": "Round of 32",
+    "r16": "Round of 16",
+    "qf": "Quarter-finals",
+    "sf": "Semi-finals",
+    "final": "Final",
+    "match": "match",
+    "matches": "matches",
+    "reset": "Reset bracket"
   }
 }
