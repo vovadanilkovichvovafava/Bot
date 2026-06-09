@@ -1603,5 +1603,26 @@
     "qualifies": "Passa",
     "knockoutLocked": "Tabellone",
     "knockoutLockedDesc": "Si sblocca dopo la fase a gironi. Prima pronostica i gironi — poi scegli chi alza il trofeo. 🏆"
+  },
+  "worldCup": {
+    "groups": "Gironi",
+    "bracket": "Tabellone",
+    "goPro": "PRO",
+    "defendingChampions": "Campioni in Carica",
+    "makeItThree": "Riescono a fare il tris?",
+    "days": "Giorni",
+    "hrs": "Ore",
+    "min": "Min",
+    "sec": "Sec",
+    "starWatch": "Stelle da Seguire",
+    "viewAll": "Vedi Tutto",
+    "focus": "Focus",
+    "group": "Girone",
+    "colPos": "Pos",
+    "fanZone": "Tifo in Diretta",
+    "online": "ONLINE",
+    "chatPlaceholder": "Scrivi qualcosa…",
+    "chatSeed1": "Forza Argentina! La Scaloneta è pronta.",
+    "chatSeed2": "Lamine Yamal sarà la stella del Mondiale."
   }
 }

@@ -1565,5 +1565,26 @@
     "qualifies": "Avanza",
     "knockoutLocked": "Cuadro eliminatorio",
     "knockoutLockedDesc": "Se desbloquea tras la fase de grupos. Primero pronostica los grupos — luego elige quién levanta el trofeo. 🏆"
+  },
+  "worldCup": {
+    "groups": "Grupos",
+    "bracket": "Cuadro",
+    "goPro": "PRO",
+    "defendingChampions": "Campeones Defensores",
+    "makeItThree": "¿Pueden ganar la tercera?",
+    "days": "Días",
+    "hrs": "Hrs",
+    "min": "Min",
+    "sec": "Seg",
+    "starWatch": "Estrellas a Seguir",
+    "viewAll": "Ver Todo",
+    "focus": "Foco",
+    "group": "Grupo",
+    "colPos": "Pos",
+    "fanZone": "Hinchada Live",
+    "online": "EN LÍNEA",
+    "chatPlaceholder": "¡Escribe algo!",
+    "chatSeed1": "¡VAMOS ARGENTINA! La Scaloneta está lista.",
+    "chatSeed2": "Lamine Yamal va a ser la estrella del mundial."
   }
 }

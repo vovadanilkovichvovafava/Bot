@@ -1529,5 +1529,26 @@
     "qualifies": "Weiter",
     "knockoutLocked": "K.-o.-Tableau",
     "knockoutLockedDesc": "Wird nach der Gruppenphase freigeschaltet. Tippe zuerst die Gruppen — dann den Sieger. 🏆"
+  },
+  "worldCup": {
+    "groups": "Gruppen",
+    "bracket": "Tableau",
+    "goPro": "PRO",
+    "defendingChampions": "Titelverteidiger",
+    "makeItThree": "Schaffen sie den Dritten?",
+    "days": "Tage",
+    "hrs": "Std",
+    "min": "Min",
+    "sec": "Sek",
+    "starWatch": "Stars im Blick",
+    "viewAll": "Alle ansehen",
+    "focus": "Fokus",
+    "group": "Gruppe",
+    "colPos": "Pos",
+    "fanZone": "Fan-Zone Live",
+    "online": "ONLINE",
+    "chatPlaceholder": "Schreib etwas…",
+    "chatSeed1": "Auf geht's Argentinien! Die Scaloneta ist bereit.",
+    "chatSeed2": "Lamine Yamal wird der Star der WM."
   }
 }

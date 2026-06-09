@@ -1544,5 +1544,26 @@
     "qualifies": "Qualifié",
     "knockoutLocked": "Tableau final",
     "knockoutLockedDesc": "Se débloque après la phase de groupes. Pronostique d'abord les groupes — puis choisis le vainqueur. 🏆"
+  },
+  "worldCup": {
+    "groups": "Groupes",
+    "bracket": "Tableau",
+    "goPro": "PRO",
+    "defendingChampions": "Champions en Titre",
+    "makeItThree": "Vont-ils faire la passe de trois ?",
+    "days": "Jours",
+    "hrs": "Hrs",
+    "min": "Min",
+    "sec": "Sec",
+    "starWatch": "Stars à Suivre",
+    "viewAll": "Voir Tout",
+    "focus": "Focus",
+    "group": "Groupe",
+    "colPos": "Pos",
+    "fanZone": "Tribune en Direct",
+    "online": "EN LIGNE",
+    "chatPlaceholder": "Écris quelque chose…",
+    "chatSeed1": "Allez l'Argentine ! La Scaloneta est prête.",
+    "chatSeed2": "Lamine Yamal sera la star du Mondial."
   }
 }

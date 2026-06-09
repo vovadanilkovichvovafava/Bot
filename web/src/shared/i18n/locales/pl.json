@@ -1583,5 +1583,26 @@
     "qualifies": "Awans",
     "knockoutLocked": "Drabinka pucharowa",
     "knockoutLockedDesc": "Odblokuje się po fazie grupowej. Najpierw wytypuj grupy — potem wybierz zwycięzcę. 🏆"
+  },
+  "worldCup": {
+    "groups": "Grupy",
+    "bracket": "Drabinka",
+    "goPro": "PRO",
+    "defendingChampions": "Obrońcy Tytułu",
+    "makeItThree": "Czy zdobędą trzeci tytuł?",
+    "days": "Dni",
+    "hrs": "Godz",
+    "min": "Min",
+    "sec": "Sek",
+    "starWatch": "Gwiazdy do Obserwacji",
+    "viewAll": "Zobacz Wszystko",
+    "focus": "Fokus",
+    "group": "Grupa",
+    "colPos": "Poz",
+    "fanZone": "Kibice na Żywo",
+    "online": "ONLINE",
+    "chatPlaceholder": "Napisz coś…",
+    "chatSeed1": "Naprzód Argentyno! Scaloneta gotowa.",
+    "chatSeed2": "Lamine Yamal będzie gwiazdą mundialu."
   }
 }
