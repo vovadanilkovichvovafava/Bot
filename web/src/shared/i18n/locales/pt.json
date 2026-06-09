@@ -443,7 +443,17 @@
     "verifyAndActivate": "Verificaremos seu depósito e ativaremos o PRO em 24 horas.",
     "gotIt": "Entendido",
     "beginnersGuide": "Escola de Apostas",
-    "tipsToStart": "7 lições para começar"
+    "tipsToStart": "7 lições para começar",
+    "proMember": "MEMBRO PRO",
+    "freePlan": "PLANO GRATUITO",
+    "accountSection": "Conta",
+    "accountDetails": "Conta",
+    "bettingLimits": "Limites de Apostas",
+    "security": "Seguranca",
+    "securityDesc": "Senha e verificacao",
+    "preferencesSection": "Preferencias",
+    "supportSection": "Suporte",
+    "enterUsername": "Digite nome de usuario"
   },
   "notifications": {
     "setupTitle": "Fique por dentro!",
@@ -841,7 +851,20 @@
     "oddsConverter": "Conversor de Odds",
     "oddsConverterDesc": "Converta entre odds decimais, fracionárias e americanas",
     "predictionHistory": "Histórico de Previsões",
-    "predictionHistoryDesc": "Veja todas as suas previsões IA anteriores e seus resultados"
+    "predictionHistoryDesc": "Veja todas as suas previsões IA anteriores e seus resultados",
+    "freeTierTitle": "Nivel Gratuito",
+    "goPro": "SEJA PRO",
+    "exclusiveTools": "Ferramentas PRO Exclusivas",
+    "valueBetShort": "A IA encontra apostas onde as odds sao maiores que a probabilidade real.",
+    "bankrollShort": "Acompanhe apostas e P/L",
+    "expertInsights": "Analise Especializada",
+    "expertInsightsDesc": "Dicas com IA",
+    "expressShort": "Acumuladas geradas por IA com odds reais",
+    "advancedStats": "Estatisticas Avancadas",
+    "unlockPotential": "Desbloqueie Seu Potencial",
+    "unlockPotentialDesc": "Acesso ilimitado a todas as ferramentas profissionais e recursos IA.",
+    "comparePlans": "Comparar Planos",
+    "noSubscription": "Sem assinatura · seu deposito e seu"
   },
   "betModal": {
     "insufficientBalance": "Saldo insuficiente",

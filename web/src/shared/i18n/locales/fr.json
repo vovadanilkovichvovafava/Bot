@@ -415,7 +415,17 @@
     "verifyAndActivate": "Nous vérifierons votre dépôt et activerons PRO dans les 24 heures.",
     "gotIt": "Compris",
     "beginnersGuide": "Guide du Débutant",
-    "tipsToStart": "10 conseils pour bien démarrer"
+    "tipsToStart": "10 conseils pour bien démarrer",
+    "proMember": "MEMBRE PRO",
+    "freePlan": "PLAN GRATUIT",
+    "accountSection": "Compte",
+    "accountDetails": "Compte",
+    "bettingLimits": "Limites de Paris",
+    "security": "Securite",
+    "securityDesc": "Mot de passe et verification",
+    "preferencesSection": "Preferences",
+    "supportSection": "Support",
+    "enterUsername": "Entrez le nom d'utilisateur"
   },
   "notifications": {
     "setupTitle": "Restez informé !",
@@ -745,7 +755,20 @@
     "oddsConverter": "Convertisseur de Cotes",
     "oddsConverterDesc": "Convertissez entre cotes décimales, fractionnaires et américaines",
     "predictionHistory": "Historique des Pronostics",
-    "predictionHistoryDesc": "Consultez tous vos pronostics IA passés et leurs résultats"
+    "predictionHistoryDesc": "Consultez tous vos pronostics IA passés et leurs résultats",
+    "freeTierTitle": "Offre Gratuite",
+    "goPro": "PASSER PRO",
+    "exclusiveTools": "Outils PRO Exclusifs",
+    "valueBetShort": "L'IA trouve des paris ou les cotes sont superieures a la probabilite reelle.",
+    "bankrollShort": "Suivi des paris et P/L",
+    "expertInsights": "Analyses d'Experts",
+    "expertInsightsDesc": "Conseils IA",
+    "expressShort": "Combines generees par IA avec cotes reelles",
+    "advancedStats": "Statistiques Avancees",
+    "unlockPotential": "Liberez Votre Potentiel",
+    "unlockPotentialDesc": "Acces illimite a tous les outils professionnels et fonctionnalites IA.",
+    "comparePlans": "Comparer les Plans",
+    "noSubscription": "Sans abonnement · votre depot reste le votre"
   },
   "betModal": {
     "insufficientBalance": "Solde insuffisant",

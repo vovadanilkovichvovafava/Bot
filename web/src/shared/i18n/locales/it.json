@@ -416,7 +416,17 @@
     "verifyAndActivate": "Verificheremo il tuo deposito e attiveremo PRO entro 24 ore.",
     "gotIt": "Capito",
     "beginnersGuide": "Scuola di Scommesse",
-    "tipsToStart": "7 lezioni per iniziare"
+    "tipsToStart": "7 lezioni per iniziare",
+    "proMember": "MEMBRO PRO",
+    "freePlan": "PIANO GRATUITO",
+    "accountSection": "Account",
+    "accountDetails": "Account",
+    "bettingLimits": "Limiti Scommesse",
+    "security": "Sicurezza",
+    "securityDesc": "Password e verifica",
+    "preferencesSection": "Preferenze",
+    "supportSection": "Supporto",
+    "enterUsername": "Inserisci nome utente"
   },
   "notifications": {
     "setupTitle": "Rimani aggiornato!",
@@ -762,7 +772,20 @@
     "oddsConverter": "Convertitore quote",
     "oddsConverterDesc": "Converti tra quote decimali, frazionarie e americane",
     "predictionHistory": "Cronologia pronostici",
-    "predictionHistoryDesc": "Tutti i tuoi pronostici AI passati e i loro risultati"
+    "predictionHistoryDesc": "Tutti i tuoi pronostici AI passati e i loro risultati",
+    "freeTierTitle": "Livello Gratuito",
+    "goPro": "DIVENTA PRO",
+    "exclusiveTools": "Strumenti PRO Esclusivi",
+    "valueBetShort": "L'IA trova scommesse dove le quote sono superiori alla probabilita reale.",
+    "bankrollShort": "Monitora scommesse e P/L",
+    "expertInsights": "Analisi Esperta",
+    "expertInsightsDesc": "Consigli con IA",
+    "expressShort": "Multiple generate dall'IA con quote reali",
+    "advancedStats": "Statistiche Avanzate",
+    "unlockPotential": "Sblocca Il Tuo Potenziale",
+    "unlockPotentialDesc": "Accesso illimitato a tutti gli strumenti professionali e funzionalita IA.",
+    "comparePlans": "Confronta Piani",
+    "noSubscription": "Nessun abbonamento · il deposito resta tuo"
   },
   "betModal": {
     "insufficientBalance": "Saldo insufficiente",

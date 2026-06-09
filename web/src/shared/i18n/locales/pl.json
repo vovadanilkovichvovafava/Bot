@@ -415,7 +415,17 @@
     "verifyAndActivate": "Zweryfikujemy Twój depozyt i aktywujemy PRO w ciągu 24 godzin.",
     "gotIt": "Rozumiem",
     "beginnersGuide": "Poradnik dla początkujących",
-    "tipsToStart": "10 wskazówek na start"
+    "tipsToStart": "10 wskazówek na start",
+    "proMember": "CZLONEK PRO",
+    "freePlan": "PLAN DARMOWY",
+    "accountSection": "Konto",
+    "accountDetails": "Konto",
+    "bettingLimits": "Limity Zakladow",
+    "security": "Bezpieczenstwo",
+    "securityDesc": "Haslo i weryfikacja",
+    "preferencesSection": "Preferencje",
+    "supportSection": "Wsparcie",
+    "enterUsername": "Wpisz nazwe uzytkownika"
   },
   "notifications": {
     "setupTitle": "Bądź na bieżąco!",
@@ -748,7 +758,20 @@
     "oddsConverter": "Konwerter kursów",
     "oddsConverterDesc": "Konwersja między kursami dziesiętnymi, ułamkowymi i amerykańskimi",
     "predictionHistory": "Historia prognoz",
-    "predictionHistoryDesc": "Wszystkie Twoje wcześniejsze prognozy AI i ich wyniki"
+    "predictionHistoryDesc": "Wszystkie Twoje wcześniejsze prognozy AI i ich wyniki",
+    "freeTierTitle": "Plan Darmowy",
+    "goPro": "PRZEJDZ NA PRO",
+    "exclusiveTools": "Ekskluzywne Narzedzia PRO",
+    "valueBetShort": "AI znajduje zaklady, gdzie kursy sa wyzsze niz rzeczywiste prawdopodobienstwo.",
+    "bankrollShort": "Sledzenie zakladow i P/L",
+    "expertInsights": "Analiza Ekspercka",
+    "expertInsightsDesc": "Porady z AI",
+    "expressShort": "Akumulatory generowane przez AI z realnymi kursami",
+    "advancedStats": "Zaawansowane Statystyki",
+    "unlockPotential": "Odblokuj Swoj Potencjal",
+    "unlockPotentialDesc": "Nieograniczony dostep do wszystkich profesjonalnych narzedzi i funkcji AI.",
+    "comparePlans": "Porownaj Plany",
+    "noSubscription": "Bez subskrypcji · depozyt pozostaje Twoj"
   },
   "betModal": {
     "insufficientBalance": "Niewystarczające saldo",

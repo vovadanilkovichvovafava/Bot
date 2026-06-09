@@ -443,7 +443,17 @@
     "verifyAndActivate": "We'll verify your deposit and activate PRO within 24 hours.",
     "gotIt": "Got it",
     "beginnersGuide": "Betting School",
-    "tipsToStart": "7 lessons to get started"
+    "tipsToStart": "7 lessons to get started",
+    "proMember": "PRO MEMBER",
+    "freePlan": "FREE PLAN",
+    "accountSection": "Account",
+    "accountDetails": "Account",
+    "bettingLimits": "Betting Limits",
+    "security": "Security",
+    "securityDesc": "Password & verification",
+    "preferencesSection": "Preferences",
+    "supportSection": "Support",
+    "enterUsername": "Enter username"
   },
   "notifications": {
     "setupTitle": "Stay updated!",
@@ -776,7 +786,20 @@
     "oddsConverter": "Odds Converter",
     "oddsConverterDesc": "Convert between decimal, fractional, and American odds",
     "predictionHistory": "Prediction History",
-    "predictionHistoryDesc": "View all your past AI predictions and their results"
+    "predictionHistoryDesc": "View all your past AI predictions and their results",
+    "freeTierTitle": "Free Tier",
+    "goPro": "GO PRO",
+    "exclusiveTools": "Exclusive PRO Tools",
+    "valueBetShort": "AI finds bets where odds are higher than true probability.",
+    "bankrollShort": "Track bets & P/L",
+    "expertInsights": "Expert Insights",
+    "expertInsightsDesc": "AI-powered tips",
+    "expressShort": "AI-generated accumulators with real odds",
+    "advancedStats": "Advanced Stats",
+    "unlockPotential": "Unlock Your Potential",
+    "unlockPotentialDesc": "Get unlimited access to all professional tools and AI features.",
+    "comparePlans": "Compare Plans",
+    "noSubscription": "No subscription · deposit stays yours"
   },
   "betModal": {
     "insufficientBalance": "Insufficient balance",

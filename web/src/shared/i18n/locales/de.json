@@ -400,7 +400,17 @@
     "verifyAndActivate": "Wir überprüfen deine Einzahlung und aktivieren PRO innerhalb von 24 Stunden.",
     "gotIt": "Verstanden",
     "beginnersGuide": "Anfänger-Leitfaden",
-    "tipsToStart": "10 Tipps für den Einstieg"
+    "tipsToStart": "10 Tipps für den Einstieg",
+    "proMember": "PRO-MITGLIED",
+    "freePlan": "KOSTENLOSER PLAN",
+    "accountSection": "Konto",
+    "accountDetails": "Konto",
+    "bettingLimits": "Wettlimits",
+    "security": "Sicherheit",
+    "securityDesc": "Passwort und Verifizierung",
+    "preferencesSection": "Einstellungen",
+    "supportSection": "Support",
+    "enterUsername": "Benutzername eingeben"
   },
   "notifications": {
     "setupTitle": "Bleib auf dem Laufenden!",
@@ -694,7 +704,20 @@
     "oddsConverter": "Quoten-Konverter",
     "oddsConverterDesc": "Konvertierung zwischen Dezimal-, Bruch- und US-Quoten",
     "predictionHistory": "Vorhersage-Verlauf",
-    "predictionHistoryDesc": "Alle deine vergangenen AI-Vorhersagen und ihre Ergebnisse"
+    "predictionHistoryDesc": "Alle deine vergangenen AI-Vorhersagen und ihre Ergebnisse",
+    "freeTierTitle": "Kostenloser Plan",
+    "goPro": "PRO WERDEN",
+    "exclusiveTools": "Exklusive PRO-Tools",
+    "valueBetShort": "KI findet Wetten, bei denen die Quoten hoher sind als die wahre Wahrscheinlichkeit.",
+    "bankrollShort": "Wetten & P/L verfolgen",
+    "expertInsights": "Expertenanalyse",
+    "expertInsightsDesc": "KI-gestutzte Tipps",
+    "expressShort": "KI-generierte Kombiwetten mit echten Quoten",
+    "advancedStats": "Erweiterte Statistiken",
+    "unlockPotential": "Entfalte Dein Potenzial",
+    "unlockPotentialDesc": "Unbegrenzter Zugang zu allen professionellen Tools und KI-Funktionen.",
+    "comparePlans": "Plane Vergleichen",
+    "noSubscription": "Kein Abo · Einzahlung bleibt deine"
   },
   "betModal": {
     "insufficientBalance": "Unzureichendes Guthaben",

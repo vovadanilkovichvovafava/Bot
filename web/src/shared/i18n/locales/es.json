@@ -415,7 +415,17 @@
     "verifyAndActivate": "Verificaremos tu depósito y activaremos PRO en 24 horas.",
     "gotIt": "Entendido",
     "beginnersGuide": "Guía para Principiantes",
-    "tipsToStart": "10 consejos para empezar"
+    "tipsToStart": "10 consejos para empezar",
+    "proMember": "MIEMBRO PRO",
+    "freePlan": "PLAN GRATUITO",
+    "accountSection": "Cuenta",
+    "accountDetails": "Cuenta",
+    "bettingLimits": "Límites de Apuestas",
+    "security": "Seguridad",
+    "securityDesc": "Contraseña y verificación",
+    "preferencesSection": "Preferencias",
+    "supportSection": "Soporte",
+    "enterUsername": "Introduce nombre de usuario"
   },
   "notifications": {
     "setupTitle": "¡Mantente al día!",
@@ -745,7 +755,20 @@
     "oddsConverter": "Conversor de Cuotas",
     "oddsConverterDesc": "Convierte entre cuotas decimales, fraccionarias y americanas",
     "predictionHistory": "Historial de Predicciones",
-    "predictionHistoryDesc": "Consulta todas tus predicciones IA anteriores y sus resultados"
+    "predictionHistoryDesc": "Consulta todas tus predicciones IA anteriores y sus resultados",
+    "freeTierTitle": "Nivel Gratuito",
+    "goPro": "HAZTE PRO",
+    "exclusiveTools": "Herramientas PRO Exclusivas",
+    "valueBetShort": "La IA encuentra apuestas donde las cuotas son superiores a la probabilidad real.",
+    "bankrollShort": "Seguimiento de apuestas y P/L",
+    "expertInsights": "Análisis Experto",
+    "expertInsightsDesc": "Consejos con IA",
+    "expressShort": "Acumuladas generadas por IA con cuotas reales",
+    "advancedStats": "Estadísticas Avanzadas",
+    "unlockPotential": "Desbloquea Tu Potencial",
+    "unlockPotentialDesc": "Acceso ilimitado a todas las herramientas profesionales y funciones IA.",
+    "comparePlans": "Comparar Planes",
+    "noSubscription": "Sin suscripción · tu depósito es tuyo"
   },
   "betModal": {
     "insufficientBalance": "Saldo insuficiente",

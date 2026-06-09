@@ -116,30 +116,35 @@ export default function Settings() {
   };
 
   return (
-    <div>
-      <div className="bg-white px-5 pt-6 pb-4">
-        <div className="flex items-center justify-center gap-2">
-          <h1 className="text-xl font-bold">{t('settings.title')}</h1>
+    <div className="bg-[#F0F2F5] min-h-screen pb-24">
+      {/* ===== HEADER ===== */}
+      <div className="px-4 pt-5 pb-6" style={{ background: 'linear-gradient(135deg, #1B2138 0%, #232a45 100%)' }}>
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+          </button>
+          <h1 className="text-white text-xl font-black tracking-wide flex-1">STATSPRO</h1>
         </div>
-      </div>
 
-      <div className="px-5 pt-4 pb-8 space-y-0">
-        {/* Profile */}
-        <div className="card mb-3">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-primary-700 font-bold text-lg">
-                {(user?.username || 'U')[0].toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
+        {/* Profile card inside header */}
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-white/15 ring-2 ring-white/20 flex items-center justify-center shrink-0">
+            <span className="text-white font-bold text-2xl">{(user?.username || 'U')[0].toUpperCase()}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
               {editingUsername ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full">
                   <input
                     type="text"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
-                    className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     placeholder={t('settings.enterUsername')}
                     autoFocus
                     maxLength={30}
@@ -156,186 +161,163 @@ export default function Settings() {
                       setEditingUsername(false);
                     }}
                     disabled={savingUsername || !newUsername.trim()}
-                    className="shrink-0 px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                    className="shrink-0 px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-lg disabled:opacity-50"
                   >
                     {savingUsername ? '...' : 'OK'}
                   </button>
                   <button
                     onClick={() => setEditingUsername(false)}
-                    className="shrink-0 px-2 py-1.5 text-gray-400 text-xs"
+                    className="shrink-0 text-white/60 text-xs px-1"
                   >
-                    ✕
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-gray-900">{user?.username || 'User'}</p>
+                <>
+                  <p className="text-white font-bold text-lg truncate">{user?.username || 'User'}</p>
                   <button
                     onClick={() => { setNewUsername(user?.username || ''); setEditingUsername(true); }}
-                    className="text-gray-400 hover:text-primary-600 transition-colors"
+                    className="text-white/40 hover:text-white/70 transition-colors shrink-0"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
                     </svg>
                   </button>
-                </div>
-              )}
-              <p className="text-sm text-gray-500">{user?.email?.includes('@phone.local') ? '' : user?.email}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bookmaker Partner Status */}
-        <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.partner')}</p>
-          <p className="text-xs text-gray-500 mb-3">{t('settings.registrationStatus', { name: advertiser.name })}</p>
-        </div>
-
-        {!isFunnel2 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-lg">🎁</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                {isPremium ? (
-                  <>
-                    <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
-                      {t('settings.registered')}
-                    </p>
-                    <p className="text-xs text-gray-600">{t('settings.proAccessActive')}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-semibold text-gray-900">{t('settings.bonusAmount', { bonus: advertiser?.bonusBanner?.bonus || '' })}</p>
-                    <p className="text-xs text-gray-600">{t('settings.registerForPro')}</p>
-                  </>
-                )}
-              </div>
-              {!isPremium && (
-                <button
-                  onClick={() => navigate('/promo?banner=settings_get_pro')}
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shrink-0"
-                >
-                  {t('settings.getIt')}
-                </button>
+                </>
               )}
             </div>
-            {!isPremium && (
-              <div className="mt-3 pt-3 border-t border-amber-200/50">
-                <p className="text-xs text-amber-700">
-                  <span className="font-semibold">Important:</span> {t('settings.proActivationNote', { name: advertiser.name })}
-                  {' '}<button onClick={() => setShowVerificationModal(true)} className="underline font-medium">{t('settings.manualVerification')}</button>
-                </p>
-              </div>
+            <p className="text-white/50 text-sm truncate">{user?.email?.includes('@phone.local') ? '' : user?.email}</p>
+            {/* Badge */}
+            {isPremium ? (
+              <span className="inline-flex items-center gap-1 mt-1.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                </svg>
+                {t('settings.proMember', { defaultValue: 'PRO MEMBER' })}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 mt-1.5 bg-white/10 text-white/50 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                {t('settings.freePlan', { defaultValue: 'FREE PLAN' })}
+              </span>
             )}
           </div>
-        )}
+        </div>
+      </div>
 
-        <SettingsItem
-          icon={<span className="text-lg">💬</span>}
-          label={t('settings.contactSupport')}
-          value={t('settings.helpWithRegistration')}
-          onClick={() => setShowSupportChat(true)}
-        />
-
-        <SettingsItem
-          icon={<span className="text-lg">📚</span>}
-          label={t('settings.beginnersGuide')}
-          value={t('settings.tipsToStart')}
-          onClick={() => navigate('/guide')}
-        />
-
-        {!isFunnel2 && (
-          <SettingsItem
-            icon={<span className="text-lg">🎁</span>}
-            label={t('settings.promoPage')}
-            value={t('settings.bonuses', { name: advertiser.name })}
-            onClick={() => navigate('/promo?banner=settings_promo_page')}
+      <div className="px-4 pt-4 space-y-3">
+        {/* ===== ACCOUNT SECTION ===== */}
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-1">{t('settings.accountSection', { defaultValue: 'Account' })}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>}
+            label={t('settings.accountDetails', { defaultValue: 'Account' })}
+            subtitle={user?.email?.includes('@phone.local') ? (user?.phone || '') : (user?.email || '')}
           />
-        )}
-
-        <div className="h-3"/>
-
-        {/* AI Betting Preferences */}
-        <div className="mb-3">
-          <p className="text-primary-600 font-semibold text-sm mb-1">{t('settings.aiBettingPrefs')}</p>
-          <p className="text-xs text-gray-500 mb-3">{t('settings.aiBettingPrefsDesc')}</p>
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>}
+            label={t('settings.notifications')}
+            subtitle={t('settings.notificationsDesc')}
+          />
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            label={t('settings.bettingLimits', { defaultValue: 'Betting Limits' })}
+            subtitle={`${t('settings.riskLevel')}: ${riskInfo.label}`}
+            onClick={() => setShowRiskModal(true)}
+          />
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>}
+            label={t('settings.security', { defaultValue: 'Security' })}
+            subtitle={t('settings.securityDesc', { defaultValue: 'Password & verification' })}
+            onClick={() => setShowSupportChat(true)}
+          />
         </div>
 
-        <SettingsItem
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181"/></svg>}
-          label={t('settings.minOdds')}
-          value={minOdds.toFixed(1)}
-          onClick={() => setShowOddsModal('min')}
-        />
-        <SettingsItem
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>}
-          label={t('settings.maxOdds')}
-          value={maxOdds.toFixed(1)}
-          onClick={() => setShowOddsModal('max')}
-        />
-        <SettingsItem
-          icon={<svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>}
-          label={t('settings.riskLevel')}
-          value={`${riskInfo.label} • ${riskLevel === 'low' ? '1-2%' : riskLevel === 'medium' ? '2-5%' : '5-10%'} stakes`}
-          onClick={() => setShowRiskModal(true)}
-        />
-
-        <div className="h-3"/>
-
-        {!isFunnel2 && (
-          <SettingsItem
-            icon={<svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"/></svg>}
-            label={t('settings.upgradePremium')}
-            value={t('settings.unlimitedPredictions')}
-            onClick={() => navigate('/pro-access?reason=upgrade&feature=premium')}
+        {/* ===== PREFERENCES ===== */}
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-1 pt-2">{t('settings.preferencesSection', { defaultValue: 'Preferences' })}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802"/></svg>}
+            label={t('settings.language', { defaultValue: 'Language' })}
+            value={{ en: 'English', es: 'Espanol', pt: 'Portugues', fr: 'Francais', it: 'Italiano', pl: 'Polski', de: 'Deutsch' }[i18n.language] || i18n.language}
+            onClick={() => setShowLangModal(true)}
           />
-        )}
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181"/></svg>}
+            label={t('settings.minOdds')}
+            value={minOdds.toFixed(1)}
+            onClick={() => setShowOddsModal('min')}
+          />
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>}
+            label={t('settings.maxOdds')}
+            value={maxOdds.toFixed(1)}
+            onClick={() => setShowOddsModal('max')}
+          />
+        </div>
 
-        <SettingsItem
-          icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802"/></svg>}
-          label={t('settings.language', { defaultValue: 'Language' })}
-          value={{ en: 'English', es: 'Español', pt: 'Português', fr: 'Français', it: 'Italiano', pl: 'Polski', de: 'Deutsch' }[i18n.language] || i18n.language}
-          onClick={() => setShowLangModal(true)}
-        />
+        {/* ===== SUPPORT & INFO ===== */}
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-1 pt-2">{t('settings.supportSection', { defaultValue: 'Support' })}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>}
+            label={t('settings.contactSupport')}
+            subtitle={t('settings.helpWithRegistration')}
+            onClick={() => setShowSupportChat(true)}
+          />
+          <MenuItem
+            icon={<svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/></svg>}
+            label={t('settings.beginnersGuide')}
+            subtitle={t('settings.tipsToStart')}
+            onClick={() => navigate('/guide')}
+          />
+          {!isFunnel2 && (
+            <MenuItem
+              icon={<svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"/></svg>}
+              label={t('settings.upgradePremium')}
+              subtitle={t('settings.unlimitedPredictions')}
+              onClick={() => navigate('/pro-access?reason=upgrade&feature=premium')}
+            />
+          )}
+        </div>
 
-        <SettingsItem
-          icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>}
-          label={t('settings.about')}
-          value="Version 1.0.2"
-        />
-
-        <div className="h-3"/>
-
+        {/* ===== LOG OUT ===== */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 font-medium"
+          className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 flex items-center gap-3 text-left"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
-          </svg>
-          {t('settings.signOut')}
+          <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
+            </svg>
+          </div>
+          <span className="text-red-500 font-semibold text-sm">{t('settings.signOut')}</span>
         </button>
+
+        {/* ===== FOOTER ===== */}
+        <div className="text-center pt-2 pb-4">
+          <p className="text-gray-400 text-xs">STATSPRO v1.0.2</p>
+          <p className="text-gray-300 text-[10px] mt-1">{t('auth.copyright', { defaultValue: '(c) 2026 STATSPRO TECHNOLOGIES' })}</p>
+        </div>
       </div>
+
+      {/* ============ MODALS ============ */}
 
       {/* Language Modal */}
       {showLangModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowLangModal(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">{t('settings.language', { defaultValue: 'Language' })}</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowLangModal(false)}>
+          <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{t('settings.language', { defaultValue: 'Language' })}</h3>
             <div className="space-y-1">
               {[
-                { code: 'en', flag: '🇬🇧', name: 'English' },
-                { code: 'es', flag: '🇪🇸', name: 'Español' },
-                { code: 'pt', flag: '🇵🇹', name: 'Português' },
-                { code: 'fr', flag: '🇫🇷', name: 'Français' },
-                { code: 'it', flag: '🇮🇹', name: 'Italiano' },
-                { code: 'pl', flag: '🇵🇱', name: 'Polski' },
-                { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
+                { code: 'en', flag: '\u{1F1EC}\u{1F1E7}', name: 'English' },
+                { code: 'es', flag: '\u{1F1EA}\u{1F1F8}', name: 'Espanol' },
+                { code: 'pt', flag: '\u{1F1F5}\u{1F1F9}', name: 'Portugues' },
+                { code: 'fr', flag: '\u{1F1EB}\u{1F1F7}', name: 'Francais' },
+                { code: 'it', flag: '\u{1F1EE}\u{1F1F9}', name: 'Italiano' },
+                { code: 'pl', flag: '\u{1F1F5}\u{1F1F1}', name: 'Polski' },
+                { code: 'de', flag: '\u{1F1E9}\u{1F1EA}', name: 'Deutsch' },
               ].map(lang => (
                 <button
                   key={lang.code}
@@ -346,14 +328,14 @@ export default function Settings() {
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                     i18n.language === lang.code
-                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      ? 'bg-emerald-50 text-emerald-700 font-semibold'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <span className="text-xl">{lang.flag}</span>
                   <span>{lang.name}</span>
                   {i18n.language === lang.code && (
-                    <svg className="w-5 h-5 ml-auto text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 ml-auto text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
                       <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd"/>
                     </svg>
                   )}
@@ -366,11 +348,10 @@ export default function Settings() {
 
       {/* Risk Level Modal */}
       {showRiskModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowRiskModal(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{t('settings.riskLevelTitle')}</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowRiskModal(false)}>
+          <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{t('settings.riskLevelTitle')}</h3>
             <p className="text-sm text-gray-500 mb-5">{t('settings.riskLevelDesc')}</p>
-
             <div className="space-y-3">
               {RISK_OPTIONS.map(opt => (
                 <div
@@ -405,9 +386,9 @@ export default function Settings() {
 
       {/* Odds Modal */}
       {showOddsModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-6" onClick={() => setShowOddsModal(null)}>
-          <div className="bg-[#F0F2F5] w-full max-w-xs rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowOddsModal(null)}>
+          <div className="bg-white w-full sm:max-w-xs rounded-t-3xl sm:rounded-3xl p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
               {showOddsModal === 'min' ? t('settings.minOdds') : t('settings.maxOdds')}
             </h3>
             <div className="space-y-1">
@@ -423,8 +404,8 @@ export default function Settings() {
                     }}
                     className={`w-full text-left px-4 py-3 rounded-xl text-lg transition-colors ${
                       current === v
-                        ? 'bg-primary-50 text-primary-600 font-bold'
-                        : 'text-gray-700 hover:bg-white'
+                        ? 'bg-emerald-50 text-emerald-600 font-bold'
+                        : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     {v.toFixed(1)}
@@ -443,36 +424,33 @@ export default function Settings() {
       {showVerificationModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => !verificationSubmitting && setShowVerificationModal(false)}>
           <div
-            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl animate-slideUp"
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{t('settings.verificationTitle')}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('settings.verificationTitle')}</h3>
               <button onClick={() => !verificationSubmitting && setShowVerificationModal(false)} className="text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
-
             {verificationSubmitted ? (
               <div className="text-center py-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
                 </div>
                 <h4 className="text-lg font-bold text-gray-900 mb-2">{t('settings.requestSubmitted')}</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('settings.verifyAndActivate')}
-                </p>
+                <p className="text-sm text-gray-600 mb-4">{t('settings.verifyAndActivate')}</p>
                 <button
                   onClick={() => {
                     setShowVerificationModal(false);
                     setVerificationSubmitted(false);
                     setVerificationId('');
                   }}
-                  className="px-6 py-2 bg-primary-500 text-white font-medium rounded-xl"
+                  className="px-6 py-2 bg-emerald-500 text-white font-medium rounded-xl"
                 >
                   {t('settings.gotIt')}
                 </button>
@@ -484,7 +462,6 @@ export default function Settings() {
                     <span className="font-semibold">How it works:</span> {t('settings.howItWorks', { name: advertiser.name })}
                   </p>
                 </div>
-
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -495,24 +472,22 @@ export default function Settings() {
                       value={verificationId}
                       onChange={(e) => setVerificationId(e.target.value)}
                       placeholder={t('settings.enterAccountId')}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       {t('settings.findInProfile', { name: advertiser.name })}
                     </p>
                   </div>
-
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                     <p className="text-xs text-amber-700">
                       <span className="font-semibold">Requirements:</span> {t('settings.verificationReq')}
                     </p>
                   </div>
                 </div>
-
                 <button
                   onClick={handleVerificationSubmit}
                   disabled={!verificationId.trim() || verificationSubmitting}
-                  className="w-full mt-6 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full mt-6 py-3.5 bg-emerald-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {verificationSubmitting ? (
                     <>
@@ -532,18 +507,21 @@ export default function Settings() {
   );
 }
 
-function SettingsItem({ icon, label, value, onClick }) {
+function MenuItem({ icon, label, subtitle, value, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 px-4 py-3.5 bg-white border-b border-gray-50 text-left"
+      className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
     >
-      <span className="text-gray-500">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900">{label}</p>
-        {value && <p className="text-sm text-gray-500 truncate">{value}</p>}
+      <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
+        {icon}
       </div>
-      <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-gray-900 text-sm">{label}</p>
+        {subtitle && <p className="text-gray-500 text-xs truncate">{subtitle}</p>}
+      </div>
+      {value && <span className="text-gray-400 text-sm shrink-0">{value}</span>}
+      <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
       </svg>
     </button>
