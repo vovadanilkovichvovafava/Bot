@@ -878,18 +878,6 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             </div>
           </div>
 
-          {/* API-Football Prediction - win probability */}
-          {pred?.predictions?.percent && (
-            <div className="mb-4">
-              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.winProbability')}</p>
-              <div className="space-y-2">
-                <ProbBar label={match.home_team?.name} pct={parseInt(pred.predictions.percent.home)} color="bg-blue-500"/>
-                <ProbBar label={t('matchDetail.draw')} pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
-                <ProbBar label={match.away_team?.name} pct={parseInt(pred.predictions.percent.away)} color="bg-red-500"/>
-              </div>
-            </div>
-          )}
-
           {/* API-Football advice */}
           {pred?.predictions?.advice && (
             <div className="bg-amber-50 rounded-xl px-4 py-2.5 text-sm text-amber-800 font-medium mb-4">
