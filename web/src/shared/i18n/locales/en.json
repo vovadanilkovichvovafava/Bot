@@ -1194,7 +1194,30 @@
       "teams": "No teams found",
       "leagues": "No leagues found"
     },
-    "popularLeagues": "Popular leagues:"
+    "popularLeagues": "Popular leagues:",
+    "myFavourites": "My Favourites",
+    "subtitle": "Track your top matches, teams, and elite leagues.",
+    "tabMatches": "MATCHES",
+    "tabLeagues": "LEAGUES",
+    "liveUpcoming": "LIVE & UPCOMING",
+    "finished": "FINISHED",
+    "todayAt": "TODAY",
+    "noMatchesTitle": "No favourite matches today",
+    "noMatchesDesc": "Add teams or leagues to see their matches here."
+  },
+  "wcTeam": {
+    "recentForm": "RECENT FORM",
+    "worldRanking": "WORLD RANKING",
+    "teamStats": "TEAM STATISTICS",
+    "avgGoals": "Avg Goals",
+    "possession": "Possession",
+    "shotsPerGame": "Shots/Gm",
+    "playerRoster": "PLAYER ROSTER",
+    "nextMatch": "NEXT MATCH",
+    "matchDate": "SUN 14 JULY",
+    "opponent": "TBD",
+    "betOnMatch": "BET ON THIS MATCH",
+    "position": "1ST POSITION"
   },
   "kelly": {
     "title": "Kelly Calculator",
