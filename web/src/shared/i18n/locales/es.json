@@ -249,7 +249,22 @@
     "benefit3": "Inicio gratis",
     "toastFrom": "de",
     "toastAction": "se registró y recibió 3 pronósticos gratis",
-    "toastJustNow": "ahora"
+    "toastJustNow": "ahora",
+    "tagline": "Análisis Deportivo Profesional y Apuestas",
+    "rememberMe": "Recordarme",
+    "technicalSupport": "Soporte Técnico",
+    "support": "Soporte",
+    "createAccountLink": "Crear una cuenta",
+    "createAccountTitle": "Crear Cuenta",
+    "createAccountSub": "Únete a la comunidad élite de analistas profesionales.",
+    "confirmLabel": "Confirmar",
+    "iAgreeTerms": "Acepto los Términos y Condiciones y la Política de Privacidad.",
+    "errPasswordMismatch": "Las contraseñas no coinciden",
+    "errAgreeTerms": "Acepta los Términos y la Política de Privacidad",
+    "loginInstead": "Inicia sesión",
+    "secureVerification": "Verificación Segura",
+    "gdprCompliant": "Conforme al RGPD",
+    "copyright": "© 2026 STATSPRO TECHNOLOGIES. TODOS LOS DERECHOS RESERVADOS."
   },
   "bonus": {
     "welcomeBonus": "Bono de Bienvenida",

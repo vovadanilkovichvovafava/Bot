@@ -234,7 +234,22 @@
     "hasAccount": "Bereits ein Konto?",
     "connecting": "Verbinden...",
     "creatingAccount": "Konto wird erstellt...",
-    "minChars": "Mindestens {{count}} Zeichen"
+    "minChars": "Mindestens {{count}} Zeichen",
+    "tagline": "Professionelle Sportanalyse & Wetten",
+    "rememberMe": "Angemeldet bleiben",
+    "technicalSupport": "Technischer Support",
+    "support": "Support",
+    "createAccountLink": "Konto erstellen",
+    "createAccountTitle": "Konto erstellen",
+    "createAccountSub": "Werde Teil der Elite-Community professioneller Analysten.",
+    "confirmLabel": "Bestätigen",
+    "iAgreeTerms": "Ich akzeptiere die AGB und die Datenschutzrichtlinie.",
+    "errPasswordMismatch": "Passwörter stimmen nicht überein",
+    "errAgreeTerms": "Bitte akzeptiere die AGB und Datenschutzrichtlinie",
+    "loginInstead": "Anmelden",
+    "secureVerification": "Sichere Verifizierung",
+    "gdprCompliant": "DSGVO-konform",
+    "copyright": "© 2026 STATSPRO TECHNOLOGIES. ALLE RECHTE VORBEHALTEN."
   },
   "bonus": {
     "welcomeBonus": "Willkommensbonus",

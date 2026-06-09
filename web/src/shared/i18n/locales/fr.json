@@ -249,7 +249,22 @@
     "benefit3": "Début gratuit",
     "toastFrom": "de",
     "toastAction": "s'est inscrit et a reçu 3 pronostics gratuits",
-    "toastJustNow": "maintenant"
+    "toastJustNow": "maintenant",
+    "tagline": "Analyse Sportive Professionnelle & Paris",
+    "rememberMe": "Se souvenir de moi",
+    "technicalSupport": "Support Technique",
+    "support": "Support",
+    "createAccountLink": "Créer un compte",
+    "createAccountTitle": "Créer un Compte",
+    "createAccountSub": "Rejoignez la communauté d'élite des analystes professionnels.",
+    "confirmLabel": "Confirmer",
+    "iAgreeTerms": "J'accepte les Conditions Générales et la Politique de Confidentialité.",
+    "errPasswordMismatch": "Les mots de passe ne correspondent pas",
+    "errAgreeTerms": "Veuillez accepter les Conditions et la Politique de Confidentialité",
+    "loginInstead": "Se connecter",
+    "secureVerification": "Vérification Sécurisée",
+    "gdprCompliant": "Conforme RGPD",
+    "copyright": "© 2026 STATSPRO TECHNOLOGIES. TOUS DROITS RÉSERVÉS."
   },
   "bonus": {
     "welcomeBonus": "Bonus de Bienvenue",
