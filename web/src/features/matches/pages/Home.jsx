@@ -330,10 +330,14 @@ function CopaMundoCard({ navigate, t }) {
       className="relative overflow-hidden rounded-2xl p-5 cursor-pointer active:scale-[0.98] transition-transform"
       style={{ background: 'linear-gradient(135deg, #20253a 0%, #2a3050 100%)' }}
     >
-      {/* trophy watermark */}
-      <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-24 h-24 text-white/[0.06]" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M18 2H6v2H3v3a4 4 0 004 4h.27A5 5 0 0011 13.9V17H8a1 1 0 100 2h8a1 1 0 100-2h-3v-3.1A5 5 0 0016.73 11H17a4 4 0 004-4V4h-3V2zM5 7V6h1v3a2 2 0 01-1-2zm14 0a2 2 0 01-1 2V6h1v1z" />
-      </svg>
+      {/* FIFA 26 emblem */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-[20px] w-[64px] flex flex-col items-center pt-2 pb-1.5 shadow-lg">
+        <div className="flex flex-col items-center leading-[0.72]">
+          <span className="wc-num text-[40px] text-[#0D0D1F]">2</span>
+          <span className="wc-num text-[40px] text-[#0D0D1F]">6</span>
+        </div>
+        <p className="text-[7px] font-black text-[#0D0D1F] tracking-[0.18em] mt-0.5">FIFA</p>
+      </div>
       <p className="text-emerald-400 text-[11px] font-black uppercase tracking-[0.15em]">{t('home.roadTo', { defaultValue: 'Road to 2026' })}</p>
       <h3 className="text-white text-xl font-black mt-0.5">{t('home.copaTitle', { defaultValue: 'World Cup' })}</h3>
       <div className="flex items-end gap-4 mt-3">
