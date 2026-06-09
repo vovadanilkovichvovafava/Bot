@@ -1365,7 +1365,14 @@
     "recentEvents": "Événements Récents",
     "statsNotAvailable": "Statistiques pas encore disponibles",
     "statsWillAppear": "Les stats apparaîtront après le début du match",
-    "usesOneOfFreeRequests": "Utilise 1 de vos requêtes gratuites"
+    "usesOneOfFreeRequests": "Utilise 1 de vos requêtes gratuites",
+    "matchTimeline": "Chronologie du Match",
+    "viewStats": "Voir les Stats",
+    "hideStats": "Masquer les Stats",
+    "fansArea": "Espace Fans",
+    "unlockPro": "Débloquer avec PRO",
+    "outOfTokens": "Vous n'avez plus de jetons de prédiction",
+    "tokensLeft": "{{count}} jetons de prédiction restants"
   },
   "oddsConverter": {
     "title": "Convertisseur de Cotes",

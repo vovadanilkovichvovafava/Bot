@@ -1497,7 +1497,14 @@
     "recentEvents": "Eventos Recentes",
     "statsNotAvailable": "Estatísticas ainda não disponíveis",
     "statsWillAppear": "As estatísticas aparecerão após o início da partida",
-    "usesOneOfFreeRequests": "Usa 1 dos seus pedidos gratuitos"
+    "usesOneOfFreeRequests": "Usa 1 dos seus pedidos gratuitos",
+    "matchTimeline": "Cronologia do Jogo",
+    "viewStats": "Ver Estatísticas",
+    "hideStats": "Ocultar Estatísticas",
+    "fansArea": "Zona de Adeptos",
+    "unlockPro": "Desbloquear com PRO",
+    "outOfTokens": "Ficaste sem tokens de previsão",
+    "tokensLeft": "Restam {{count}} tokens de previsão"
   },
   "oddsConverter": {
     "title": "Conversor de Odds",

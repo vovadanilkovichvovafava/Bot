@@ -1368,7 +1368,14 @@
     "recentEvents": "Ostatnie zdarzenia",
     "statsNotAvailable": "Statystyki jeszcze niedostępne",
     "statsWillAppear": "Statystyki pojawią się po rozpoczęciu meczu",
-    "usesOneOfFreeRequests": "Zużywa jedno darmowe zapytanie"
+    "usesOneOfFreeRequests": "Zużywa jedno darmowe zapytanie",
+    "matchTimeline": "Oś Czasu Meczu",
+    "viewStats": "Zobacz Statystyki",
+    "hideStats": "Ukryj Statystyki",
+    "fansArea": "Strefa Kibica",
+    "unlockPro": "Odblokuj z PRO",
+    "outOfTokens": "Skończyły się tokeny predykcji",
+    "tokensLeft": "Pozostało {{count}} tokenów predykcji"
   },
   "oddsConverter": {
     "title": "Konwerter Kursów",

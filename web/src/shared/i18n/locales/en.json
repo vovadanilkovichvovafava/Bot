@@ -1392,7 +1392,14 @@
     "recentEvents": "Recent Events",
     "statsNotAvailable": "Statistics not yet available",
     "statsWillAppear": "Stats will appear after match starts",
-    "usesOneOfFreeRequests": "Uses 1 of your free requests"
+    "usesOneOfFreeRequests": "Uses 1 of your free requests",
+    "matchTimeline": "Match Timeline",
+    "viewStats": "View Stats",
+    "hideStats": "Hide Stats",
+    "fansArea": "Fans Area",
+    "unlockPro": "Unlock with PRO",
+    "outOfTokens": "You're out of prediction tokens",
+    "tokensLeft": "{{count}} prediction tokens left"
   },
   "oddsConverter": {
     "title": "Odds Converter",

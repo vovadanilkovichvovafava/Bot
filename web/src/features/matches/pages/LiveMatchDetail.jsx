@@ -6,79 +6,51 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
-import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'fans', 'stats', 'events', 'lineups'];
-
-// AI request tracking
-const AI_REQUESTS_KEY = 'ai_requests_count';
-
-const getAIRequestCount = () => {
-  const count = localStorage.getItem(AI_REQUESTS_KEY);
-  return count ? parseInt(count, 10) : 0;
-};
-
-const incrementAIRequestCount = () => {
-  const newCount = getAIRequestCount() + 1;
-  localStorage.setItem(AI_REQUESTS_KEY, newCount.toString());
-  return newCount;
-};
+const FREE_AI_LIMIT = 5;
 
 export default function LiveMatchDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick, countryCode } = useAdvertiser();
-  // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
-  // Everyone else must first register through the offer
-  const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
+  const { advertiser, trackClick } = useAdvertiser();
+
+  const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
+  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
+  const unlocked = isPremium || isFunnel2;
+
   const [fixture, setFixture] = useState(null);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
-  const [lineups, setLineups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [fonbetMatch, setFonbetMatch] = useState(null);
+  const [aiRemaining, setAiRemaining] = useState(null);
+  const [showStats, setShowStats] = useState(false);
+
+  // tokens / pts
+  const remaining = unlocked ? '∞' : (aiRemaining ?? FREE_AI_LIMIT);
+  const tokensLeft = unlocked ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+  const canAnalyze = unlocked || tokensLeft > 0;
+
+  useEffect(() => {
+    if (unlocked) return;
+    api.getChatLimit().then(d => setAiRemaining(d.remaining ?? FREE_AI_LIMIT)).catch(() => setAiRemaining(FREE_AI_LIMIT));
+  }, [unlocked]);
 
   const loadMatchData = useCallback(async () => {
     try {
-      const [fixtureData, statsData, eventsData, lineupsData] = await Promise.allSettled([
+      const [fixtureData, statsData, eventsData] = await Promise.allSettled([
         footballApi.getFixture(id),
         footballApi.getFixtureStatistics(id),
         footballApi.getFixtureEvents(id),
-        footballApi.getFixtureLineups(id),
       ]);
-
-      if (fixtureData.status === 'fulfilled' && fixtureData.value) {
-        setFixture(fixtureData.value);
-        // Load Fonbet odds in background (non-blocking, safe)
-        try {
-          const fd = fixtureData.value;
-          const fb = await fonbetApi.findMatch(
-            fd.teams?.home?.name,
-            fd.teams?.away?.name,
-            fd.fixture?.date
-          );
-          if (fb) setFonbetMatch(fb);
-        } catch (_) { /* Fonbet unavailable — no problem */ }
-      }
-      if (statsData.status === 'fulfilled' && statsData.value) {
-        setStats(statsData.value);
-      }
-      if (eventsData.status === 'fulfilled' && eventsData.value) {
-        setEvents(eventsData.value);
-      }
-      if (lineupsData.status === 'fulfilled' && lineupsData.value) {
-        setLineups(lineupsData.value);
-      }
-      setLastUpdate(new Date());
+      if (fixtureData.status === 'fulfilled' && fixtureData.value) setFixture(fixtureData.value);
+      if (statsData.status === 'fulfilled' && statsData.value) setStats(statsData.value);
+      if (eventsData.status === 'fulfilled' && eventsData.value) setEvents(eventsData.value);
     } catch (e) {
       console.error('Error loading live match:', e);
     } finally {
@@ -88,13 +60,13 @@ export default function LiveMatchDetail() {
 
   useEffect(() => {
     loadMatchData();
-    // Auto-refresh every 30 seconds for live matches
     const interval = setInterval(loadMatchData, 30000);
     return () => clearInterval(interval);
   }, [loadMatchData]);
 
   const getLiveAnalysis = async () => {
     if (!fixture) return;
+    if (!canAnalyze) { navigate('/pro-access?reason=upgrade&feature=live-analysis'); return; }
     setAnalyzing(true);
     try {
       const home = fixture.teams?.home?.name;
@@ -104,57 +76,25 @@ export default function LiveMatchDetail() {
       const minute = fixture.fixture?.status?.elapsed || 0;
 
       let prompt = `LIVE Match Analysis: ${home} ${homeGoals} - ${awayGoals} ${away} (${minute}')\n\n`;
-
-      // Add current stats
       if (stats?.length >= 2) {
         const homeStats = stats[0]?.statistics || [];
         const awayStats = stats[1]?.statistics || [];
         prompt += 'Current Stats:\n';
-        homeStats.forEach((s, i) => {
-          const awayStat = awayStats[i];
-          prompt += `${s.type}: ${home} ${s.value || 0} - ${awayStat?.value || 0} ${away}\n`;
-        });
+        homeStats.forEach((s, i) => { prompt += `${s.type}: ${home} ${s.value || 0} - ${awayStats[i]?.value || 0} ${away}\n`; });
       }
-
-      // Add recent events
       if (events.length > 0) {
         prompt += '\nRecent Events:\n';
-        events.slice(-5).forEach(e => {
-          prompt += `${e.time?.elapsed}' - ${e.type}: ${e.player?.name} (${e.team?.name})\n`;
-        });
+        events.slice(-5).forEach(e => { prompt += `${e.time?.elapsed}' - ${e.type}: ${e.player?.name} (${e.team?.name})\n`; });
       }
-
-      // Add user betting preferences
       const minOdds = user?.min_odds || 1.5;
       const maxOdds = user?.max_odds || 3.0;
-      const riskLevel = user?.risk_level || 'medium';
-      const riskDesc = {
-        low: 'Conservative - safer live bets, cash out recommendations. 1-2% stakes.',
-        medium: 'Balanced - standard live bets, next goal, over/under. 2-5% stakes.',
-        high: 'Aggressive - value live picks, correct score, comeback bets. 5-10% stakes.'
-      };
+      prompt += `\n\nProvide a SHORT live analysis (1-2 sentences on momentum) then ONLY 2-3 live bets, one per line, EXACTLY:\n[BET] <Bet Type> @ <Odds> | <one short sentence why>\nAll odds between ${minOdds} and ${maxOdds}.`;
 
-      prompt += `\n\n**USER PREFERENCES:**`;
-      prompt += `\n- Odds range: ${minOdds} - ${maxOdds}`;
-      prompt += `\n- Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]})`;
-
-      prompt += '\n\nProvide LIVE analysis: current momentum, which team is dominating, prediction for remaining time. Recommend live bets matching user preferences (odds between ' + minOdds + '-' + maxOdds + ', ' + riskLevel + ' risk). Be specific about the current match state.';
-      prompt += `\n\n**IMPORTANT: End your analysis with exactly this format:**`;
-      prompt += `\n[BET] Bet Type Here @ Odds Here`;
-      prompt += `\nExample: [BET] Next Goal: ${home} @ 3.5`;
-      prompt += `\nExample: [BET] Over 1.5 Goals @ 1.85`;
-
-      // Split: match data goes as match_context, question as message
-      const userMessage = `Analyze this LIVE match ${home} vs ${away} and provide betting recommendation.`;
+      const userMessage = `Analyze this LIVE match ${home} vs ${away} and provide a betting recommendation.`;
       const data = await api.aiChat(userMessage, [], prompt);
-
-      // Increment AI request counter for non-premium users (AFTER successful response)
-      const isPremium = user?.is_premium && user?.funnel !== 'funnel-2' && user?.funnel !== 'funnel-4';
-      const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
-      if (!isPremium && !isFunnel2) {
-        incrementAIRequestCount();
+      if (!unlocked) {
+        api.getChatLimit().then(d => setAiRemaining(d.remaining ?? 0)).catch(() => setAiRemaining((r) => Math.max(0, (r ?? FREE_AI_LIMIT) - 1)));
       }
-
       setAiAnalysis(data.response);
     } catch (e) {
       console.error(e);
@@ -166,17 +106,14 @@ export default function LiveMatchDetail() {
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50">
-        <div className="flex-1 flex items-center justify-center">
-          <FootballSpinner size="lg" text={t('liveMatch.loading')} />
-        </div>
+      <div className="h-screen flex items-center justify-center bg-[#F0F2F5]">
+        <FootballSpinner size="lg" text={t('liveMatch.loading')} />
       </div>
     );
   }
-
   if (!fixture) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-[#F0F2F5]">
         <div className="text-center">
           <p className="text-gray-500 mb-4">{t('liveMatch.notFound')}</p>
           <button onClick={() => navigate(-1)} className="text-primary-600">{t('liveMatch.goBack')}</button>
@@ -195,587 +132,267 @@ export default function LiveMatchDetail() {
   const isFinished = ['FT', 'AET', 'PEN'].includes(statusShort);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="px-5 pt-4 pb-6">
-            {/* Top bar */}
-            <div className="flex items-center justify-between mb-6">
-              <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-                </svg>
-              </button>
-
-              <div className="flex items-center gap-2">
-                {fixture.league?.logo && (
-                  <img src={fixture.league.logo} alt="" className="w-6 h-6 object-contain"/>
-                )}
-                <span className="text-gray-700 text-sm font-medium">{fixture.league?.name}</span>
-              </div>
-
-              {/* Live indicator */}
-              {!isFinished && (
-                <div className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"/>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"/>
-                  </span>
-                  <span className="text-red-600 text-xs font-bold">{t('liveMatch.live')}</span>
-                </div>
-              )}
-              {isFinished && (
-                <div className="bg-gray-100 px-3 py-1.5 rounded-full">
-                  <span className="text-gray-500 text-xs font-bold">{t('liveMatch.ft')}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Score Card */}
-            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-              <div className="flex items-center justify-between">
-                {/* Home Team */}
-                <div className="flex-1 text-center">
-                  <div className="w-20 h-20 mx-auto mb-3 bg-white rounded-2xl p-3 shadow-sm">
-                    {home?.logo && <img src={home.logo} alt="" className="w-full h-full object-contain"/>}
-                  </div>
-                  <p className="text-gray-900 font-bold text-sm truncate px-2">{home?.name}</p>
-                </div>
-
-                {/* Score */}
-                <div className="px-6 text-center">
-                  <div className="flex items-center gap-3">
-                    <span className="text-5xl font-black text-gray-900">{homeGoals}</span>
-                    <span className="text-2xl text-gray-300">-</span>
-                    <span className="text-5xl font-black text-gray-900">{awayGoals}</span>
-                  </div>
-
-                  {/* Minute */}
-                  <div className="mt-3">
-                    {isHalfTime ? (
-                      <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-sm font-bold">
-                        {t('liveMatch.ht')}
-                      </span>
-                    ) : isFinished ? (
-                      <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold">
-                        {t('liveMatch.fullTime')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm font-bold animate-pulse">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>
-                        {elapsed}'
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Away Team */}
-                <div className="flex-1 text-center">
-                  <div className="w-20 h-20 mx-auto mb-3 bg-white rounded-2xl p-3 shadow-sm">
-                    {away?.logo && <img src={away.logo} alt="" className="w-full h-full object-contain"/>}
-                  </div>
-                  <p className="text-gray-900 font-bold text-sm truncate px-2">{away?.name}</p>
-                </div>
-              </div>
-
-              {/* Quick Stats Row */}
-              {stats?.length >= 2 && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <QuickStats stats={stats} t={t} />
-                </div>
-              )}
-            </div>
-
-            {/* Last Update */}
-            <p className="text-center text-gray-400 text-xs mt-3">
-              {t('liveMatch.lastUpdated', { time: lastUpdate.toLocaleTimeString() })}
-            </p>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-          <div className="flex overflow-x-auto scrollbar-none">
-            {TAB_KEYS.map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 min-w-0 py-3 text-xs font-semibold transition-all relative whitespace-nowrap px-1 ${
-                  activeTab === tab ? 'text-primary-600' : 'text-gray-400'
-                }`}
-              >
-                {t(`liveMatch.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
-                {activeTab === tab && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary-600 rounded-full"/>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-5 py-4 space-y-4 pb-8">
-          {activeTab === 'overview' && (
-            <OverviewTab
-              fixture={fixture}
-              stats={stats}
-              events={events}
-              aiAnalysis={aiAnalysis}
-              analyzing={analyzing}
-              getLiveAnalysis={getLiveAnalysis}
-              user={user}
-              isFinished={isFinished}
-              advertiser={advertiser}
-              trackClick={trackClick}
-              navigate={navigate}
-              t={t}
-              fonbetMatch={fonbetMatch}
-              canUseDeeplink={canUseDeeplink}
-            />
-          )}
-          {activeTab === 'stats' && (
-            <StatsTab stats={stats} home={home} away={away} t={t} />
-          )}
-          {activeTab === 'events' && (
-            <EventsTab events={events} home={home} away={away} t={t} />
-          )}
-          {activeTab === 'lineups' && (
-            <LineupsTab lineups={lineups} t={t} />
-          )}
-          {activeTab === 'fans' && (
-            <LiveFansAreaTab matchId={id} home={home} away={away} t={t} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Fans Area Tab for Live Matches
-function LiveFansAreaTab({ matchId, home, away, t }) {
-  const homeTeam = home ? { name: home.name, logo: home.logo } : null;
-  const awayTeam = away ? { name: away.name, logo: away.logo } : null;
-  return (
-    <>
-      <CommunityPick matchId={matchId} homeTeam={homeTeam} awayTeam={awayTeam} />
-      <MatchChat matchId={matchId} />
-    </>
-  );
-}
-
-// Quick Stats in Header
-function QuickStats({ stats, t }) {
-  const homePoss = stats[0]?.statistics?.find(s => s.type === 'Ball Possession')?.value || '50%';
-  const awayPoss = stats[1]?.statistics?.find(s => s.type === 'Ball Possession')?.value || '50%';
-  const homeShots = stats[0]?.statistics?.find(s => s.type === 'Total Shots')?.value || 0;
-  const awayShots = stats[1]?.statistics?.find(s => s.type === 'Total Shots')?.value || 0;
-  const homeOnTarget = stats[0]?.statistics?.find(s => s.type === 'Shots on Goal')?.value || 0;
-  const awayOnTarget = stats[1]?.statistics?.find(s => s.type === 'Shots on Goal')?.value || 0;
-
-  return (
-    <div className="grid grid-cols-3 gap-4 text-center">
-      <div>
-        <div className="flex items-center justify-center gap-2 text-gray-900 font-bold">
-          <span>{homePoss}</span>
-          <span className="text-gray-300">-</span>
-          <span>{awayPoss}</span>
-        </div>
-        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.possession')}</p>
-      </div>
-      <div>
-        <div className="flex items-center justify-center gap-2 text-gray-900 font-bold">
-          <span>{homeShots}</span>
-          <span className="text-gray-300">-</span>
-          <span>{awayShots}</span>
-        </div>
-        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.shots')}</p>
-      </div>
-      <div>
-        <div className="flex items-center justify-center gap-2 text-gray-900 font-bold">
-          <span>{homeOnTarget}</span>
-          <span className="text-gray-300">-</span>
-          <span>{awayOnTarget}</span>
-        </div>
-        <p className="text-gray-500 text-xs mt-1">{t('liveMatch.onTarget')}</p>
-      </div>
-    </div>
-  );
-}
-
-// Overview Tab
-function OverviewTab({ fixture, stats, events, aiAnalysis, analyzing, getLiveAnalysis, user, isFinished, advertiser, trackClick, navigate, t, fonbetMatch, canUseDeeplink }) {
-  const recentEvents = events.slice(-5).reverse();
-  const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
-
-  // Parse AI recommended bets from analysis — supports multiple formats
-  const parseRecommendedBets = () => {
-    if (!aiAnalysis) return [];
-    const bets = [];
-    const seen = new Set();
-    let m;
-
-    // 1) Explicit [BET] tags
-    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
-    while ((m = betTagRe.exec(aiAnalysis)) !== null) {
-      const key = m[1].trim().toLowerCase();
-      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) }); }
-    }
-
-    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85"
-    if (bets.length === 0) {
-      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
-      while ((m = numberedRe.exec(aiAnalysis)) !== null) {
-        const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
-        const odds = parseFloat(m[2]);
-        if (odds >= 1.01 && odds <= 50 && type.length > 2) {
-          const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
-        }
-      }
-    }
-
-    // 3) Fallback: "Bet Type @ odds" anywhere
-    if (bets.length === 0) {
-      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
-      while ((m = fallbackRe.exec(aiAnalysis)) !== null) {
-        const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
-        const odds = parseFloat(m[2]);
-        if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
-          const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
-        }
-      }
-    }
-
-    return bets.slice(0, 4);
-  };
-
-  const recommendedBets = parseRecommendedBets();
-  const recommendedBet = recommendedBets[0] || null;
-  const bonusNumeric = advertiser?.freeBetAmount || 75;
-  const potentialWin = recommendedBet ? Math.round(bonusNumeric * recommendedBet.odds) : 0;
-
-  return (
-    <>
-      {/* AI Live Analysis */}
-      <div className="card border border-gray-100">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-gray-900 font-bold">{t('liveMatch.aiLiveAnalysis')}</h3>
-            <p className="text-gray-500 text-xs">{t('liveMatch.realTimeInsights')}</p>
-          </div>
-        </div>
-
-        {aiAnalysis ? (
-          <>
-            <div className="bg-gray-50 rounded-xl p-4 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-              {aiAnalysis.split('\n').map((line, i) => {
-                const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>');
-                return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
-              })}
-            </div>
-
-            {/* Combined: Best Bet cards + Promo block (merged into one card) */}
-            {!isPremium && (
-              <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                {/* Best Bet section — only if bets exist */}
-                {recommendedBets.length > 0 && (
-                  <>
-                    <div className="bg-white px-4 pt-3 pb-2">
-                      <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-                        <span>🔥</span>
-                        {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
-                      </p>
-                    </div>
-                    <div className="bg-white px-4 pb-3 space-y-2">
-                      {recommendedBets.map((bet, idx) => {
-                        const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
-                        return (
-                          <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                                <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                              </div>
-                            </div>
-                            <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
-                {/* Promo header bar */}
-                <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">{t('aiChat.exclusiveFor')}</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">{t('aiChat.limitedTime')}</span>
-                </div>
-
-                {/* Promo body */}
-                <div className="bg-white p-4">
-                  <p
-                    className="text-sm text-gray-700 leading-relaxed mb-3"
-                    dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
-                      match: `${fixture?.teams?.home?.name || ''} — ${fixture?.teams?.away?.name || ''}`,
-                      confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
-                      bonus: advertiser?.bonusBanner?.bonus || '',
-                    }) }}
-                  />
-
-                  {/* Free bet card — dark navy */}
-                  <div className="rounded-xl p-4 mb-3" style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🎁</span>
-                      <div className="flex-1">
-                        <p className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">{t('advertiser.freeBetLabel')}</p>
-                        <p className="text-xl font-black text-emerald-400">{advertiser?.bonusBanner?.bonus}</p>
-                        <p className="text-[11px] text-white/50 mt-0.5">
-                          {t('aiChat.bonusBannerDeposit', {
-                            deposit: advertiser?.bonusBanner?.deposit || '',
-                            bonus: advertiser?.bonusBanner?.bonus || '',
-                          })}
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full border border-emerald-400/30">{t('aiChat.noRisk')}</span>
-                    </div>
-                  </div>
-
-                  {/* 3 steps */}
-                  <div className="flex items-center justify-between mb-3 px-2">
-                    <div className="flex flex-col items-center">
-                      <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">1</div>
-                      <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step1Label')}</p>
-                      <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.deposit}</p>
-                    </div>
-                    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-                    <div className="flex flex-col items-center">
-                      <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">2</div>
-                      <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step2Label')}</p>
-                      <p className="text-[10px] font-semibold text-gray-800">{advertiser?.bonusBanner?.bonus}</p>
-                    </div>
-                    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-                    <div className="flex flex-col items-center">
-                      <div className="w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">3</div>
-                      <p className="text-[10px] text-gray-500 text-center leading-tight">{t('aiChat.step3Label')}</p>
-                    </div>
-                  </div>
-
-                  <p className="text-[10px] text-gray-400 text-center mb-3">{t('aiChat.bonusDisclaimer')}</p>
-
-                  {/* CTA */}
-                  <button
-                    onClick={() => { trackClick(user?.id, 'live_ad_get_bonus'); navigate('/promo'); }}
-                    className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
-                    {t('aiChat.bonusCta', { bonus: advertiser?.bonusBanner?.bonus || '' })}
-                  </button>
-
-                  {/* Trust badges */}
-                  <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
-                      {t('aiChat.trustSafe')}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
-                      {t('aiChat.trustLicensed')}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                      4.9/5
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                      {t('aiChat.trustWithdrawal', { defaultValue: 'Withdrawal 15 min' })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <button
-            onClick={getLiveAnalysis}
-            disabled={analyzing}
-            className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {analyzing ? (
-              <>
-                <FootballSpinner size="xs" light />
-                {t('liveMatch.analyzingMatch')}
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                </svg>
-                {isFinished ? t('liveMatch.getPostMatchAnalysis') : t('liveMatch.getLiveAnalysis')}
-              </>
-            )}
+    <div className="bg-[#F0F2F5] min-h-screen pb-8">
+      {/* Header */}
+      <div className="px-4 pt-5 pb-4" style={{ background: 'linear-gradient(135deg, #1B2138 0%, #232a45 100%)' }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
           </button>
-        )}
-
-        {!aiAnalysis && (
-          <p className="text-gray-400 text-xs text-center mt-3">
-            {t('liveMatch.usesOneOfFreeRequests')}
-          </p>
-        )}
+          <h1 className="flex-1 text-white text-lg font-black tracking-wide">STATSPRO</h1>
+          <button onClick={() => navigate(unlocked ? '/settings' : '/pro-access')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5">
+            <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
+            </span>
+            <span className="text-emerald-400 font-bold text-sm">{remaining} {t('home.pts', { defaultValue: 'pts' })}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Recent Events */}
-      {recentEvents.length > 0 && (
-        <div className="card border border-gray-100">
-          <h3 className="text-gray-900 font-bold mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd"/>
-            </svg>
-            {t('liveMatch.recentEvents')}
-          </h3>
-          <div className="space-y-3">
-            {recentEvents.map((event, i) => (
-              <EventItem key={i} event={event} t={t} />
-            ))}
+      <div className="px-4 pt-4 space-y-4">
+        {/* Hero */}
+        <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' }}>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-white/60 text-[11px] font-bold uppercase tracking-wider">{fixture.league?.name}</span>
+            {!isFinished ? (
+              <span className="inline-flex items-center gap-1 bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />{t('liveMatch.live', { defaultValue: 'LIVE' })}
+              </span>
+            ) : (
+              <span className="bg-white/15 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{t('liveMatch.ft', { defaultValue: 'FT' })}</span>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center gap-2 w-24">
+              <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                {home?.logo && <img src={home.logo} alt="" className="w-10 h-10 object-contain" />}
+              </div>
+              <span className="text-[13px] font-bold text-center leading-tight">{home?.name}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-3">
+                <span className="text-4xl font-black">{homeGoals}</span>
+                <span className="text-2xl text-white/40">-</span>
+                <span className="text-4xl font-black">{awayGoals}</span>
+              </div>
+              <span className="mt-2 inline-flex items-center gap-1 bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full">
+                {isHalfTime ? t('liveMatch.ht', { defaultValue: 'HT' }) : isFinished ? t('liveMatch.fullTime', { defaultValue: 'Full time' }) : `${elapsed}'`}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2 w-24">
+              <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                {away?.logo && <img src={away.logo} alt="" className="w-10 h-10 object-contain" />}
+              </div>
+              <span className="text-[13px] font-bold text-center leading-tight">{away?.name}</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Match Momentum */}
-      {stats?.length >= 2 && (
-        <MomentumCard stats={stats} t={t} />
-      )}
-    </>
-  );
-}
+        {/* AI Live Analysis (token-gated) */}
+        <AiLiveAnalysis
+          canAnalyze={canAnalyze}
+          unlocked={unlocked}
+          analyzing={analyzing}
+          aiAnalysis={aiAnalysis}
+          onAnalyze={getLiveAnalysis}
+          isFinished={isFinished}
+          tokensLeft={tokensLeft}
+          onPlace={() => { trackClick(user?.id, 'live_ai_place'); navigate('/promo'); }}
+          onUnlock={() => navigate('/pro-access?reason=upgrade&feature=live-analysis')}
+          t={t}
+        />
 
-// Event Item
-function EventItem({ event, t }) {
-  const getEventIcon = (type, detail) => {
-    if (type === 'Goal') {
-      return detail === 'Own Goal'
-        ? <span className="text-red-500">⚽</span>
-        : <span className="text-green-500">⚽</span>;
-    }
-    if (type === 'Card') {
-      return detail === 'Yellow Card'
-        ? <span className="w-3 h-4 bg-yellow-400 rounded-sm"/>
-        : <span className="w-3 h-4 bg-red-500 rounded-sm"/>;
-    }
-    if (type === 'subst') {
-      return <span className="text-blue-500">⇄</span>;
-    }
-    if (type === 'Var') {
-      return <span className="text-purple-500 text-xs font-bold">VAR</span>;
-    }
-    return <span className="text-gray-400">•</span>;
-  };
-
-  return (
-    <div className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-      <span className="w-8 text-gray-500 text-sm font-mono">{event.time?.elapsed}'</span>
-      <span className="w-6 flex items-center justify-center">
-        {getEventIcon(event.type, event.detail)}
-      </span>
-      <div className="flex-1">
-        <p className="text-gray-900 text-sm font-medium">{event.player?.name}</p>
-        <p className="text-gray-500 text-xs">
-          {event.team?.name} {event.assist?.name && `• ${t('liveMatch.assist')}: ${event.assist.name}`}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Momentum Card
-function MomentumCard({ stats, t }) {
-  const homeDanger = parseInt(stats[0]?.statistics?.find(s => s.type === 'Dangerous Attacks')?.value) || 0;
-  const awayDanger = parseInt(stats[1]?.statistics?.find(s => s.type === 'Dangerous Attacks')?.value) || 0;
-  const total = homeDanger + awayDanger || 1;
-  const homePct = Math.round((homeDanger / total) * 100);
-
-  return (
-    <div className="card border border-gray-100">
-      <h3 className="text-gray-900 font-bold mb-4 flex items-center gap-2">
-        <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
-          <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72v5.69a.75.75 0 001.5 0v-5.69l1.72 1.72a.75.75 0 101.06-1.06l-3-3z" clipRule="evenodd"/>
-        </svg>
-        {t('liveMatch.matchMomentum')}
-      </h3>
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-blue-600 font-semibold">{homePct}%</span>
-          <span className="text-gray-500">{t('liveMatch.dangerousAttacks')}</span>
-          <span className="text-red-600 font-semibold">{100 - homePct}%</span>
+        {/* Match Timeline */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[17px] font-black text-gray-900">{t('liveMatch.matchTimeline', { defaultValue: 'Match Timeline' })}</h3>
+            <button onClick={() => setShowStats(!showStats)} className="text-primary-600 text-sm font-semibold">
+              {showStats ? t('liveMatch.hideStats', { defaultValue: 'Hide Stats' }) : t('liveMatch.viewStats', { defaultValue: 'View Stats' })}
+            </button>
+          </div>
+          {showStats ? (
+            <StatsPanel stats={stats} home={home} away={away} t={t} />
+          ) : (
+            <Timeline events={events} home={home} t={t} />
+          )}
         </div>
-        <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-1000"
-            style={{ width: `${homePct}%` }}
-          />
-          <div
-            className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all duration-1000"
-            style={{ width: `${100 - homePct}%` }}
-          />
+
+        {/* Fans Area */}
+        <div>
+          <h3 className="text-[17px] font-black text-gray-900 mb-3">{t('liveMatch.fansArea', { defaultValue: 'Fans Area' })}</h3>
+          <div className="space-y-4">
+            <CommunityPick matchId={id} homeTeam={home ? { name: home.name, logo: home.logo } : null} awayTeam={away ? { name: away.name, logo: away.logo } : null} />
+            <MatchChat matchId={id} />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Stats Tab
-function StatsTab({ stats, home, away, t }) {
-  if (!stats?.length) {
+/* ===== AI Live Analysis card ===== */
+function AiLiveAnalysis({ canAnalyze, unlocked, analyzing, aiAnalysis, onAnalyze, isFinished, tokensLeft, onPlace, onUnlock, t }) {
+  const bets = parseBets(aiAnalysis);
+  const summary = stripBets(aiAnalysis);
+
+  const Head = (
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shrink-0">
+        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2v1h1a3 3 0 013 3v8a3 3 0 01-3 3H9a3 3 0 01-3-3V8a3 3 0 013-3h1V4a2 2 0 012-2zm-3 9a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z"/></svg>
+      </div>
+      <div className="min-w-0">
+        <h3 className="text-gray-900 font-bold leading-tight">{t('liveMatch.aiLiveAnalysis', { defaultValue: 'AI Live Analysis' })}</h3>
+        <p className="text-gray-400 text-xs">{t('liveMatch.realTimeInsights', { defaultValue: 'Real-time tactical insights' })}</p>
+      </div>
+    </div>
+  );
+
+  // Out of tokens → locked
+  if (!canAnalyze && !aiAnalysis) {
     return (
-      <div className="card border border-gray-100 p-8 text-center">
-        <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/>
-        </svg>
-        <p className="text-gray-500 font-medium">{t('liveMatch.statsNotAvailable')}</p>
-        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.statsWillAppear')}</p>
+      <div className="rounded-2xl p-4 text-white" style={{ background: 'linear-gradient(135deg, #1d4ed8, #4338ca)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2v1h1a3 3 0 013 3v8a3 3 0 01-3 3H9a3 3 0 01-3-3V8a3 3 0 013-3h1V4a2 2 0 012-2z"/></svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-emerald-300 text-[10px] font-black uppercase tracking-wide">{t('liveMatch.aiLiveAnalysis', { defaultValue: 'AI Live Analysis' })}</p>
+            <p className="text-white font-bold text-sm leading-tight">{t('liveMatch.outOfTokens', { defaultValue: "You're out of prediction tokens" })}</p>
+          </div>
+        </div>
+        <button onClick={onUnlock} className="w-full mt-3 bg-emerald-500 text-[#0b1733] font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+          {t('liveMatch.unlockPro', { defaultValue: 'Unlock with PRO' })}
+        </button>
       </div>
     );
   }
 
+  return (
+    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      {Head}
+      {aiAnalysis ? (
+        <div className="mt-3">
+          {summary && (
+            <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-3 mb-3 whitespace-pre-line">{summary}</p>
+          )}
+          {bets.length > 0 && (
+            <div className="space-y-2">
+              {bets.map((b, i) => <LiveBetRow key={i} bet={b} idx={i} onPlace={onPlace} t={t} />)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <button
+            onClick={onAnalyze}
+            disabled={analyzing}
+            className="w-full mt-3 py-3 bg-primary-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {analyzing ? (<><FootballSpinner size="xs" light />{t('liveMatch.analyzingMatch', { defaultValue: 'Analyzing…' })}</>) : (
+              isFinished ? t('liveMatch.getPostMatchAnalysis', { defaultValue: 'Get post-match analysis' }) : t('liveMatch.getLiveAnalysis', { defaultValue: 'Get live analysis' })
+            )}
+          </button>
+          {!unlocked && (
+            <p className="text-gray-400 text-xs text-center mt-2">
+              {t('liveMatch.tokensLeft', { count: tokensLeft, defaultValue: `${tokensLeft} prediction tokens left` })}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function LiveBetRow({ bet, idx, onPlace, t }) {
+  const [open, setOpen] = useState(false);
+  const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+  return (
+    <div className="rounded-xl border border-gray-100 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+            <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+          </div>
+        </div>
+        <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+      </div>
+      <div className="flex gap-2 px-3 pb-3">
+        <button onClick={() => setOpen(!open)} className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 rounded-lg py-2">
+          {t('aiChat.analysis', { defaultValue: 'Analysis' })}
+          <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+        </button>
+        <button onClick={onPlace} className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2">{t('aiChat.placeBet', { defaultValue: 'Place bet' })}</button>
+      </div>
+      {open && bet.reason && (
+        <div className="px-3 pb-3 -mt-0.5">
+          <div className="bg-gray-50 rounded-lg p-3 text-[13px] text-gray-700 leading-relaxed border-l-2 border-primary-500">{bet.reason}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===== Timeline ===== */
+function Timeline({ events, home, t }) {
+  if (!events?.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <p className="text-gray-500 font-medium">{t('liveMatch.noEventsYet', { defaultValue: 'No events yet' })}</p>
+        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.eventsWillAppear', { defaultValue: 'Events will appear here' })}</p>
+      </div>
+    );
+  }
+  const ordered = [...events].reverse();
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
+      {ordered.map((event, i) => {
+        const isHome = event.team?.id === home?.id;
+        const style = eventStyle(event.type, event.detail, t);
+        return (
+          <div key={i} className={`flex items-center gap-3 ${isHome ? '' : 'flex-row-reverse text-right'}`}>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-gray-900 truncate">{event.player?.name}</p>
+              <p className="text-xs text-gray-400 truncate">{style.text}{event.assist?.name ? ` · ${t('liveMatch.assist', { defaultValue: 'Assist' })}: ${event.assist.name}` : ''}</p>
+            </div>
+            <div className={`w-7 h-7 rounded-full ${style.bg} flex items-center justify-center text-[12px] text-white shrink-0`}>{style.icon}</div>
+            <span className="w-9 text-center text-sm font-mono text-gray-500 shrink-0">{event.time?.elapsed}'</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function eventStyle(type, detail, t) {
+  if (type === 'Goal') return { bg: detail === 'Own Goal' ? 'bg-rose-500' : 'bg-emerald-500', icon: '⚽', text: detail === 'Own Goal' ? t('liveMatch.ownGoal', { defaultValue: 'Own goal' }) : t('liveMatch.goal', { defaultValue: 'Goal' }) };
+  if (type === 'Card') return { bg: detail === 'Yellow Card' ? 'bg-amber-400' : 'bg-rose-500', icon: '', text: detail === 'Yellow Card' ? t('liveMatch.yellowCard', { defaultValue: 'Yellow card' }) : t('liveMatch.redCard', { defaultValue: 'Red card' }) };
+  if (type === 'subst') return { bg: 'bg-blue-500', icon: '⇄', text: t('liveMatch.substitution', { defaultValue: 'Substitution' }) };
+  if (type === 'Var') return { bg: 'bg-purple-500', icon: 'V', text: t('liveMatch.varDecision', { defaultValue: 'VAR' }) };
+  return { bg: 'bg-gray-300', icon: '•', text: type };
+}
+
+/* ===== Stats panel ===== */
+function StatsPanel({ stats, home, away, t }) {
+  if (!stats?.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <p className="text-gray-500 font-medium">{t('liveMatch.statsNotAvailable', { defaultValue: 'Stats not available' })}</p>
+      </div>
+    );
+  }
   const homeStats = stats[0]?.statistics || [];
   const awayStats = stats[1]?.statistics || [];
-
-  const statPairs = homeStats.map((s, i) => ({
-    label: s.type,
-    home: s.value,
-    away: awayStats[i]?.value,
-  }));
-
+  const pairs = homeStats.map((s, i) => ({ label: s.type, home: s.value, away: awayStats[i]?.value }));
   return (
-    <div className="card border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <img src={home?.logo} alt="" className="w-6 h-6 object-contain"/>
-          <span className="text-gray-700 text-xs font-medium">{home?.name}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700 text-xs font-medium">{away?.name}</span>
-          <img src={away?.logo} alt="" className="w-6 h-6 object-contain"/>
-        </div>
+    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2"><img src={home?.logo} alt="" className="w-5 h-5 object-contain" /><span className="text-gray-700 text-xs font-medium">{home?.name}</span></div>
+        <div className="flex items-center gap-2"><span className="text-gray-700 text-xs font-medium">{away?.name}</span><img src={away?.logo} alt="" className="w-5 h-5 object-contain" /></div>
       </div>
-
-      <div className="space-y-5">
-        {statPairs.map((s, i) => (
-          <StatBar key={i} label={s.label} home={s.home} away={s.away} />
-        ))}
-      </div>
+      <div className="space-y-4">{pairs.map((s, i) => <StatBar key={i} label={s.label} home={s.home} away={s.away} />)}</div>
     </div>
   );
 }
@@ -785,193 +402,34 @@ function StatBar({ label, home, away }) {
   const aVal = typeof away === 'string' ? parseInt(away) || 0 : (away ?? 0);
   const total = hVal + aVal || 1;
   const hPct = Math.round((hVal / total) * 100);
-  const aPct = 100 - hPct;
-
   const displayHome = typeof home === 'string' && home.includes('%') ? home : (home ?? 0);
   const displayAway = typeof away === 'string' && away.includes('%') ? away : (away ?? 0);
-
   return (
     <div>
-      <div className="flex justify-between text-sm mb-2">
+      <div className="flex justify-between text-sm mb-1.5">
         <span className="font-semibold text-gray-900">{displayHome}</span>
-        <span className="text-gray-500 text-xs">{label}</span>
+        <span className="text-gray-400 text-xs">{label}</span>
         <span className="font-semibold text-gray-900">{displayAway}</span>
       </div>
       <div className="flex h-2 gap-1">
-        <div className="flex-1 bg-gray-100 rounded-full overflow-hidden flex justify-end">
-          <div
-            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-700"
-            style={{ width: `${hPct}%` }}
-          />
-        </div>
-        <div className="flex-1 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-700"
-            style={{ width: `${aPct}%` }}
-          />
-        </div>
+        <div className="flex-1 bg-gray-100 rounded-full overflow-hidden flex justify-end"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${hPct}%` }} /></div>
+        <div className="flex-1 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-rose-500 rounded-full" style={{ width: `${100 - hPct}%` }} /></div>
       </div>
     </div>
   );
 }
 
-// Events Tab
-function EventsTab({ events, home, away, t }) {
-  if (!events?.length) {
-    return (
-      <div className="card border border-gray-100 p-8 text-center">
-        <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <p className="text-gray-500 font-medium">{t('liveMatch.noEventsYet')}</p>
-        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.eventsWillAppear')}</p>
-      </div>
-    );
+/* ===== AI text parsing ===== */
+function parseBets(content) {
+  if (!content) return [];
+  const bets = []; const seen = new Set(); let m;
+  const re = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
+  while ((m = re.exec(content)) !== null) {
+    const key = m[1].trim().toLowerCase();
+    if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]), reason: (m[3] || '').trim() }); }
   }
-
-  const groupedEvents = events.reduce((acc, event) => {
-    const period = event.time?.elapsed <= 45 ? t('liveMatch.firstHalf') : t('liveMatch.secondHalf');
-    if (!acc[period]) acc[period] = [];
-    acc[period].push(event);
-    return acc;
-  }, {});
-
-  return (
-    <div className="space-y-4">
-      {Object.entries(groupedEvents).map(([period, periodEvents]) => (
-        <div key={period} className="card border border-gray-100">
-          <h3 className="text-gray-500 text-xs font-semibold uppercase mb-4">{period}</h3>
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-[39px] top-0 bottom-0 w-0.5 bg-gray-100"/>
-
-            <div className="space-y-4">
-              {periodEvents.map((event, i) => (
-                <TimelineEvent key={i} event={event} home={home} away={away} t={t} />
-              ))}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return bets.slice(0, 4);
 }
-
-function TimelineEvent({ event, home, away, t }) {
-  const isHome = event.team?.id === home?.id;
-
-  const getEventStyle = (type, detail) => {
-    if (type === 'Goal') {
-      return {
-        bg: detail === 'Own Goal' ? 'bg-red-500' : 'bg-green-500',
-        icon: '⚽',
-        text: detail === 'Own Goal' ? t('liveMatch.ownGoal') : t('liveMatch.goal')
-      };
-    }
-    if (type === 'Card') {
-      return {
-        bg: detail === 'Yellow Card' ? 'bg-yellow-400' : 'bg-red-500',
-        icon: '',
-        text: detail === 'Yellow Card' ? t('liveMatch.yellowCard') : t('liveMatch.redCard')
-      };
-    }
-    if (type === 'subst') {
-      return { bg: 'bg-blue-500', icon: '⇄', text: t('liveMatch.substitution') };
-    }
-    if (type === 'Var') {
-      return { bg: 'bg-purple-500', icon: '', text: t('liveMatch.varDecision') };
-    }
-    return { bg: 'bg-gray-300', icon: '•', text: type };
-  };
-
-  const style = getEventStyle(event.type, event.detail);
-
-  return (
-    <div className="flex items-start gap-3">
-      <span className="w-8 text-gray-500 text-sm font-mono pt-1">{event.time?.elapsed}'</span>
-      <div className={`w-4 h-4 ${style.bg} rounded-full flex items-center justify-center text-[10px] text-white z-10`}>
-        {style.icon}
-      </div>
-      <div className="flex-1 pb-2">
-        <div className="flex items-center gap-2">
-          <img src={event.team?.logo} alt="" className="w-4 h-4 object-contain"/>
-          <span className="text-gray-900 font-semibold text-sm">{event.player?.name}</span>
-        </div>
-        <p className="text-gray-500 text-xs mt-0.5">
-          {style.text}
-          {event.assist?.name && ` • ${t('liveMatch.assist')}: ${event.assist.name}`}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Lineups Tab
-function LineupsTab({ lineups, t }) {
-  if (!lineups?.length) {
-    return (
-      <div className="card border border-gray-100 p-8 text-center">
-        <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-        </svg>
-        <p className="text-gray-500 font-medium">{t('liveMatch.lineupsNotAvailable')}</p>
-        <p className="text-gray-400 text-sm mt-1">{t('liveMatch.lineupsAppearBefore')}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {lineups.map((team, idx) => (
-        <div key={idx} className="card border border-gray-100">
-          <div className="flex items-center gap-3 mb-4">
-            <img src={team.team?.logo} alt="" className="w-8 h-8 object-contain"/>
-            <div>
-              <h3 className="text-gray-900 font-bold">{team.team?.name}</h3>
-              <p className="text-gray-500 text-xs">{team.formation}</p>
-            </div>
-          </div>
-
-          {team.coach?.name && (
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
-              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{t('liveMatch.coach')}</span>
-              <span>{team.coach.name}</span>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <p className="text-gray-400 text-xs uppercase font-semibold mb-3">{t('liveMatch.startingXI')}</p>
-            <div className="space-y-2">
-              {team.startXI?.map((p, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
-                    {p.player?.number}
-                  </span>
-                  <span className="text-gray-900">{p.player?.name}</span>
-                  <span className="text-gray-400 text-xs ml-auto">{p.player?.pos}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {team.substitutes?.length > 0 && (
-            <div>
-              <p className="text-gray-400 text-xs uppercase font-semibold mb-3">{t('liveMatch.substitutes')}</p>
-              <div className="space-y-2">
-                {team.substitutes.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm">
-                    <span className="w-7 h-7 bg-gray-50 rounded-full flex items-center justify-center text-xs font-bold text-gray-400">
-                      {p.player?.number}
-                    </span>
-                    <span className="text-gray-500">{p.player?.name}</span>
-                    <span className="text-gray-300 text-xs ml-auto">{p.player?.pos}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+function stripBets(content) {
+  return (content || '').replace(/\[BET\][^\n]*/gi, '').replace(/\n{3,}/g, '\n\n').trim();
 }

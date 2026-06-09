@@ -1314,7 +1314,14 @@
     "recentEvents": "Letzte Ereignisse",
     "statsNotAvailable": "Statistiken noch nicht verfügbar",
     "statsWillAppear": "Statistiken erscheinen nach Spielbeginn",
-    "usesOneOfFreeRequests": "Verbraucht eine deiner kostenlosen Anfragen"
+    "usesOneOfFreeRequests": "Verbraucht eine deiner kostenlosen Anfragen",
+    "matchTimeline": "Spielverlauf",
+    "viewStats": "Statistiken ansehen",
+    "hideStats": "Statistiken ausblenden",
+    "fansArea": "Fan-Bereich",
+    "unlockPro": "Mit PRO freischalten",
+    "outOfTokens": "Keine Prognose-Tokens mehr",
+    "tokensLeft": "{{count}} Prognose-Tokens übrig"
   },
   "oddsConverter": {
     "title": "Quotenrechner",
