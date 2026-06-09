@@ -1312,18 +1312,6 @@ function LineupsTab({ enriched, loading, t }) {
 // Shared Components
 // ============================
 
-function ProbBar({ label, pct, color }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-600 w-24 truncate">{label}</span>
-      <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}/>
-      </div>
-      <span className="text-xs font-bold text-gray-900 w-10 text-right">{pct}%</span>
-    </div>
-  );
-}
-
 function CompareBar({ label, home, away }) {
   const h = parseInt(home) || 0;
   const a = parseInt(away) || 0;
