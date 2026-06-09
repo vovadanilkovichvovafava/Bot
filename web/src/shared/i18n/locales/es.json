@@ -1529,7 +1529,7 @@
   "predict": {
     "fantasy": "Pronóstico Fantasy",
     "question": "¿Quién ganará el Mundial?",
-    "ctaSub": "Completa el cuadro y elige tu campeón",
+    "ctaSub": "Pronostica la fase de grupos",
     "yourChampion": "Tu campeón",
     "tbd": "Por decidir",
     "progress": "Progreso",
@@ -1542,6 +1542,13 @@
     "final": "Final",
     "match": "partido",
     "matches": "partidos",
-    "reset": "Reiniciar cuadro"
+    "reset": "Reiniciar pronóstico",
+    "groupStageTitle": "Pronostica la fase de grupos",
+    "groupStageHint": "Toca los equipos en el orden en que crees que terminarán. Los 2 primeros avanzan.",
+    "groupsDone": "Grupos completados",
+    "group": "Grupo",
+    "qualifies": "Avanza",
+    "knockoutLocked": "Cuadro eliminatorio",
+    "knockoutLockedDesc": "Se desbloquea tras la fase de grupos. Primero pronostica los grupos — luego elige quién levanta el trofeo. 🏆"
   }
 }

@@ -1690,7 +1690,7 @@
   "predict": {
     "fantasy": "Palpite Fantasy",
     "question": "Quem vai ganhar o Mundial?",
-    "ctaSub": "Preenche o quadro e escolhe o teu campeão",
+    "ctaSub": "Palpita a fase de grupos",
     "yourChampion": "O teu campeão",
     "tbd": "A decidir",
     "progress": "Progresso",
@@ -1703,6 +1703,13 @@
     "final": "Final",
     "match": "jogo",
     "matches": "jogos",
-    "reset": "Reiniciar quadro"
+    "reset": "Reiniciar palpite",
+    "groupStageTitle": "Palpita a fase de grupos",
+    "groupStageHint": "Toca nas equipas pela ordem em que achas que vão terminar. Os 2 primeiros avançam.",
+    "groupsDone": "Grupos completos",
+    "group": "Grupo",
+    "qualifies": "Avança",
+    "knockoutLocked": "Quadro eliminatório",
+    "knockoutLockedDesc": "Desbloqueia após a fase de grupos. Primeiro palpita os grupos — depois escolhe quem levanta o troféu. 🏆"
   }
 }

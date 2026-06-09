@@ -1493,7 +1493,7 @@
   "predict": {
     "fantasy": "Fantasy-Tipp",
     "question": "Wer gewinnt die WM?",
-    "ctaSub": "Fülle das Tableau aus und wähle deinen Sieger",
+    "ctaSub": "Tippe die Gruppenphase",
     "yourChampion": "Dein Sieger",
     "tbd": "Noch offen",
     "progress": "Fortschritt",
@@ -1506,6 +1506,13 @@
     "final": "Finale",
     "match": "Spiel",
     "matches": "Spiele",
-    "reset": "Tableau zurücksetzen"
+    "reset": "Tipps zurücksetzen",
+    "groupStageTitle": "Tippe die Gruppenphase",
+    "groupStageHint": "Tippe die Teams in der erwarteten Reihenfolge an. Die Top 2 ziehen weiter.",
+    "groupsDone": "Gruppen abgeschlossen",
+    "group": "Gruppe",
+    "qualifies": "Weiter",
+    "knockoutLocked": "K.-o.-Tableau",
+    "knockoutLockedDesc": "Wird nach der Gruppenphase freigeschaltet. Tippe zuerst die Gruppen — dann den Sieger. 🏆"
   }
 }

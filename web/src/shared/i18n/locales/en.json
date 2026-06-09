@@ -1585,7 +1585,7 @@
   "predict": {
     "fantasy": "Fantasy Predict",
     "question": "Who will win the World Cup?",
-    "ctaSub": "Fill in the bracket & pick your champion",
+    "ctaSub": "Predict the group stage standings",
     "yourChampion": "Your champion",
     "tbd": "To be decided",
     "progress": "Progress",
@@ -1598,6 +1598,13 @@
     "final": "Final",
     "match": "match",
     "matches": "matches",
-    "reset": "Reset bracket"
+    "reset": "Reset predictions",
+    "groupStageTitle": "Predict the group stage",
+    "groupStageHint": "Tap teams in the order you think they'll finish. Top 2 advance.",
+    "groupsDone": "Groups completed",
+    "group": "Group",
+    "qualifies": "Advances",
+    "knockoutLocked": "Knockout bracket",
+    "knockoutLockedDesc": "Unlocks after the group stage. First predict the groups — then pick who lifts the trophy. 🏆"
   }
 }

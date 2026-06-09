@@ -1508,7 +1508,7 @@
   "predict": {
     "fantasy": "Pronostic Fantasy",
     "question": "Qui va gagner la Coupe du Monde ?",
-    "ctaSub": "Remplis le tableau et choisis ton champion",
+    "ctaSub": "Pronostique la phase de groupes",
     "yourChampion": "Ton champion",
     "tbd": "À décider",
     "progress": "Progression",
@@ -1521,6 +1521,13 @@
     "final": "Finale",
     "match": "match",
     "matches": "matchs",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "groupStageTitle": "Pronostique la phase de groupes",
+    "groupStageHint": "Touche les équipes dans l'ordre du classement final. Les 2 premiers se qualifient.",
+    "groupsDone": "Groupes complétés",
+    "group": "Groupe",
+    "qualifies": "Qualifié",
+    "knockoutLocked": "Tableau final",
+    "knockoutLockedDesc": "Se débloque après la phase de groupes. Pronostique d'abord les groupes — puis choisis le vainqueur. 🏆"
   }
 }

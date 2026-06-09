@@ -1567,7 +1567,7 @@
   "predict": {
     "fantasy": "Pronostico Fantasy",
     "question": "Chi vincerà il Mondiale?",
-    "ctaSub": "Completa il tabellone e scegli il campione",
+    "ctaSub": "Pronostica la fase a gironi",
     "yourChampion": "Il tuo campione",
     "tbd": "Da decidere",
     "progress": "Avanzamento",
@@ -1580,6 +1580,13 @@
     "final": "Finale",
     "match": "partita",
     "matches": "partite",
-    "reset": "Reimposta tabellone"
+    "reset": "Reimposta pronostico",
+    "groupStageTitle": "Pronostica la fase a gironi",
+    "groupStageHint": "Tocca le squadre nell'ordine in cui pensi finiranno. Le prime 2 passano.",
+    "groupsDone": "Gironi completati",
+    "group": "Girone",
+    "qualifies": "Passa",
+    "knockoutLocked": "Tabellone",
+    "knockoutLockedDesc": "Si sblocca dopo la fase a gironi. Prima pronostica i gironi — poi scegli chi alza il trofeo. 🏆"
   }
 }

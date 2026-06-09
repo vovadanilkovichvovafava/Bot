@@ -1547,7 +1547,7 @@
   "predict": {
     "fantasy": "Typuj Fantasy",
     "question": "Kto wygra Mistrzostwa Świata?",
-    "ctaSub": "Wypełnij drabinkę i wybierz mistrza",
+    "ctaSub": "Typuj fazę grupową",
     "yourChampion": "Twój mistrz",
     "tbd": "Do ustalenia",
     "progress": "Postęp",
@@ -1560,6 +1560,13 @@
     "final": "Finał",
     "match": "mecz",
     "matches": "mecze",
-    "reset": "Resetuj drabinkę"
+    "reset": "Resetuj typy",
+    "groupStageTitle": "Typuj fazę grupową",
+    "groupStageHint": "Dotykaj drużyny w kolejności, w jakiej skończą. Dwie pierwsze awansują.",
+    "groupsDone": "Ukończone grupy",
+    "group": "Grupa",
+    "qualifies": "Awans",
+    "knockoutLocked": "Drabinka pucharowa",
+    "knockoutLockedDesc": "Odblokuje się po fazie grupowej. Najpierw wytypuj grupy — potem wybierz zwycięzcę. 🏆"
   }
 }
