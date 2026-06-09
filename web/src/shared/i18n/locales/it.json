@@ -1318,7 +1318,8 @@
     "winProbability": "Probabilità di Vittoria",
     "reanalyze": "Ri-analizza",
     "reanalyzeCost": "costa 1 richiesta",
-    "reanalyzing": "Ri-analisi..."
+    "reanalyzing": "Ri-analisi...",
+    "kickoff": "Inizio"
   },
   "liveMatch": {
     "tabOverview": "Panoramica",

@@ -1308,7 +1308,8 @@
     "winProbability": "Prawdopodobieństwo wygranej",
     "reanalyze": "Ponowna analiza",
     "reanalyzeCost": "kosztuje 1 zapytanie",
-    "reanalyzing": "Ponowna analiza..."
+    "reanalyzing": "Ponowna analiza...",
+    "kickoff": "Początek"
   },
   "liveMatch": {
     "tabOverview": "Przegląd",

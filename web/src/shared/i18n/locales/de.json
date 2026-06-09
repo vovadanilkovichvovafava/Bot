@@ -1254,7 +1254,8 @@
     "winProbability": "Gewinnwahrscheinlichkeit",
     "reanalyze": "Neu analysieren",
     "reanalyzeCost": "kostet 1 Anfrage",
-    "reanalyzing": "Neu analysieren..."
+    "reanalyzing": "Neu analysieren...",
+    "kickoff": "Anstoß"
   },
   "liveMatch": {
     "tabOverview": "Übersicht",

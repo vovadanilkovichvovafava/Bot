@@ -1437,7 +1437,8 @@
     "winProbability": "Probabilidade de Vitória",
     "reanalyze": "Re-analisar",
     "reanalyzeCost": "custa 1 pedido",
-    "reanalyzing": "Re-analisando..."
+    "reanalyzing": "Re-analisando...",
+    "kickoff": "Início"
   },
   "liveMatch": {
     "tabOverview": "Resumo",

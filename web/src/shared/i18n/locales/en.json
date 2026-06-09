@@ -1332,7 +1332,8 @@
     "winProbability": "Win Probability",
     "reanalyze": "Re-analyze",
     "reanalyzeCost": "costs 1 request",
-    "reanalyzing": "Re-analyzing..."
+    "reanalyzing": "Re-analyzing...",
+    "kickoff": "Kickoff"
   },
   "liveMatch": {
     "tabOverview": "Overview",

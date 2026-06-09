@@ -1305,7 +1305,8 @@
     "winProbability": "Probabilité de Victoire",
     "reanalyze": "Ré-analyser",
     "reanalyzeCost": "coûte 1 requête",
-    "reanalyzing": "Ré-analyse..."
+    "reanalyzing": "Ré-analyse...",
+    "kickoff": "Coup d'envoi"
   },
   "liveMatch": {
     "tabOverview": "Aperçu",

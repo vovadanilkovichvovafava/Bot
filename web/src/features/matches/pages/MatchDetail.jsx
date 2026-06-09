@@ -16,7 +16,7 @@ import { getTrackingLink, addTrackingToUrl } from '../../betting/services/tracki
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'fans', 'stats', 'lineups'];
+const TAB_KEYS = ['overview', 'stats', 'lineups', 'fans'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
@@ -631,6 +631,14 @@ export default function MatchDetail() {
 
   const odds1x2 = getOdds1x2();
 
+  // Hero display helpers
+  const kickoffTime = formatTime(match.match_date);
+  const _md = new Date(match.match_date);
+  const isMatchToday = _md.toDateString() === new Date().toDateString();
+  const dateLabel = isMatchToday ? t('matches.today', { defaultValue: 'Today' }) : formatDate(match.match_date);
+  const venueName = enriched?.fixture?.fixture?.venue?.name;
+  const ptsDisplay = (isPremiumTop || isFunnel2Top || isFunnel4Top) ? '∞' : (aiRemaining ?? FREE_AI_LIMIT);
+
   // Registered (use_deeplink) and PRO users go directly to bookmaker match
   // Everyone else goes to offer link to register on bookmaker first
   const handlePromoClick = (source) => {
@@ -641,73 +649,48 @@ export default function MatchDetail() {
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
      <div className="flex-1 min-h-0 overflow-y-auto">
-      {/* Header */}
-      <div className="bg-white px-5 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-            </svg>
+      {/* Header — STATSPRO dark navy */}
+      <div className="px-4 pt-5 pb-4" style={{ background: 'linear-gradient(135deg, #1B2138 0%, #232a45 100%)' }}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-900">{match.league}</h1>
-          <div className="w-10"/>
+          <h1 className="flex-1 text-white text-lg font-black tracking-wide">STATSPRO</h1>
+          <button onClick={() => navigate((isPremiumTop || isFunnel2Top || isFunnel4Top) ? '/settings' : '/pro-access')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5 shrink-0">
+            <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
+            </span>
+            <span className="text-emerald-400 font-bold text-sm">{ptsDisplay} {t('home.pts', { defaultValue: 'pts' })}</span>
+          </button>
+          <button onClick={() => navigate('/settings')} className="w-9 h-9 rounded-full bg-white/15 ring-2 ring-white/10 flex items-center justify-center shrink-0">
+            <span className="text-white font-bold text-sm">{(user?.username || 'U')[0].toUpperCase()}</span>
+          </button>
         </div>
+      </div>
 
-        {/* Match Info Card */}
-        <div className="card border border-gray-100">
-          <p className="text-gray-500 text-center text-sm">{formatDate(match.match_date)} &bull; {formatTime(match.match_date)}</p>
-
-          <div className="flex items-center justify-between mt-4 px-2">
-            <div className="flex-1 text-center">
-              {match.home_team?.logo && (
-                <img src={match.home_team.logo} alt="" className="w-16 h-16 mx-auto mb-2 object-contain" onError={(e) => e.target.style.display='none'}/>
-              )}
-              <p className="font-semibold text-sm">{match.home_team?.name}</p>
+      <div className="px-4 pt-4">
+        {/* Blue hero */}
+        <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center gap-2 w-24">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                {match.home_team?.logo && <img src={match.home_team.logo} alt="" className="w-11 h-11 object-contain" onError={(e) => e.target.style.display='none'}/>}
+              </div>
+              <span className="text-[13px] font-bold text-center leading-tight">{match.home_team?.name}</span>
             </div>
-
-            <div className="px-4 text-center">
-              <span className="text-2xl font-bold text-gray-300">{t('matchDetail.vs')}</span>
-              <p className={`text-xs mt-1 font-medium ${statusLabel(match.status) === 'Live' ? 'text-red-500' : 'text-amber-500'}`}>
-                {statusLabel(match.status)}
-              </p>
+            <div className="flex flex-col items-center px-2">
+              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t('matchDetail.kickoff', { defaultValue: 'Kickoff' })}</span>
+              <span className="text-3xl font-black leading-tight my-0.5">{kickoffTime}</span>
+              <span className="bg-white/15 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">{dateLabel}</span>
+              {venueName && <span className="text-white/50 text-[10px] mt-1.5 text-center max-w-[110px] truncate">{venueName}</span>}
             </div>
-
-            <div className="flex-1 text-center">
-              {match.away_team?.logo && (
-                <img src={match.away_team.logo} alt="" className="w-16 h-16 mx-auto mb-2 object-contain" onError={(e) => e.target.style.display='none'}/>
-              )}
-              <p className="font-semibold text-sm">{match.away_team?.name}</p>
+            <div className="flex flex-col items-center gap-2 w-24">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                {match.away_team?.logo && <img src={match.away_team.logo} alt="" className="w-11 h-11 object-contain" onError={(e) => e.target.style.display='none'}/>}
+              </div>
+              <span className="text-[13px] font-bold text-center leading-tight">{match.away_team?.name}</span>
             </div>
           </div>
-
-          {/* Odds row - clickable */}
-          {odds1x2 && (
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <div className="grid grid-cols-3 gap-2">
-                <div
-                  onClick={() => handlePromoClick('match_odds_home')}
-                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
-                >
-                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.home')}</p>
-                  <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
-                </div>
-                <div
-                  onClick={() => handlePromoClick('match_odds_draw')}
-                  className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
-                >
-                  <p className="text-[10px] text-gray-500 uppercase font-medium">{t('matchDetail.draw')}</p>
-                  <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
-                </div>
-                <div
-                  onClick={() => handlePromoClick('match_odds_away')}
-                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
-                >
-                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.away')}</p>
-                  <p className="text-sm font-bold text-blue-600">{odds1x2.away}</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Tabs */}
@@ -716,7 +699,7 @@ export default function MatchDetail() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 min-w-0 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${
+              className={`flex-1 min-w-0 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-1 ${
                 activeTab === tab
                   ? 'text-primary-600 border-primary-600'
                   : 'text-gray-400 border-transparent'
@@ -728,7 +711,7 @@ export default function MatchDetail() {
         </div>
       </div>
 
-      <div className="px-5 mt-4 space-y-4 pb-8">
+      <div className="px-4 mt-4 space-y-4 pb-8">
         {activeTab === 'overview' && (
           <OverviewTab
             matchId={id}
