@@ -430,18 +430,12 @@ export default function MatchDetail() {
     prompt += `\nIf a market's odds are outside this range, find a DIFFERENT market that fits.`;
     prompt += `\nFor example, if Match Winner odds are 1.10 (below ${minOdds}), suggest Over/Under, BTTS, Handicap, or Corners instead.`;
 
-    prompt += `\n\nProvide a detailed prediction with probabilities and key factors.`;
-    prompt += `\n\n**IMPORTANT: End your analysis with a FINAL RECOMMENDATIONS section containing 2-3 bets from DIFFERENT markets.**`;
-    prompt += `\nEach recommendation MUST use this exact format on its own line:`;
-    prompt += `\n[BET] Bet Type @ Odds`;
-    prompt += `\n`;
-    prompt += `\nExample final section:`;
-    prompt += `\n**FINAL RECOMMENDATIONS**`;
-    prompt += `\n1. [BET] Over 2.5 Goals @ 1.85`;
-    prompt += `\n2. [BET] ${home} Win @ 2.10`;
-    prompt += `\n3. [BET] Both Teams to Score @ 1.75`;
-    prompt += `\n`;
-    prompt += `\nAll odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
+    prompt += `\n\n**OUTPUT FORMAT — IMPORTANT:** Keep it SHORT. Do NOT write long expert-analysis paragraphs. Reply with ONLY 2-3 bets from DIFFERENT markets, one per line, in this EXACT format:`;
+    prompt += `\n[BET] <Bet Type> @ <Odds> | <one short sentence explaining why this bet>`;
+    prompt += `\nExample:`;
+    prompt += `\n[BET] Over 2.5 Goals @ 1.85 | Both teams average 1.6 goals and last 4 H2H went over.`;
+    prompt += `\n[BET] ${home} Win @ 2.10 | Hosts unbeaten in 7 home games with key striker back.`;
+    prompt += `\nDo NOT add commentary before or after the list. All odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
     return prompt;
   };
 
@@ -802,35 +796,35 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
     const seen = new Set();
     let m;
 
-    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85
-    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
+    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85 | reason
+    const betTagRe = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
     while ((m = betTagRe.exec(content)) !== null) {
       const key = m[1].trim().toLowerCase();
-      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) }); }
+      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]), reason: (m[3] || '').trim() }); }
     }
 
-    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85" or "1. **Over 2.5** @ 1.85"
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85 | reason"
     if (bets.length === 0) {
-      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*([^\n@–—|]+?)\**\s*[@–—-]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = numberedRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
         if (odds >= 1.01 && odds <= 50 && type.length > 2) {
           const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds, reason: (m[3] || '').trim() }); }
         }
       }
     }
 
-    // 3) Fallback: "Bet Type @ odds" anywhere
+    // 3) Fallback: "Bet Type @ odds | reason" anywhere
     if (bets.length === 0) {
-      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**([^\n@–—|]+?)\**\s*[@–—]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = fallbackRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
         if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
           const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds, reason: (m[3] || '').trim() }); }
         }
       }
     }
@@ -914,47 +908,24 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             </div>
           )}
 
-          {/* Claude AI Analysis text */}
-          {(pred?.predictions || pred?.comparison) && <div className="border-t border-gray-100 my-4"/>}
-          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.expertAnalysis')}</p>
-          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {prediction.claudeAnalysis?.split('\n').map((line, i) => {
-              const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-              return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
-            })}
-          </div>
+          {/* Bets-first: AI picks with per-bet "Analysis details" toggle */}
+          {recommendedBets.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mb-2.5">
+                <span>🔥</span>{t('aiChat.aiPicks', { defaultValue: 'AI Picks' })}
+              </p>
+              <MatchBetList
+                bets={recommendedBets}
+                fallback={stripBets(prediction.claudeAnalysis)}
+                t={t}
+                onPlace={() => { trackClick(user?.id, 'match_bet_card'); navigate('/promo'); }}
+              />
+            </div>
+          )}
 
-          {/* Combined: Best Bet cards + Promo block (merged into one card) */}
+          {/* Promo block (free users) */}
           {!isPremium && (
             <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-              {/* Best Bet section — only if bets exist */}
-              {recommendedBets.length > 0 && (
-                <>
-                  <div className="bg-white px-4 pt-3 pb-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-                      <span>🔥</span>
-                      {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
-                    </p>
-                  </div>
-                  <div className="bg-white px-4 pb-3 space-y-2">
-                    {recommendedBets.map((bet, idx) => {
-                      const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
-                      return (
-                        <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                              <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
 
               {/* Promo header bar */}
               <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
@@ -1773,3 +1744,60 @@ function MatchBonusCard({ match, advertiser, user, trackClick, recommendedBet, p
   );
 }
 
+
+/* Strip [BET] lines and the FINAL RECOMMENDATIONS header — fallback analysis text */
+function stripBets(content) {
+  return (content || '')
+    .replace(/\[BET\][^\n]*/gi, '')
+    .replace(/\*\*?FINAL RECOMMENDATIONS\*\*?/gi, '')
+    .replace(/FINAL RECOMMENDATIONS/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* Bets-first list with a per-bet "Analysis details" toggle */
+function MatchBetList({ bets, fallback, t, onPlace }) {
+  const [openIdx, setOpenIdx] = useState(null);
+  return (
+    <div className="space-y-2.5">
+      {bets.slice(0, 4).map((bet, idx) => {
+        const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+        const analysis = bet.reason || fallback;
+        const isOpen = openIdx === idx;
+        return (
+          <div key={idx} className="rounded-xl border border-gray-100 overflow-hidden bg-white">
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                </div>
+              </div>
+              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+            </div>
+            <div className="flex gap-2 px-3 pb-3">
+              <button
+                onClick={() => setOpenIdx(isOpen ? null : idx)}
+                className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 rounded-lg py-2"
+              >
+                {t('matchDetail.analysisDetails', { defaultValue: 'Analysis details' })}
+                <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+              </button>
+              <button onClick={onPlace} className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2">
+                {t('aiChat.placeBet', { defaultValue: 'Place bet' })}
+              </button>
+            </div>
+            {isOpen && analysis && (
+              <div className="px-3 pb-3 -mt-0.5">
+                <div className="bg-gray-50 rounded-lg p-3 text-[13px] text-gray-700 leading-relaxed border-l-2 border-primary-500 whitespace-pre-line">
+                  {analysis}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

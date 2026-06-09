@@ -1309,7 +1309,8 @@
     "reanalyze": "Ponowna analiza",
     "reanalyzeCost": "kosztuje 1 zapytanie",
     "reanalyzing": "Ponowna analiza...",
-    "kickoff": "Początek"
+    "kickoff": "Początek",
+    "analysisDetails": "Szczegóły analizy"
   },
   "liveMatch": {
     "tabOverview": "Przegląd",

@@ -1255,7 +1255,8 @@
     "reanalyze": "Neu analysieren",
     "reanalyzeCost": "kostet 1 Anfrage",
     "reanalyzing": "Neu analysieren...",
-    "kickoff": "Anstoß"
+    "kickoff": "Anstoß",
+    "analysisDetails": "Analyse-Details"
   },
   "liveMatch": {
     "tabOverview": "Übersicht",

@@ -1319,7 +1319,8 @@
     "reanalyze": "Ri-analizza",
     "reanalyzeCost": "costa 1 richiesta",
     "reanalyzing": "Ri-analisi...",
-    "kickoff": "Inizio"
+    "kickoff": "Inizio",
+    "analysisDetails": "Dettagli analisi"
   },
   "liveMatch": {
     "tabOverview": "Panoramica",

@@ -1306,7 +1306,8 @@
     "reanalyze": "Ré-analyser",
     "reanalyzeCost": "coûte 1 requête",
     "reanalyzing": "Ré-analyse...",
-    "kickoff": "Coup d'envoi"
+    "kickoff": "Coup d'envoi",
+    "analysisDetails": "Détails de l'analyse"
   },
   "liveMatch": {
     "tabOverview": "Aperçu",
