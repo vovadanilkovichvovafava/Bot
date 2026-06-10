@@ -8,27 +8,29 @@ const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
 const WC_START = new Date('2026-06-11T20:00:00Z');
 
-function mkRow(group, rank, name, code) {
+function mkRow(group, rank, name, code, id) {
   return {
     rank, group,
-    team: { name, logo: `https://flagcdn.com/w80/${code}.png` },
+    // `id` is the api-sports SENIOR national-team id — used to load the real squad
+    // directly (resolving by name returns youth teams / nothing for some countries).
+    team: { id, name, logo: `https://flagcdn.com/w80/${code}.png` },
     points: 0, goalsDiff: 0, all: { played: 0, win: 0, draw: 0, lose: 0 },
   };
 }
 
 const WC2026_GROUPS = [
-  [mkRow('Group A', 1, 'Mexico', 'mx'), mkRow('Group A', 2, 'South Africa', 'za'), mkRow('Group A', 3, 'South Korea', 'kr'), mkRow('Group A', 4, 'Czech Republic', 'cz')],
-  [mkRow('Group B', 1, 'Canada', 'ca'), mkRow('Group B', 2, 'Bosnia & Herzegovina', 'ba'), mkRow('Group B', 3, 'Qatar', 'qa'), mkRow('Group B', 4, 'Switzerland', 'ch')],
-  [mkRow('Group C', 1, 'Brazil', 'br'), mkRow('Group C', 2, 'Morocco', 'ma'), mkRow('Group C', 3, 'Haiti', 'ht'), mkRow('Group C', 4, 'Scotland', 'gb-sct')],
-  [mkRow('Group D', 1, 'United States', 'us'), mkRow('Group D', 2, 'Paraguay', 'py'), mkRow('Group D', 3, 'Australia', 'au'), mkRow('Group D', 4, 'Türkiye', 'tr')],
-  [mkRow('Group E', 1, 'Germany', 'de'), mkRow('Group E', 2, 'Curaçao', 'cw'), mkRow('Group E', 3, 'Ivory Coast', 'ci'), mkRow('Group E', 4, 'Ecuador', 'ec')],
-  [mkRow('Group F', 1, 'Netherlands', 'nl'), mkRow('Group F', 2, 'Japan', 'jp'), mkRow('Group F', 3, 'Sweden', 'se'), mkRow('Group F', 4, 'Tunisia', 'tn')],
-  [mkRow('Group G', 1, 'Belgium', 'be'), mkRow('Group G', 2, 'Egypt', 'eg'), mkRow('Group G', 3, 'Iran', 'ir'), mkRow('Group G', 4, 'New Zealand', 'nz')],
-  [mkRow('Group H', 1, 'Spain', 'es'), mkRow('Group H', 2, 'Cape Verde', 'cv'), mkRow('Group H', 3, 'Saudi Arabia', 'sa'), mkRow('Group H', 4, 'Uruguay', 'uy')],
-  [mkRow('Group I', 1, 'France', 'fr'), mkRow('Group I', 2, 'Senegal', 'sn'), mkRow('Group I', 3, 'Iraq', 'iq'), mkRow('Group I', 4, 'Norway', 'no')],
-  [mkRow('Group J', 1, 'Argentina', 'ar'), mkRow('Group J', 2, 'Algeria', 'dz'), mkRow('Group J', 3, 'Austria', 'at'), mkRow('Group J', 4, 'Jordan', 'jo')],
-  [mkRow('Group K', 1, 'Portugal', 'pt'), mkRow('Group K', 2, 'DR Congo', 'cd'), mkRow('Group K', 3, 'Uzbekistan', 'uz'), mkRow('Group K', 4, 'Colombia', 'co')],
-  [mkRow('Group L', 1, 'England', 'gb-eng'), mkRow('Group L', 2, 'Croatia', 'hr'), mkRow('Group L', 3, 'Ghana', 'gh'), mkRow('Group L', 4, 'Panama', 'pa')],
+  [mkRow('Group A', 1, 'Mexico', 'mx', 16), mkRow('Group A', 2, 'South Africa', 'za', 1531), mkRow('Group A', 3, 'South Korea', 'kr', 17), mkRow('Group A', 4, 'Czech Republic', 'cz', 770)],
+  [mkRow('Group B', 1, 'Canada', 'ca', 5529), mkRow('Group B', 2, 'Bosnia & Herzegovina', 'ba', 1113), mkRow('Group B', 3, 'Qatar', 'qa', 1569), mkRow('Group B', 4, 'Switzerland', 'ch', 15)],
+  [mkRow('Group C', 1, 'Brazil', 'br', 6), mkRow('Group C', 2, 'Morocco', 'ma', 31), mkRow('Group C', 3, 'Haiti', 'ht', 2386), mkRow('Group C', 4, 'Scotland', 'gb-sct', 1108)],
+  [mkRow('Group D', 1, 'United States', 'us', 2384), mkRow('Group D', 2, 'Paraguay', 'py', 2380), mkRow('Group D', 3, 'Australia', 'au', 20), mkRow('Group D', 4, 'Türkiye', 'tr', 777)],
+  [mkRow('Group E', 1, 'Germany', 'de', 25), mkRow('Group E', 2, 'Curaçao', 'cw', 5530), mkRow('Group E', 3, 'Ivory Coast', 'ci', 1501), mkRow('Group E', 4, 'Ecuador', 'ec', 2382)],
+  [mkRow('Group F', 1, 'Netherlands', 'nl', 1118), mkRow('Group F', 2, 'Japan', 'jp', 12), mkRow('Group F', 3, 'Sweden', 'se', 5), mkRow('Group F', 4, 'Tunisia', 'tn', 28)],
+  [mkRow('Group G', 1, 'Belgium', 'be', 1), mkRow('Group G', 2, 'Egypt', 'eg', 32), mkRow('Group G', 3, 'Iran', 'ir', 22), mkRow('Group G', 4, 'New Zealand', 'nz', 4673)],
+  [mkRow('Group H', 1, 'Spain', 'es', 9), mkRow('Group H', 2, 'Cape Verde', 'cv', 1533), mkRow('Group H', 3, 'Saudi Arabia', 'sa', 23), mkRow('Group H', 4, 'Uruguay', 'uy', 7)],
+  [mkRow('Group I', 1, 'France', 'fr', 2), mkRow('Group I', 2, 'Senegal', 'sn', 13), mkRow('Group I', 3, 'Iraq', 'iq', 1567), mkRow('Group I', 4, 'Norway', 'no', 1090)],
+  [mkRow('Group J', 1, 'Argentina', 'ar', 26), mkRow('Group J', 2, 'Algeria', 'dz', 1532), mkRow('Group J', 3, 'Austria', 'at', 775), mkRow('Group J', 4, 'Jordan', 'jo', 1548)],
+  [mkRow('Group K', 1, 'Portugal', 'pt', 27), mkRow('Group K', 2, 'DR Congo', 'cd', 1508), mkRow('Group K', 3, 'Uzbekistan', 'uz', 1568), mkRow('Group K', 4, 'Colombia', 'co', 8)],
+  [mkRow('Group L', 1, 'England', 'gb-eng', 10), mkRow('Group L', 2, 'Croatia', 'hr', 3), mkRow('Group L', 3, 'Ghana', 'gh', 1504), mkRow('Group L', 4, 'Panama', 'pa', 11)],
 ];
 
 const KNOCKOUT_ROUNDS = [

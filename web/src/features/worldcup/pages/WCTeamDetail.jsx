@@ -52,9 +52,10 @@ export default function WCTeamDetail() {
       try {
         let teamId = /^\d+$/.test(id) ? Number(id) : null;
         if (!teamId && stateTeam?.name) {
-          const found = await footballApi.searchTeams(stateTeam.name);
-          teamId = found?.[0]?.id || null;
-          if (alive && found?.[0]) setTeam((prev) => ({ ...prev, logo: prev?.logo || found[0].logo }));
+          // Resolve to the SENIOR national team (not youth/women) by name.
+          const found = await footballApi.resolveNationalTeam(stateTeam.name);
+          teamId = found?.id || null;
+          if (alive && found) setTeam((prev) => ({ ...prev, logo: prev?.logo || found.logo }));
         }
         if (!teamId) { if (alive) setLoading(false); return; }
         const squad = await footballApi.getSquad(teamId);

@@ -350,11 +350,28 @@ class FootballApiService {
         name: item.team?.name || item.name,
         logo: item.team?.logo || item.logo,
         country: item.team?.country || item.country,
+        national: item.team?.national ?? item.national ?? false,
       })).filter(t => t.id && t.name);
     } catch (e) {
       console.error('Team search failed:', e);
       return [];
     }
+  }
+
+  // Resolve a country/team name to its SENIOR national team (excludes youth/women
+  // sides, which API search otherwise returns first for some countries).
+  async resolveNationalTeam(name) {
+    if (!name) return null;
+    const youth = /\bU-?\d{2}\b|\bW\b|women|olympic|futsal|amateur|beach/i;
+    const results = await this.searchTeams(name);
+    const seniors = results.filter(t => t.national && !youth.test(t.name || ''));
+    const norm = (s) => (s || '').toLowerCase().replace(/[^a-z]/g, '');
+    return (
+      seniors.find(t => norm(t.name) === norm(name)) ||
+      seniors[0] ||
+      results[0] ||
+      null
+    );
   }
 
   async getTeamStatistics(teamId, season, leagueId) {
