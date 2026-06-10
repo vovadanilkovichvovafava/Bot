@@ -152,11 +152,11 @@ export default function WorldCup() {
           <h1 className="flex-1 text-white text-xl font-black tracking-wide">
             STATSPRO<sup className="text-emerald-400 text-[10px] font-bold ml-0.5 align-super">2026</sup>
           </h1>
-          <button onClick={() => navigate(isPremium ? '/settings' : '/pro-access')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5 shrink-0">
-            <span className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
+          <button onClick={() => navigate('/rewards')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5 shrink-0">
+            <span className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center">
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
             </span>
-            <span className="text-white font-bold text-sm">{isPremium ? '∞' : t('worldCup.goPro', { defaultValue: 'PRO' })} {isPremium ? t('home.pts', { defaultValue: 'pts' }) : ''}</span>
+            <span className="text-white font-bold text-sm">{t('worldCup.rewards', { defaultValue: 'Rewards' })}</span>
           </button>
         </div>
       </div>

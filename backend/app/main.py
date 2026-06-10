@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express
+from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express, fantasy
 from app.api.admin_auth import get_current_admin
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
@@ -244,6 +244,7 @@ app.include_router(fonbet.router, prefix="/api/v1/fonbet", tags=["fonbet"])
 app.include_router(community_picks.router, prefix="/api/v1/community-picks", tags=["community-picks"])
 app.include_router(match_chat.router, prefix="/api/v1/match-chat", tags=["match-chat"])
 app.include_router(express.router, prefix="/api/v1/express", tags=["express"])
+app.include_router(fantasy.router, prefix="/api/v1/fantasy", tags=["fantasy"])
 
 
 @app.get("/")

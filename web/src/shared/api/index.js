@@ -226,6 +226,22 @@ class ApiService {
     return this.request('/users/me/referral');
   }
 
+  // === Fantasy rewards ===
+  async getFantasy() {
+    return this.request('/fantasy/me');
+  }
+
+  async redeemFantasy(tierId) {
+    return this.request('/fantasy/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ tier_id: tierId }),
+    });
+  }
+
+  async getFantasyLeaderboard() {
+    return this.request('/fantasy/leaderboard');
+  }
+
   async getMyPredictions() {
     return this.request('/users/me/predictions');
   }

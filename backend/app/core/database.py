@@ -58,6 +58,7 @@ async def init_db():
     import app.models.community_pick  # noqa: F401
     import app.models.match_chat  # noqa: F401
     import app.models.express_bet  # noqa: F401
+    import app.models.fantasy  # noqa: F401
 
     async with engine.begin() as conn:
         # Create all tables (will not modify existing ones — that's fine,
@@ -214,6 +215,21 @@ async def init_db():
             # ── analytics_events indexes ──
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
+            # ── Fantasy / rewards (points → PRO now, $ freebet later) ──
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points_lifetime INTEGER DEFAULT 0",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS points_awarded BOOLEAN DEFAULT FALSE",
+            """CREATE TABLE IF NOT EXISTS fantasy_ledger (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                kind VARCHAR NOT NULL,
+                points INTEGER NOT NULL,
+                reason VARCHAR,
+                ref VARCHAR,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_fantasy_ledger_user ON fantasy_ledger(user_id, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_users_fantasy_lifetime ON users(fantasy_points_lifetime DESC) WHERE fantasy_points_lifetime > 0",
         ]
 
         for migration in migrations:

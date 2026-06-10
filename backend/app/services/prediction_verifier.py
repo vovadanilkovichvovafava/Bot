@@ -8,16 +8,36 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from sqlalchemy import select, func, and_, case
+from sqlalchemy import select, func, and_, case, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.models.prediction import Prediction
+from app.models.user import User
+from app.models.fantasy import FantasyLedger
 from app.models.ml_models import MatchFeature, LearningLog
 from app.services.api_football import ApiFootballService
 from app.services.feature_engineer import update_elo_after_match
 
 logger = logging.getLogger(__name__)
+
+# Fantasy points awarded for a correct prediction (confidence-weighted).
+FANTASY_BASE_POINTS = 100
+
+
+async def _award_fantasy_points(db: AsyncSession, user_id: int, points: int, reason: str, ref: str):
+    """Credit fantasy points to a user and record a ledger entry (same transaction)."""
+    if not user_id or points <= 0:
+        return
+    await db.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(
+            fantasy_points=func.coalesce(User.fantasy_points, 0) + points,
+            fantasy_points_lifetime=func.coalesce(User.fantasy_points_lifetime, 0) + points,
+        )
+    )
+    db.add(FantasyLedger(user_id=user_id, kind="earn", points=points, reason=reason, ref=str(ref) if ref else None))
 
 # Bet type verification logic
 # Maps bet_type to a function(home_goals, away_goals) -> bool
@@ -172,6 +192,16 @@ async def verify_pending_predictions():
                     # Determine if prediction was correct
                     is_correct = _check_prediction(pred, home_goals, away_goals, fixture)
                     pred.is_correct = is_correct
+
+                    # Fantasy points: award once, only for correct predictions.
+                    if is_correct and not pred.points_awarded and pred.user_id:
+                        conf = int(min(max(pred.confidence or 0, 0), 100))
+                        await _award_fantasy_points(
+                            db, pred.user_id, FANTASY_BASE_POINTS + conf,
+                            "correct_prediction", pred.match_id,
+                        )
+                    pred.points_awarded = True
+
                     verified_count += 1
 
                     logger.info(
