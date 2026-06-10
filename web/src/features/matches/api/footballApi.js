@@ -288,8 +288,11 @@ class FootballApiService {
   }
 
   async getLiveOdds(fixtureId) {
-    // Live odds only from direct API
-    return this.directRequest('/odds/live', { fixture: fixtureId });
+    try {
+      return await this.backendRequest(`/fixtures/${fixtureId}/odds/live`);
+    } catch {
+      return [];
+    }
   }
 
   // Batch 1X2 odds for a whole date → { [fixtureId]: { home, draw, away } }
@@ -355,12 +358,11 @@ class FootballApiService {
   }
 
   async getTeamStatistics(teamId, season, leagueId) {
-    // Complex query - direct API
-    return this.directRequest('/teams/statistics', {
-      team: teamId,
-      season,
-      league: leagueId,
-    });
+    try {
+      return await this.backendRequest(`/teams/${teamId}/statistics?season=${season}&league=${leagueId}`);
+    } catch {
+      return null;
+    }
   }
 
   // === Injuries ===
@@ -425,23 +427,39 @@ class FootballApiService {
   // === Players ===
 
   async getTopScorers(leagueId, season) {
-    return this.directRequest('/players/topscorers', { league: leagueId, season });
+    try {
+      return await this.backendRequest(`/players/topscorers/${leagueId}/${season}`);
+    } catch {
+      return [];
+    }
   }
 
   // === Leagues ===
 
   async getLeagues(country) {
-    const params = country ? { country } : {};
-    return this.directRequest('/leagues', params);
+    try {
+      const qs = country ? `?country=${encodeURIComponent(country)}` : '';
+      return await this.backendRequest(`/leagues${qs}`);
+    } catch {
+      return [];
+    }
   }
 
   async getLeagueById(leagueId) {
-    const res = await this.directRequest('/leagues', { id: leagueId });
-    return res[0] || null;
+    try {
+      const res = await this.backendRequest(`/leagues?id=${leagueId}`);
+      return res[0] || null;
+    } catch {
+      return null;
+    }
   }
 
   async searchLeague(name) {
-    return this.directRequest('/leagues', { search: name });
+    try {
+      return await this.backendRequest(`/leagues?search=${encodeURIComponent(name)}`);
+    } catch {
+      return [];
+    }
   }
 
   // === Fixtures with Odds (optimized) ===

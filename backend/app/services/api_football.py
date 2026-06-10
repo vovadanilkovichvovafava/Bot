@@ -279,6 +279,40 @@ class ApiFootballService:
         h2h = f"{team1_id}-{team2_id}"
         return await self._request("/fixtures/headtohead", {"h2h": h2h, "last": last}, "fixtures")
 
+    # === Team Statistics / Players / Leagues / Live Odds ===
+
+    async def get_team_statistics(self, team_id: int, season: int, league_id: int) -> Any:
+        """Get aggregated season statistics for a team in a league (response is an object)."""
+        return await self._request(
+            "/teams/statistics",
+            {"team": team_id, "season": season, "league": league_id},
+            "teams",
+        )
+
+    async def get_top_scorers(self, league_id: int, season: int) -> List[Dict]:
+        """Get top scorers for a league+season."""
+        return await self._request("/players/topscorers", {"league": league_id, "season": season}, "standings")
+
+    async def get_leagues(
+        self,
+        country: Optional[str] = None,
+        search: Optional[str] = None,
+        league_id: Optional[int] = None,
+    ) -> List[Dict]:
+        """List/search leagues."""
+        params: Dict[str, Any] = {}
+        if country:
+            params["country"] = country
+        if search:
+            params["search"] = search
+        if league_id:
+            params["id"] = league_id
+        return await self._request("/leagues", params, "standings")
+
+    async def get_live_odds(self, fixture_id: int) -> List[Dict]:
+        """Get in-play (live) odds for a fixture."""
+        return await self._request("/odds/live", {"fixture": fixture_id}, "live")
+
     # === Enriched Data (combines multiple calls) ===
 
     async def get_match_enriched(self, fixture_id: int) -> Dict:

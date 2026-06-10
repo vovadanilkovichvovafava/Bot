@@ -148,6 +148,16 @@ async def get_odds(fixture_id: int) -> List[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch odds")
 
 
+@router.get("/fixtures/{fixture_id}/odds/live")
+async def get_live_odds(fixture_id: int) -> List[Dict]:
+    """Get in-play (live) odds for a fixture."""
+    try:
+        return await api_football.get_live_odds(fixture_id)
+    except Exception as e:
+        logger.error(f"Error fetching live odds for fixture {fixture_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch live odds")
+
+
 @router.get("/odds/date/{date}")
 async def get_odds_map_by_date(date: str) -> Dict:
     """Batch 1X2 odds for all fixtures on a date → {fixture_id: {home, draw, away}}."""
@@ -188,6 +198,48 @@ async def get_squad(team_id: int) -> List[Dict]:
     except Exception as e:
         logger.error(f"Error fetching squad for team {team_id}: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch squad")
+
+
+@router.get("/teams/{team_id}/statistics")
+async def get_team_statistics(
+    team_id: int,
+    season: int = Query(..., ge=2000, le=2030),
+    league: int = Query(..., ge=1),
+) -> Dict:
+    """Get aggregated season statistics for a team in a league."""
+    try:
+        return await api_football.get_team_statistics(team_id, season, league) or {}
+    except Exception as e:
+        logger.error(f"Error fetching team statistics for team {team_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch team statistics")
+
+
+# === Players ===
+
+@router.get("/players/topscorers/{league_id}/{season}")
+async def get_top_scorers(league_id: int, season: int) -> List[Dict]:
+    """Get top scorers for a league+season."""
+    try:
+        return await api_football.get_top_scorers(league_id, season)
+    except Exception as e:
+        logger.error(f"Error fetching top scorers for league {league_id}, season {season}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch top scorers")
+
+
+# === Leagues ===
+
+@router.get("/leagues")
+async def get_leagues(
+    country: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, min_length=2),
+    id: Optional[int] = Query(None, ge=1),
+) -> List[Dict]:
+    """List or search leagues (by country, name, or id)."""
+    try:
+        return await api_football.get_leagues(country=country, search=search, league_id=id)
+    except Exception as e:
+        logger.error(f"Error fetching leagues (country={country}, search={search}, id={id}): {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch leagues")
 
 
 # === Injuries ===
