@@ -842,7 +842,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
   const recommendedBet = recommendedBets[0] || null;
 
   // Calculate potential win for free bet card
-  const bonusNumeric = advertiser?.freeBetAmount || 75;
+  const bonusNumeric = advertiser?.freeBetAmount || 100;
   const potentialWin = recommendedBet ? Math.round(bonusNumeric * recommendedBet.odds) : 0;
   const formatWinAmount = (val) => {
     const currency = advertiser?.currency || '€';

@@ -189,13 +189,13 @@ export default function ProAccess() {
   const feature = searchParams.get('feature');
 
   const calcTiers = advertiser.calcTiers || [
-    { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
-    { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
-    { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
-    { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
+    { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
+    { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
+    { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
+    { dep: '€500', bonus: '€500', total: '€1.000', months: 8 },
   ];
-  const calcMaxBonus = advertiser.calcMaxBonus || '€750';
-  const calcBonusPercent = advertiser.calcBonusPercent || '+150%';
+  const calcMaxBonus = advertiser.calcMaxBonus || '€500';
+  const calcBonusPercent = advertiser.calcBonusPercent || '+100%';
   const calcLabels = [
     t('proAccess.s4bLblStart'),
     t('proAccess.s4bLblPopular'),
@@ -449,23 +449,23 @@ export default function ProAccess() {
               <div className="rtag blue">Min PRO</div>
               <div className="da">{advertiser.depositAmounts?.[0] || '€50'}</div>
               <div className="dl">{t('proAccess.s5MinForPro')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} {t('proAccess.s5Bonus')}</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€50'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('proAccess.s4Recommended')}</div>
               <div className="da">{advertiser.depositAmounts?.[1] || '€100'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€150'} {t('proAccess.s5Bonus')}</div>
+              <div className="dbonus dbonus-green">+{advertiser.bonusAmounts?.[1] || '€100'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt${sel === 2 ? ' sel' : ''}`} onClick={() => setSel(2)}>
               <div className="da">{advertiser.depositAmounts?.[2] || '€300'}</div>
               <div className="dl">{t('proAccess.s4Serious')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€450'} {t('proAccess.s5Bonus')}</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[2] || '€300'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt${sel === 3 ? ' sel' : ''}`} onClick={() => setSel(3)}>
               <div className="da">{advertiser.depositAmounts?.[3] || '€500'}</div>
               <div className="dl">{t('proAccess.s4MoreBonus')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€750'} {t('proAccess.s5Bonus')}</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[3] || '€500'} {t('proAccess.s5Bonus')}</div>
             </div>
           </div>
 

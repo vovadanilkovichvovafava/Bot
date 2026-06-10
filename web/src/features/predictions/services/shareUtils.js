@@ -111,7 +111,7 @@ export function getShareLinks(text, url = window.location.href) {
 /**
  * Generate share text with referral link for viral growth
  */
-export function generateReferralShareText({ matchText, prediction, referralCode, bonus = '€75' }) {
+export function generateReferralShareText({ matchText, prediction, referralCode, bonus = '€100' }) {
   const baseUrl = window.location.origin;
   const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
 
@@ -131,7 +131,7 @@ export function generateReferralShareText({ matchText, prediction, referralCode,
 /**
  * Generate express share text with referral
  */
-export function generateExpressShareText({ express, referralCode, bonus = '€75' }) {
+export function generateExpressShareText({ express, referralCode, bonus = '€100' }) {
   const baseUrl = window.location.origin;
   const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
 
@@ -149,7 +149,7 @@ export function generateExpressShareText({ express, referralCode, bonus = '€75
 /**
  * Generate post-match "could have won" share text
  */
-export function generatePostMatchShareText({ homeTeam, awayTeam, score, bet, odds, potentialWin, currency, referralCode, bonus = '€75' }) {
+export function generatePostMatchShareText({ homeTeam, awayTeam, score, bet, odds, potentialWin, currency, referralCode, bonus = '€100' }) {
   const baseUrl = window.location.origin;
   const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
 

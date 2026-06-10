@@ -174,12 +174,12 @@ export default function PostMatchReminder() {
               </p>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="font-bold text-amber-700">{advertiser?.bonusBanner?.bonus || '€75'}</span>
+              <span className="font-bold text-amber-700">{advertiser?.bonusBanner?.bonus || '€100'}</span>
               <span className="text-amber-500">&times;</span>
               <span className="font-bold text-amber-700">{reminder.odds?.toFixed(2)}</span>
               <span className="text-amber-500">=</span>
               <span className="text-lg font-black text-amber-700">
-                {advertiser?.currency}{Math.round((advertiser?.freeBetAmount || 75) * (reminder.odds || 1))}
+                {advertiser?.currency}{Math.round((advertiser?.freeBetAmount || 100) * (reminder.odds || 1))}
               </span>
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function PostMatchReminder() {
                   potentialWin: reminder.potential_win,
                   currency: advertiser?.currency || '€',
                   referralCode: user?.referral_code,
-                  bonus: advertiser?.bonusBanner?.bonus || '€75',
+                  bonus: advertiser?.bonusBanner?.bonus || '€100',
                 });
                 trackClick(user?.id, 'post_match_share');
                 await sharePrediction(text, `${reminder.home_team} vs ${reminder.away_team}`);

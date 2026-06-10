@@ -345,7 +345,7 @@ export default function ExpressBet() {
                     trackClick={trackClick}
                     userId={user?.id}
                     referralCode={user?.referral_code}
-                    bonus={advertiser?.bonusBanner?.bonus || '€75'}
+                    bonus={advertiser?.bonusBanner?.bonus || '€100'}
                     navigate={navigate}
                     t={t}
                     isPro={isPro}
@@ -374,7 +374,7 @@ export default function ExpressBet() {
                     {t('advertiser.freeBetLabel')}
                   </p>
                   <p className="text-white text-base font-bold">
-                    {t('express.betExpressWithBonus', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `Bet your express with ${advertiser?.bonusBanner?.bonus || '€75'} free bet` })}
+                    {t('express.betExpressWithBonus', { bonus: advertiser?.bonusBanner?.bonus || '€100', defaultValue: `Bet your express with ${advertiser?.bonusBanner?.bonus || '€100'} free bet` })}
                   </p>
                 </div>
               </div>
@@ -384,7 +384,7 @@ export default function ExpressBet() {
                     <span className="text-lg">🎁</span>
                     <div>
                       <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">{t('advertiser.freeBetLabel')}</p>
-                      <p className="text-white font-black text-sm">{advertiser?.bonusBanner?.bonus || '€75'}</p>
+                      <p className="text-white font-black text-sm">{advertiser?.bonusBanner?.bonus || '€100'}</p>
                     </div>
                   </div>
                   {expresses[0] && (
@@ -397,7 +397,7 @@ export default function ExpressBet() {
                   {expresses[0] && (
                     <div className="text-right">
                       <p className="text-[10px] text-white/50 font-semibold uppercase">{t('matchDetail.potentialWin', { defaultValue: 'Potential win' })}</p>
-                      <p className="text-lg font-black" style={{ color: '#F7C948' }}>&euro;{Math.round((advertiser?.freeBetAmount || 75) * parseFloat(expresses[0].total_odds))}</p>
+                      <p className="text-lg font-black" style={{ color: '#F7C948' }}>&euro;{Math.round((advertiser?.freeBetAmount || 100) * parseFloat(expresses[0].total_odds))}</p>
                     </div>
                   )}
                 </div>
@@ -405,7 +405,7 @@ export default function ExpressBet() {
             </div>
             <div className="relative px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <p className="text-white font-bold text-xs">
-                {t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus || '€75', defaultValue: `Get ${advertiser?.bonusBanner?.bonus || '€75'} free bet` })}
+                {t('aiChat.getFreeBet', { bonus: advertiser?.bonusBanner?.bonus || '€100', defaultValue: `Get ${advertiser?.bonusBanner?.bonus || '€100'} free bet` })}
               </p>
               <svg className="w-4 h-4 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
             </div>

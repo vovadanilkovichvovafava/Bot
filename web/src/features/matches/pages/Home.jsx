@@ -527,7 +527,7 @@ function MejorPickCard({ matches, smartBet, navigate, t, locked, advertiser, tra
 function HomeBonusBanner({ advertiser, userId, trackClick }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const bb = advertiser?.bonusBanner || { deposit: '€50', bonus: '€75', total: '€125' };
+  const bb = advertiser?.bonusBanner || { deposit: '€100', bonus: '€100', total: '€200' };
 
   const hour = new Date().getHours();
   const claimedCount = 90 + ((hour * 7 + 13) % 80);
