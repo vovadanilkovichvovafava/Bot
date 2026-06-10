@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import footballApi from '../../matches/api/footballApi';
+import MatchChat from '../../matches/components/MatchChat';
 
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
@@ -102,31 +103,41 @@ export default function WorldCup() {
   const [tab, setTab] = useState('groups');
   const [groups, setGroups] = useState([]);
   const [fixtures, setFixtures] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Live polling: standings + tournament fixtures + currently-live WC matches.
+  // During the tournament this keeps tables/scores fresh without a reload.
   useEffect(() => {
     let alive = true;
-    (async () => {
-      setLoading(true);
+    const load = async (initial) => {
+      if (initial) setLoading(true);
       try {
-        const [g, f] = await Promise.allSettled([
+        const [g, f, live] = await Promise.allSettled([
           footballApi.getAllStandings(WC_LEAGUE_ID, WC_SEASON),
           footballApi.getTournamentFixtures(WC_LEAGUE_ID, WC_SEASON),
+          footballApi.getLiveFixtures(),
         ]);
         if (!alive) return;
         const apiGroups = g.status === 'fulfilled' ? (g.value || []) : [];
-        setGroups(apiGroups.length > 0 ? apiGroups : WC2026_GROUPS);
-        setFixtures(f.status === 'fulfilled' ? (f.value || []) : []);
+        if (apiGroups.length > 0) setGroups(apiGroups);
+        else if (initial) setGroups(WC2026_GROUPS); // placeholder only until the API populates
+        if (f.status === 'fulfilled') setFixtures(f.value || []);
+        const allLive = live.status === 'fulfilled' ? (live.value || []) : [];
+        setLiveMatches(allLive.filter((m) => m.league?.id === WC_LEAGUE_ID));
       } catch {
-        if (alive) { setGroups(WC2026_GROUPS); setFixtures([]); }
+        if (alive && initial) { setGroups(WC2026_GROUPS); setFixtures([]); }
       } finally {
-        if (alive) setLoading(false);
+        if (alive && initial) setLoading(false);
       }
-    })();
-    return () => { alive = false; };
+    };
+    load(true);
+    const iv = setInterval(() => load(false), 30000); // refresh every 30s
+    return () => { alive = false; clearInterval(iv); };
   }, []);
 
-  const openMatch = (id) => { if (id) navigate(`/match/${id}`); };
+  // In-play matches open the live screen (30s polling); otherwise the pre-match page.
+  const openMatch = (id, live) => { if (id) navigate(live ? `/live/${id}` : `/match/${id}`); };
   const openTeam = (team) => { if (team?.name) navigate(`/world-cup/team/${team.id || 'na'}`, { state: { team } }); };
   const isPremium = user?.is_premium;
 
@@ -162,7 +173,11 @@ export default function WorldCup() {
                 </div>
                 <p className="text-[6px] font-black text-[#0D0D1F] tracking-[0.18em]">FIFA</p>
               </div>
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">LIVE</span>
+              {liveMatches.length > 0 && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                  <span className="w-1 h-1 rounded-full bg-white animate-pulse" />LIVE
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-emerald-400 text-[10px] font-black uppercase tracking-wider">
@@ -187,6 +202,9 @@ export default function WorldCup() {
             ))}
           </div>
         </div>
+
+        {/* ===== Live now ===== */}
+        {liveMatches.length > 0 && <LiveNowStrip matches={liveMatches} onOpen={openMatch} t={t} />}
 
         {/* ===== Star Watch ===== */}
         <div>
@@ -268,8 +286,14 @@ export default function WorldCup() {
           ))}
         </div>
 
-        {/* ===== Hinchada Live ===== */}
-        <HinchadaLive t={t} username={user?.username} />
+        {/* ===== Fan Zone (real backend chat) ===== */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <h3 className="text-[17px] font-black text-gray-900">{t('worldCup.fanZone', { defaultValue: 'Fan Zone Live' })}</h3>
+          </div>
+          <MatchChat matchId="wc2026-fanzone" />
+        </div>
       </div>
     </div>
   );
@@ -400,7 +424,7 @@ function BracketTie({ fixture, onOpenMatch, roundColor }) {
   const homeWin = done && goals?.home > goals?.away;
   const awayWin = done && goals?.away > goals?.home;
   return (
-    <button onClick={() => onOpenMatch(fx?.id)} className="w-full rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden text-left">
+    <button onClick={() => onOpenMatch(fx?.id, live)} className="w-full rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden text-left">
       <div className="h-0.5" style={{ backgroundColor: roundColor }} />
       <div className="p-3 space-y-1">
         <BracketTeamRow team={teams?.home} score={goals?.home} winner={homeWin} dim={done && !homeWin} />
@@ -428,71 +452,49 @@ function BracketTeamRow({ team, score, winner, dim }) {
   );
 }
 
-/* ============================ HINCHADA LIVE ============================ */
+/* ============================ LIVE NOW ============================ */
 
-function HinchadaLive({ t, username }) {
-  const seed = [
-    { user: 'Diego78', code: 'ar', g: ['#75AADB', '#0B3D91'], text: t('worldCup.chatSeed1', { defaultValue: 'Come on Argentina! La Scaloneta is ready.' }) },
-    { user: 'Marta_RM', code: 'es', g: ['#C60B1E', '#FFC400'], text: t('worldCup.chatSeed2', { defaultValue: 'Lamine Yamal will be the star of the World Cup.' }) },
-  ];
-  const [messages, setMessages] = useState(seed);
-  const [text, setText] = useState('');
-  const endRef = useRef(null);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
-
-  const send = (e) => {
-    e.preventDefault();
-    const v = text.trim();
-    if (!v) return;
-    setMessages((m) => [...m, { user: username || 'You', code: null, g: ['#34d399', '#059669'], text: v, me: true }]);
-    setText('');
-  };
-
+function LiveNowStrip({ matches, onOpen, t }) {
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ background: 'linear-gradient(135deg, #14532D, #1B5E3B)' }}>
-        <div className="flex items-center gap-2 text-white">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
-          <span className="font-bold text-sm">{t('worldCup.fanZone', { defaultValue: 'Fan Zone Live' })}</span>
-        </div>
-        <span className="flex items-center gap-1.5 bg-white/15 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />12K {t('worldCup.online', { defaultValue: 'ONLINE' })}
-        </span>
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+        <h3 className="text-[17px] font-black text-gray-900">{t('worldCup.liveNow', { defaultValue: 'Live now' })}</h3>
       </div>
-
-      {/* Messages */}
-      <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex items-start gap-2.5 ${m.me ? 'flex-row-reverse' : ''}`}>
-            <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[9px] font-black text-white" style={{ background: `linear-gradient(135deg, ${m.g[0]}, ${m.g[1]})` }}>
-              {m.user[0].toUpperCase()}
-            </div>
-            <div className={`min-w-0 ${m.me ? 'text-right' : ''}`}>
-              <p className="text-[11px] font-bold text-gray-500 flex items-center gap-1 mb-0.5" style={m.me ? { justifyContent: 'flex-end' } : undefined}>
-                {m.user}
-                {m.code && <img src={`https://flagcdn.com/w20/${m.code}.png`} alt="" className="w-3.5 h-2.5 object-cover rounded-[1px]" />}
-              </p>
-              <p className={`inline-block text-sm px-3 py-2 rounded-2xl ${m.me ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-800'}`}>{m.text}</p>
-            </div>
-          </div>
-        ))}
-        <div ref={endRef} />
+      <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+        {matches.map((m) => {
+          const fx = m.fixture || {};
+          const g = m.goals || {};
+          return (
+            <button
+              key={fx.id}
+              onClick={() => onOpen(fx.id, true)}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm w-[220px] shrink-0 p-3 text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-rose-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  {tStatusShort(fx.status) || 'LIVE'}
+                </span>
+                <span className="text-[9px] text-gray-400 truncate max-w-[100px]">{m.league?.round || ''}</span>
+              </div>
+              <LiveTeamRow team={m.teams?.home} score={g.home} />
+              <div className="h-px bg-gray-100 my-1" />
+              <LiveTeamRow team={m.teams?.away} score={g.away} />
+            </button>
+          );
+        })}
       </div>
+    </div>
+  );
+}
 
-      {/* Input */}
-      <form onSubmit={send} className="flex items-center gap-2 p-3 border-t border-gray-100">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={t('worldCup.chatPlaceholder', { defaultValue: 'Write something…' })}
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
-        <button type="submit" className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 active:scale-95 transition-transform">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
-        </button>
-      </form>
+function LiveTeamRow({ team, score }) {
+  return (
+    <div className="flex items-center gap-2">
+      {team?.logo ? <img src={team.logo} alt="" className="w-5 h-5 object-contain shrink-0" loading="lazy" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
+      <span className="flex-1 text-sm font-semibold text-gray-900 truncate">{team?.name || 'TBD'}</span>
+      <span className="text-sm font-black text-gray-900 tabular-nums">{score ?? 0}</span>
     </div>
   );
 }
