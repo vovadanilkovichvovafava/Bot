@@ -26,7 +26,7 @@ const ADVERTISERS_CONFIG = {
   // Italy - Euro
   IT: {
     name: 'partner',
-    bonus: 'Bonus 100% fino a 100 €',
+    bonus: 'Bonus fino a 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
     currency: '€',
@@ -38,17 +38,17 @@ const ADVERTISERS_CONFIG = {
     quickAmounts: [5, 10, 25, 50, 100],
     // Deposit step amounts for ProAccess deposit grid
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    // Bonus amounts shown on deposit grid (100% of deposit)
-    bonusAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    // Bonus calculator tiers for ProAccess step 4 (100% match)
+    // Bonus amounts shown on deposit grid
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    // Bonus calculator tiers for ProAccess step 4
     calcTiers: [
-      { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
-      { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
-      { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
-      { dep: '€500', bonus: '€500', total: '€1.000', months: 8 },
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
     ],
-    calcMaxBonus: '€500',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     // Example profit amounts for BookmakerPromo comparisons
     exampleAmounts: {
       ourOdds: 1.45,
@@ -69,10 +69,10 @@ const ADVERTISERS_CONFIG = {
       minAmount: '5 €',
       profitDiff: '+3.50 €',
     },
-    // Bonus banner amounts (funnel-2) — 100% match
+    // Bonus banner amounts (funnel-2)
     freeBetAmount: 100,
-    depositAmount: 100,
-    bonusBanner: { deposit: '€100', bonus: '€100', total: '€200' },
+    depositAmount: 50,
+    bonusBanner: { deposit: '€50', bonus: '€100', total: '€150' },
     texts: {
       freeBet: 'Scommessa gratuita da 100 euro',
       betOnMatch: 'Scommetti su qualsiasi partita',
@@ -91,7 +91,7 @@ const ADVERTISERS_CONFIG = {
   // Spain - Euro
   ES: {
     name: 'partner',
-    bonus: 'Bono 100% hasta 100 €',
+    bonus: 'Bono hasta 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
     currency: '€',
@@ -101,15 +101,15 @@ const ADVERTISERS_CONFIG = {
     locale: 'es',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
-      { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
-      { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
-      { dep: '€500', bonus: '€500', total: '€1.000', months: 8 },
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
     ],
-    calcMaxBonus: '€500',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -130,8 +130,8 @@ const ADVERTISERS_CONFIG = {
       profitDiff: '+3.50 €',
     },
     freeBetAmount: 100,
-    depositAmount: 100,
-    bonusBanner: { deposit: '€100', bonus: '€100', total: '€200' },
+    depositAmount: 50,
+    bonusBanner: { deposit: '€50', bonus: '€100', total: '€150' },
     texts: {
       freeBet: 'Apuesta gratuita de 100 euros',
       betOnMatch: 'Apuesta en cualquier partido',
@@ -150,7 +150,7 @@ const ADVERTISERS_CONFIG = {
   // France - Euro
   FR: {
     name: 'partner',
-    bonus: 'Bonus 100% jusqu\'à 100 €',
+    bonus: 'Bonus jusqu\'à 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
     currency: '€',
@@ -160,15 +160,15 @@ const ADVERTISERS_CONFIG = {
     locale: 'fr',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
-      { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
-      { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
-      { dep: '€500', bonus: '€500', total: '€1.000', months: 8 },
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
     ],
-    calcMaxBonus: '€500',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -189,8 +189,8 @@ const ADVERTISERS_CONFIG = {
       profitDiff: '+3.50 €',
     },
     freeBetAmount: 100,
-    depositAmount: 100,
-    bonusBanner: { deposit: '€100', bonus: '€100', total: '€200' },
+    depositAmount: 50,
+    bonusBanner: { deposit: '€50', bonus: '€100', total: '€150' },
     texts: {
       freeBet: 'Pari gratuit de 100 euros',
       betOnMatch: 'Pariez sur n\'importe quel match',
@@ -209,7 +209,7 @@ const ADVERTISERS_CONFIG = {
   // Germany - Euro
   DE: {
     name: 'partner',
-    bonus: 'Bonus 100% bis zu 100 €',
+    bonus: 'Bonus bis zu 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
     currency: '€',
@@ -219,15 +219,15 @@ const ADVERTISERS_CONFIG = {
     locale: 'de',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['50 €', '100 €', '300 €', '500 €'],
+    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
-      { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
-      { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
-      { dep: '€500', bonus: '€500', total: '€1.000', months: 8 },
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
     ],
-    calcMaxBonus: '€500',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -248,8 +248,8 @@ const ADVERTISERS_CONFIG = {
       profitDiff: '+3,50 €',
     },
     freeBetAmount: 100,
-    depositAmount: 100,
-    bonusBanner: { deposit: '€100', bonus: '€100', total: '€200' },
+    depositAmount: 50,
+    bonusBanner: { deposit: '€50', bonus: '€100', total: '€150' },
     texts: {
       freeBet: 'Kostenlose Wette 100 Euro',
       betOnMatch: 'Wetten Sie auf jedes Spiel',
@@ -265,12 +265,12 @@ const ADVERTISERS_CONFIG = {
       betAndTakeIt: 'Jetzt nutzen!',
     },
   },
-  // Poland - PLN (Zloty) — ~400 zł ≈ €100, 100% match
+  // Poland - PLN (Zloty)
   PL: {
     name: 'partner',
-    bonus: 'Bonus 100% do 400 zł',
-    bonusShort: '400 zł',
-    bonusAmount: '400 zł',
+    bonus: 'Bonus do 320 zł',
+    bonusShort: '320 zł',
+    bonusAmount: '320 zł',
     currency: 'zł',
     currencyCode: 'PLN',
     minDeposit: '5 zł',
@@ -279,15 +279,15 @@ const ADVERTISERS_CONFIG = {
     // PLN amounts (~4x EUR equivalent)
     quickAmounts: [20, 50, 100, 200, 500],
     depositAmounts: ['200 zł', '400 zł', '1.200 zł', '2.000 zł'],
-    bonusAmounts: ['200 zł', '400 zł', '1.200 zł', '2.000 zł'],
+    bonusAmounts: ['300 zł', '600 zł', '1.800 zł', '3.000 zł'],
     calcTiers: [
-      { dep: '200 zł',   bonus: '200 zł',   total: '400 zł',   months: 1 },
-      { dep: '400 zł',   bonus: '400 zł',   total: '800 zł',   months: 2 },
-      { dep: '1.200 zł', bonus: '1.200 zł', total: '2.400 zł', months: 5 },
-      { dep: '2.000 zł', bonus: '2.000 zł', total: '4.000 zł', months: 8 },
+      { dep: '200 zł',   bonus: '300 zł',   total: '500 zł',   months: 1 },
+      { dep: '400 zł',   bonus: '600 zł',   total: '1.000 zł', months: 2 },
+      { dep: '1.200 zł', bonus: '1.800 zł', total: '3.000 zł', months: 5 },
+      { dep: '2.000 zł', bonus: '3.000 zł', total: '5.000 zł', months: 8 },
     ],
-    calcMaxBonus: '2.000 zł',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '3.000 zł',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -303,21 +303,21 @@ const ADVERTISERS_CONFIG = {
       monthlyBar: '+188 zł',
       sixMonthBar: '+1.128 zł',
       annualBar: '+2.256 zł',
-      bonusDisplay: '400 zł',
+      bonusDisplay: '320 zł',
       minAmount: '20 zł',
       profitDiff: '+14 zł',
     },
-    freeBetAmount: 400,
-    depositAmount: 400,
-    bonusBanner: { deposit: '400 zł', bonus: '400 zł', total: '800 zł' },
+    freeBetAmount: 320,
+    depositAmount: 200,
+    bonusBanner: { deposit: '200 zł', bonus: '320 zł', total: '520 zł' },
     texts: {
-      freeBet: 'Zakład za darmo 400 złotych',
+      freeBet: 'Zakład za darmo 320 złotych',
       betOnMatch: 'Obstawiaj dowolny mecz',
-      ctaButton: 'Zakład za darmo 400 złotych',
-      promoTitle: 'Zakład za darmo 400 złotych',
+      ctaButton: 'Zakład za darmo 320 złotych',
+      promoTitle: 'Zakład za darmo 320 złotych',
       promoCta: 'Postaw zakład',
       promoCtaFree: 'Postaw darmowy zakład',
-      bonusButton: 'Zakład za darmo 400 złotych',
+      bonusButton: 'Zakład za darmo 320 złotych',
       bestBets: 'Najlepsze zakłady',
       useFreeBet: 'Użyj darmowego zakładu i wygraj',
       potentialWin: 'Wygrana',
@@ -328,7 +328,7 @@ const ADVERTISERS_CONFIG = {
   // Default for all other regions - English, Euro
   EUR: {
     name: 'partner',
-    bonus: '100% bonus up to €100',
+    bonus: 'Bonus up to €100',
     bonusShort: '€100',
     bonusAmount: '€100',
     currency: '€',
@@ -338,15 +338,15 @@ const ADVERTISERS_CONFIG = {
     locale: 'en',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['€50', '€100', '€300', '€500'],
-    bonusAmounts: ['€50', '€100', '€300', '€500'],
+    bonusAmounts: ['€75', '€150', '€450', '€750'],
     calcTiers: [
-      { dep: '€50',  bonus: '€50',  total: '€100',   months: 1 },
-      { dep: '€100', bonus: '€100', total: '€200',   months: 2 },
-      { dep: '€300', bonus: '€300', total: '€600',   months: 5 },
-      { dep: '€500', bonus: '€500', total: '€1,000', months: 8 },
+      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
+      { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
+      { dep: '€500', bonus: '€750',  total: '€1,250', months: 8 },
     ],
-    calcMaxBonus: '€500',
-    calcBonusPercent: '+100%',
+    calcMaxBonus: '€750',
+    calcBonusPercent: '+150%',
     exampleAmounts: {
       ourOdds: 1.45,
       bet365Odds: 1.38,
@@ -367,8 +367,8 @@ const ADVERTISERS_CONFIG = {
       profitDiff: '+€3.50',
     },
     freeBetAmount: 100,
-    depositAmount: 100,
-    bonusBanner: { deposit: '€100', bonus: '€100', total: '€200' },
+    depositAmount: 50,
+    bonusBanner: { deposit: '€50', bonus: '€100', total: '€150' },
     texts: {
       freeBet: 'Free bet of €100',
       betOnMatch: 'Bet on any match',

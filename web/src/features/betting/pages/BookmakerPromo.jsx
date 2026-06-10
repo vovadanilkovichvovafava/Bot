@@ -140,18 +140,18 @@ export default function BookmakerPromo() {
         <div className="q-body">
           <div className="q-bonus-hd">
             <div className="q-bhtag"><div className="q-bhdot" />Solo per utenti PreScore AI</div>
-            <div className="q-bhttl">Il tuo deposito viene<br/><span style={{color:'#F7C948'}}>raddoppiato ×2</span></div>
-            <div className="q-bhsub">Il nostro partner aggiunge +100% al tuo primo deposito.<br/>Sono soldi tuoi — usali per scommettere con l'AI.</div>
+            <div className="q-bhttl">Il tuo deposito viene<br/><span style={{color:'#F7C948'}}>moltiplicato ×2,5</span></div>
+            <div className="q-bhsub">Il nostro partner aggiunge +150% al tuo primo deposito.<br/>Sono soldi tuoi — usali per scommettere con l'AI.</div>
           </div>
 
           {/* Calc */}
           <div className="q-calc">
             <div className="q-copts">
               {[
-                { dep:'€50',  bonus:'€50',  total:'€100',   lbl:'Inizio' },
-                { dep:'€100', bonus:'€100', total:'€200',   lbl:'Popolare', rec:true },
-                { dep:'€300', bonus:'€300', total:'€600',   lbl:'Top' },
-                { dep:'€500', bonus:'€500', total:'€1.000', lbl:'Massimo' },
+                { dep:'€50',  bonus:'€75',   total:'€125',  lbl:'Inizio' },
+                { dep:'€100', bonus:'€150',  total:'€250',  lbl:'Popolare', rec:true },
+                { dep:'€300', bonus:'€450',  total:'€750',  lbl:'Top' },
+                { dep:'€500', bonus:'€750',  total:'€1.250',lbl:'Massimo' },
               ].map((o, i) => (
                 <div key={i} className={`q-copt${calcSel===i?' on':''}`} onClick={()=>setCalcSel(i)}>
                   {o.rec && <div className="crec">🔥</div>}
@@ -162,10 +162,10 @@ export default function BookmakerPromo() {
             </div>
             <div className="q-cres">
               {[
-                { dep:'€50',  bonus:'€50',  total:'€100'   },
-                { dep:'€100', bonus:'€100', total:'€200'   },
-                { dep:'€300', bonus:'€300', total:'€600'   },
-                { dep:'€500', bonus:'€500', total:'€1.000' },
+                { dep:'€50',  bonus:'€75',   total:'€125'  },
+                { dep:'€100', bonus:'€150',  total:'€250'  },
+                { dep:'€300', bonus:'€450',  total:'€750'  },
+                { dep:'€500', bonus:'€750',  total:'€1.250'},
               ].map((o, i) => calcSel===i && (
                 <div key={i} style={{display:'contents'}}>
                   <div className="q-cres-row">
@@ -293,7 +293,7 @@ export default function BookmakerPromo() {
             <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
               <div className="da">{advertiser.depositAmounts?.[0] || '50 €'}</div>
               <div className="dl">{t('promo.s4Popular')}</div>
-              <div className="db">+{advertiser.bonusAmounts?.[0] || '50 €'} bonus</div>
+              <div className="db">+{advertiser.bonusAmounts?.[0] || '75 €'} bonus</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('promo.s4Recommended')}</div>
@@ -341,8 +341,8 @@ export default function BookmakerPromo() {
           </div>
           <div className="q-bfloat">
             <div className="q-bfl">Bonus massimo disponibile</div>
-            <div className="q-bfa">€500</div>
-            <div className="q-bfd">Deposita €500 → ricevi <strong>€500 gratis</strong> sul conto. Totale: €1.000 per scommettere.</div>
+            <div className="q-bfa">€750</div>
+            <div className="q-bfd">Deposita €500 → ricevi <strong>€750 gratis</strong> sul conto. Totale: €1.250 per scommettere.</div>
           </div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('promo.s5Install')}</div></div>
