@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
 from app.core.database import get_db
+from app.api.admin_auth import get_current_admin
 from app.models.user import User
 from app.models.support_chat import SupportChatMessage
 
@@ -909,23 +910,19 @@ class SupportSessionOut(BaseModel):
 
 @router.get("/messages")
 async def get_support_messages(
-    key: str,
     user_id: Optional[int] = None,
     session_id: Optional[str] = None,
     role: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to read support chat messages.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     Filters: user_id, session_id, role (user/assistant)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import desc
 
     stmt = select(SupportChatMessage)
@@ -963,19 +960,15 @@ async def get_support_messages(
 
 @router.get("/sessions")
 async def get_support_sessions(
-    key: str,
     limit: int = 50,
     offset: int = 0,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to list all support chat sessions with summary.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import func as sa_func, desc
 
     # Get sessions grouped
@@ -1039,17 +1032,13 @@ async def get_support_sessions(
 
 @router.get("/stats")
 async def get_support_stats(
-    key: str,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to get support chat statistics.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import func as sa_func, distinct, cast, Date
 
     total = await db.execute(

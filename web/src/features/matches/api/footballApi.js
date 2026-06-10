@@ -1,17 +1,14 @@
 /**
  * Football API Service
  *
- * Calls go through our backend proxy for server-side caching.
- * This saves API requests by sharing cache between all users.
- *
- * Fallback to direct API-Football calls if backend is unavailable.
+ * All calls go through our backend proxy for server-side caching and to keep
+ * the API-Football key server-side. The key is intentionally NOT exposed to the
+ * browser; when the backend is unavailable, football data degrades gracefully.
  */
 
 import { ENV } from '../../../shared/config/env';
 
 const BACKEND_BASE = ENV.API_URL;
-const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
-const API_KEY = ENV.API_FOOTBALL_KEY;
 
 // Local cache for fallback mode (when backend is down)
 const localCache = new Map();
@@ -100,31 +97,13 @@ class FootballApiService {
     }
   }
 
-  // === Direct API-Football Requests (fallback) ===
+  // === Direct API-Football Requests (disabled) ===
 
-  async directRequest(endpoint, params = {}) {
-    if (!API_KEY) return [];
-
-    const cacheKey = endpoint + JSON.stringify(params);
-    const cached = getLocalCache(cacheKey);
-    if (cached) return cached;
-
-    const query = new URLSearchParams(params).toString();
-    const url = `${API_FOOTBALL_BASE}${endpoint}${query ? '?' + query : ''}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'x-apisports-key': API_KEY },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API-Football HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const result = data.response || [];
-    setLocalCache(cacheKey, result);
-    return result;
+  // Direct browser → API-Football calls are intentionally disabled so the API
+  // key is never shipped to the client. All data flows through the backend
+  // proxy; if the backend is down we degrade gracefully by returning no data.
+  async directRequest() {
+    return [];
   }
 
   // === Unified Request Method ===

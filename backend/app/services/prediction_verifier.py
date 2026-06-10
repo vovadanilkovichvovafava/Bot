@@ -259,10 +259,15 @@ def _check_prediction(pred: Prediction, home_goals: int, away_goals: int, fixtur
 
 async def update_ml_after_verification():
     """
-    After predictions are verified, update ML training data:
-    1. Mark MatchFeature records as verified (fill actual results)
-    2. Update Elo ratings based on match results
-    3. Log the event
+    After predictions are verified, mark MatchFeature records as verified.
+
+    NOTE: Elo updates are deliberately NOT done here. Elo is applied exclusively
+    by feature_engineer.process_verified_matches(), which processes verified
+    matches in chronological order, recording the PRE-match Elo as a training
+    feature *before* advancing the rating. Updating Elo here as well would
+    advance ratings out of order and leak the match's own outcome into its
+    training features (home_elo/away_elo/elo_diff) — inflating offline accuracy
+    and miscalibrating live predictions.
     """
     import json
 
@@ -286,20 +291,8 @@ async def update_ml_after_verification():
             updated = 0
             for match in unverified:
                 try:
-                    # Update Elo ratings
-                    if match.result and match.home_team_id and match.away_team_id:
-                        await update_elo_after_match(
-                            db=db,
-                            home_team_id=match.home_team_id,
-                            away_team_id=match.away_team_id,
-                            home_team_name=match.home_team_name,
-                            away_team_name=match.away_team_name,
-                            league_id=match.league_id,
-                            league_name=match.league_name or "",
-                            home_goals=match.home_goals,
-                            away_goals=match.away_goals,
-                        )
-
+                    # Only mark as verified. Elo is updated later, in chronological
+                    # order, by process_verified_matches() to avoid target leakage.
                     match.is_verified = True
                     match.verified_at = datetime.utcnow()
                     updated += 1

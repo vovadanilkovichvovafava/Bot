@@ -179,14 +179,17 @@ export function AuthProvider({ children }) {
   };
 
   // Bookmaker account management
+  // NOTE: `password` is intentionally NOT stored. The plaintext bookmaker
+  // password must never be persisted to localStorage (readable by any XSS).
+  // It is only used transiently by the caller to authenticate with the bookmaker.
   const connectBookmaker = async (login, password) => {
-    const credentials = { login, password, connectedAt: new Date().toISOString() };
-    safeSetItem(BOOKMAKER_STORAGE_KEY, JSON.stringify(credentials));
-    setBookmakerAccount(credentials);
+    const account = { login, connectedAt: new Date().toISOString() };
+    safeSetItem(BOOKMAKER_STORAGE_KEY, JSON.stringify(account));
+    setBookmakerAccount(account);
     // TODO: Call backend to sync balance
     // For now, simulate a balance
     setBookmakerBalance({ amount: 0, currency: 'EUR', lastSync: new Date().toISOString() });
-    return credentials;
+    return account;
   };
 
   const disconnectBookmaker = () => {

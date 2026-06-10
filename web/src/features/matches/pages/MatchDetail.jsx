@@ -929,7 +929,9 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                 <p
                   className="text-sm text-gray-700 leading-relaxed mb-3"
                   dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
-                    match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`,
+                    // Escape interpolated names — i18next escapeValue is off and this is an HTML sink.
+                    match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`
+                      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
                     confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
                     bonus: advertiser?.bonusBanner?.bonus || '',
                   }) }}

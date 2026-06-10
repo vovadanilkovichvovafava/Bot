@@ -213,7 +213,43 @@ export function getTrackingLink(userId, banner = '', funnel = '') {
     return link;
   } catch (err) {
     console.warn('[Tracking] Failed to build link:', err.message);
-    return `${baseUrl}?external_id=${userId}`;
+    // baseUrl is block-scoped to the try above and may not exist here — use the
+    // module-level default offer base for the fallback.
+    return `${OFFER_BASE_URL}?external_id=${userId}`;
+  }
+}
+
+/**
+ * Open-redirect guard for externally-supplied bookmaker deeplinks
+ * (e.g. the ?fonbet_deeplink= query param). Only https URLs whose host matches
+ * a configured offer/bookmaker host (or a subdomain of one) are allowed.
+ * Returns false for anything else, including javascript:/data: schemes.
+ */
+function deeplinkAllowedHosts() {
+  const hosts = new Set();
+  const add = (u) => { try { if (u) hosts.add(new URL(u).host.toLowerCase()); } catch { /* ignore */ } };
+  add(OFFER_BASE_URL);
+  add(OFFER_BASE_URL_F2);
+  add(OFFER_BASE_URL_GOOGLE);
+  add(ENV.BOOKMAKER_LINK);
+  (ENV.DEEPLINK_HOSTS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .forEach((h) => hosts.add(h));
+  return hosts;
+}
+
+export function isAllowedDeeplink(url) {
+  if (!url) return false;
+  try {
+    const u = new URL(url, window.location.origin);
+    if (u.protocol !== 'https:') return false;
+    const host = u.host.toLowerCase();
+    const allow = deeplinkAllowedHosts();
+    return [...allow].some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
   }
 }
 

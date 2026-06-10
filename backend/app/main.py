@@ -2,12 +2,13 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express
+from app.api.admin_auth import get_current_admin
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
@@ -193,10 +194,16 @@ CORS_ORIGINS = [
     "http://127.0.0.1:5174",
 ]
 
-# Allow extra CORS origins via env (comma-separated) for multi-domain deployments
+# Allow extra CORS origins via env (comma-separated) for multi-domain deployments.
+# Only accept well-formed http(s) origins so a malformed env entry can't widen the policy.
 _extra_origins = os.getenv("EXTRA_CORS_ORIGINS", "")
 if _extra_origins:
-    CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
+    for o in _extra_origins.split(","):
+        o = o.strip()
+        if o and o.startswith(("https://", "http://")) and o != "*":
+            CORS_ORIGINS.append(o)
+        elif o:
+            logger.warning("Ignoring invalid EXTRA_CORS_ORIGINS entry: %r", o)
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,7 +211,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Global exception handler — ensures unhandled errors still get CORS headers
@@ -276,8 +282,8 @@ async def health_check():
 
 
 @app.get("/debug/user/{public_id}")
-async def debug_user(public_id: str):
-    """Debug endpoint to check user premium status by public_id"""
+async def debug_user(public_id: str, admin: dict = Depends(get_current_admin)):
+    """Debug endpoint to check user premium status by public_id (admin only)"""
     from app.core.database import async_session_maker as async_session
     from app.models.user import User
     from sqlalchemy import select
@@ -309,8 +315,8 @@ async def debug_user(public_id: str):
 
 
 @app.get("/debug/registrations")
-async def debug_registrations():
-    """Debug: daily registrations by country for the last 7 days"""
+async def debug_registrations(admin: dict = Depends(get_current_admin)):
+    """Debug: daily registrations by country for the last 7 days (admin only)"""
     from app.core.database import async_session_maker as async_session
     from app.models.user import User
     from sqlalchemy import select, func
@@ -336,8 +342,8 @@ async def debug_registrations():
 
 
 @app.get("/debug/ml-pipeline")
-async def debug_ml_pipeline():
-    """Quick ML pipeline status check — no auth required."""
+async def debug_ml_pipeline(admin: dict = Depends(get_current_admin)):
+    """Quick ML pipeline status check (admin only)."""
     from app.core.database import async_session_maker
     from app.models.ml_models import MatchFeature, MLModel, EloRating, LearningLog
     from sqlalchemy import select, func, and_
@@ -425,8 +431,8 @@ async def debug_ml_pipeline():
 
 
 @app.get("/debug/football-api")
-async def debug_football_api():
-    """Debug endpoint to test Football API connection"""
+async def debug_football_api(admin: dict = Depends(get_current_admin)):
+    """Debug endpoint to test Football API connection (admin only)"""
     import os
     import httpx
     import traceback

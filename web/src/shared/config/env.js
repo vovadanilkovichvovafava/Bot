@@ -17,6 +17,7 @@ export const ENV = {
   BOOKMAKER_LINK:     rc.BOOKMAKER_LINK     || import.meta.env.VITE_BOOKMAKER_LINK     || '#',
   BOOKMAKER_BONUS:    rc.BOOKMAKER_BONUS    || import.meta.env.VITE_BOOKMAKER_BONUS    || 'Welcome Bonus',
   BOOKMAKER_PROMO:    rc.BOOKMAKER_PROMO    || import.meta.env.VITE_BOOKMAKER_PROMO    || '',
-  API_FOOTBALL_KEY:   rc.API_FOOTBALL_KEY   || import.meta.env.VITE_API_FOOTBALL_KEY   || '',
   TRAFFIC_SOURCE:     rc.TRAFFIC_SOURCE     || import.meta.env.VITE_TRAFFIC_SOURCE     || '',
+  // Comma-separated extra hosts allowed as bookmaker deeplinks (open-redirect allowlist).
+  DEEPLINK_HOSTS:     rc.DEEPLINK_HOSTS     || import.meta.env.VITE_DEEPLINK_HOSTS     || '',
 };

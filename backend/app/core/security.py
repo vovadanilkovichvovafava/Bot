@@ -1,3 +1,5 @@
+import hmac
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -9,6 +11,18 @@ from app.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)  # Don't auto-error, we'll check cookies too
+
+
+def verify_internal_secret(provided: Optional[str]) -> bool:
+    """
+    Constant-time check of an X-Internal-Secret header against POSTBACK_SECRET.
+    Returns False when the configured secret is empty (fail closed) — an empty
+    header must never be accepted as a valid secret.
+    """
+    expected = os.getenv("POSTBACK_SECRET", "")
+    if not expected or not isinstance(provided, str) or not provided:
+        return False
+    return hmac.compare_digest(provided, expected)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

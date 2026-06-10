@@ -1,15 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-export default function ProBlur({ children, feature, reason = 'upgrade' }) {
+export default function ProBlur({ children, feature, reason = 'upgrade', placeholder = null }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  // SECURITY NOTE: a CSS blur is presentation only — it does NOT withhold data,
+  // since `children` are still in the DOM and readable via devtools. It is fine
+  // for non-secret upsell content (stats, lineups, standings). For anything that
+  // must actually be hidden from non-PRO users, pass a `placeholder` (a decoy
+  // with the same shape) and DO NOT render the real value as children — the real
+  // content should be fetched only after the server confirms the user is PRO.
+  const blurred = placeholder ?? children;
+
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      {/* Blurred silhouette of the real content */}
-      <div className="pointer-events-none select-none" style={{ filter: 'blur(12px)', WebkitFilter: 'blur(12px)' }}>
-        {children}
+      {/* Blurred silhouette (decoy when a placeholder is supplied) */}
+      <div className="pointer-events-none select-none" style={{ filter: 'blur(12px)', WebkitFilter: 'blur(12px)' }} aria-hidden="true">
+        {blurred}
       </div>
       {/* Single centered upgrade button */}
       <button

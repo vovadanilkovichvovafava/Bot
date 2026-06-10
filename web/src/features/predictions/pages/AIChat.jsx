@@ -510,7 +510,10 @@ export default function AIChat() {
                     {/* Dynamic text with match info */}
                     {(() => {
                       const userMsg = messages[messages.indexOf(msg) - 1];
-                      const matchName = userMsg?.content?.slice(0, 40) || '';
+                      // matchName is the user's previous chat message — untrusted.
+                      // It is interpolated into HTML below (i18next escapeValue is off),
+                      // so it MUST be escaped to prevent stored XSS.
+                      const matchName = escapeHtml(userMsg?.content?.slice(0, 40) || '');
                       const confidence = msg.bets?.[0] ? 70 + ((msg.bets[0].type || '').length * 7 + Math.round(msg.bets[0].odds * 13)) % 26 : 78;
                       return (
                         <p

@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List
+import hashlib
 import os
 
 
@@ -27,6 +28,19 @@ class Settings(BaseSettings):
             # Allow insecure default only in DEBUG mode
             return "dev-only-insecure-key-do-not-use-in-production"
         return key
+
+    @property
+    def ADMIN_SECRET_KEY(self) -> str:
+        """
+        Signing key for ADMIN tokens — a cryptographically distinct realm from
+        user tokens. Uses ADMIN_SECRET_KEY if set, otherwise derives a separate
+        key from SECRET_KEY so admin and user tokens can never be interchanged
+        even when only SECRET_KEY is configured.
+        """
+        explicit = os.getenv("ADMIN_SECRET_KEY", "")
+        if explicit:
+            return explicit
+        return hashlib.sha256(f"admin-realm:{self.SECRET_KEY}".encode()).hexdigest()
 
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days

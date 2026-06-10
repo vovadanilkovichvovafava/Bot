@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
+import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
 const TOTAL = 6;
@@ -108,11 +108,14 @@ export default function BookmakerPromo() {
   const [bookmakerLink, setBookmakerLink] = useState(null);
 
   const banner = searchParams.get('banner') || '';
-  const fonbetDeeplink = searchParams.get('fonbet_deeplink') || '';
+  const rawDeeplink = searchParams.get('fonbet_deeplink') || '';
+  // Guard against open redirect: only honour the deeplink if it points to an
+  // allowlisted bookmaker host. Otherwise ignore it and use the normal offer link.
+  const fonbetDeeplink = isAllowedDeeplink(rawDeeplink) ? rawDeeplink : '';
 
   useEffect(() => {
     if (!user?.id) return; // Wait for auth — never build link with anon ID
-    // If we have a Fonbet deeplink from the referring page, prefer it
+    // If we have a valid Fonbet deeplink from the referring page, prefer it
     if (fonbetDeeplink) {
       setBookmakerLink(addTrackingToUrl(fonbetDeeplink, user.id, banner || 'promo_fonbet'));
     } else {

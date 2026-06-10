@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// ── Runtime config mock (hoisted above imports) ──
+// The app now resolves config at runtime; pin deterministic values for tests
+// regardless of build/runtime defaults.
+vi.mock('../shared/config/env', () => ({
+  ENV: {
+    API_URL: 'https://appbot-production-152e.up.railway.app/api/v1',
+    TRAFFIC_SOURCE: '',
+  },
+}));
+
 // ── localStorage mock (must be at MODULE level BEFORE any describe/import) ──
 let store = {};
 const localStorageMock = {

@@ -1,5 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// ── Runtime config mock (hoisted above imports) ──
+// Pin deterministic offer/tracking config so tests don't depend on runtime defaults.
+vi.mock('../shared/config/env', () => ({
+  ENV: {
+    TRACKING_API: 'https://postbackapi-production.up.railway.app',
+    OFFER_URL: 'https://siteofficialred.com/KnSQ1M',
+    OFFER_URL_F2: '',
+    OFFER_URL_GOOGLE: '',
+    BOOKMAKER_LINK: '#',
+    DEEPLINK_HOSTS: '',
+  },
+}));
+
 // ── sessionStorage mock (must be set up BEFORE importing the module) ──
 let sessionStore = {};
 const sessionStorageMock = {

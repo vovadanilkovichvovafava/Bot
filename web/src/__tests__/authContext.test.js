@@ -358,7 +358,7 @@ describe('AuthContext', () => {
   // connectBookmaker
   // ──────────────────────────────────────────
   describe('connectBookmaker', () => {
-    it('stores credentials in localStorage as JSON and sets bookmakerAccount', async () => {
+    it('stores the login (but NOT the password) and sets bookmakerAccount', async () => {
       api.getToken.mockReturnValue(null);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -367,19 +367,20 @@ describe('AuthContext', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      let credentials;
+      let account;
       await act(async () => {
-        credentials = await result.current.connectBookmaker('myLogin', 'myPass');
+        account = await result.current.connectBookmaker('myLogin', 'myPass');
       });
 
-      expect(credentials.login).toBe('myLogin');
-      expect(credentials.password).toBe('myPass');
-      expect(credentials.connectedAt).toBeDefined();
+      expect(account.login).toBe('myLogin');
+      expect(account.connectedAt).toBeDefined();
+      // Security: the plaintext password must never be returned or persisted.
+      expect(account.password).toBeUndefined();
 
-      // Check localStorage
+      // Check localStorage — login present, password absent
       const stored = JSON.parse(localStorageMock['bookmaker_credentials']);
       expect(stored.login).toBe('myLogin');
-      expect(stored.password).toBe('myPass');
+      expect(stored.password).toBeUndefined();
 
       // Check state
       expect(result.current.bookmakerAccount).not.toBeNull();

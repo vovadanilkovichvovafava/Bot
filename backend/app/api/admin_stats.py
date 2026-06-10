@@ -14,7 +14,7 @@ from sqlalchemy import select, func, case, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.admin_auth import get_current_admin
+from app.api.admin_auth import get_current_admin, require_admin_role
 from app.models.user import User
 from app.models.prediction import Prediction
 from app.models.support_chat import SupportChatMessage
@@ -580,7 +580,7 @@ async def export_users_csv(
     status: Optional[str] = Query(None),
     country: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),
-    admin: dict = Depends(get_current_admin),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Export users as CSV file."""
@@ -953,7 +953,7 @@ async def get_user_profile(
 async def toggle_user_premium(
     user_id: int,
     days: int = Body(15, embed=False),
-    admin: dict = Depends(get_current_admin),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle premium status for a user (admin action)."""
@@ -988,7 +988,7 @@ async def toggle_user_premium(
 @router.post("/users/{user_id}/toggle-ban")
 async def toggle_user_ban(
     user_id: int,
-    admin: dict = Depends(get_current_admin),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle ban status for a user (admin action)."""
@@ -1231,7 +1231,7 @@ async def get_ml_stats(
 
 @router.post("/ml/train")
 async def trigger_ml_training(
-    admin: dict = Depends(get_current_admin),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
 ):
     """Manually trigger ML model training with full enrichment pipeline."""
     import asyncio
@@ -1319,7 +1319,7 @@ async def trigger_ml_training(
 
 @router.post("/ml/backfill")
 async def trigger_backfill(
-    admin: dict = Depends(get_current_admin),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
 ):
     """Manually trigger data backfill + enrichment + training."""
     import asyncio
