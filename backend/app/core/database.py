@@ -230,6 +230,14 @@ async def init_db():
             )""",
             "CREATE INDEX IF NOT EXISTS ix_fantasy_ledger_user ON fantasy_ledger(user_id, created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_users_fantasy_lifetime ON users(fantasy_points_lifetime DESC) WHERE fantasy_points_lifetime > 0",
+            # One-time welcome bonus: 100 starting points for every user who never got one.
+            # Idempotent via the signup_bonus ledger marker — safe to run on every boot,
+            # and new accounts already insert their own marker at registration.
+            """UPDATE users SET fantasy_points = COALESCE(fantasy_points, 0) + 100
+                WHERE id NOT IN (SELECT user_id FROM fantasy_ledger WHERE kind = 'signup_bonus')""",
+            """INSERT INTO fantasy_ledger (user_id, kind, points, reason, created_at)
+                SELECT id, 'signup_bonus', 100, 'welcome_bonus', NOW() FROM users
+                WHERE id NOT IN (SELECT user_id FROM fantasy_ledger WHERE kind = 'signup_bonus')""",
             """CREATE TABLE IF NOT EXISTS wc_predictions (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(id) UNIQUE,

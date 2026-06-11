@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import api from '../../../shared/api';
 
-const HEADLINE_TIER = 5000; // the "5000 pts" headline goal
+const HEADLINE_TIER = 7500; // headline goal = 30-day PRO tier
 
 export default function Rewards() {
   const navigate = useNavigate();

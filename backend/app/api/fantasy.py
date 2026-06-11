@@ -27,13 +27,17 @@ router = APIRouter()
 MAX_PREMIUM_DAYS = 365
 LEADERBOARD_MIN_PREDICTIONS = 5
 
+# Group-stage predictions close at the end of 2026-06-17 (UTC). After this, picks
+# are locked so nobody can predict groups whose results are already known.
+WC_PREDICT_DEADLINE = datetime(2026, 6, 17, 23, 59, 59)
+
 # Redemption tiers. PRO tiers are live; the cash/freebet tier is gated off until a
 # partner promo-code integration exists.
 TIERS = [
-    {"id": "pro_3d",  "points": 1000, "type": "pro",  "pro_days": 3,  "label": "3 days PRO",  "available": True},
-    {"id": "pro_7d",  "points": 2500, "type": "pro",  "pro_days": 7,  "label": "7 days PRO",  "available": True},
-    {"id": "pro_30d", "points": 5000, "type": "pro",  "pro_days": 30, "label": "30 days PRO", "available": True},
-    {"id": "cash_50", "points": 5000, "type": "cash", "amount": 50, "currency": "USD",
+    {"id": "pro_3d",  "points": 1500, "type": "pro",  "pro_days": 3,  "label": "3 days PRO",  "available": True},
+    {"id": "pro_7d",  "points": 3750, "type": "pro",  "pro_days": 7,  "label": "7 days PRO",  "available": True},
+    {"id": "pro_30d", "points": 7500, "type": "pro",  "pro_days": 30, "label": "30 days PRO", "available": True},
+    {"id": "cash_50", "points": 7500, "type": "cash", "amount": 50, "currency": "USD",
      "label": "$50 free bet", "available": False, "note": "coming soon"},
 ]
 
@@ -140,6 +144,8 @@ async def get_wc_predict(
         "picks": json.loads(row.picks_json) if row and row.picks_json else {},
         "points_awarded": row.points_awarded if row else 0,
         "scored_groups": json.loads(row.scored_groups) if (row and row.scored_groups) else [],
+        "locked": datetime.utcnow() > WC_PREDICT_DEADLINE,
+        "deadline": WC_PREDICT_DEADLINE.isoformat() + "Z",
     }
 
 
@@ -150,6 +156,9 @@ async def save_wc_predict(
     db: AsyncSession = Depends(get_db),
 ):
     uid = current_user.get("user_id")
+    # Predictions close after the deadline so finished groups can't be predicted.
+    if datetime.utcnow() > WC_PREDICT_DEADLINE:
+        raise HTTPException(status_code=403, detail="Group predictions are closed")
     # Only keep group keys with a list of ids (defensive)
     clean = {str(k): [int(x) for x in v][:4] for k, v in (body.picks or {}).items() if isinstance(v, list)}
     row = (await db.execute(select(WcPrediction).where(WcPrediction.user_id == uid))).scalar_one_or_none()

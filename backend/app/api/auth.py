@@ -13,6 +13,10 @@ from app.core.phone_country import detect_country_from_phone
 from app.config import settings
 from app.core.database import get_db
 from app.models.user import User
+from app.models.fantasy import FantasyLedger
+
+# Fantasy points granted to every new account so they can start staking predictions.
+WELCOME_FANTASY_POINTS = 100
 
 logger = logging.getLogger(__name__)
 
@@ -253,6 +257,11 @@ async def register(
 
     # Generate unique referral code for new user
     new_user.referral_code = f"PS{new_user.id:04X}{int(new_user.created_at.timestamp()) % 10000:04X}"
+
+    # Welcome bonus — 100 starting fantasy points (the signup_bonus ledger row also
+    # makes the existing-user backfill idempotent: it skips anyone who already has one).
+    new_user.fantasy_points = WELCOME_FANTASY_POINTS
+    db.add(FantasyLedger(user_id=new_user.id, kind="signup_bonus", points=WELCOME_FANTASY_POINTS, reason="welcome_bonus"))
 
     # Award referrer with bonus
     if referrer:

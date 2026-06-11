@@ -66,6 +66,7 @@ export default function WorldCupPredict() {
   // picks: { [letter]: [teamId, teamId, ...] } in predicted finishing order
   const [picks, setPicks] = useState({});
   const [pointsAwarded, setPointsAwarded] = useState(0);
+  const [locked, setLocked] = useState(false);
   const saveTimer = useRef(null);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function WorldCupPredict() {
       try {
         const res = await api.getWcPredict();
         if (!alive) return;
+        if (res?.locked) setLocked(true);
         const serverPicks = apiToPicks(res?.picks || {});
         if (Object.keys(serverPicks).length) {
           setPicks(serverPicks);
@@ -103,6 +105,7 @@ export default function WorldCupPredict() {
   };
 
   const toggle = (letter, teamId) => {
+    if (locked) return; // predictions closed after the deadline
     const cur = picks[letter] || [];
     let next;
     if (cur.includes(teamId)) {
@@ -120,7 +123,7 @@ export default function WorldCupPredict() {
     persist({ ...picks, [letter]: next });
   };
 
-  const reset = () => persist({});
+  const reset = () => { if (!locked) persist({}); };
 
   const isComplete = (letter) => (picks[letter]?.length || 0) === 4;
   const groupsDone = LETTERS.filter(isComplete).length;
@@ -141,6 +144,16 @@ export default function WorldCupPredict() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
           {t('common.back', { defaultValue: 'Back' })}
         </button>
+
+        {locked && (
+          <div className="rounded-2xl p-4 mb-4 bg-amber-500/15 border border-amber-400/30 flex items-start gap-2">
+            <span className="text-xl leading-none">🔒</span>
+            <div>
+              <p className="text-amber-300 font-bold text-sm">{t('predict.closedTitle', { defaultValue: 'Group predictions are closed' })}</p>
+              <p className="text-white/60 text-xs mt-0.5">{t('predict.closedHint', { defaultValue: 'The deadline has passed — your picks are locked and being scored.' })}</p>
+            </div>
+          </div>
+        )}
 
         {/* Hero */}
         <div className="rounded-2xl p-5 mb-5" style={{ background: 'linear-gradient(135deg, #20253a 0%, #2a3050 100%)' }}>
@@ -189,7 +202,7 @@ export default function WorldCupPredict() {
 
         {/* Reset */}
         {groupsDone > 0 && (
-          <button onClick={reset} className="w-full mt-6 py-3 rounded-xl border border-white/15 text-white/60 text-sm font-semibold hover:bg-white/5 transition-colors">
+          <button onClick={reset} disabled={locked} className={`w-full mt-6 py-3 rounded-xl border border-white/15 text-white/60 text-sm font-semibold transition-colors ${locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5'}`}>
             {t('predict.reset', { defaultValue: 'Reset predictions' })}
           </button>
         )}
