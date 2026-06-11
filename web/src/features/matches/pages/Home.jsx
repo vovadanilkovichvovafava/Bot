@@ -20,7 +20,19 @@ const HOME_MATCHES_TTL = 3 * 60 * 1000; // 3 minutes — stale-while-revalidate
 const WC_START = new Date('2026-06-11T20:00:00Z');
 
 // Top leagues to show on home
-const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
+const WC_LEAGUE_ID = 1; // FIFA World Cup — always the top priority while it's on
+const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3]; // PL, LaLiga, SerieA, Bundesliga, Ligue1, UCL, UEL
+// Other recognizable competitions (internationals + popular leagues) — used as a
+// mid tier so that out of the European season we still surface known matches.
+const NOTABLE_LEAGUE_IDS = [4, 5, 9, 10, 848, 13, 11, 253, 71, 262, 94, 88, 144, 203, 197];
+
+// Lower = higher priority in "Top Matches": World Cup > big European > notable > rest
+function leaguePriority(id) {
+  if (id === WC_LEAGUE_ID) return 0;
+  if (TOP_LEAGUE_IDS.includes(id)) return 1;
+  if (NOTABLE_LEAGUE_IDS.includes(id)) return 2;
+  return 3;
+}
 
 // Deterministic synthetic odds per fixture (same pattern as existing Best Bet card)
 function genOdds(seed) {
@@ -90,9 +102,12 @@ export default function Home() {
       .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
       .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
       .sort((a, b) => {
-        const aTop = TOP_LEAGUE_IDS.includes(a.league?.id) ? 0 : 1;
-        const bTop = TOP_LEAGUE_IDS.includes(b.league?.id) ? 0 : 1;
-        if (aTop !== bTop) return aTop - bTop;
+        const pa = leaguePriority(a.league?.id);
+        const pb = leaguePriority(b.league?.id);
+        if (pa !== pb) return pa - pb;
+        // Within the same priority, show live matches first, then by kickoff time
+        const live = (f) => ['1H', '2H', 'HT'].includes(f.fixture?.status?.short) ? 0 : 1;
+        if (live(a) !== live(b)) return live(a) - live(b);
         return new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0);
       })
       .slice(0, 6);
