@@ -595,6 +595,15 @@ async def verification_loop():
                     logger.error(f"Error updating ML after verification: {e}")
             else:
                 logger.info("Verification cycle: no new verifications")
+
+            # Settle World Cup group predictions (no-op until a group table is final)
+            try:
+                from app.services.wc_settlement import settle_wc_predictions
+                settled = await settle_wc_predictions()
+                if settled:
+                    logger.info(f"WC predictions: settled {settled} group results")
+            except Exception as e:
+                logger.error(f"Error settling WC predictions: {e}")
         except Exception as e:
             logger.error(f"Verification loop error: {e}")
 

@@ -230,6 +230,16 @@ async def init_db():
             )""",
             "CREATE INDEX IF NOT EXISTS ix_fantasy_ledger_user ON fantasy_ledger(user_id, created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_users_fantasy_lifetime ON users(fantasy_points_lifetime DESC) WHERE fantasy_points_lifetime > 0",
+            """CREATE TABLE IF NOT EXISTS wc_predictions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) UNIQUE,
+                picks_json TEXT NOT NULL,
+                scored_groups TEXT,
+                points_awarded INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_wc_predictions_user ON wc_predictions(user_id)",
         ]
 
         for migration in migrations:

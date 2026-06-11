@@ -242,6 +242,17 @@ class ApiService {
     return this.request('/fantasy/leaderboard');
   }
 
+  async getWcPredict() {
+    return this.request('/fantasy/wc-predict');
+  }
+
+  async saveWcPredict(picks) {
+    return this.request('/fantasy/wc-predict', {
+      method: 'POST',
+      body: JSON.stringify({ picks }),
+    });
+  }
+
   async getMyPredictions() {
     return this.request('/users/me/predictions');
   }

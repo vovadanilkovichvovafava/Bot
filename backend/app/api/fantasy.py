@@ -4,6 +4,7 @@ Points are awarded by the verification worker (prediction_verifier). Rewards are
 PRO time today; a $ free-bet code tier is reserved ("coming soon") and depends on
 a partner-issued promo-code agreement.
 """
+import json
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -16,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.models.fantasy import FantasyLedger
+from app.models.fantasy import FantasyLedger, WcPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,48 @@ async def fantasy_redeem(
         "premium_until": new_until.isoformat(),
         "reward": tier["label"],
     }
+
+
+class WcPredictRequest(BaseModel):
+    picks: dict  # {"A": [teamId, teamId, teamId, teamId], ...} api-sports ids in predicted order
+
+
+@router.get("/wc-predict")
+async def get_wc_predict(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    uid = current_user.get("user_id")
+    row = (await db.execute(select(WcPrediction).where(WcPrediction.user_id == uid))).scalar_one_or_none()
+    return {
+        "picks": json.loads(row.picks_json) if row and row.picks_json else {},
+        "points_awarded": row.points_awarded if row else 0,
+        "scored_groups": json.loads(row.scored_groups) if (row and row.scored_groups) else [],
+    }
+
+
+@router.post("/wc-predict")
+async def save_wc_predict(
+    body: WcPredictRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    uid = current_user.get("user_id")
+    # Only keep group keys with a list of ids (defensive)
+    clean = {str(k): [int(x) for x in v][:4] for k, v in (body.picks or {}).items() if isinstance(v, list)}
+    row = (await db.execute(select(WcPrediction).where(WcPrediction.user_id == uid))).scalar_one_or_none()
+    if row:
+        # Don't let users rewrite groups that were already scored
+        scored = set(json.loads(row.scored_groups or "[]"))
+        existing = json.loads(row.picks_json or "{}")
+        for g in scored:
+            if g in existing:
+                clean[g] = existing[g]
+        row.picks_json = json.dumps(clean)
+    else:
+        db.add(WcPrediction(user_id=uid, picks_json=json.dumps(clean)))
+    await db.commit()
+    return {"success": True, "picks": clean}
 
 
 @router.get("/leaderboard")

@@ -1,26 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import api from '../../../shared/api';
 
 const STORAGE_KEY = 'wc_predict_groups_v1';
 
-// 12 groups — 4 teams each
+// 12 groups — 4 teams each: [name, flagCode, apiSportsTeamId]
 const GROUPS = {
-  A: [['Mexico', 'mx'], ['South Africa', 'za'], ['South Korea', 'kr'], ['Czech Republic', 'cz']],
-  B: [['Canada', 'ca'], ['Bosnia & H.', 'ba'], ['Qatar', 'qa'], ['Switzerland', 'ch']],
-  C: [['Brazil', 'br'], ['Morocco', 'ma'], ['Haiti', 'ht'], ['Scotland', 'gb-sct']],
-  D: [['United States', 'us'], ['Paraguay', 'py'], ['Australia', 'au'], ['Türkiye', 'tr']],
-  E: [['Germany', 'de'], ['Curaçao', 'cw'], ['Ivory Coast', 'ci'], ['Ecuador', 'ec']],
-  F: [['Netherlands', 'nl'], ['Japan', 'jp'], ['Sweden', 'se'], ['Tunisia', 'tn']],
-  G: [['Belgium', 'be'], ['Egypt', 'eg'], ['Iran', 'ir'], ['New Zealand', 'nz']],
-  H: [['Spain', 'es'], ['Cape Verde', 'cv'], ['Saudi Arabia', 'sa'], ['Uruguay', 'uy']],
-  I: [['France', 'fr'], ['Senegal', 'sn'], ['Iraq', 'iq'], ['Norway', 'no']],
-  J: [['Argentina', 'ar'], ['Algeria', 'dz'], ['Austria', 'at'], ['Jordan', 'jo']],
-  K: [['Portugal', 'pt'], ['DR Congo', 'cd'], ['Uzbekistan', 'uz'], ['Colombia', 'co']],
-  L: [['England', 'gb-eng'], ['Croatia', 'hr'], ['Ghana', 'gh'], ['Panama', 'pa']],
+  A: [['Mexico', 'mx', 16], ['South Africa', 'za', 1531], ['South Korea', 'kr', 17], ['Czech Republic', 'cz', 770]],
+  B: [['Canada', 'ca', 5529], ['Bosnia & H.', 'ba', 1113], ['Qatar', 'qa', 1569], ['Switzerland', 'ch', 15]],
+  C: [['Brazil', 'br', 6], ['Morocco', 'ma', 31], ['Haiti', 'ht', 2386], ['Scotland', 'gb-sct', 1108]],
+  D: [['United States', 'us', 2384], ['Paraguay', 'py', 2380], ['Australia', 'au', 20], ['Türkiye', 'tr', 777]],
+  E: [['Germany', 'de', 25], ['Curaçao', 'cw', 5530], ['Ivory Coast', 'ci', 1501], ['Ecuador', 'ec', 2382]],
+  F: [['Netherlands', 'nl', 1118], ['Japan', 'jp', 12], ['Sweden', 'se', 5], ['Tunisia', 'tn', 28]],
+  G: [['Belgium', 'be', 1], ['Egypt', 'eg', 32], ['Iran', 'ir', 22], ['New Zealand', 'nz', 4673]],
+  H: [['Spain', 'es', 9], ['Cape Verde', 'cv', 1533], ['Saudi Arabia', 'sa', 23], ['Uruguay', 'uy', 7]],
+  I: [['France', 'fr', 2], ['Senegal', 'sn', 13], ['Iraq', 'iq', 1567], ['Norway', 'no', 1090]],
+  J: [['Argentina', 'ar', 26], ['Algeria', 'dz', 1532], ['Austria', 'at', 775], ['Jordan', 'jo', 1548]],
+  K: [['Portugal', 'pt', 27], ['DR Congo', 'cd', 1508], ['Uzbekistan', 'uz', 1568], ['Colombia', 'co', 8]],
+  L: [['England', 'gb-eng', 10], ['Croatia', 'hr', 3], ['Ghana', 'gh', 1504], ['Panama', 'pa', 11]],
 };
 
 const LETTERS = Object.keys(GROUPS);
+
+// Convert positional picks ({A:['A0','A2',...]}) <-> api-sports ids ({A:[16,17,...]})
+const apiIdOf = (posId) => {
+  const letter = posId[0];
+  const idx = Number(posId.slice(1));
+  return GROUPS[letter]?.[idx]?.[2] ?? null;
+};
+const picksToApi = (picks) => {
+  const out = {};
+  for (const [l, order] of Object.entries(picks || {})) {
+    const ids = (order || []).map(apiIdOf).filter((x) => x != null);
+    if (ids.length) out[l] = ids;
+  }
+  return out;
+};
+const apiToPicks = (serverPicks) => {
+  const out = {};
+  for (const [l, ids] of Object.entries(serverPicks || {})) {
+    const order = (ids || [])
+      .map((apiId) => GROUPS[l]?.findIndex((tm) => tm[2] === apiId))
+      .filter((i) => i != null && i >= 0)
+      .map((i) => `${l}${i}`);
+    if (order.length) out[l] = order;
+  }
+  return out;
+};
 
 const ACCENT = {
   A: '#FB7185', B: '#38BDF8', C: '#34D399', D: '#A78BFA',
@@ -38,17 +65,41 @@ export default function WorldCupPredict() {
   const { t } = useTranslation();
   // picks: { [letter]: [teamId, teamId, ...] } in predicted finishing order
   const [picks, setPicks] = useState({});
+  const [pointsAwarded, setPointsAwarded] = useState(0);
+  const saveTimer = useRef(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setPicks(JSON.parse(raw));
-    } catch {}
+    let alive = true;
+    (async () => {
+      // Prefer server-saved picks (so they can be scored into fantasy points)
+      try {
+        const res = await api.getWcPredict();
+        if (!alive) return;
+        const serverPicks = apiToPicks(res?.picks || {});
+        if (Object.keys(serverPicks).length) {
+          setPicks(serverPicks);
+          setPointsAwarded(res?.points_awarded || 0);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serverPicks)); } catch {}
+          return;
+        }
+      } catch {}
+      // Fallback to any locally-saved draft
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && alive) setPicks(JSON.parse(raw));
+      } catch {}
+    })();
+    return () => { alive = false; if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
 
   const persist = (p) => {
     setPicks(p);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
+    // Debounced sync to the server so completed groups get scored into points
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api.saveWcPredict(picksToApi(p)).catch(() => {});
+    }, 800);
   };
 
   const toggle = (letter, teamId) => {
@@ -96,6 +147,11 @@ export default function WorldCupPredict() {
           <p className="text-emerald-400 text-[11px] font-black uppercase tracking-[0.15em]">{t('predict.fantasy', { defaultValue: 'Fantasy Predict' })}</p>
           <h1 className="text-2xl font-black mt-1 leading-tight">{t('predict.groupStageTitle', { defaultValue: 'Predict the group stage' })}</h1>
           <p className="text-white/50 text-sm mt-1.5">{t('predict.groupStageHint', { defaultValue: "Tap teams in the order you think they'll finish. Top 2 advance." })}</p>
+          <p className="text-emerald-400/90 text-xs mt-1.5 font-semibold">
+            {pointsAwarded > 0
+              ? `⭐ ${t('predict.earned', { points: pointsAwarded, defaultValue: `You've earned ${pointsAwarded} pts` })}`
+              : t('predict.earnHint', { defaultValue: '+50 fantasy points for each team you place in the exact right spot' })}
+          </p>
 
           <div className="mt-4">
             <div className="flex justify-between text-[11px] text-white/40 mb-1.5">
