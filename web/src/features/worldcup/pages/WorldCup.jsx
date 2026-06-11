@@ -47,15 +47,28 @@ const ROUND_COLORS = {
   'Semi-finals': '#B4E600', 'Final': '#FFC72C',
 };
 
-// Star players to watch (avatars use country flag + initials, no external photos)
+// Curated stars — used as a fallback before tournament stats exist. `id` is the
+// api-sports national-team id (to load the real squad), `match` is the surname we
+// look for in that squad to grab the player's real photo.
 const STAR_PLAYERS = [
-  { name: 'Leo Messi', country: 'Argentina', code: 'ar', g: ['#75AADB', '#0B3D91'] },
-  { name: 'C. Ronaldo', country: 'Portugal', code: 'pt', g: ['#DA291C', '#046A38'] },
-  { name: 'K. Mbappé', country: 'France', code: 'fr', g: ['#1d4ed8', '#0b1f6b'] },
-  { name: 'Lamine Yamal', country: 'Spain', code: 'es', g: ['#C60B1E', '#FFC400'] },
-  { name: 'E. Haaland', country: 'Norway', code: 'no', g: ['#BA0C2F', '#00205B'] },
-  { name: 'Vinícius Jr', country: 'Brazil', code: 'br', g: ['#009C3B', '#FFDF00'] },
+  { name: 'Leo Messi', country: 'Argentina', code: 'ar', id: 26, match: 'messi', g: ['#75AADB', '#0B3D91'] },
+  { name: 'C. Ronaldo', country: 'Portugal', code: 'pt', id: 27, match: 'ronaldo', g: ['#DA291C', '#046A38'] },
+  { name: 'K. Mbappé', country: 'France', code: 'fr', id: 2, match: 'mbappe', g: ['#1d4ed8', '#0b1f6b'] },
+  { name: 'Lamine Yamal', country: 'Spain', code: 'es', id: 9, match: 'yamal', g: ['#C60B1E', '#FFC400'] },
+  { name: 'E. Haaland', country: 'Norway', code: 'no', id: 1090, match: 'haaland', g: ['#BA0C2F', '#00205B'] },
+  { name: 'Vinícius Jr', country: 'Brazil', code: 'br', id: 6, match: 'vinic', g: ['#009C3B', '#FFDF00'] },
 ];
+
+// Map a country (nationality string from api-sports) → flag code for the small flag.
+const NATIONALITY_FLAG = {
+  Argentina: 'ar', Portugal: 'pt', France: 'fr', Spain: 'es', Norway: 'no', Brazil: 'br',
+  England: 'gb-eng', Germany: 'de', Netherlands: 'nl', Belgium: 'be', Croatia: 'hr',
+  Italy: 'it', Uruguay: 'uy', Colombia: 'co', Mexico: 'mx', 'USA': 'us', Morocco: 'ma',
+  Senegal: 'sn', Japan: 'jp', 'South Korea': 'kr', Switzerland: 'ch', Denmark: 'dk',
+  Poland: 'pl', Serbia: 'rs', Austria: 'at', Sweden: 'se', Ecuador: 'ec', Canada: 'ca',
+};
+
+const stripAccents = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const FOCUS_TEAMS = [
   { label: 'Spain', alias: 'La Roja', seed: 'Group H · Seed 1', code: 'es', name: 'Spain', from: '#7f1d1d', to: '#b91c1c' },
@@ -105,6 +118,47 @@ export default function WorldCup() {
   const [fixtures, setFixtures] = useState([]);
   const [liveMatches, setLiveMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stars, setStars] = useState(null); // null = loading; array after resolve
+
+  // Star Watch — real player faces + stats.
+  // Primary: live top players ranked by goals+assists (real photos from api-sports).
+  // Fallback (before the tournament has stats): curated stars enriched with real
+  // squad photos, so we still show faces instead of initials.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const top = await footballApi.getTopPlayers(WC_LEAGUE_ID, WC_SEASON, 12);
+        if (alive && Array.isArray(top) && top.length > 0) {
+          setStars(top.filter((p) => p && p.name).map((p) => ({
+            name: p.name,
+            photo: p.photo,
+            country: p.nationality,
+            code: NATIONALITY_FLAG[p.nationality] || '',
+            goals: p.goals || 0,
+            assists: p.assists || 0,
+            ga: p.ga ?? ((p.goals || 0) + (p.assists || 0)),
+            g: ['#1e3a8a', '#2563eb'],
+          })));
+          return;
+        }
+      } catch { /* fall through to squad photos */ }
+      // Fallback: pull each curated star's real photo from their national squad.
+      const enriched = await Promise.all(STAR_PLAYERS.map(async (s) => {
+        try {
+          const squad = await footballApi.getSquad(s.id);
+          const entry = Array.isArray(squad) ? squad[0] : squad;
+          const players = entry?.players || [];
+          const hit = players.find((pl) => stripAccents(pl.name).includes(s.match));
+          return { ...s, photo: hit?.photo || null };
+        } catch {
+          return { ...s, photo: null };
+        }
+      }));
+      if (alive) setStars(enriched);
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Live polling: standings + tournament fixtures + currently-live WC matches.
   // During the tournament this keeps tables/scores fresh without a reload.
@@ -213,20 +267,42 @@ export default function WorldCup() {
             <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-semibold">{t('worldCup.viewAll', { defaultValue: 'View All' })}</button>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-            {STAR_PLAYERS.map((p) => (
-              <div key={p.name} className="bg-white rounded-2xl border border-gray-100 shadow-sm w-[120px] shrink-0 p-3 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full p-0.5 mb-2" style={{ background: `linear-gradient(135deg, ${p.g[0]}, ${p.g[1]})` }}>
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                    <span className="font-black text-gray-700 text-lg">{p.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}</span>
+            {(stars || STAR_PLAYERS).map((p) => {
+              const hasStats = (p.goals || 0) + (p.assists || 0) > 0;
+              const initials = (p.name || '').split(' ').map((w) => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
+              return (
+                <div key={p.name} className="bg-white rounded-2xl border border-gray-100 shadow-sm w-[120px] shrink-0 p-3 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full p-0.5 mb-2" style={{ background: `linear-gradient(135deg, ${p.g?.[0] || '#1e3a8a'}, ${p.g?.[1] || '#2563eb'})` }}>
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      {p.photo ? (
+                        <img
+                          src={p.photo}
+                          alt={p.name}
+                          loading="lazy"
+                          className="w-full h-full rounded-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                        />
+                      ) : null}
+                      <span
+                        className="font-black text-gray-700 text-lg w-full h-full rounded-full items-center justify-center"
+                        style={{ display: p.photo ? 'none' : 'flex' }}
+                      >{initials}</span>
+                    </div>
                   </div>
+                  <p className="text-[13px] font-bold text-gray-900 leading-tight">{p.name}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5 flex items-center gap-1 justify-center">
+                    {p.country}
+                    {p.code && <img src={`https://flagcdn.com/w20/${p.code}.png`} alt="" className="w-3.5 h-2.5 object-cover rounded-[1px]" />}
+                  </p>
+                  {hasStats && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-bold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700" title="Goals">⚽ {p.goals}</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Assists">🅰 {p.assists}</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-[13px] font-bold text-gray-900 leading-tight">{p.name}</p>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5 flex items-center gap-1 justify-center">
-                  {p.country}
-                  <img src={`https://flagcdn.com/w20/${p.code}.png`} alt="" className="w-3.5 h-2.5 object-cover rounded-[1px]" />
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

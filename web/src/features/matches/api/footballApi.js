@@ -460,6 +460,15 @@ class FootballApiService {
     }
   }
 
+  // Top players ranked by goals+assists (merged scorers+assists, real photos + stats)
+  async getTopPlayers(leagueId, season, limit = 12) {
+    try {
+      return await this.backendRequest(`/players/top/${leagueId}/${season}?limit=${limit}`);
+    } catch {
+      return [];
+    }
+  }
+
   // === Leagues ===
 
   async getLeagues(country) {

@@ -2,6 +2,7 @@
 API-Football proxy endpoints with server-side caching.
 Frontend calls these endpoints instead of API-Football directly.
 """
+import asyncio
 import json
 import logging
 import time
@@ -234,6 +235,71 @@ async def get_top_scorers(league_id: int, season: int) -> List[Dict]:
     except Exception as e:
         logger.error(f"Error fetching top scorers for league {league_id}, season {season}: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch top scorers")
+
+
+def _player_stat_entry(entry: Dict) -> Optional[Dict]:
+    """Normalize one api-sports topscorers/topassists entry → flat player+stats dict."""
+    player = entry.get("player") or {}
+    pid = player.get("id")
+    if pid is None:
+        return None
+    stats = (entry.get("statistics") or [{}])[0] or {}
+    goals_block = stats.get("goals") or {}
+    team = stats.get("team") or {}
+    return {
+        "id": pid,
+        "name": player.get("name"),
+        "photo": player.get("photo"),
+        "nationality": player.get("nationality"),
+        "team": {"name": team.get("name"), "logo": team.get("logo")},
+        "goals": goals_block.get("total") or 0,
+        "assists": goals_block.get("assists") or 0,
+    }
+
+
+@router.get("/players/top/{league_id}/{season}")
+async def get_top_players(
+    league_id: int,
+    season: int,
+    limit: int = Query(12, ge=1, le=30),
+) -> List[Dict]:
+    """Top players for a league+season ranked by goals+assists.
+
+    Merges top scorers and top assist providers (so assist-heavy players surface
+    too), de-duplicates by player id, and returns real photos + stats.
+    """
+    try:
+        scorers, assisters = await asyncio.gather(
+            api_football.get_top_scorers(league_id, season),
+            api_football.get_top_assists(league_id, season),
+            return_exceptions=True,
+        )
+        scorers = scorers if isinstance(scorers, list) else []
+        assisters = assisters if isinstance(assisters, list) else []
+
+        merged: Dict[Any, Dict] = {}
+        for entry in [*scorers, *assisters]:
+            flat = _player_stat_entry(entry)
+            if not flat:
+                continue
+            cur = merged.get(flat["id"])
+            if cur:
+                # Same player can appear in both lists — keep the richer figures.
+                cur["goals"] = max(cur["goals"], flat["goals"])
+                cur["assists"] = max(cur["assists"], flat["assists"])
+                if not cur.get("photo"):
+                    cur["photo"] = flat["photo"]
+            else:
+                merged[flat["id"]] = flat
+
+        out = list(merged.values())
+        for p in out:
+            p["ga"] = (p["goals"] or 0) + (p["assists"] or 0)
+        out.sort(key=lambda x: (x["ga"], x["goals"]), reverse=True)
+        return out[:limit]
+    except Exception as e:
+        logger.error(f"Error fetching top players for league {league_id}, season {season}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch top players")
 
 
 # === Leagues ===

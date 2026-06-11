@@ -297,6 +297,10 @@ class ApiFootballService:
         """Get top scorers for a league+season."""
         return await self._request("/players/topscorers", {"league": league_id, "season": season}, "standings")
 
+    async def get_top_assists(self, league_id: int, season: int) -> List[Dict]:
+        """Get top assist providers for a league+season."""
+        return await self._request("/players/topassists", {"league": league_id, "season": season}, "standings")
+
     async def get_leagues(
         self,
         country: Optional[str] = None,
