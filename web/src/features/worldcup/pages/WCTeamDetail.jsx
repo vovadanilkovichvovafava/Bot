@@ -172,7 +172,7 @@ export default function WCTeamDetail() {
             <h2 className="text-xl font-black text-gray-900 uppercase">{name}</h2>
             {group && (
               <p className="text-gray-500 text-xs font-medium mt-0.5">
-                {t('worldCup.group', { defaultValue: 'Group' })} {group} · {t('wcTeam.position', { defaultValue: '1ST POSITION' })}
+                {t('worldCup.group', { defaultValue: 'Group' })} {group}
               </p>
             )}
           </div>
