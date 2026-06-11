@@ -148,7 +148,7 @@ export default function BookmakerPromo() {
           <div className="q-calc">
             <div className="q-copts">
               {[
-                { dep:'€50',  bonus:'€75',   total:'€125',  lbl:'Inizio' },
+                { dep:'€50',  bonus:'€100',  total:'€150',  lbl:'Inizio' },
                 { dep:'€100', bonus:'€150',  total:'€250',  lbl:'Popolare', rec:true },
                 { dep:'€300', bonus:'€450',  total:'€750',  lbl:'Top' },
                 { dep:'€500', bonus:'€750',  total:'€1.250',lbl:'Massimo' },
@@ -162,7 +162,7 @@ export default function BookmakerPromo() {
             </div>
             <div className="q-cres">
               {[
-                { dep:'€50',  bonus:'€75',   total:'€125'  },
+                { dep:'€50',  bonus:'€100',  total:'€150'  },
                 { dep:'€100', bonus:'€150',  total:'€250'  },
                 { dep:'€300', bonus:'€450',  total:'€750'  },
                 { dep:'€500', bonus:'€750',  total:'€1.250'},
@@ -293,7 +293,7 @@ export default function BookmakerPromo() {
             <div className={`q-dopt${sel === 0 ? ' sel' : ''}`} onClick={() => setSel(0)}>
               <div className="da">{advertiser.depositAmounts?.[0] || '50 €'}</div>
               <div className="dl">{t('promo.s4Popular')}</div>
-              <div className="db">+{advertiser.bonusAmounts?.[0] || '75 €'} bonus</div>
+              <div className="db">+{advertiser.bonusAmounts?.[0] || '100 €'} bonus</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('promo.s4Recommended')}</div>

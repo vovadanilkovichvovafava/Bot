@@ -39,10 +39,10 @@ const ADVERTISERS_CONFIG = {
     // Deposit step amounts for ProAccess deposit grid
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
     // Bonus amounts shown on deposit grid
-    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    bonusAmounts: ['100 €', '150 €', '450 €', '750 €'],
     // Bonus calculator tiers for ProAccess step 4
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -101,9 +101,9 @@ const ADVERTISERS_CONFIG = {
     locale: 'es',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    bonusAmounts: ['100 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -160,9 +160,9 @@ const ADVERTISERS_CONFIG = {
     locale: 'fr',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    bonusAmounts: ['100 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -219,9 +219,9 @@ const ADVERTISERS_CONFIG = {
     locale: 'de',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    bonusAmounts: ['100 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -338,9 +338,9 @@ const ADVERTISERS_CONFIG = {
     locale: 'pt',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['50 €', '100 €', '300 €', '500 €'],
-    bonusAmounts: ['75 €', '150 €', '450 €', '750 €'],
+    bonusAmounts: ['100 €', '150 €', '450 €', '750 €'],
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -397,9 +397,9 @@ const ADVERTISERS_CONFIG = {
     locale: 'en',
     quickAmounts: [5, 10, 25, 50, 100],
     depositAmounts: ['€50', '€100', '€300', '€500'],
-    bonusAmounts: ['€75', '€150', '€450', '€750'],
+    bonusAmounts: ['€100', '€150', '€450', '€750'],
     calcTiers: [
-      { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+      { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
       { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
       { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
       { dep: '€500', bonus: '€750',  total: '€1,250', months: 8 },

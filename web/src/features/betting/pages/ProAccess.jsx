@@ -106,7 +106,7 @@ const quizCSS = `
 .q-mc-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#166534;line-height:1.45}
 .q-mc-dot{width:5px;height:5px;border-radius:50%;background:#22C55E;flex-shrink:0;margin-top:4px}
 
-/* NEW: €50+€75=€125 math banner */
+/* NEW: €50+€100=€150 math banner */
 .q-math-banner{background:var(--dark-g);border-radius:13px;padding:13px 14px;flex-shrink:0;animation:qfadeUp .35s ease .1s both;position:relative;overflow:hidden}
 .q-math-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;background:rgba(247,201,72,.1)}
 .q-mb-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
@@ -189,7 +189,7 @@ export default function ProAccess() {
   const feature = searchParams.get('feature');
 
   const calcTiers = advertiser.calcTiers || [
-    { dep: '€50',  bonus: '€75',   total: '€125',  months: 1 },
+    { dep: '€50',  bonus: '€100',  total: '€150',  months: 1 },
     { dep: '€100', bonus: '€150',  total: '€250',  months: 2 },
     { dep: '€300', bonus: '€450',  total: '€750',  months: 5 },
     { dep: '€500', bonus: '€750',  total: '€1.250', months: 8 },
@@ -404,7 +404,7 @@ export default function ProAccess() {
 
       {/* ═══════════════════════════════════════════
           STEP 5 — Выбор суммы депозита  (ОБНОВЛЕНО)
-          + формула €50 + €75 = €125
+          + формула €50 + €100 = €150
           + метка «Min PRO» на опции €50
           + предупреждение минимум
       ═══════════════════════════════════════════ */}
@@ -449,7 +449,7 @@ export default function ProAccess() {
               <div className="rtag blue">Min PRO</div>
               <div className="da">{advertiser.depositAmounts?.[0] || '€50'}</div>
               <div className="dl">{t('proAccess.s5MinForPro')}</div>
-              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€75'} {t('proAccess.s5Bonus')}</div>
+              <div className="dbonus">+{advertiser.bonusAmounts?.[0] || '€100'} {t('proAccess.s5Bonus')}</div>
             </div>
             <div className={`q-dopt rec${sel === 1 ? ' sel' : ''}`} onClick={() => setSel(1)}>
               <div className="rtag">{t('proAccess.s4Recommended')}</div>
@@ -493,7 +493,7 @@ export default function ProAccess() {
 
       {/* ═══════════════════════════════════════════
           STEP 6 — Final CTA  (ОБНОВЛЕНО)
-          + разбивка €50+€75=€125
+          + разбивка €50+€100=€150
           + акцент на «деньги у вас»
       ═══════════════════════════════════════════ */}
       <div className={`q-step final${step === 6 ? ' active' : ''}`}>
