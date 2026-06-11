@@ -104,6 +104,10 @@ export default function WCTeamDetail() {
     const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     return { date: `${wd} ${d.getDate()} ${mon}`, time };
   })();
+  const nmId = nextMatch?.fixture?.id;
+  const nmLive = ['1H', '2H', 'HT'].includes(nextMatch?.fixture?.status?.short);
+  // Open the match inside our app (live screen if in-play, otherwise the detail page)
+  const openNextMatch = () => { if (nmId) navigate(nmLive ? `/live/${nmId}` : `/match/${nmId}`); };
 
   const name = team?.name || stateTeam?.name || 'Team';
   const logo = team?.logo || stateTeam?.logo;
@@ -292,8 +296,16 @@ export default function WCTeamDetail() {
 
         {/* ===== NEXT MATCH CTA ===== */}
         <div className="bg-[#1B2138] rounded-2xl p-4 shadow-lg">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-3">{t('wcTeam.nextMatch', { defaultValue: 'NEXT MATCH' })}</p>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t('wcTeam.nextMatch', { defaultValue: 'NEXT MATCH' })}</p>
+            {nmId && <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-0.5">{t('wcTeam.viewMatch', { defaultValue: 'View match' })} <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg></span>}
+          </div>
+          <button
+            type="button"
+            onClick={openNextMatch}
+            disabled={!nmId}
+            className={`w-full flex items-center justify-between mb-4 rounded-xl ${nmId ? 'active:opacity-80 transition-opacity cursor-pointer' : 'cursor-default'}`}
+          >
             <div className="flex items-center gap-2">
               {logo && <img src={logo} alt="" className="w-8 h-8 object-contain" />}
               <span className="text-white font-bold text-sm uppercase">{name}</span>
@@ -308,7 +320,7 @@ export default function WCTeamDetail() {
                 ? <img src={opponent.logo} alt="" className="w-8 h-8 object-contain" />
                 : <div className="w-8 h-8 bg-white/10 rounded-full" />}
             </div>
-          </div>
+          </button>
           <button
             onClick={() => {
               trackClick(user?.id, 'wc_team_bet');
