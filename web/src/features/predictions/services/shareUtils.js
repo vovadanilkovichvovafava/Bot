@@ -139,7 +139,7 @@ export function generateExpressShareText({ express, referralCode, bonus = '€10
   express.legs?.forEach((leg, i) => {
     text += `${i + 1}. ${leg.home_team} - ${leg.away_team}: ${leg.bet_type} @ ${leg.odds}\n`;
   });
-  text += `\nPotential win: ${bonus} x ${express.total_odds} = €${Math.round(75 * parseFloat(express.total_odds))}\n\n`;
+  text += `\nPotential win: ${bonus} x ${express.total_odds} = €${Math.round(100 * parseFloat(express.total_odds))}\n\n`;
   text += `Get ${bonus} free bet at PreScore AI\n`;
   text += refLink;
 
