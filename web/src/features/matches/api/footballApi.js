@@ -178,6 +178,15 @@ class FootballApiService {
     return res[0] || null;
   }
 
+  // A team's most recent finished fixtures (for form / derived stats)
+  async getTeamRecentFixtures(teamId, last = 10) {
+    try {
+      return await this.backendRequest(`/teams/${teamId}/recent?last=${last}`);
+    } catch {
+      return [];
+    }
+  }
+
   // === Find Fixture by Team Names ===
 
   async findFixture(homeTeam, awayTeam, date) {

@@ -84,6 +84,16 @@ async def get_fixtures_by_team(
         raise HTTPException(status_code=502, detail="Failed to fetch team fixtures")
 
 
+@router.get("/teams/{team_id}/recent")
+async def get_team_recent(team_id: int, last: int = Query(10, ge=1, le=30)) -> List[Dict]:
+    """Get a team's most recent finished fixtures (for form / derived stats)."""
+    try:
+        return await api_football.get_team_recent(team_id, last)
+    except Exception as e:
+        logger.error(f"Error fetching recent fixtures for team {team_id}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch recent fixtures")
+
+
 @router.get("/fixtures/{fixture_id}/enriched")
 async def get_fixture_enriched(fixture_id: int) -> Dict:
     """Get all enriched data for a fixture (stats, events, lineups, prediction, odds)"""

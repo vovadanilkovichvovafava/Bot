@@ -28,6 +28,7 @@ export default function WCTeamDetail() {
   const [team, setTeam] = useState(stateTeam);
   const [players, setPlayers] = useState([]);
   const [nextMatch, setNextMatch] = useState(null);
+  const [recent, setRecent] = useState([]);
   const [teamApiId, setTeamApiId] = useState(/^\d+$/.test(id) ? Number(id) : null);
   const [loading, setLoading] = useState(true);
 
@@ -62,9 +63,10 @@ export default function WCTeamDetail() {
         if (!teamId) { if (alive) setLoading(false); return; }
         if (alive) setTeamApiId(teamId);
         // Squad + the team's next fixture (real opponent/date) in parallel
-        const [squadRes, fxRes] = await Promise.allSettled([
+        const [squadRes, fxRes, recentRes] = await Promise.allSettled([
           footballApi.getSquad(teamId),
           footballApi.getFixturesByTeam(teamId, 2026, 6),
+          footballApi.getTeamRecentFixtures(teamId, 8),
         ]);
         if (!alive) return;
         const squad = squadRes.status === 'fulfilled' ? squadRes.value : null;
@@ -75,6 +77,7 @@ export default function WCTeamDetail() {
         const upcoming = fixtures.filter((f) => ['NS', 'TBD'].includes(f.fixture?.status?.short));
         // Prefer the World Cup (league 1) fixture, else the soonest upcoming
         setNextMatch(upcoming.find((f) => f.league?.id === 1) || upcoming[0] || fixtures[0] || null);
+        setRecent(recentRes.status === 'fulfilled' ? (recentRes.value || []) : []);
       } catch {
         if (alive) setPlayers([]);
       } finally {
@@ -106,8 +109,22 @@ export default function WCTeamDetail() {
   const logo = team?.logo || stateTeam?.logo;
   const group = stateTeam?.group || team?.group || null;
 
-  const formLetters = ['W', 'W', 'D', 'W', 'L'];
+  // Real recent form + stats derived from the team's last finished fixtures
+  const results = recent
+    .filter((f) => ['FT', 'AET', 'PEN'].includes(f.fixture?.status?.short) && teamApiId)
+    .sort((a, b) => new Date(b.fixture?.date) - new Date(a.fixture?.date))
+    .map((f) => {
+      const isHome = f.teams?.home?.id === teamApiId;
+      const gf = (isHome ? f.goals?.home : f.goals?.away) ?? 0;
+      const ga = (isHome ? f.goals?.away : f.goals?.home) ?? 0;
+      return { gf, ga, r: gf > ga ? 'W' : gf < ga ? 'L' : 'D' };
+    });
+  const formLetters = results.length ? results.slice(0, 5).map((x) => x.r).reverse() : [];
   const formColors = { W: 'bg-emerald-500', D: 'bg-gray-400', L: 'bg-red-500' };
+  const games = results.length;
+  const avgGoals = games ? (results.reduce((s, x) => s + x.gf, 0) / games).toFixed(1) : '—';
+  const winRate = games ? `${Math.round((results.filter((x) => x.r === 'W').length / games) * 100)}%` : '—';
+  const avgConceded = games ? (results.reduce((s, x) => s + x.ga, 0) / games).toFixed(1) : '—';
   const worldRanking = history?.titles?.length >= 3 ? '#1' : history?.titles?.length >= 2 ? '#3' : history?.titles?.length >= 1 ? '#8' : '#15';
 
   return (
@@ -168,11 +185,11 @@ export default function WCTeamDetail() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-2">{t('wcTeam.recentForm', { defaultValue: 'RECENT FORM' })}</p>
             <div className="flex gap-1.5">
-              {formLetters.map((l, i) => (
+              {formLetters.length ? formLetters.map((l, i) => (
                 <span key={i} className={`w-7 h-7 ${formColors[l]} rounded-full flex items-center justify-center text-white text-[10px] font-bold`}>
                   {l}
                 </span>
-              ))}
+              )) : <span className="text-gray-300 text-sm font-bold">—</span>}
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -185,9 +202,9 @@ export default function WCTeamDetail() {
         <div>
           <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3 px-1">{t('wcTeam.teamStats', { defaultValue: 'TEAM STATISTICS' })}</p>
           <div className="grid grid-cols-3 gap-3">
-            <StatCard value="2.4" label={t('wcTeam.avgGoals', { defaultValue: 'Avg Goals' })} />
-            <StatCard value="64%" label={t('wcTeam.possession', { defaultValue: 'Possession' })} />
-            <StatCard value="14.2" label={t('wcTeam.shotsPerGame', { defaultValue: 'Shots/Gm' })} />
+            <StatCard value={avgGoals} label={t('wcTeam.avgGoals', { defaultValue: 'Avg Goals' })} />
+            <StatCard value={winRate} label={t('wcTeam.winRate', { defaultValue: 'Win Rate' })} />
+            <StatCard value={avgConceded} label={t('wcTeam.conceded', { defaultValue: 'Conceded' })} />
           </div>
         </div>
 

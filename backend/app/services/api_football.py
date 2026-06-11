@@ -179,6 +179,10 @@ class ApiFootballService:
         """Get ALL fixtures for a league+season (group stage + knockouts). Used for tournament views like the World Cup."""
         return await self._request("/fixtures", {"league": league_id, "season": season}, "fixtures")
 
+    async def get_team_recent(self, team_id: int, last: int = 10) -> List[Dict]:
+        """Get a team's most recent finished fixtures (for form / derived stats)."""
+        return await self._request("/fixtures", {"team": team_id, "last": last}, "fixtures")
+
     # === Statistics ===
 
     async def get_fixture_statistics(self, fixture_id: int) -> List[Dict]:
