@@ -214,7 +214,11 @@ export default function MatchCast() {
           <div className="px-3 text-center">
             <div className="text-4xl font-black tabular-nums">{gh}<span className="text-white/40 mx-1">:</span>{ga}</div>
             <div className="text-[11px] text-white/50 mt-1 font-mono">
-              {isFinished ? t('matchCast.fullTime', { defaultValue: 'Full time' }) : status.short === 'HT' ? 'HT' : `${minute}'`}
+              {isFinished
+                ? t('matchCast.fullTime', { defaultValue: 'Full time' })
+                : status.short === 'NS'
+                  ? new Date(fixture.fixture?.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : status.short === 'HT' ? 'HT' : `${minute}'`}
             </div>
           </div>
           <div className="flex-1 flex flex-col items-center gap-1">

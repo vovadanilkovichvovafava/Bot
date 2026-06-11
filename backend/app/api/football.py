@@ -151,6 +151,8 @@ def _fallback_commentary(last_event: Optional[Dict], home: str, away: str,
                          gh: int, ga: int, minute: int) -> str:
     """Templated commentary when the AI key is unavailable."""
     if not last_event:
+        if (minute or 0) <= 0:
+            return f"Kickoff approaching — {home} vs {away}. Stay tuned for the action!"
         return f"{home} {gh}-{ga} {away} · {minute}' — the game is underway."
     ev_team = (last_event.get("team") or {}).get("name") or ""
     player = (last_event.get("player") or {}).get("name") or "the player"

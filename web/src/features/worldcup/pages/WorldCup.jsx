@@ -260,6 +260,40 @@ export default function WorldCup() {
         {/* ===== Live now ===== */}
         {liveMatches.length > 0 && <LiveNowStrip matches={liveMatches} onOpen={openMatch} t={t} />}
 
+        {/* ===== Match-cast hero — the live (or next) WC match ===== */}
+        {(() => {
+          const liveWc = liveMatches[0];
+          const upcoming = [...fixtures]
+            .filter((m) => m?.fixture?.status?.short === 'NS')
+            .sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date))[0];
+          const fc = liveWc || upcoming || fixtures[0];
+          if (!fc?.fixture?.id) return null;
+          const fcLive = ['1H', '2H', 'ET', 'LIVE', 'P', 'BT', 'HT'].includes(fc.fixture?.status?.short);
+          return (
+            <button
+              onClick={() => navigate(`/matchcast/${fc.fixture.id}`)}
+              className="w-full rounded-2xl p-4 text-left text-white shadow-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-600 flex items-center justify-between"
+            >
+              <div className="min-w-0">
+                <div className="text-[11px] font-black uppercase tracking-widest text-white/85 flex items-center gap-1.5">
+                  {fcLive ? <span className="w-2 h-2 rounded-full bg-red-300 animate-pulse" /> : <span>📡</span>}
+                  {fcLive ? t('worldCup.matchcastLive', { defaultValue: 'Match-cast · LIVE' }) : t('worldCup.matchcastOpener', { defaultValue: 'Match-cast' })}
+                </div>
+                <div className="text-[17px] font-black mt-1 truncate">
+                  {fc.teams?.home?.name} <span className="text-white/60 font-bold">vs</span> {fc.teams?.away?.name}
+                </div>
+                <div className="text-xs text-white/85 mt-0.5">
+                  {fcLive
+                    ? `${fc.goals?.home ?? 0}-${fc.goals?.away ?? 0} · ${fc.fixture?.status?.elapsed || 0}'`
+                    : new Date(fc.fixture.date).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  {' · '}{t('worldCup.matchcastCta', { defaultValue: 'live pitch + AI commentary' })}
+                </div>
+              </div>
+              <div className="text-2xl shrink-0 ml-2">›</div>
+            </button>
+          );
+        })()}
+
         {/* ===== Star Watch ===== */}
         <div>
           <div className="flex items-center justify-between mb-3">
