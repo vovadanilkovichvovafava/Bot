@@ -55,6 +55,7 @@ export default function Rewards() {
 
   const reasonLabel = (h) => {
     if (h.reason === 'correct_prediction') return t('rewards.earnCorrect', { defaultValue: 'Correct prediction' });
+    if (h.reason === 'wrong_prediction') return t('rewards.wrongPrediction', { defaultValue: 'Wrong prediction' });
     if (h.reason?.startsWith('redeem_')) return t('rewards.redeemReason', { defaultValue: 'Reward redeemed' });
     return h.reason || '';
   };
@@ -89,7 +90,7 @@ export default function Rewards() {
           <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
             <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all" style={{ width: `${progress}%` }} />
           </div>
-          <p className="text-[11px] text-gray-400 mt-2">{t('rewards.howEarn', { defaultValue: 'Earn points for every correct prediction. Redeem them for PRO — and soon a $50 free bet.' })}</p>
+          <p className="text-[11px] text-gray-400 mt-2">{t('rewards.howEarn', { defaultValue: 'Win points for correct predictions — but a wrong pick costs points too. The more confident you are, the bigger the reward and the bigger the risk. Redeem points for PRO — and soon a $50 free bet.' })}</p>
         </div>
 
         {/* Tiers */}

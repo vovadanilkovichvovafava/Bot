@@ -23,6 +23,17 @@ logger = logging.getLogger(__name__)
 
 # Fantasy points awarded for a correct prediction (confidence-weighted).
 FANTASY_BASE_POINTS = 100
+# Wrong predictions cost points — the more confident the pick, the bigger the risk.
+# penalty = clamp(confidence * factor, min, max). Reward stays larger than risk
+# (e.g. conf 80 → +180 if right, −40 if wrong) so the game rewards skill, not caution.
+WRONG_PENALTY_FACTOR = 0.5
+WRONG_PENALTY_MIN = 20
+WRONG_PENALTY_MAX = 100
+
+
+def _wrong_penalty(confidence: int) -> int:
+    """Points lost on a wrong prediction, scaled by how confident the pick was."""
+    return int(min(WRONG_PENALTY_MAX, max(WRONG_PENALTY_MIN, round(confidence * WRONG_PENALTY_FACTOR))))
 
 
 async def _award_fantasy_points(db: AsyncSession, user_id: int, points: int, reason: str, ref: str):
@@ -38,6 +49,21 @@ async def _award_fantasy_points(db: AsyncSession, user_id: int, points: int, rea
         )
     )
     db.add(FantasyLedger(user_id=user_id, kind="earn", points=points, reason=reason, ref=str(ref) if ref else None))
+
+
+async def _penalize_fantasy_points(db: AsyncSession, user_id: int, penalty: int, reason: str, ref: str):
+    """Deduct fantasy points for a wrong prediction, flooring both balances at 0."""
+    if not user_id or penalty <= 0:
+        return
+    await db.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(
+            fantasy_points=func.greatest(0, func.coalesce(User.fantasy_points, 0) - penalty),
+            fantasy_points_lifetime=func.greatest(0, func.coalesce(User.fantasy_points_lifetime, 0) - penalty),
+        )
+    )
+    db.add(FantasyLedger(user_id=user_id, kind="penalty", points=-penalty, reason=reason, ref=str(ref) if ref else None))
 
 # Bet type verification logic
 # Maps bet_type to a function(home_goals, away_goals) -> bool
@@ -193,13 +219,20 @@ async def verify_pending_predictions():
                     is_correct = _check_prediction(pred, home_goals, away_goals, fixture)
                     pred.is_correct = is_correct
 
-                    # Fantasy points: award once, only for correct predictions.
-                    if is_correct and not pred.points_awarded and pred.user_id:
+                    # Fantasy points settle once per prediction: win → reward,
+                    # wrong → confidence-scaled penalty (you can lose points).
+                    if not pred.points_awarded and pred.user_id:
                         conf = int(min(max(pred.confidence or 0, 0), 100))
-                        await _award_fantasy_points(
-                            db, pred.user_id, FANTASY_BASE_POINTS + conf,
-                            "correct_prediction", pred.match_id,
-                        )
+                        if is_correct:
+                            await _award_fantasy_points(
+                                db, pred.user_id, FANTASY_BASE_POINTS + conf,
+                                "correct_prediction", pred.match_id,
+                            )
+                        else:
+                            await _penalize_fantasy_points(
+                                db, pred.user_id, _wrong_penalty(conf),
+                                "wrong_prediction", pred.match_id,
+                            )
                     pred.points_awarded = True
 
                     verified_count += 1
