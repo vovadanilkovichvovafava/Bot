@@ -149,21 +149,41 @@ export async function saveTrackingParams(userId) {
 const OFFER_BASE_URL = ENV.OFFER_URL;
 const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 const OFFER_BASE_URL_GOOGLE = ENV.OFFER_URL_GOOGLE || '';
+const OFFER_BASE_URL_AR = ENV.OFFER_URL_AR || '';
+const OFFER_BASE_URL_PT = ENV.OFFER_URL_PT || '';
+
+/**
+ * Выбор offer-ссылки по гео — у партнёра разные офферы под Аргентину и Португалию.
+ * Приоритет:
+ *   1) явный тег ?offer=ar|pt|br во входящей (партнёрской) ссылке — детерминированно;
+ *   2) определённая страна юзера (AdvertiserContext → localStorage.countryCode);
+ *   3) Google-оффер (utm_source=google) → Funnel-2 оффер → дефолтный OFFER_URL.
+ * AR → OFFER_URL_AR, PT/BR → OFFER_URL_PT. Если нужный оффер не задан — откат на OFFER_URL.
+ */
+function pickOfferBase(getParam, isGoogle, funnel) {
+  let region = (getParam('offer') || getParam('geo') || '').toLowerCase();
+  if (!region) {
+    try { region = (localStorage.getItem('countryCode') || '').toLowerCase(); } catch { /* ignore */ }
+  }
+  if (region === 'ar' && OFFER_BASE_URL_AR) return OFFER_BASE_URL_AR;
+  if ((region === 'pt' || region === 'br') && OFFER_BASE_URL_PT) return OFFER_BASE_URL_PT;
+  if (isGoogle) return OFFER_BASE_URL_GOOGLE;
+  if (funnel === 'funnel-2' || funnel === 'funnel-4') return OFFER_BASE_URL_F2;
+  return OFFER_BASE_URL;
+}
 
 export function getTrackingLink(userId, banner = '', funnel = '') {
   if (!userId) return null;
 
   try {
-    // Определяем base URL: Google offer > Funnel-2 offer > Default offer
-    const utmSource = new URLSearchParams(window.location.search).get('utm_source')
-      || sessionStorage.getItem('tracking_utm_source') || '';
-    const isGoogle = OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google';
-    const baseUrl = isGoogle
-      ? OFFER_BASE_URL_GOOGLE
-      : (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
     const params = new URLSearchParams();
     const urlParams = new URLSearchParams(window.location.search);
     const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';
+
+    // Определяем base URL: гео-оффер (AR/PT) > Google > Funnel-2 > дефолтный
+    const utmSource = getParam('utm_source');
+    const isGoogle = !!(OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google');
+    const baseUrl = pickOfferBase(getParam, isGoogle, funnel);
 
     // Наш userId как external_id для постбэков
     params.set('external_id', String(userId));
@@ -231,6 +251,8 @@ function deeplinkAllowedHosts() {
   add(OFFER_BASE_URL);
   add(OFFER_BASE_URL_F2);
   add(OFFER_BASE_URL_GOOGLE);
+  add(OFFER_BASE_URL_AR);
+  add(OFFER_BASE_URL_PT);
   add(ENV.BOOKMAKER_LINK);
   (ENV.DEEPLINK_HOSTS || '')
     .split(',')

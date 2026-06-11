@@ -11,6 +11,9 @@ export const ENV = {
   OFFER_URL:          rc.OFFER_URL          || import.meta.env.VITE_OFFER_URL          || '',
   OFFER_URL_F2:       rc.OFFER_URL_F2       || import.meta.env.VITE_OFFER_URL_F2       || '',
   OFFER_URL_GOOGLE:   rc.OFFER_URL_GOOGLE   || import.meta.env.VITE_OFFER_URL_GOOGLE   || '',
+  // Geo-split offers: Argentina / Portugal (+Brazil). Empty → fall back to OFFER_URL.
+  OFFER_URL_AR:       rc.OFFER_URL_AR       || import.meta.env.VITE_OFFER_URL_AR       || '',
+  OFFER_URL_PT:       rc.OFFER_URL_PT       || import.meta.env.VITE_OFFER_URL_PT       || '',
   BKPROXY_URL:        rc.BKPROXY_URL        || import.meta.env.VITE_BKPROXY_URL        || '/geo',
   VAPID_PUBLIC_KEY:   rc.VAPID_PUBLIC_KEY   || import.meta.env.VITE_VAPID_PUBLIC_KEY   || '',
   BOOKMAKER_NAME:     rc.BOOKMAKER_NAME     || import.meta.env.VITE_BOOKMAKER_NAME     || 'Partner',
