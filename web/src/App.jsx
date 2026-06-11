@@ -90,6 +90,7 @@ const PredictionHistory = lazy(() => import('./features/predictions/pages/Predic
 const OddsConverter = lazy(() => import('./features/tools/pages/OddsConverter'));
 const YourStats = lazy(() => import('./features/predictions/pages/YourStats'));
 const LiveMatchDetail = lazy(() => import('./features/matches/pages/LiveMatchDetail'));
+const MatchCast = lazy(() => import('./features/matches/pages/MatchCast'));
 const BookmakerPromo = lazy(() => import('./features/betting/pages/BookmakerPromo'));
 const ProAccess = lazy(() => import('./features/betting/pages/ProAccess'));
 const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'));
@@ -240,6 +241,7 @@ export default function App() {
         <Route path="/live/:id" element={
           <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
         } />
+        <Route path="/matchcast/:id" element={<MatchCast />} />
         <Route path="/premium" element={<Navigate to="/pro-access" replace />} />
         <Route path="/value-finder" element={
           <ProtectedRoute><ValueFinder /></ProtectedRoute>

@@ -188,6 +188,14 @@ export default function LiveMatchDetail() {
           </div>
         </div>
 
+        {/* Match-cast — live pitch + AI commentator */}
+        <button
+          onClick={() => navigate(`/matchcast/${id}`)}
+          className="w-full mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-2xl py-3 flex items-center justify-center gap-2 shadow-lg"
+        >
+          📡 {t('liveMatch.openMatchCast', { defaultValue: 'Open Match-cast (live + AI commentary)' })}
+        </button>
+
         {/* AI Live Analysis (token-gated) */}
         <AiLiveAnalysis
           canAnalyze={canAnalyze}

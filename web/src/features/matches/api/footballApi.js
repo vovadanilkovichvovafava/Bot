@@ -271,6 +271,15 @@ class FootballApiService {
     return this.request(`/fixtures/${fixtureId}/statistics`, '/fixtures/statistics', { fixture: fixtureId });
   }
 
+  // Live AI commentator line for the match-cast (cached server-side per state)
+  async getMatchCommentary(fixtureId, lang = 'en') {
+    try {
+      return await this.backendRequest(`/fixtures/${fixtureId}/commentary?lang=${encodeURIComponent(lang)}`);
+    } catch {
+      return { text: '' };
+    }
+  }
+
   async getFixtureEvents(fixtureId) {
     return this.request(`/fixtures/${fixtureId}/events`, '/fixtures/events', { fixture: fixtureId });
   }

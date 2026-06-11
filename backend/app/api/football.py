@@ -137,6 +137,114 @@ async def get_fixture_lineups(fixture_id: int) -> List[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch lineups")
 
 
+# === Match-cast AI commentary ===
+
+_COMMENTARY_LANGS = {
+    "en": "English", "pt": "Portuguese", "es": "Spanish", "ru": "Russian",
+    "fr": "French", "it": "Italian", "de": "German", "pl": "Polish",
+}
+_commentary_cache: Dict[str, Dict] = {}  # key -> {"ts": float, "text": str}
+_COMMENTARY_TTL = 45  # seconds — repeated polls / many viewers reuse the same line
+
+
+def _fallback_commentary(last_event: Optional[Dict], home: str, away: str,
+                         gh: int, ga: int, minute: int) -> str:
+    """Templated commentary when the AI key is unavailable."""
+    if not last_event:
+        return f"{home} {gh}-{ga} {away} · {minute}' — the game is underway."
+    ev_team = (last_event.get("team") or {}).get("name") or ""
+    player = (last_event.get("player") or {}).get("name") or "the player"
+    etype = (last_event.get("type") or "").lower()
+    detail = (last_event.get("detail") or "").lower()
+    minute = (last_event.get("time") or {}).get("elapsed") or minute
+    if etype == "goal":
+        return f"⚽ GOAL! {player} scores for {ev_team}! {home} {gh}-{ga} {away} ({minute}')."
+    if etype == "card" and "yellow" in detail:
+        return f"🟨 Yellow card for {player} ({ev_team}) at {minute}'."
+    if etype == "card" and "red" in detail:
+        return f"🟥 Red card! {player} is sent off for {ev_team} ({minute}')."
+    if etype == "subst":
+        return f"🔄 {ev_team} make a change — {player} comes on at {minute}'."
+    if etype == "var":
+        return f"📺 VAR check for {ev_team} at {minute}'..."
+    return f"{home} {gh}-{ga} {away} · {minute}' — {ev_team} pushing forward."
+
+
+@router.get("/fixtures/{fixture_id}/commentary")
+async def get_match_commentary(fixture_id: int, lang: str = Query("en")):
+    """One punchy live-commentary line for the match-cast.
+
+    AI (Haiku) when a key is set, otherwise a templated line. Cached per
+    (fixture, latest-state) so many concurrent viewers share one generation.
+    """
+    try:
+        fx, events = await asyncio.gather(
+            api_football.get_fixture(fixture_id),
+            api_football.get_fixture_events(fixture_id),
+            return_exceptions=True,
+        )
+        fixture = fx if isinstance(fx, dict) else None
+        events = events if isinstance(events, list) else []
+        if not fixture:
+            return {"text": ""}
+
+        teams = fixture.get("teams") or {}
+        home = (teams.get("home") or {}).get("name") or "Home"
+        away = (teams.get("away") or {}).get("name") or "Away"
+        goals = fixture.get("goals") or {}
+        gh = goals.get("home") or 0
+        ga = goals.get("away") or 0
+        status = (fixture.get("fixture") or {}).get("status") or {}
+        minute = status.get("elapsed") or 0
+        last = events[-1] if events else None
+
+        # Cache key changes when score/events/5-min-bucket change → fresh line on news.
+        key = f"{fixture_id}:{len(events)}:{gh}:{ga}:{minute // 5}:{lang}"
+        now = time.time()
+        cached = _commentary_cache.get(key)
+        if cached and now - cached["ts"] < _COMMENTARY_TTL:
+            return {"text": cached["text"], "cached": True}
+
+        claude_key = os.getenv("CLAUDE_API_KEY", "")
+        text = ""
+        if claude_key:
+            ev_lines = []
+            for e in events[-6:]:
+                t = (e.get("time") or {}).get("elapsed")
+                tm = (e.get("team") or {}).get("name")
+                ev_lines.append(f"{t}' {tm}: {e.get('type')}/{e.get('detail')} - {(e.get('player') or {}).get('name')}")
+            events_text = "\n".join(ev_lines) or "no events yet"
+            lang_name = _COMMENTARY_LANGS.get(lang, "English")
+            prompt = (
+                f"You are an energetic live football commentator.\n"
+                f"Match: {home} {gh}-{ga} {away}, minute {minute}.\n"
+                f"Recent events:\n{events_text}\n\n"
+                f"Write ONE punchy live-commentary line (max 16 words) about the CURRENT moment, "
+                f"in {lang_name}. At most one emoji. No quotes. Output only the line."
+            )
+            try:
+                client = anthropic.AsyncAnthropic(api_key=claude_key)
+                resp = await client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=80,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                text = (resp.content[0].text or "").strip()
+            except Exception as e:
+                logger.error(f"Commentary AI error for {fixture_id}: {e}")
+
+        if not text:
+            text = _fallback_commentary(last, home, away, gh, ga, minute)
+
+        if len(_commentary_cache) > 500:
+            _commentary_cache.clear()
+        _commentary_cache[key] = {"ts": now, "text": text}
+        return {"text": text}
+    except Exception as e:
+        logger.error(f"Error building commentary for fixture {fixture_id}: {e}")
+        return {"text": ""}
+
+
 # === Predictions & Odds ===
 
 @router.get("/fixtures/{fixture_id}/prediction")
