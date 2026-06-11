@@ -33,11 +33,39 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 
 
 def get_client_ip(request: Request) -> str:
-    """Get client IP from request, considering proxies"""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    """
+    Real client IP for anti-abuse (per-IP registration cap).
+
+    Behind Cloudflare, CF-Connecting-IP is authoritative — Cloudflare strips any
+    client-supplied value, so it cannot be spoofed. We deliberately do NOT trust
+    the leftmost X-Forwarded-For entry (attacker-controlled), which would let a
+    farmer bypass the 5-accounts/IP limit by sending a fresh fake IP each time.
+    """
+    cf = request.headers.get("CF-Connecting-IP")
+    if cf and cf.strip():
+        return cf.strip()
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        # Use the LAST hop (added by the trusted proxy), not the spoofable first.
+        parts = [p.strip() for p in xff.split(",") if p.strip()]
+        if parts:
+            return parts[-1]
     return request.client.host if request.client else "unknown"
+
+
+VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4"}
+
+
+def normalize_funnel(raw) -> str:
+    """Map an incoming utm_funnel value ('2', 'funnel-2', etc.) to a valid funnel."""
+    if not raw:
+        return "funnel-1"
+    r = str(raw).strip().lower()
+    if r in VALID_FUNNELS:
+        return r
+    if r in {"1", "2", "3", "4"}:
+        return f"funnel-{r}"
+    return "funnel-1"
 
 
 class UserRegister(BaseModel):
@@ -186,8 +214,8 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # All new users go to funnel-1
-    funnel = "funnel-1"
+    # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
+    funnel = normalize_funnel(user.utm_funnel)
 
     # Create new user
     new_user = User(
