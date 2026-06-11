@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -204,7 +204,9 @@ async def save_predictions(
 class PremiumActivation(BaseModel):
     premium: bool
     source: str
-    depositAmount: Optional[str] = None
+    # Accept number or string (the postback server sends a parsed numeric amount);
+    # this field is informational only and not used for the grant.
+    depositAmount: Optional[Any] = None
     currency: Optional[str] = None
     expiresAt: Optional[str] = None
 
