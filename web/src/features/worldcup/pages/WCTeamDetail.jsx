@@ -27,6 +27,8 @@ export default function WCTeamDetail() {
   const stateTeam = location.state?.team || null;
   const [team, setTeam] = useState(stateTeam);
   const [players, setPlayers] = useState([]);
+  const [nextMatch, setNextMatch] = useState(null);
+  const [teamApiId, setTeamApiId] = useState(/^\d+$/.test(id) ? Number(id) : null);
   const [loading, setLoading] = useState(true);
 
   const isFunnel2 = user?.funnel === 'funnel-2' || user?.funnel === 'funnel-4';
@@ -58,11 +60,21 @@ export default function WCTeamDetail() {
           if (alive && found) setTeam((prev) => ({ ...prev, logo: prev?.logo || found.logo }));
         }
         if (!teamId) { if (alive) setLoading(false); return; }
-        const squad = await footballApi.getSquad(teamId);
-        const entry = Array.isArray(squad) ? squad[0] : squad;
+        if (alive) setTeamApiId(teamId);
+        // Squad + the team's next fixture (real opponent/date) in parallel
+        const [squadRes, fxRes] = await Promise.allSettled([
+          footballApi.getSquad(teamId),
+          footballApi.getFixturesByTeam(teamId, 2026, 6),
+        ]);
         if (!alive) return;
+        const squad = squadRes.status === 'fulfilled' ? squadRes.value : null;
+        const entry = Array.isArray(squad) ? squad[0] : squad;
         if (entry?.team) setTeam((prev) => ({ name: entry.team.name, logo: entry.team.logo, ...prev }));
         setPlayers(entry?.players || []);
+        const fixtures = fxRes.status === 'fulfilled' ? (fxRes.value || []) : [];
+        const upcoming = fixtures.filter((f) => ['NS', 'TBD'].includes(f.fixture?.status?.short));
+        // Prefer the World Cup (league 1) fixture, else the soonest upcoming
+        setNextMatch(upcoming.find((f) => f.league?.id === 1) || upcoming[0] || fixtures[0] || null);
       } catch {
         if (alive) setPlayers([]);
       } finally {
@@ -76,6 +88,19 @@ export default function WCTeamDetail() {
     ...g,
     list: players.filter((p) => p.position === g.key),
   })).filter((g) => g.list.length > 0);
+
+  // Next match: real opponent + kickoff (falls back to placeholder if unknown)
+  const nmTeams = nextMatch?.teams;
+  const opponent = nmTeams ? (nmTeams.home?.id === teamApiId ? nmTeams.away : nmTeams.home) : null;
+  const nmWhen = (() => {
+    const iso = nextMatch?.fixture?.date;
+    if (!iso) return null;
+    const d = new Date(iso);
+    const wd = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    const mon = d.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+    const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return { date: `${wd} ${d.getDate()} ${mon}`, time };
+  })();
 
   const name = team?.name || stateTeam?.name || 'Team';
   const logo = team?.logo || stateTeam?.logo;
@@ -257,12 +282,14 @@ export default function WCTeamDetail() {
               <span className="text-white font-bold text-sm uppercase">{name}</span>
             </div>
             <div className="text-center">
-              <p className="text-white/40 text-[10px]">{t('wcTeam.matchDate', { defaultValue: 'SUN 14 JULY' })}</p>
-              <p className="text-white font-black text-xl">20:00</p>
+              <p className="text-white/40 text-[10px]">{nmWhen ? nmWhen.date : t('wcTeam.matchDate', { defaultValue: 'TBD' })}</p>
+              <p className="text-white font-black text-xl">{nmWhen ? nmWhen.time : '—'}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white font-bold text-sm">{t('wcTeam.opponent', { defaultValue: 'TBD' })}</span>
-              <div className="w-8 h-8 bg-white/10 rounded-full" />
+              <span className="text-white font-bold text-sm uppercase">{opponent?.name || t('wcTeam.opponent', { defaultValue: 'TBD' })}</span>
+              {opponent?.logo
+                ? <img src={opponent.logo} alt="" className="w-8 h-8 object-contain" />
+                : <div className="w-8 h-8 bg-white/10 rounded-full" />}
             </div>
           </div>
           <button
