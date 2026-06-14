@@ -3113,3 +3113,53 @@ async def get_banner_clicks_stats(
         logger.error(traceback.format_exc())
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Banner analytics error: {str(e)}")
+
+
+# ── Maintenance: purge users by traffic source (owner only) ──────────────────
+
+@router.post("/maintenance/purge-source")
+async def purge_users_by_source(
+    source: str = Body(..., embed=True),
+    confirm: bool = Body(False, embed=True),
+    admin: dict = Depends(require_admin_role("owner")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all users with a given traffic_source plus their related rows.
+
+    Owner-only, requires confirm=true. Used to clear legacy/old-domain test data
+    (e.g. source='prescoreai_com') so the dashboard reflects only the new domain.
+    """
+    from fastapi import HTTPException
+    source = (source or "").strip()
+    if not source:
+        raise HTTPException(status_code=400, detail="source is required")
+    if not confirm:
+        raise HTTPException(status_code=400, detail="confirm must be true")
+
+    # How many users match (for the response / sanity)
+    target_count = (await db.execute(
+        text("SELECT COUNT(*) FROM users WHERE traffic_source = :s"), {"s": source}
+    )).scalar() or 0
+    if target_count == 0:
+        return {"deleted_users": 0, "source": source, "message": "No users matched."}
+
+    sub = "(SELECT id FROM users WHERE traffic_source = :s)"
+    # Children first (FK to users.id), then null the self-referential referrer link,
+    # then the users themselves.
+    child_tables = [
+        "predictions", "fantasy_ledger", "wc_predictions",
+        "community_picks", "match_chat_messages", "support_chat_messages",
+        "ai_chat_messages",
+    ]
+    deleted = {}
+    for tbl in child_tables:
+        res = await db.execute(text(f"DELETE FROM {tbl} WHERE user_id IN {sub}"), {"s": source})
+        deleted[tbl] = res.rowcount
+    await db.execute(text(f"UPDATE users SET referred_by_id = NULL WHERE referred_by_id IN {sub}"), {"s": source})
+    res = await db.execute(text("DELETE FROM users WHERE traffic_source = :s"), {"s": source})
+    deleted_users = res.rowcount
+    await db.commit()
+
+    logger.warning("PURGE source=%s by admin=%s: removed %s users, children=%s",
+                   source, admin.get("email"), deleted_users, deleted)
+    return {"deleted_users": deleted_users, "source": source, "children": deleted}
