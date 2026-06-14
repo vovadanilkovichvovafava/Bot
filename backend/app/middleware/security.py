@@ -74,22 +74,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     AUTH_LIMIT = 20
     WINDOW_SECONDS = 60
 
-    # Allowed CORS origins — must match main.py CORS config
+    # Allowed CORS origins — must match main.py CORS config.
+    # Locked to the single production domain (bot-kwojmg.saturn.ac) + local dev.
     CORS_ORIGINS = {
-        "https://prescoreai.com",
-        "https://www.prescoreai.com",
-        "https://prescore.vip",
-        "https://www.prescore.vip",
-        "https://prescoreai.vip",
-        "https://www.prescoreai.vip",
-        "https://sportscoreai.com",
-        "https://www.sportscoreai.com",
-        "https://pwa-production-20b5.up.railway.app",
-        "https://pwa-2-production.up.railway.app",
-        "https://appbot-production-152e.up.railway.app",
         "https://bot-kwojmg.saturn.ac",
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",
     }
 
     # Add extra origins from env for multi-domain deployments

@@ -173,18 +173,11 @@ app.add_middleware(InjectionDetectionMiddleware)
 # CORS - MUST be added LAST so it runs FIRST (LIFO order)
 # Note: When allow_credentials=True, cannot use wildcard "*" for origins
 # Instead, we list specific origins or use allow_origin_regex
+# Single production domain — only bot-kwojmg.saturn.ac may call this API from a
+# browser. Old marketing domains (prescoreai.*, prescore.vip, sportscoreai.com)
+# and the dead Railway apps are intentionally removed so no other frontend can
+# feed this backend/DB. Add more via EXTRA_CORS_ORIGINS if ever needed.
 CORS_ORIGINS = [
-    "https://prescoreai.com",
-    "https://www.prescoreai.com",
-    "https://prescoreai.vip",
-    "https://www.prescoreai.vip",
-    "https://prescore.vip",
-    "https://www.prescore.vip",
-    "https://sportscoreai.com",
-    "https://www.sportscoreai.com",
-    "https://pwa-production-20b5.up.railway.app",
-    "https://pwa-2-production.up.railway.app",
-    "https://appbot-production-152e.up.railway.app",
     "https://bot-kwojmg.saturn.ac",
     "http://localhost:3000",
     "http://localhost:5173",
