@@ -27,9 +27,11 @@ router = APIRouter()
 MAX_PREMIUM_DAYS = 365
 LEADERBOARD_MIN_PREDICTIONS = 5
 
-# Group-stage predictions close at the end of 2026-06-17 (UTC). After this, picks
+# Group-stage predictions close at the end of 2026-06-23 (UTC). After this, picks
 # are locked so nobody can predict groups whose results are already known.
-WC_PREDICT_DEADLINE = datetime(2026, 6, 17, 23, 59, 59)
+WC_PREDICT_DEADLINE = datetime(2026, 6, 23, 23, 59, 59)
+# Number of groups that must be fully predicted before a prediction can be finalized.
+WC_TOTAL_GROUPS = 12
 
 # Redemption tiers. PRO tiers are live; the cash/freebet tier is gated off until a
 # partner promo-code integration exists.
@@ -144,8 +146,11 @@ async def get_wc_predict(
         "picks": json.loads(row.picks_json) if row and row.picks_json else {},
         "points_awarded": row.points_awarded if row else 0,
         "scored_groups": json.loads(row.scored_groups) if (row and row.scored_groups) else [],
+        "finalized": bool(row.finalized) if row else False,
+        "finalized_at": row.finalized_at.isoformat() + "Z" if (row and row.finalized_at) else None,
         "locked": datetime.utcnow() > WC_PREDICT_DEADLINE,
         "deadline": WC_PREDICT_DEADLINE.isoformat() + "Z",
+        "total_groups": WC_TOTAL_GROUPS,
     }
 
 
@@ -163,6 +168,9 @@ async def save_wc_predict(
     clean = {str(k): [int(x) for x in v][:4] for k, v in (body.picks or {}).items() if isinstance(v, list)}
     row = (await db.execute(select(WcPrediction).where(WcPrediction.user_id == uid))).scalar_one_or_none()
     if row:
+        # A finalized prediction is locked — no more edits.
+        if row.finalized:
+            raise HTTPException(status_code=403, detail="Prediction already finalized")
         # Don't let users rewrite groups that were already scored
         scored = set(json.loads(row.scored_groups or "[]"))
         existing = json.loads(row.picks_json or "{}")
@@ -174,6 +182,38 @@ async def save_wc_predict(
         db.add(WcPrediction(user_id=uid, picks_json=json.dumps(clean)))
     await db.commit()
     return {"success": True, "picks": clean}
+
+
+@router.post("/wc-predict/finalize")
+async def finalize_wc_predict(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lock in the prediction. Only finalized predictions count and get scored.
+
+    Requires all groups predicted (4 teams each) and the deadline not passed.
+    Once finalized, the prediction can no longer be edited.
+    """
+    uid = current_user.get("user_id")
+    if datetime.utcnow() > WC_PREDICT_DEADLINE:
+        raise HTTPException(status_code=403, detail="Group predictions are closed")
+    row = (await db.execute(select(WcPrediction).where(WcPrediction.user_id == uid))).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=400, detail="Nothing to finalize")
+    if row.finalized:
+        return {"success": True, "finalized": True, "already": True}
+    picks = json.loads(row.picks_json or "{}")
+    complete_groups = sum(1 for v in picks.values() if isinstance(v, list) and len(v) == 4)
+    if complete_groups < WC_TOTAL_GROUPS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Predict all {WC_TOTAL_GROUPS} groups first ({complete_groups}/{WC_TOTAL_GROUPS} done)",
+        )
+    row.finalized = True
+    row.finalized_at = datetime.utcnow()
+    await db.commit()
+    logger.info("WC prediction finalized: user=%s", uid)
+    return {"success": True, "finalized": True, "finalized_at": row.finalized_at.isoformat() + "Z"}
 
 
 @router.get("/leaderboard")

@@ -248,6 +248,9 @@ async def init_db():
                 updated_at TIMESTAMP DEFAULT NOW()
             )""",
             "CREATE INDEX IF NOT EXISTS ix_wc_predictions_user ON wc_predictions(user_id)",
+            # A prediction only counts/scores once the user finalizes it
+            "ALTER TABLE wc_predictions ADD COLUMN IF NOT EXISTS finalized BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE wc_predictions ADD COLUMN IF NOT EXISTS finalized_at TIMESTAMP",
         ]
 
         for migration in migrations:

@@ -253,6 +253,10 @@ class ApiService {
     });
   }
 
+  async finalizeWcPredict() {
+    return this.request('/fantasy/wc-predict/finalize', { method: 'POST' });
+  }
+
   async getMyPredictions() {
     return this.request('/users/me/predictions');
   }

@@ -67,6 +67,8 @@ export default function WorldCupPredict() {
   const [picks, setPicks] = useState({});
   const [pointsAwarded, setPointsAwarded] = useState(0);
   const [locked, setLocked] = useState(false);
+  const [finalized, setFinalized] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const saveTimer = useRef(null);
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export default function WorldCupPredict() {
         const res = await api.getWcPredict();
         if (!alive) return;
         if (res?.locked) setLocked(true);
+        if (res?.finalized) setFinalized(true);
         const serverPicks = apiToPicks(res?.picks || {});
         if (Object.keys(serverPicks).length) {
           setPicks(serverPicks);
@@ -105,7 +108,7 @@ export default function WorldCupPredict() {
   };
 
   const toggle = (letter, teamId) => {
-    if (locked) return; // predictions closed after the deadline
+    if (locked || finalized) return; // closed after the deadline, or already finalized
     const cur = picks[letter] || [];
     let next;
     if (cur.includes(teamId)) {
@@ -123,11 +126,29 @@ export default function WorldCupPredict() {
     persist({ ...picks, [letter]: next });
   };
 
-  const reset = () => { if (!locked) persist({}); };
+  const reset = () => { if (!locked && !finalized) persist({}); };
 
   const isComplete = (letter) => (picks[letter]?.length || 0) === 4;
   const groupsDone = LETTERS.filter(isComplete).length;
   const progressPct = Math.round((groupsDone / LETTERS.length) * 100);
+  const allGroupsDone = groupsDone === LETTERS.length;
+
+  const doFinalize = async () => {
+    if (finalizing || finalized || locked || !allGroupsDone) return;
+    setFinalizing(true);
+    try {
+      // Make sure the latest picks are saved before locking them in
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      await api.saveWcPredict(picksToApi(picks)).catch(() => {});
+      const res = await api.finalizeWcPredict();
+      if (res?.finalized) setFinalized(true);
+    } catch (e) {
+      // surface a soft message; keep the form editable on failure
+      console.warn('finalize failed', e?.message);
+    } finally {
+      setFinalizing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#070710] text-white pb-28">
@@ -145,7 +166,17 @@ export default function WorldCupPredict() {
           {t('common.back', { defaultValue: 'Back' })}
         </button>
 
-        {locked && (
+        {finalized && (
+          <div className="rounded-2xl p-4 mb-4 bg-emerald-500/15 border border-emerald-400/30 flex items-start gap-2">
+            <span className="text-xl leading-none">✅</span>
+            <div>
+              <p className="text-emerald-300 font-bold text-sm">{t('predict.finalizedTitle', { defaultValue: 'Prediction locked in' })}</p>
+              <p className="text-white/60 text-xs mt-0.5">{t('predict.finalizedHint', { defaultValue: 'Your prediction is final and counts for points. It can no longer be changed.' })}</p>
+            </div>
+          </div>
+        )}
+
+        {locked && !finalized && (
           <div className="rounded-2xl p-4 mb-4 bg-amber-500/15 border border-amber-400/30 flex items-start gap-2">
             <span className="text-xl leading-none">🔒</span>
             <div>
@@ -191,6 +222,30 @@ export default function WorldCupPredict() {
           ))}
         </div>
 
+        {/* Finalize — lock in the prediction (only then does it count) */}
+        {!finalized && !locked && (
+          <div className="mt-6">
+            <button
+              onClick={doFinalize}
+              disabled={!allGroupsDone || finalizing}
+              className={`w-full py-3.5 rounded-2xl font-black text-[15px] transition-all ${
+                allGroupsDone && !finalizing
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white/40 cursor-not-allowed'
+              }`}
+            >
+              {finalizing
+                ? t('predict.finalizing', { defaultValue: 'Locking in…' })
+                : allGroupsDone
+                  ? `✅ ${t('predict.finalize', { defaultValue: 'Finalize prediction' })}`
+                  : t('predict.finalizeProgress', { count: groupsDone, total: LETTERS.length, defaultValue: `Fill all groups to finalize (${groupsDone}/${LETTERS.length})` })}
+            </button>
+            <p className="text-center text-white/40 text-[11px] mt-2">
+              {t('predict.finalizeNote', { defaultValue: 'Only a finalized prediction counts for points. After finalizing it cannot be changed.' })}
+            </p>
+          </div>
+        )}
+
         {/* Locked knockout stage */}
         <div className="mt-6 rounded-2xl border border-white/[0.08] bg-[#0d0d18] p-5 text-center relative overflow-hidden">
           <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
@@ -201,7 +256,7 @@ export default function WorldCupPredict() {
         </div>
 
         {/* Reset */}
-        {groupsDone > 0 && (
+        {groupsDone > 0 && !finalized && (
           <button onClick={reset} disabled={locked} className={`w-full mt-6 py-3 rounded-xl border border-white/15 text-white/60 text-sm font-semibold transition-colors ${locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5'}`}>
             {t('predict.reset', { defaultValue: 'Reset predictions' })}
           </button>

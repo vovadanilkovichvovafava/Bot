@@ -60,7 +60,10 @@ async def settle_wc_predictions() -> int:
 
     settled = 0
     async with async_session_maker() as db:
-        rows = (await db.execute(select(WcPrediction))).scalars().all()
+        # Only finalized predictions count toward fantasy points.
+        rows = (await db.execute(
+            select(WcPrediction).where(WcPrediction.finalized == True)  # noqa: E712
+        )).scalars().all()
         for pred in rows:
             try:
                 picks = json.loads(pred.picks_json or "{}")
