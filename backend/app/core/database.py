@@ -100,6 +100,20 @@ async def init_db():
             # Country column for user geo tracking
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_country ON users(country)",
+            # Backfill country for Latin-American phones (prefixes added later) —
+            # longest prefix first; only fills rows where country is missing.
+            "UPDATE users SET country='UY' WHERE (country IS NULL OR country='') AND phone LIKE '+598%'",
+            "UPDATE users SET country='PY' WHERE (country IS NULL OR country='') AND phone LIKE '+595%'",
+            "UPDATE users SET country='EC' WHERE (country IS NULL OR country='') AND phone LIKE '+593%'",
+            "UPDATE users SET country='BO' WHERE (country IS NULL OR country='') AND phone LIKE '+591%'",
+            "UPDATE users SET country='AR' WHERE (country IS NULL OR country='') AND phone LIKE '+54%'",
+            "UPDATE users SET country='BR' WHERE (country IS NULL OR country='') AND phone LIKE '+55%'",
+            "UPDATE users SET country='MX' WHERE (country IS NULL OR country='') AND phone LIKE '+52%'",
+            "UPDATE users SET country='PE' WHERE (country IS NULL OR country='') AND phone LIKE '+51%'",
+            "UPDATE users SET country='CL' WHERE (country IS NULL OR country='') AND phone LIKE '+56%'",
+            "UPDATE users SET country='CO' WHERE (country IS NULL OR country='') AND phone LIKE '+57%'",
+            "UPDATE users SET country='VE' WHERE (country IS NULL OR country='') AND phone LIKE '+58%'",
+            "UPDATE users SET country='CU' WHERE (country IS NULL OR country='') AND phone LIKE '+53%'",
             # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
