@@ -6,7 +6,7 @@ All endpoints require admin authentication.
 import logging
 import os
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends, Query, Body
@@ -3163,3 +3163,104 @@ async def purge_users_by_source(
     logger.warning("PURGE source=%s by admin=%s: removed %s users, children=%s",
                    source, admin.get("email"), deleted_users, deleted)
     return {"deleted_users": deleted_users, "source": source, "children": deleted}
+
+
+# ── Session replay: visitor sessions list + replay playback (admin only) ──────
+
+@router.get("/recent-visits")
+async def get_recent_visits(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent visitor sessions (grouped analytics_events), flagged if a replay exists."""
+    sql = text("""
+        SELECT ae.session_id,
+               MIN(ae.created_at) AS first_seen,
+               MAX(ae.created_at) AS last_seen,
+               COUNT(*) AS events,
+               COUNT(DISTINCT ae.page) AS pages,
+               MAX(ae.user_id) AS user_id,
+               MAX(ae.country) AS country,
+               MAX(ae.referrer) AS referrer,
+               MAX(ae.user_agent) AS user_agent,
+               (ARRAY_AGG(ae.page ORDER BY ae.created_at DESC))[1] AS last_page,
+               (SELECT COUNT(*) FROM session_replays sr WHERE sr.session_id = ae.session_id) AS has_replay
+        FROM analytics_events ae
+        WHERE ae.session_id IS NOT NULL AND ae.session_id <> ''
+        GROUP BY ae.session_id
+        ORDER BY last_seen DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    rows = (await db.execute(sql, {"limit": limit, "offset": offset})).mappings().all()
+    now = datetime.now(timezone.utc)
+    visits = []
+    for r in rows:
+        first, last = r["first_seen"], r["last_seen"]
+        dur = int((last - first).total_seconds()) if (first and last) else 0
+        is_live = False
+        try:
+            la = last.replace(tzinfo=timezone.utc) if (last and last.tzinfo is None) else last
+            is_live = bool(la and (now - la).total_seconds() < 120)
+        except Exception:
+            pass
+        visits.append({
+            "session_id": r["session_id"],
+            "visit_time": first.isoformat() if first else None,
+            "last_activity": last.isoformat() if last else None,
+            "duration_sec": dur,
+            "events": r["events"],
+            "page_views": r["pages"],
+            "user_id": r["user_id"],
+            "country": r["country"],
+            "referrer": r["referrer"],
+            "user_agent": r["user_agent"],
+            "last_page": r["last_page"],
+            "has_replay": bool(r["has_replay"]),
+            "is_live": is_live,
+        })
+    return {"visits": visits, "limit": limit, "offset": offset}
+
+
+@router.get("/replay/{session_id}")
+async def get_session_replay(
+    session_id: str,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Merge all replay chunks for a session and return rrweb events for playback."""
+    import json as _json
+    from fastapi import HTTPException
+    from app.models.session_replay import SessionReplay, ReplayChunk
+
+    replay = (await db.execute(
+        select(SessionReplay).where(SessionReplay.session_id == session_id)
+    )).scalar_one_or_none()
+    if not replay:
+        raise HTTPException(status_code=404, detail="No replay data for this session")
+
+    chunks = (await db.execute(
+        select(ReplayChunk).where(ReplayChunk.session_id == session_id)
+        .order_by(ReplayChunk.chunk_index.asc(), ReplayChunk.id.asc())
+    )).scalars().all()
+
+    all_events = []
+    for chunk in chunks:
+        try:
+            ev = _json.loads(chunk.events_json)
+            if isinstance(ev, list):
+                all_events.extend(ev)
+        except Exception:
+            continue
+    if not all_events:
+        raise HTTPException(status_code=404, detail="No valid replay events")
+
+    return {
+        "session_id": session_id,
+        "events": all_events,
+        "events_count": len(all_events),
+        "chunks": len(chunks),
+        "size_bytes": replay.total_size,
+        "is_complete": replay.is_complete,
+    }

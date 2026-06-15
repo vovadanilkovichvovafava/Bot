@@ -3,7 +3,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './features/auth/context/AuthContext';
 import FootballSpinner from './shared/components/FootballSpinner';
 import { saveTrackingParams } from './features/betting/services/trackingService';
-import { track } from './shared/services/analytics';
+import { track, SESSION_ID } from './shared/services/analytics';
+import replayRecorder from './shared/services/replayRecorder';
 import Layout from './shared/components/Layout';
 
 // ErrorBoundary — catches React render crashes, shows fallback instead of white screen
@@ -195,6 +196,12 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [location]);
+
+  // Session replay (rrweb) — record once per tab; played back in the admin panel
+  useEffect(() => {
+    replayRecorder.init(SESSION_ID);
+    return () => replayRecorder.destroy();
+  }, []);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
   useEffect(() => {
