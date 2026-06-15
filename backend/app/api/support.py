@@ -434,13 +434,15 @@ def find_relevant_knowledge(message: str, full_history: str = "") -> str:
 # System Prompt Builder
 # ============================================================
 
-LANGUAGE_NAMES = {"en": "English", "it": "Italian", "de": "German", "pl": "Polish"}
+LANGUAGE_NAMES = {
+    "en": "English", "es": "Spanish", "pt": "Portuguese", "it": "Italian",
+    "de": "German", "pl": "Polish", "fr": "French", "ru": "Russian",
+    "ar": "Arabic", "hi": "Hindi", "tr": "Turkish", "ro": "Romanian", "zh": "Chinese",
+}
 
 PERSONA_NAMES = {
-    "en": "Alex",
-    "it": "Marco",
-    "de": "Max",
-    "pl": "Kuba",
+    "en": "Alex", "es": "Alex", "pt": "Alex", "it": "Marco",
+    "de": "Max", "pl": "Kuba", "fr": "Alex", "ru": "Alex",
 }
 
 
@@ -481,7 +483,10 @@ Our official partner bookmaker is {PARTNER_NAME}. Always refer to it by name whe
 - If they ask "how to start" — explain how to use features they already have
 
 === LANGUAGE ===
-- ALWAYS respond in {language}. Write naturally like a native speaker in a messenger.
+- Reply in the SAME language the user wrote their LAST message in — detect it from
+  their actual message, never from a setting. (App locale hint, may be wrong: {language}.)
+- E.g. if they write in Spanish, reply in Spanish; if they switch language, switch with them.
+- Write naturally like a native speaker in a messenger.
 - Use casual, informal language. Light slang is ok.
 
 === STYLE ===
@@ -760,7 +765,7 @@ async def guest_support_chat(
 {KNOWLEDGE_BASE["password_reset"]}
 
 === LANGUAGE ===
-- ALWAYS respond in {language}.
+- Reply in the SAME language the user wrote in — detect it from their message, not a setting. (Locale hint, may be wrong: {language}.)
 
 === STYLE ===
 - 2-4 sentences max. Casual, friendly.
