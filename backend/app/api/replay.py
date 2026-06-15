@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Any, Optional
 
 from fastapi import APIRouter, Request, Depends
@@ -78,7 +78,7 @@ async def store_replay_chunk(
             replay.chunks_count = (replay.chunks_count or 0) + 1
             replay.total_events = (replay.total_events or 0) + chunk_events
             replay.total_size = (replay.total_size or 0) + chunk_size
-            replay.updated_at = datetime.now(timezone.utc)
+            replay.updated_at = datetime.utcnow()
             if body.is_final:
                 replay.is_complete = True
             total = replay.total_events

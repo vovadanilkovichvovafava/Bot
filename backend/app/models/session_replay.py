@@ -1,6 +1,6 @@
 """Session replay storage — rrweb event recordings for admin playback."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from app.core.database import Base
@@ -17,9 +17,8 @@ class SessionReplay(Base):
     total_events = Column(Integer, default=0)
     total_size = Column(Integer, default=0)  # uncompressed bytes across all chunks
     is_complete = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class ReplayChunk(Base):
@@ -32,4 +31,4 @@ class ReplayChunk(Base):
     events_json = Column(Text, nullable=False)  # JSON array of rrweb events
     events_count = Column(Integer, default=0)
     size_bytes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
