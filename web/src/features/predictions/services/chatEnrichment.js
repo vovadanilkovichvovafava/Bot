@@ -1117,12 +1117,12 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
     if (fbMatch?.odds) {
       const fo = fbMatch.odds;
       parts.push('');
-      parts.push('--- Fonbet Real Odds (live bookmaker) ---');
+      parts.push('--- Partner Real Odds (live bookmaker) ---');
       if (fo['1']) parts.push(`Match Winner: 1=${fo['1']}, X=${fo['X']}, 2=${fo['2']}`);
       if (fo['over_2.5']) parts.push(`Total: Over 2.5=${fo['over_2.5']}, Under 2.5=${fo['under_2.5']}`);
       if (fo['btts_yes']) parts.push(`BTTS: Yes=${fo['btts_yes']}, No=${fo['btts_no']}`);
       if (fo['1X']) parts.push(`Double Chance: 1X=${fo['1X']}, 12=${fo['12']}, X2=${fo['X2']}`);
-      if (fbMatch.deeplink) parts.push(`Fonbet link: ${fbMatch.deeplink}`);
+      if (fbMatch.deeplink) parts.push(`Partner link: ${fbMatch.deeplink}`);
       fonbetDeeplink = fbMatch.deeplink || null;
     }
   } catch (_) { /* Fonbet unavailable — no problem, AI works without it */ }

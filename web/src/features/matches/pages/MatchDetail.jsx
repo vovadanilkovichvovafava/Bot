@@ -334,13 +334,13 @@ export default function MatchDetail() {
     // Fonbet real odds (if available)
     if (fonbetMatch?.odds) {
       const fo = fonbetMatch.odds;
-      prompt += `\n\n--- Fonbet Real Odds (live from bookmaker) ---`;
+      prompt += `\n\n--- Partner Real Odds (live from bookmaker) ---`;
       if (fo['1']) prompt += `\nMatch Winner: Home ${fo['1']}, Draw ${fo['X']}, Away ${fo['2']}`;
       if (fo['over_2.5']) prompt += `\nTotal: Over 2.5 = ${fo['over_2.5']}, Under 2.5 = ${fo['under_2.5']}`;
       if (fo['btts_yes']) prompt += `\nBTTS: Yes = ${fo['btts_yes']}, No = ${fo['btts_no']}`;
       if (fo['1X']) prompt += `\nDouble Chance: 1X = ${fo['1X']}, 12 = ${fo['12']}, X2 = ${fo['X2']}`;
       if (fo['handicap_1']) prompt += `\nHandicap: Home = ${fo['handicap_1']}, Away = ${fo['handicap_2']}`;
-      if (fonbetMatch.deeplink) prompt += `\nFonbet deeplink: ${fonbetMatch.deeplink}`;
+      if (fonbetMatch.deeplink) prompt += `\nPartner deeplink: ${fonbetMatch.deeplink}`;
     }
 
     // Standings (league positions)

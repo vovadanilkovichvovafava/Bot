@@ -305,7 +305,7 @@ function ValueBetCard({ item, navigate, t, fonbetMap, userId }) {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-indigo-500 font-semibold uppercase">Fonbet Odds</p>
+                <p className="text-[10px] text-indigo-500 font-semibold uppercase">Partner Odds</p>
                 <p className="text-xs text-indigo-700 font-medium mt-0.5">
                   1: {fbOdds['1']} &middot; X: {fbOdds['X']} &middot; 2: {fbOdds['2']}
                 </p>

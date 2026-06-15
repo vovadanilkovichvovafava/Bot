@@ -28,8 +28,9 @@ from app.models.support_chat import SupportChatMessage
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Partner bookmaker config — change via env vars, no code edits needed
-PARTNER_NAME = os.getenv("PARTNER_NAME", "Fonbet")
+# Partner bookmaker config — change via env vars, no code edits needed.
+# Default is the generic word "Partner" so no bookmaker brand leaks into chat.
+PARTNER_NAME = os.getenv("PARTNER_NAME", "Partner")
 PARTNER_OFFER_URL = os.getenv("PARTNER_OFFER_URL", "")
 
 
