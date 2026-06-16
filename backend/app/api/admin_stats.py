@@ -1057,36 +1057,24 @@ async def get_predictions_stats(
     ]
 
     # Daily predictions — last 30 days, combining match predictions + WC group
-    # predictions + AI-chat questions (each user message to the AI).
+    # predictions + AI-chat questions. Per-table (each in its own try) so one
+    # failing source can't blank out the whole chart.
     cutoff = now - timedelta(days=30)
-    try:
-        daily_rows = (await db.execute(text("""
-            SELECT day, SUM(cnt) AS cnt FROM (
-                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM predictions
-                    WHERE created_at >= :cutoff GROUP BY (created_at)::date
-                UNION ALL
-                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM wc_predictions
-                    WHERE created_at >= :cutoff GROUP BY (created_at)::date
-                UNION ALL
-                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM ai_chat_messages
-                    WHERE role = 'user' AND created_at >= :cutoff GROUP BY (created_at)::date
-            ) u
-            GROUP BY day ORDER BY day
-        """), {"cutoff": cutoff})).all()
-    except Exception as e:
-        logger.warning(f"Daily predictions union failed, falling back to predictions only: {e}")
-        await db.rollback()
-        daily_rows = (await db.execute(
-            select(
-                func.date(Prediction.created_at).label("day"),
-                func.count(Prediction.id).label("cnt"),
-            )
-            .where(Prediction.created_at >= cutoff)
-            .group_by(func.date(Prediction.created_at))
-            .order_by(func.date(Prediction.created_at))
-        )).all()
+    daily_map = {}
+    for label, src_sql in (
+        ("predictions", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM predictions WHERE created_at >= :cutoff GROUP BY (created_at)::date"),
+        ("wc_predictions", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM wc_predictions WHERE created_at >= :cutoff GROUP BY (created_at)::date"),
+        ("ai_chat", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM ai_chat_messages WHERE role = 'user' AND created_at >= :cutoff GROUP BY (created_at)::date"),
+    ):
+        try:
+            rows = (await db.execute(text(src_sql), {"cutoff": cutoff})).all()
+            for r in rows:
+                daily_map[str(r[0])] = daily_map.get(str(r[0]), 0) + (r[1] or 0)
+        except Exception as e:
+            logger.warning(f"Daily predictions: {label} query failed: {e}")
+            await db.rollback()
     daily_predictions = _fill_daily_gaps(
-        [{"date": str(r[0]), "count": r[1]} for r in daily_rows], days=30
+        [{"date": d, "count": c} for d, c in sorted(daily_map.items())], days=30
     )
 
     # By league (top 10)
