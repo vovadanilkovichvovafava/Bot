@@ -3280,3 +3280,50 @@ async def get_session_replay(
         "size_bytes": replay.total_size,
         "is_complete": replay.is_complete,
     }
+
+
+@router.get("/ip-check")
+async def ip_check(
+    ips: str = Query(..., description="Comma-separated IPs to check"),
+    admin: dict = Depends(require_admin_role("owner", "admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Is an IP 'ours'? Returns this backend's egress IP (so you can compare) and,
+    for each given IP, how many app requests we logged from it (analytics_events).
+    NOTE: postback/Keitaro requests are NOT IP-logged, so they can't be counted here.
+    """
+    import httpx
+
+    egress = None
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get("https://api.ipify.org")
+            egress = (r.text or "").strip()
+    except Exception:
+        egress = None
+
+    ip_list = [s.strip() for s in (ips or "").split(",") if s.strip()][:20]
+    out = []
+    for ip in ip_list:
+        row = (await db.execute(text("""
+            SELECT COUNT(*) AS events,
+                   COUNT(DISTINCT session_id) AS sessions,
+                   MIN(created_at) AS first_seen,
+                   MAX(created_at) AS last_seen,
+                   COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL AND user_id <> '') AS users
+            FROM analytics_events WHERE ip = :ip
+        """), {"ip": ip})).mappings().first()
+        reg = (await db.execute(text(
+            "SELECT COUNT(*) FROM users WHERE registration_ip = :ip"
+        ), {"ip": ip})).scalar() or 0
+        out.append({
+            "ip": ip,
+            "is_our_backend_egress": bool(egress and ip == egress),
+            "app_events": row["events"] or 0,
+            "sessions": row["sessions"] or 0,
+            "users_seen": row["users"] or 0,
+            "registrations_from_ip": int(reg),
+            "first_seen": row["first_seen"].isoformat() if row["first_seen"] else None,
+            "last_seen": row["last_seen"].isoformat() if row["last_seen"] else None,
+        })
+    return {"our_backend_egress_ip": egress, "ips": out}
