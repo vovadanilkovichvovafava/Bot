@@ -213,6 +213,21 @@ async def get_overview(
         logger.error(f"Overview: predictions query failed: {e}")
         await db.rollback()
 
+    # WC group predictions + AI-chat questions also count as "predictions" on the
+    # dashboard (verified/accuracy stay from the predictions table only).
+    for label, sql in (
+        ("wc_predictions", "SELECT COUNT(*) AS t, COUNT(*) FILTER (WHERE created_at >= :today) AS td, COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yd FROM wc_predictions"),
+        ("ai_chat", "SELECT COUNT(*) AS t, COUNT(*) FILTER (WHERE created_at >= :today) AS td, COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yd FROM ai_chat_messages WHERE role = 'user'"),
+    ):
+        try:
+            r = (await db.execute(text(sql), {"today": today_start, "yesterday": yesterday_start})).one()
+            pred_data["total"] = (pred_data.get("total") or 0) + (r[0] or 0)
+            pred_data["today"] = (pred_data.get("today") or 0) + (r[1] or 0)
+            pred_data["yesterday"] = (pred_data.get("yesterday") or 0) + (r[2] or 0)
+        except Exception as e:
+            logger.warning(f"Overview: {label} count failed: {e}")
+            await db.rollback()
+
     # ── Chat/support + online ──
     try:
         chat_stats = (await db.execute(text("""
@@ -1041,16 +1056,35 @@ async def get_predictions_stats(
         for r in bet_rows
     ]
 
-    # Daily predictions — last 30 days
-    daily_rows = (await db.execute(
-        select(
-            func.date(Prediction.created_at).label("day"),
-            func.count(Prediction.id).label("cnt"),
-        )
-        .where(Prediction.created_at >= now - timedelta(days=30))
-        .group_by(func.date(Prediction.created_at))
-        .order_by(func.date(Prediction.created_at))
-    )).all()
+    # Daily predictions — last 30 days, combining match predictions + WC group
+    # predictions + AI-chat questions (each user message to the AI).
+    cutoff = now - timedelta(days=30)
+    try:
+        daily_rows = (await db.execute(text("""
+            SELECT day, SUM(cnt) AS cnt FROM (
+                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM predictions
+                    WHERE created_at >= :cutoff GROUP BY (created_at)::date
+                UNION ALL
+                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM wc_predictions
+                    WHERE created_at >= :cutoff GROUP BY (created_at)::date
+                UNION ALL
+                SELECT (created_at)::date AS day, COUNT(*) AS cnt FROM ai_chat_messages
+                    WHERE role = 'user' AND created_at >= :cutoff GROUP BY (created_at)::date
+            ) u
+            GROUP BY day ORDER BY day
+        """), {"cutoff": cutoff})).all()
+    except Exception as e:
+        logger.warning(f"Daily predictions union failed, falling back to predictions only: {e}")
+        await db.rollback()
+        daily_rows = (await db.execute(
+            select(
+                func.date(Prediction.created_at).label("day"),
+                func.count(Prediction.id).label("cnt"),
+            )
+            .where(Prediction.created_at >= cutoff)
+            .group_by(func.date(Prediction.created_at))
+            .order_by(func.date(Prediction.created_at))
+        )).all()
     daily_predictions = _fill_daily_gaps(
         [{"date": str(r[0]), "count": r[1]} for r in daily_rows], days=30
     )
