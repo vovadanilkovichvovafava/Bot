@@ -827,6 +827,18 @@ export async function enrichMessage(message) {
  * Detect if the message is asking about a specific match.
  * Handles both "Team A vs Team B" and "матч Команда1 Команда2" patterns.
  */
+// Reduce a noisy captured side ("quien gana en el partido francia") to the known
+// team it contains ("francia"); else just strip noise words. The non-greedy "vs"
+// pattern can swallow the whole prefix into the home side, so this rescues it.
+function reduceToKnownTeam(name) {
+  const lower = (name || '').toLowerCase();
+  let best = null;
+  for (const team of KNOWN_TEAMS) {
+    if (team.length > 2 && lower.includes(team) && (!best || team.length > best.length)) best = team;
+  }
+  return best || cleanTeamName(name);
+}
+
 function detectMatchQuery(lower, original) {
   // 1. Try explicit "vs" / "—" patterns first
   for (const pattern of MATCH_PATTERNS_VS) {
@@ -835,7 +847,7 @@ function detectMatchQuery(lower, original) {
       const home = (match[1] || '').trim();
       const away = (match[2] || '').trim();
       if (home.length > 1 && away.length > 1) {
-        return { home: cleanTeamName(home), away: cleanTeamName(away) };
+        return { home: reduceToKnownTeam(home), away: reduceToKnownTeam(away) };
       }
     }
   }

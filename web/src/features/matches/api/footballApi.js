@@ -42,9 +42,82 @@ function normalize(name) {
     .trim();
 }
 
+// Localized national-team names → api-sports English name. api-sports returns
+// English ("France"), but users type "Francia"/"франция"/"Frankreich" — without
+// this map the fuzzy match fails and the AI gets no fixture data. Keys are the
+// raw lowercased localized name (Cyrillic kept, since normalize() would strip it).
+const NATIONAL_TEAM_ALIASES = {
+  // France
+  francia: 'France', frankreich: 'France', франция: 'France', francja: 'France',
+  // Germany
+  alemania: 'Germany', allemagne: 'Germany', deutschland: 'Germany', германия: 'Germany', niemcy: 'Germany',
+  // Spain
+  españa: 'Spain', espana: 'Spain', espagne: 'Spain', spagna: 'Spain', spanien: 'Spain', испания: 'Spain', hiszpania: 'Spain',
+  // Brazil
+  brasil: 'Brazil', brasile: 'Brazil', brésil: 'Brazil', bresil: 'Brazil', бразилия: 'Brazil', brazylia: 'Brazil',
+  // England
+  inglaterra: 'England', inghilterra: 'England', angleterre: 'England', англия: 'England', anglia: 'England',
+  // Netherlands
+  'países bajos': 'Netherlands', 'paises bajos': 'Netherlands', holanda: 'Netherlands', olanda: 'Netherlands', 'pays-bas': 'Netherlands', нидерланды: 'Netherlands', голландия: 'Netherlands', holandia: 'Netherlands',
+  // Belgium
+  bélgica: 'Belgium', belgica: 'Belgium', belgique: 'Belgium', belgio: 'Belgium', belgien: 'Belgium', бельгия: 'Belgium', belgia: 'Belgium',
+  // Italy
+  italia: 'Italy', italie: 'Italy', italien: 'Italy', италия: 'Italy', włochy: 'Italy',
+  // Croatia
+  croacia: 'Croatia', croazia: 'Croatia', croatie: 'Croatia', kroatien: 'Croatia', хорватия: 'Croatia', chorwacja: 'Croatia',
+  // Portugal
+  portugalia: 'Portugal', португалия: 'Portugal',
+  // Switzerland
+  suiza: 'Switzerland', suisse: 'Switzerland', svizzera: 'Switzerland', schweiz: 'Switzerland', швейцария: 'Switzerland', szwajcaria: 'Switzerland',
+  // Mexico
+  méxico: 'Mexico', мексика: 'Mexico', meksyk: 'Mexico',
+  // Morocco
+  marruecos: 'Morocco', maroc: 'Morocco', marocco: 'Morocco', marokko: 'Morocco', марокко: 'Morocco', maroko: 'Morocco',
+  // South Korea
+  'corea del sur': 'South Korea', 'corée du sud': 'South Korea', südkorea: 'South Korea', 'южная корея': 'South Korea', 'korea południowa': 'South Korea', corea: 'South Korea',
+  // Japan
+  japón: 'Japan', japon: 'Japan', giappone: 'Japan', япония: 'Japan', japonia: 'Japan',
+  // Tunisia
+  túnez: 'Tunisia', tunez: 'Tunisia', tunisie: 'Tunisia', тунис: 'Tunisia', tunezja: 'Tunisia',
+  // Saudi Arabia
+  'arabia saudita': 'Saudi Arabia', 'arabie saoudite': 'Saudi Arabia', 'saudi-arabien': 'Saudi Arabia', 'саудовская аравия': 'Saudi Arabia', 'arabia saudí': 'Saudi Arabia',
+  // Algeria
+  argelia: 'Algeria', algérie: 'Algeria', algerie: 'Algeria', algerien: 'Algeria', алжир: 'Algeria', algieria: 'Algeria',
+  // Norway
+  noruega: 'Norway', norvège: 'Norway', norvegia: 'Norway', norwegen: 'Norway', норвегия: 'Norway', norwegia: 'Norway',
+  // USA
+  'estados unidos': 'USA', 'états-unis': 'USA', сша: 'USA', eeuu: 'USA',
+  // Scotland
+  escocia: 'Scotland', écosse: 'Scotland', schottland: 'Scotland', шотландия: 'Scotland', szkocja: 'Scotland',
+  // Türkiye
+  turquía: 'Türkiye', turquia: 'Türkiye', turchia: 'Türkiye', türkei: 'Türkiye', турция: 'Türkiye', turcja: 'Türkiye',
+  // Czech Republic
+  'república checa': 'Czech Republic', 'republica checa': 'Czech Republic', tchéquie: 'Czech Republic', tschechien: 'Czech Republic', чехия: 'Czech Republic', czechy: 'Czech Republic',
+  // South Africa
+  sudáfrica: 'South Africa', sudafrica: 'South Africa', 'afrique du sud': 'South Africa', südafrika: 'South Africa', юар: 'South Africa', rpa: 'South Africa',
+  // others (Cyrillic mainly — they'd otherwise normalize to empty)
+  аргентина: 'Argentina', уругвай: 'Uruguay', колумбия: 'Colombia',
+  канада: 'Canada', canadá: 'Canada', катар: 'Qatar', catar: 'Qatar', эквадор: 'Ecuador',
+  сенегал: 'Senegal', иран: 'Iran', irán: 'Iran', ирак: 'Iraq', irak: 'Iraq',
+  египет: 'Egypt', egipto: 'Egypt', égypte: 'Egypt', гана: 'Ghana', панама: 'Panama', panamá: 'Panama',
+  парагвай: 'Paraguay', гаити: 'Haiti', haití: 'Haiti', иордания: 'Jordan', jordania: 'Jordan',
+  австрия: 'Austria', autriche: 'Austria', österreich: 'Austria', австралия: 'Australia',
+  узбекистан: 'Uzbekistan', uzbekistán: 'Uzbekistan', швеция: 'Sweden', suecia: 'Sweden', suède: 'Sweden',
+  'кот-д\'ивуар': 'Ivory Coast', 'costa de marfil': 'Ivory Coast', 'côte d\'ivoire': 'Ivory Coast',
+  'cabo verde': 'Cape Verde', 'кабо-верде': 'Cape Verde', curazao: 'Curaçao', кюрасао: 'Curaçao',
+  'nueva zelanda': 'New Zealand', 'новая зеландия': 'New Zealand', 'rd congo': 'DR Congo', 'др конго': 'DR Congo',
+  'bosnia y herzegovina': 'Bosnia and Herzegovina', босния: 'Bosnia and Herzegovina',
+};
+
+function resolveTeamAlias(name) {
+  const key = (name || '').toLowerCase().trim();
+  return NATIONAL_TEAM_ALIASES[key] || name;
+}
+
 function teamMatch(apiName, ourName) {
   const a = normalize(apiName);
-  const b = normalize(ourName);
+  const b = normalize(resolveTeamAlias(ourName));
+  if (!a || !b) return false;       // empty (e.g. Cyrillic stripped) must not match everything
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
   const aWords = a.match(/[a-z]{3,}/g) || [];
