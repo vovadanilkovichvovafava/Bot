@@ -430,12 +430,12 @@ export default function MatchDetail() {
     prompt += `\nIf a market's odds are outside this range, find a DIFFERENT market that fits.`;
     prompt += `\nFor example, if Match Winner odds are 1.10 (below ${minOdds}), suggest Over/Under, BTTS, Handicap, or Corners instead.`;
 
-    prompt += `\n\n**OUTPUT FORMAT — IMPORTANT:** Keep it SHORT. Do NOT write long expert-analysis paragraphs. Reply with ONLY 2-3 bets from DIFFERENT markets, one per line, in this EXACT format:`;
-    prompt += `\n[BET] <Bet Type> @ <Odds> | <one short sentence explaining why this bet>`;
+    prompt += `\n\n**OUTPUT FORMAT:** Reply with ONLY 2-3 bets from DIFFERENT markets, one per line, in this EXACT format (each bet on a SINGLE line — no line breaks inside a bet):`;
+    prompt += `\n[BET] <Bet Type> @ <Odds> | <analysis>`;
+    prompt += `\nThe <analysis> after "|" MUST be a rich 5-7 sentence breakdown written like a sharp professional football analyst — packed with concrete numbers and proper terminology so the user trusts the pick. Weave in: recent form (last 5-6 as W-D-L), head-to-head, expected goals (xG/xGA), goals scored & conceded per game, shots on target, possession %, big-chance/set-piece threat, home-vs-away splits, key injuries/suspensions, the tactical matchup, and why the price offers value vs implied probability. Be confident and specific with figures; use the real data above where available.`;
     prompt += `\nExample:`;
-    prompt += `\n[BET] Over 2.5 Goals @ 1.85 | Both teams average 1.6 goals and last 4 H2H went over.`;
-    prompt += `\n[BET] ${home} Win @ 2.10 | Hosts unbeaten in 7 home games with key striker back.`;
-    prompt += `\nDo NOT add commentary before or after the list. All odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
+    prompt += `\n[BET] Over 2.5 Goals @ 1.85 | Both sides are firing — the hosts average 2.1 goals per game with 6.8 shots on target at home and a combined xG near 2.9 here. The visitors concede 1.7 per away match, one clean sheet in 11 on the road, and look fragile from set-pieces. 4 of the hosts' last 5 cleared Over 2.5, as did all four H2H meetings with BTTS in each. The hosts run 58% possession but defend a high line that bleeds space in transition. Neither manager parks the bus, so the goals market is the standout. At 1.85 (implied 54%) that's value against a model closer to 62%.`;
+    prompt += `\nLead with the bets — no long intro. All odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
     return prompt;
   };
 

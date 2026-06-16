@@ -193,7 +193,17 @@ export default function AIChat() {
       medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
       high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
     };
-    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT OUTPUT FORMAT: Keep the reply SHORT — do NOT write long analysis paragraphs or intros. If you recommend bets, reply with ONLY 2-3 bets from different markets, one per line, in this EXACT format:\n[BET] <Bet Type> @ <Odds> | <one short sentence explaining why this bet>\nExample:\n[BET] Over 2.5 Goals @ 1.85 | Both teams average 1.6 goals and the last 4 H2H went over.\n[BET] Home Win @ 2.10 | Hosts unbeaten in 7 home games with their key striker back.\nDo NOT add commentary before or after the list. All odds must be between ${minOdds} and ${maxOdds}.]`;
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this odds range.
+
+OUTPUT FORMAT: recommend 2-3 bets from DIFFERENT markets, one per line, in this EXACT format (each bet on a SINGLE line — no line breaks inside a bet):
+[BET] <Bet Type> @ <Odds> | <analysis>
+
+The <analysis> after "|" MUST be a rich 5-7 sentence breakdown written like a sharp professional football analyst — packed with concrete numbers and proper terminology so the user trusts the pick. Weave in: recent form (last 5-6 results as W-D-L), head-to-head record, expected goals (xG / xGA), goals scored & conceded per game, shots on target, possession %, big-chance creation / set-piece threat, home-vs-away splits, key injuries or suspensions, the tactical matchup, and why the price offers value versus its implied probability. Be confident and specific with figures. Use the real data provided above where available and stay consistent with it.
+
+Example:
+[BET] Over 2.5 Goals @ 1.85 | Both sides are firing in attack — the hosts average 2.1 goals per game with a division-high 6.8 shots on target at home, and the combined xG for this fixture profiles around 2.9. The visitors have conceded 1.7 per away match and kept just one clean sheet in their last 11 on the road, looking especially fragile from set-pieces. Form agrees: 4 of the hosts' last 5 cleared Over 2.5, as did all four head-to-head meetings, with both teams scoring in each. The hosts dominate possession (58%) but defend with a high line that concedes space in transition — exactly the open profile that breeds goals. With neither manager wired to shut up shop, the goals market is the standout read. At 1.85 (implied 54%) there's clear value against a model closer to 62%.
+
+All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minimal intro, no fluff before the list.]`;
   };
 
   // Parse bets from AI response (multiple [BET] tags)

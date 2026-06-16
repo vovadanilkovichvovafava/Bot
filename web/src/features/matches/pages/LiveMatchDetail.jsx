@@ -88,7 +88,7 @@ export default function LiveMatchDetail() {
       }
       const minOdds = user?.min_odds || 1.5;
       const maxOdds = user?.max_odds || 3.0;
-      prompt += `\n\nProvide a SHORT live analysis (1-2 sentences on momentum) then ONLY 2-3 live bets, one per line, EXACTLY:\n[BET] <Bet Type> @ <Odds> | <one short sentence why>\nAll odds between ${minOdds} and ${maxOdds}.`;
+      prompt += `\n\nGive 2-3 live bets, one per line, in this EXACT format (each bet on a SINGLE line — no line breaks inside a bet):\n[BET] <Bet Type> @ <Odds> | <analysis>\nThe <analysis> after "|" MUST be a rich 5-7 sentence live read written like a sharp in-play analyst — packed with concrete numbers and terminology so the user trusts the pick. Weave in the LIVE picture: current momentum and territory, shots / shots on target so far, possession %, dangerous attacks, corners, xG in-play, cards/tempo, who's pushing vs sitting back, the scoreline context and minute, and why the live price offers value. Be confident and specific with figures from the live data above. All odds between ${minOdds} and ${maxOdds}.`;
 
       const userMessage = `Analyze this LIVE match ${home} vs ${away} and provide a betting recommendation.`;
       const data = await api.aiChat(userMessage, [], prompt);
