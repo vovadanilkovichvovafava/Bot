@@ -3176,21 +3176,35 @@ async def get_recent_visits(
 ):
     """Recent visitor sessions (grouped analytics_events), flagged if a replay exists."""
     sql = text("""
-        SELECT ae.session_id,
-               MIN(ae.created_at) AS first_seen,
-               MAX(ae.created_at) AS last_seen,
-               COUNT(*) AS events,
-               COUNT(DISTINCT ae.page) AS pages,
-               MAX(ae.user_id) AS user_id,
-               MAX(ae.country) AS country,
-               MAX(ae.referrer) AS referrer,
-               MAX(ae.user_agent) AS user_agent,
-               (ARRAY_AGG(ae.page ORDER BY ae.created_at DESC))[1] AS last_page,
-               (SELECT COUNT(*) FROM session_replays sr WHERE sr.session_id = ae.session_id) AS has_replay
-        FROM analytics_events ae
-        WHERE ae.session_id IS NOT NULL AND ae.session_id <> ''
-        GROUP BY ae.session_id
-        ORDER BY last_seen DESC
+        WITH sessions AS (
+            SELECT ae.session_id,
+                   MIN(ae.created_at) AS first_seen,
+                   MAX(ae.created_at) AS last_seen,
+                   COUNT(*) AS events,
+                   COUNT(DISTINCT ae.page) AS pages,
+                   MAX(ae.user_id) AS user_id,
+                   MAX(ae.country) AS country,
+                   MAX(ae.referrer) AS referrer,
+                   MAX(ae.user_agent) AS user_agent,
+                   (ARRAY_AGG(ae.page ORDER BY ae.created_at DESC))[1] AS last_page
+            FROM analytics_events ae
+            WHERE ae.session_id IS NOT NULL AND ae.session_id <> ''
+            GROUP BY ae.session_id
+        ),
+        ranked AS (
+            SELECT s.*,
+                   CASE WHEN s.user_id IS NOT NULL AND s.user_id <> ''
+                        THEN ROW_NUMBER() OVER (PARTITION BY s.user_id ORDER BY s.first_seen ASC)
+                   END AS visit_number,
+                   CASE WHEN s.user_id IS NOT NULL AND s.user_id <> ''
+                        THEN COUNT(*) OVER (PARTITION BY s.user_id)
+                   END AS total_visits
+            FROM sessions s
+        )
+        SELECT r.*,
+               (SELECT COUNT(*) FROM session_replays sr WHERE sr.session_id = r.session_id) AS has_replay
+        FROM ranked r
+        ORDER BY r.last_seen DESC
         LIMIT :limit OFFSET :offset
     """)
     rows = (await db.execute(sql, {"limit": limit, "offset": offset})).mappings().all()
@@ -3219,6 +3233,8 @@ async def get_recent_visits(
             "last_page": r["last_page"],
             "has_replay": bool(r["has_replay"]),
             "is_live": is_live,
+            "visit_number": r["visit_number"],   # Nth visit of this user (None if anonymous)
+            "total_visits": r["total_visits"],    # total visits of this user
         })
     return {"visits": visits, "limit": limit, "offset": offset}
 

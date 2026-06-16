@@ -443,6 +443,7 @@ export default function AdminTraffic() {
               <tr>
                 <th className="px-4 py-2">Time</th>
                 <th className="px-3 py-2">User</th>
+                <th className="px-3 py-2">Visit</th>
                 <th className="px-3 py-2">Country</th>
                 <th className="px-3 py-2">Pages</th>
                 <th className="px-3 py-2">Duration</th>
@@ -458,6 +459,13 @@ export default function AdminTraffic() {
                     {fmtTime(v.last_activity || v.visit_time)}
                   </td>
                   <td className="px-3 py-2 text-xs font-mono text-slate-400">{v.user_id ? v.user_id.slice(0, 12) : '—'}</td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap">
+                    {v.visit_number
+                      ? <span title={`Visit ${v.visit_number} of ${v.total_visits}`} className={v.visit_number > 1 ? 'text-amber-400 font-semibold' : 'text-slate-400'}>
+                          #{v.visit_number}{v.total_visits ? <span className="text-slate-600"> / {v.total_visits}</span> : null}
+                        </span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
                   <td className="px-3 py-2 text-xs">{v.country || '—'}</td>
                   <td className="px-3 py-2 text-xs">{v.page_views}</td>
                   <td className="px-3 py-2 text-xs">{fmtDur(v.duration_sec)}</td>
@@ -470,7 +478,7 @@ export default function AdminTraffic() {
                 </tr>
               ))}
               {visits.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500 text-sm">No sessions yet</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-500 text-sm">No sessions yet</td></tr>
               )}
             </tbody>
           </table>
