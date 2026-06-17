@@ -235,12 +235,18 @@ async def get_match_commentary(fixture_id: int, lang: str = Query("en")):
             except Exception as e:
                 logger.error(f"Commentary AI error for {fixture_id}: {e}")
 
+        ai_ok = bool(text)
         if not text:
             text = _fallback_commentary(last, home, away, gh, ga, minute)
 
-        if len(_commentary_cache) > 500:
-            _commentary_cache.clear()
-        _commentary_cache[key] = {"ts": now, "text": text}
+        # Cache real AI lines, and templated lines when no API key is configured
+        # (that fallback is intentional and stable). But do NOT cache a fallback
+        # produced because the AI call FAILED — otherwise a transient Claude error
+        # (billing/rate-limit) sticks the templated line until the key rotates.
+        if ai_ok or not claude_key:
+            if len(_commentary_cache) > 500:
+                _commentary_cache.clear()
+            _commentary_cache[key] = {"ts": now, "text": text}
         return {"text": text}
     except Exception as e:
         logger.error(f"Error building commentary for fixture {fixture_id}: {e}")

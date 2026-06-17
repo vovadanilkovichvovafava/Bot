@@ -129,6 +129,7 @@ class MatchAnalyzer:
         # Phase 3: AI analysis (depends on full context)
         analysis = await self._get_ai_analysis(home_team, away_team, context)
 
+        ai_failed = not analysis
         if not analysis:
             # Fallback to simple stats-based analysis
             analysis = self._simple_analysis(home_team, away_team, standings)
@@ -148,8 +149,13 @@ class MatchAnalyzer:
             result["ml_recommendations"] = ml_prediction.get("recommendations", [])
             result["ml_model_info"] = ml_prediction.get("model_info", {})
 
-        # Cache the result for other users
-        _set_cached_analysis(match_id, result)
+        # Cache the result for other users — but ONLY real AI analyses.
+        # When Claude was unavailable (e.g. billing/rate-limit/transient error) we
+        # fell back to stats; caching that would "stick" the degraded fallback for
+        # the full 24h TTL even after Claude recovers. Skip caching so the next
+        # request retries and picks up the real analysis.
+        if not ai_failed:
+            _set_cached_analysis(match_id, result)
 
         return result
 
