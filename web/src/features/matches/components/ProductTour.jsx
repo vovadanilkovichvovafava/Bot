@@ -151,8 +151,15 @@ export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hideP
 
   // ---- Spotlight step ----
   const pad = 8;
+  const gap = 14;        // distance between spotlight and tooltip
+  const margin = 12;     // keep tooltip off the screen edge
   const hasRect = !!rect;
-  const above = hasRect ? rect.top > window.innerHeight * 0.5 : true;
+  const vh = window.innerHeight;
+  // Available room on each side; pick the larger so the action button always fits.
+  const spaceAbove = hasRect ? rect.top - pad - gap : 0;
+  const spaceBelow = hasRect ? vh - (rect.bottom + pad + gap) : 0;
+  const above = hasRect ? spaceAbove > spaceBelow : true;
+  const maxH = hasRect ? Math.max(180, (above ? spaceAbove : spaceBelow) - margin) : undefined;
 
   return (
     <div className="fixed inset-0 z-[120]">
@@ -180,22 +187,22 @@ export default function ProductTour({ onClose, onGoToPromo, onGoToExpress, hideP
         className="absolute left-4 right-4 max-w-sm mx-auto"
         style={hasRect
           ? (above
-              ? { bottom: window.innerHeight - rect.top + pad + 14 }
-              : { top: rect.bottom + pad + 14 })
+              ? { bottom: vh - rect.top + pad + gap }
+              : { top: rect.bottom + pad + gap })
           : { top: '50%', transform: 'translateY(-50%)' }}
       >
-        <div className="bg-white rounded-2xl shadow-2xl px-5 pt-4 pb-4">
-          <div className="flex items-center justify-between mb-2">
+        <div className="bg-white rounded-2xl shadow-2xl px-5 pt-4 pb-4 flex flex-col" style={{ maxHeight: maxH }}>
+          <div className="flex items-center justify-between mb-2 shrink-0">
             <span className="text-xs text-gray-400 font-medium">{progress}</span>
             <button onClick={skip} className="text-xs text-gray-400 font-medium">
               {t('tour.skip', { defaultValue: 'Skip' })}
             </button>
           </div>
-          <h3 className="text-base font-bold text-gray-900 mb-1">{current.title}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed mb-4">{current.desc}</p>
+          <h3 className="text-base font-bold text-gray-900 mb-1 shrink-0">{current.title}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed mb-4 min-h-0 overflow-y-auto">{current.desc}</p>
           <button
             onClick={next}
-            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-primary-500/30 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-primary-500/30 flex items-center justify-center gap-2 shrink-0"
           >
             {step === lastStep - 1
               ? t('tour.finish', { defaultValue: 'Finish' })
