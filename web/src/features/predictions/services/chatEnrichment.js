@@ -1209,10 +1209,23 @@ async function enrichDayOverview(day) {
     const fixtures = await footballApi.getFixturesByDate(date);
     if (!fixtures?.length) return `No fixtures found for ${day} (${date}).`;
 
-    // Group by league, limit to top leagues
-    const topLeagueIds = new Set([39, 140, 78, 135, 61, 2, 3, 88, 94, 40, 71, 253]);
-    const topFixtures = fixtures.filter(f => topLeagueIds.has(f.league.id));
-    const useFixtures = topFixtures.length > 0 ? topFixtures : fixtures.slice(0, 30);
+    // World Cup takes absolute priority: while the tournament is running, the AI
+    // should give picks ONLY on World Cup matches.
+    const WC_LEAGUE_ID = 1;
+    const wcFixtures = fixtures.filter(f => f.league.id === WC_LEAGUE_ID);
+
+    // Group by league, limit to top leagues (WC included as top priority)
+    const topLeagueIds = new Set([WC_LEAGUE_ID, 39, 140, 78, 135, 61, 2, 3, 88, 94, 40, 71, 253]);
+    let useFixtures;
+    let wcMode = false;
+    if (wcFixtures.length > 0) {
+      // World Cup is on today → focus exclusively on it
+      useFixtures = wcFixtures;
+      wcMode = true;
+    } else {
+      const topFixtures = fixtures.filter(f => topLeagueIds.has(f.league.id));
+      useFixtures = topFixtures.length > 0 ? topFixtures : fixtures.slice(0, 30);
+    }
 
     const byLeague = {};
     for (const f of useFixtures) {
@@ -1222,7 +1235,10 @@ async function enrichDayOverview(day) {
     }
 
     const parts = [`Football fixtures for ${day} (${date}):`];
-    parts.push(`Total: ${fixtures.length} matches (showing top leagues)`);
+    if (wcMode) {
+      parts.push(`The FIFA World Cup is in progress. Give betting picks ONLY for these World Cup matches — ignore all other competitions.`);
+    }
+    parts.push(`Total: ${fixtures.length} matches${wcMode ? ` (${useFixtures.length} World Cup matches)` : ' (showing top leagues)'}`);
     parts.push('');
 
     for (const [league, matches] of Object.entries(byLeague)) {
