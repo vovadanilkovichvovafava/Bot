@@ -797,23 +797,34 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
     const seen = new Set();
     let m;
 
+    // A real bet "type" is a short market label, not a prose sentence. This guard
+    // rejects fragments of the analysis text that the regexes can otherwise mistake
+    // for a bet (e.g. "Recent form (Czechia & South Africa last 5 ... @ 6.00").
+    const isBetType = (t) => {
+      const s = (t || '').trim();
+      if (s.length < 3 || s.length > 35) return false;       // markets are short
+      if (s.split(/\s+/).length > 6) return false;           // not a sentence
+      if (/recent form|last \d|head[- ]?to[- ]?head|\bh2h\b|confidence|average|per game|\bxg\b|possession|probabilit|implied/i.test(s)) return false;
+      return true;
+    };
+    const oddsOk = (o) => o >= 1.01 && o <= 25;
+    const add = (type, oddsStr, reason) => {
+      const t = (type || '').trim();
+      const odds = parseFloat(oddsStr);
+      if (!isBetType(t) || !oddsOk(odds)) return;
+      const key = t.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); bets.push({ type: t, odds, reason: (reason || '').trim() }); }
+    };
+
     // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85 | reason
     const betTagRe = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
-    while ((m = betTagRe.exec(content)) !== null) {
-      const key = m[1].trim().toLowerCase();
-      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]), reason: (m[3] || '').trim() }); }
-    }
+    while ((m = betTagRe.exec(content)) !== null) add(m[1], m[2], m[3]);
 
     // 2) Numbered list: "1. Over 2.5 Goals @ 1.85 | reason"
     if (bets.length === 0) {
       const numberedRe = /^\s*\d+[.)]\s*\**\s*([^\n@–—|]+?)\**\s*[@–—-]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = numberedRe.exec(content)) !== null) {
-        const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
-        const odds = parseFloat(m[2]);
-        if (odds >= 1.01 && odds <= 50 && type.length > 2) {
-          const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds, reason: (m[3] || '').trim() }); }
-        }
+        add(m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, ''), m[2], m[3]);
       }
     }
 
@@ -822,11 +833,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
       const fallbackRe = /(?:^|\n)[•\-*]?\s*\**([^\n@–—|]+?)\**\s*[@–—]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
       while ((m = fallbackRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
-        const odds = parseFloat(m[2]);
-        if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
-          const key = type.toLowerCase();
-          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds, reason: (m[3] || '').trim() }); }
-        }
+        if (!type.includes(':')) add(type, m[2], m[3]);
       }
     }
 
