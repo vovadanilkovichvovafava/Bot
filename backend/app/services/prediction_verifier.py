@@ -83,9 +83,15 @@ BET_VERIFIERS = {
     "Under 1.5": lambda h, a: h + a < 2,
     "Over 3.5": lambda h, a: h + a > 3,
     "Under 3.5": lambda h, a: h + a < 4,
+    "Over 0.5": lambda h, a: h + a > 0,
+    "Under 0.5": lambda h, a: h + a == 0,
+    "Over 4.5": lambda h, a: h + a > 4,
+    "Under 4.5": lambda h, a: h + a < 5,
     # BTTS
     "Both Teams Score": lambda h, a: h > 0 and a > 0,
     "BTTS": lambda h, a: h > 0 and a > 0,
+    "Both Teams Score - No": lambda h, a: not (h > 0 and a > 0),
+    "BTTS No": lambda h, a: not (h > 0 and a > 0),
     # Russian bet type names
     "П1": lambda h, a: h > a,
     "П2": lambda h, a: a > h,

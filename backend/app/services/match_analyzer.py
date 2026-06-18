@@ -373,9 +373,17 @@ class MatchAnalyzer:
 
 {context}
 
+Pick from the FULL range of markets — choose the ones that best fit this match, and make the 3 picks DIFFERENT markets (don't just give 1X2 three times):
+- Match result: Home Win, Away Win, Draw
+- Double Chance: Home or Draw, Away or Draw, Home or Away
+- Totals (any line): Over/Under 1.5, 2.5, 3.5 goals
+- Both Teams Score (BTTS) — Yes / No
+- Handicap & combos: e.g. "Away +1.5", "Home Win & Over 1.5", "Win & Both Teams Score"
+- Corners (Over/Under), Cards (Over/Under), Half-time result, Half-time/Full-time
+
 Respond in this exact JSON format:
 {{
-    "bet_type": "best bet type (П1/П2/Х/ТБ2.5/ТМ2.5/BTTS/1X/X2/Over1.5/Under3.5)",
+    "bet_type": "best bet — any market above, e.g. 'Over 2.5', 'Both Teams Score', 'Home or Draw', 'Home Win & Over 1.5'",
     "confidence": 65-95 (number),
     "odds": 1.5-3.0 (estimated fair odds),
     "reasoning": "2-3 sentences explaining the prediction",
