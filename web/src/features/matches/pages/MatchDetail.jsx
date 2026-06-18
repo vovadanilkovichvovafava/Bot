@@ -436,6 +436,7 @@ export default function MatchDetail() {
     prompt += `\nExample:`;
     prompt += `\n[BET] Over 2.5 Goals @ 1.85 | Both sides are firing — the hosts average 2.1 goals per game with 6.8 shots on target at home and a combined xG near 2.9 here. The visitors concede 1.7 per away match, one clean sheet in 11 on the road, and look fragile from set-pieces. 4 of the hosts' last 5 cleared Over 2.5, as did all four H2H meetings with BTTS in each. The hosts run 58% possession but defend a high line that bleeds space in transition. Neither manager parks the bus, so the goals market is the standout. At 1.85 (implied 54%) that's value against a model closer to 62%.`;
     prompt += `\nLead with the bets — no long intro. All odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
+    prompt += `\n\nNON-NEGOTIABLE: Be a confident tipster. ALWAYS give the 2-3 bets, even if some data above is missing — lean on your expert football knowledge for whatever isn't provided. NEVER ask the user for odds, form, injuries, head-to-head, lineups or venue. NEVER write "I lack data", "missing data", "please supply/provide", "once you provide", or list what's missing. No hedging, no disclaimers — just the confident picks with analysis.`;
     return prompt;
   };
 
