@@ -262,6 +262,7 @@
     "createAccountSub": "Dołącz do elitarnej społeczności profesjonalnych analityków.",
     "confirmLabel": "Potwierdź",
     "iAgreeTerms": "Akceptuję Regulamin i Politykę Prywatności.",
+    "termsImplicit": "Kontynuując, akceptujesz Regulamin i Politykę Prywatności.",
     "errPasswordMismatch": "Hasła nie są zgodne",
     "errAgreeTerms": "Zaakceptuj Regulamin i Politykę Prywatności",
     "loginInstead": "Zaloguj się",

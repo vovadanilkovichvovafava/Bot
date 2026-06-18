@@ -262,6 +262,7 @@
     "createAccountSub": "Únete a la comunidad élite de analistas profesionales.",
     "confirmLabel": "Confirmar",
     "iAgreeTerms": "Acepto los Términos y Condiciones y la Política de Privacidad.",
+    "termsImplicit": "Al continuar, aceptas los Términos y Condiciones y la Política de Privacidad.",
     "errPasswordMismatch": "Las contraseñas no coinciden",
     "errAgreeTerms": "Acepta los Términos y la Política de Privacidad",
     "loginInstead": "Inicia sesión",

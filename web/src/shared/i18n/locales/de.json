@@ -247,6 +247,7 @@
     "createAccountSub": "Werde Teil der Elite-Community professioneller Analysten.",
     "confirmLabel": "Bestätigen",
     "iAgreeTerms": "Ich akzeptiere die AGB und die Datenschutzrichtlinie.",
+    "termsImplicit": "Mit dem Fortfahren akzeptierst du die AGB und die Datenschutzrichtlinie.",
     "errPasswordMismatch": "Passwörter stimmen nicht überein",
     "errAgreeTerms": "Bitte akzeptiere die AGB und Datenschutzrichtlinie",
     "loginInstead": "Anmelden",

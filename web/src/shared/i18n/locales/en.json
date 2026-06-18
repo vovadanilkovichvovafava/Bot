@@ -290,6 +290,7 @@
     "createAccountSub": "Join the elite community of professional analysts.",
     "confirmLabel": "Confirm",
     "iAgreeTerms": "I agree to the Terms & Conditions and Privacy Policy.",
+    "termsImplicit": "By continuing, you accept the Terms & Conditions and Privacy Policy.",
     "errPasswordMismatch": "Passwords do not match",
     "errAgreeTerms": "Please accept the Terms & Privacy Policy",
     "loginInstead": "Log in instead",
