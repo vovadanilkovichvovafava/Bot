@@ -89,17 +89,21 @@ export function detectCountry() {
       return 'FR';
     if (tz.startsWith('Europe/Prague'))
       return 'CZ';
+    if (tz.startsWith('Europe/Lisbon') || tz.startsWith('Atlantic/Madeira') || tz.startsWith('Atlantic/Azores'))
+      return 'PT';
     if (tz.startsWith('Asia/Jerusalem') || tz.startsWith('Asia/Tel_Aviv'))
       return 'IL';
     if (tz.startsWith('Asia/Dubai'))
       return 'AE';
   } catch {}
 
-  return 'US'; // default
+  return 'PT'; // default — Portuguese-first audience
 }
 
 export function getCountryByCode(code) {
-  return COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
+  return COUNTRIES.find((c) => c.code === code)
+    || COUNTRIES.find((c) => c.code === 'PT')
+    || COUNTRIES[0];
 }
 
 export { COUNTRIES };
