@@ -338,18 +338,25 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
         }
       }
 
+      // The backend returns AI-service failures as a normal 200 with an error
+      // string (e.g. "AI service error: Invalid request"). Detect those so we
+      // don't treat them as a real pick or persist them — otherwise a transient
+      // failure (e.g. credits ran out) sticks in the 2h chat cache and keeps
+      // showing even after the AI recovers.
+      const isAiError = /^(AI service|AI authentication|AI assistant is not available|Sorry, AI)/i.test((data.response || '').trim());
+
       const newMessages = [...messages, userMsg, {
         id: Date.now() + 1,
         role: 'assistant',
         content: data.response,
         hasData: !!matchContext,
-        showAd: true,
+        showAd: !isAiError,
         bet: firstBet,
         bets: parsedBets,
         fonbetDeeplink,
       }];
       setMessages(newMessages);
-      saveChatHistory(newMessages);
+      if (!isAiError) saveChatHistory(newMessages);
     } catch (e) {
       console.error('AI Chat error:', e);
       // Safely extract error message
