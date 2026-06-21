@@ -135,9 +135,14 @@ async def lifespan(app: FastAPI):
     background_tasks.append(monitor_task)
     logger.info("ML monitoring worker scheduled (daily)")
 
-    prewarm_task = asyncio.create_task(safe_task("prewarm", prewarm_cache_loop()))
-    background_tasks.append(prewarm_task)
-    logger.info("Cache pre-warm worker scheduled (every 30 min)")
+    # Cache pre-warm worker DISABLED — analysis is now on-demand only.
+    # It used to call Claude for ~20 matches every 30 min in the background
+    # (no user request), which silently burned the Anthropic credit balance.
+    # Now a match is analyzed by Claude only when a user actually opens/asks for it
+    # (result still cached 24h for everyone). To re-enable, restore the task below.
+    # prewarm_task = asyncio.create_task(safe_task("prewarm", prewarm_cache_loop()))
+    # background_tasks.append(prewarm_task)
+    logger.info("Cache pre-warm worker DISABLED (on-demand analysis only)")
 
     try:
         from app.services.express_generator import express_generation_loop
