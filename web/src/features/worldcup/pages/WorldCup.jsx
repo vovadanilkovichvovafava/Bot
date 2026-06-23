@@ -257,6 +257,22 @@ export default function WorldCup() {
           </div>
         </div>
 
+        {/* ===== Rewards promo ===== */}
+        <button
+          onClick={() => navigate('/rewards')}
+          className="w-full text-left relative overflow-hidden rounded-2xl p-4 flex items-center gap-3.5 shadow-lg active:scale-[0.99] transition-transform"
+          style={{ background: 'linear-gradient(120deg, #15321f 0%, #14532d 55%, #166534 100%)' }}
+        >
+          <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 shadow-md">
+            <svg className="w-7 h-7 text-[#0D0D1F]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 13.14 2 8.27l6.91-1.01L12 1z"/></svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-emerald-300 text-[10px] font-black uppercase tracking-wider">{t('worldCup.rewardsPromoTag', { defaultValue: 'World Cup Rewards' })}</p>
+            <h3 className="text-white font-black text-[15px] leading-snug mt-0.5">{t('worldCup.rewardsPromoTitle', { defaultValue: 'Predict matches, earn points — unlock PRO for free' })}</h3>
+          </div>
+          <svg className="w-5 h-5 text-white/70 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+
         {/* ===== Live now ===== */}
         {liveMatches.length > 0 && <LiveNowStrip matches={liveMatches} onOpen={openMatch} t={t} />}
 
