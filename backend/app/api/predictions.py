@@ -38,6 +38,10 @@ DEGRESSIVE_LIMITS = {
 # Fixed daily limit for funnel-3
 FUNNEL3_DAILY_LIMIT = 7
 
+# funnel-1 (default): lifetime free limit — 5 free AI requests TOTAL (no daily
+# reset). Once used up, only the PRO upgrade unlocks unlimited.
+FREE_LIFETIME_LIMIT = 5
+
 
 def get_daily_limit(day_number: int, funnel: str = "funnel-1") -> int:
     """Get the daily limit based on funnel type and day of usage."""
@@ -102,30 +106,37 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     now = datetime.utcnow()
     today = now.date()
 
-    # Check if it's a new day since last request
-    if user.last_chat_request_date is None:
-        # First ever request — day 1
-        user.account_day_number = 1
-        user.daily_chat_requests = 0
-        user.last_chat_request_date = now
-    elif user.last_chat_request_date.date() < today:
-        # New day! Advance day_number and reset counter
-        user.account_day_number = (user.account_day_number or 1) + 1
-        user.daily_chat_requests = 0
-        user.last_chat_request_date = now
+    if funnel == "funnel-3":
+        # funnel-3: fixed daily limit — reset the counter each new day.
+        if user.last_chat_request_date is None:
+            user.account_day_number = 1
+            user.daily_chat_requests = 0
+            user.last_chat_request_date = now
+        elif user.last_chat_request_date.date() < today:
+            user.account_day_number = (user.account_day_number or 1) + 1
+            user.daily_chat_requests = 0
+            user.last_chat_request_date = now
+        base_limit = get_daily_limit(user.account_day_number or 1, funnel)
+        resets_at = datetime.combine(today + timedelta(days=1), datetime.min.time()).isoformat() + "Z"
+    else:
+        # funnel-1 (default): LIFETIME free limit — FREE_LIFETIME_LIMIT total
+        # requests, NO daily reset. daily_chat_requests is used here as a
+        # lifetime counter (never reset). Once used up, only PRO unlocks unlimited.
+        if user.last_chat_request_date is None:
+            user.last_chat_request_date = now
+        if user.account_day_number is None:
+            user.account_day_number = 1
+        base_limit = FREE_LIFETIME_LIMIT
+        resets_at = None  # never resets — upgrade to PRO for unlimited
 
     day_number = user.account_day_number or 1
-    limit = get_daily_limit(day_number, funnel)
     used = user.daily_chat_requests or 0
 
     # Add bonus from referrals
     bonus = user.referral_bonus_requests or 0
-    total_limit = limit + bonus
+    total_limit = base_limit + bonus
 
     remaining = max(0, total_limit - used)
-
-    # Calculate when the limit resets (next midnight UTC)
-    tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
 
     try:
         await db.commit()
@@ -136,11 +147,11 @@ async def check_and_update_limits(user_id: int, db: AsyncSession) -> dict:
     return {
         "remaining": remaining,
         "limit": total_limit,
-        "base_limit": limit,
+        "base_limit": base_limit,
         "bonus": bonus,
         "day_number": day_number,
         "used": used,
-        "resets_at": tomorrow.isoformat() + "Z",
+        "resets_at": resets_at,
         "is_premium": False,
         "funnel": funnel,
     }
@@ -157,8 +168,8 @@ async def increment_chat_usage(user_id: int, db: AsyncSession):
         now = datetime.utcnow()
         today = now.date()
 
-        # Safety: if somehow date changed between check and increment
-        if user.last_chat_request_date and user.last_chat_request_date.date() < today:
+        # funnel-3 resets daily; funnel-1 (default) is a LIFETIME counter — never reset.
+        if (user.funnel or "funnel-1") == "funnel-3" and user.last_chat_request_date and user.last_chat_request_date.date() < today:
             user.account_day_number = (user.account_day_number or 1) + 1
             user.daily_chat_requests = 1
         else:
