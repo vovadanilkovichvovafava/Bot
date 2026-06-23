@@ -658,8 +658,8 @@
     "s6BreakdownBonus": "Bono de la casa de apuestas (+150%)",
     "s6BreakdownTotal": "Total en la cuenta",
     "s6DepositStep": "Depósito desde €50",
-    "s6CtaBtn": "Depositar €50 y obtener PRO",
-    "s6CtaHint": "€50 se quedan contigo · +€100 bono · PRO se activa automáticamente"
+    "s6CtaBtn": "Depositar y obtener PRO",
+    "s6CtaHint": "Tu dinero se queda contigo · +€100 bono · PRO se activa automáticamente"
   },
   "aiChat": {
     "title": "Asistente IA",

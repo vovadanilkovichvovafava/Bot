@@ -312,8 +312,8 @@
     "s6BreakdownBonus": "Bahisçiden bonus (+150%)",
     "s6BreakdownTotal": "Hesapta toplam",
     "s6DepositStep": "€50'den yatırım",
-    "s6CtaBtn": "€50 yatır ve PRO al",
-    "s6CtaHint": "€50 sizde kalır · +€100 bonus · PRO otomatik etkinleşir"
+    "s6CtaBtn": "Yatır ve PRO al",
+    "s6CtaHint": "Paranız sizde kalır · +€100 bonus · PRO otomatik etkinleşir"
   },
   "guide": {
     "lesson": "Ders",

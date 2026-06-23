@@ -605,8 +605,8 @@
     "s6BreakdownBonus": "Bonus vom Buchmacher (+150%)",
     "s6BreakdownTotal": "Gesamt auf dem Konto",
     "s6DepositStep": "Einzahlung ab 50€",
-    "s6CtaBtn": "50€ einzahlen und PRO erhalten",
-    "s6CtaHint": "50€ bleiben bei Ihnen · +100€ Bonus · PRO aktiviert sich automatisch"
+    "s6CtaBtn": "Einzahlen und PRO erhalten",
+    "s6CtaHint": "Dein Geld bleibt bei dir · +100€ Bonus · PRO aktiviert sich automatisch"
   },
   "aiChat": {
     "title": "AI Assistent",

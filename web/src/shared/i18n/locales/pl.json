@@ -659,8 +659,8 @@
     "s6BreakdownBonus": "Bonus od bukmachera (+150%)",
     "s6BreakdownTotal": "Łącznie na koncie",
     "s6DepositStep": "Wpłata od €50",
-    "s6CtaBtn": "Wpłać €50 i otrzymaj PRO",
-    "s6CtaHint": "€50 zostaje u Ciebie · +€100 bonus · PRO aktywuje się automatycznie"
+    "s6CtaBtn": "Wpłać i otrzymaj PRO",
+    "s6CtaHint": "Twoje pieniądze zostają u Ciebie · +€100 bonus · PRO aktywuje się automatycznie"
   },
   "aiChat": {
     "title": "Asystent AI",

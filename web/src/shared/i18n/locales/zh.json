@@ -312,8 +312,8 @@
     "s6BreakdownBonus": "博彩公司奖金（+150%）",
     "s6BreakdownTotal": "账户总计",
     "s6DepositStep": "存入€50起",
-    "s6CtaBtn": "存入€50获取PRO",
-    "s6CtaHint": "€50留在您手中 · +€100奖金 · PRO自动激活"
+    "s6CtaBtn": "存款获取PRO",
+    "s6CtaHint": "您的钱留在您手中 · +€100奖金 · PRO自动激活"
   },
   "guide": {
     "lesson": "课程",

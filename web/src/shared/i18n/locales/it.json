@@ -673,8 +673,8 @@
     "s6BreakdownBonus": "Bonus dal bookmaker (+150%)",
     "s6BreakdownTotal": "Totale sul conto",
     "s6DepositStep": "Deposito da €50",
-    "s6CtaBtn": "Deposita €50 e ottieni PRO",
-    "s6CtaHint": "€50 restano tuoi · +€100 bonus · PRO si attiva automaticamente"
+    "s6CtaBtn": "Deposita e ottieni PRO",
+    "s6CtaHint": "I tuoi soldi restano tuoi · +€100 bonus · PRO si attiva automaticamente"
   },
   "aiChat": {
     "title": "Assistente AI",
