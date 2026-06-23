@@ -6,7 +6,10 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
-const TOTAL = 6;
+// Shortened funnel: only show the bonus hook (step 1) and the final CTA (step 6).
+// The warming steps 2–5 still exist in the markup but are skipped to cut the
+// app→offer path for cold users. To restore the full funnel: FLOW = [1,2,3,4,5,6].
+const FLOW = [1, 6];
 
 const quizCSS = `
 :root{--qbg:#EEF1F7;--qcard:#FFF;--qprimary:#1B3A5C;--qaccent:#E8A317;--qgreen:#1DAA61;--qblue:#2B7AE8;--qpurple:#6366F1;--qred:#EF4444;--qtext:#1E293B;--qtext2:#5A6B80;--qtext3:#94A3B8;--qborder:#E2E8F0;--gold-g:linear-gradient(135deg,#F7C948 0%,#E8A317 100%);--blue-g:linear-gradient(135deg,#2B7AE8 0%,#1B6DD9 100%);--green-g:linear-gradient(135deg,#1DAA61 0%,#16894E 100%);--dark-g:linear-gradient(160deg,#0F2744 0%,#1B3A5C 40%,#2B5A8C 100%)}
@@ -123,17 +126,18 @@ export default function BookmakerPromo() {
     }
   }, [user?.id, banner, fonbetDeeplink]);
 
-  const next = () => { if (step < TOTAL) setStep(step + 1); };
-  const prev = () => { if (step > 1) setStep(step - 1); else navigate(-1); };
+  const pos = FLOW.indexOf(step);
+  const next = () => { if (pos >= 0 && pos < FLOW.length - 1) setStep(FLOW[pos + 1]); };
+  const prev = () => { if (pos > 0) setStep(FLOW[pos - 1]); else navigate(-1); };
 
   return (
     <div className="q-wrap">
       <style>{quizCSS}</style>
-      <div className="q-pbar"><div className="q-pfill" style={{ width: `${(step / TOTAL) * 100}%` }} /></div>
+      <div className="q-pbar"><div className="q-pfill" style={{ width: `${((pos + 1) / FLOW.length) * 100}%` }} /></div>
       <div className="q-back" onClick={prev}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </div>
-      <div className="q-spill">{step} / {TOTAL}</div>
+      <div className="q-spill">{pos + 1} / {FLOW.length}</div>
 
       {/* STEP 1 — Bonus Calculator (NEW) */}
       <div className={`q-step${step === 1 ? ' active' : ''}`}>
