@@ -143,19 +143,19 @@ export default function BookmakerPromo() {
       <div className={`q-step${step === 1 ? ' active' : ''}`}>
         <div className="q-body">
           <div className="q-bonus-hd">
-            <div className="q-bhtag"><div className="q-bhdot" />Solo per utenti PreScore AI</div>
-            <div className="q-bhttl">Il tuo deposito viene<br/><span style={{color:'#F7C948'}}>moltiplicato ×2,5</span></div>
-            <div className="q-bhsub">Il nostro partner aggiunge +150% al tuo primo deposito.<br/>Sono soldi tuoi — usali per scommettere con l'AI.</div>
+            <div className="q-bhtag"><div className="q-bhdot" />{t('promo.calcTag', { defaultValue: 'Only for PreScore AI users' })}</div>
+            <div className="q-bhttl">{t('promo.calcTitle1', { defaultValue: 'Your deposit gets' })}<br/><span style={{color:'#F7C948'}}>{t('promo.calcTitle2', { defaultValue: 'multiplied ×2.5' })}</span></div>
+            <div className="q-bhsub">{t('promo.calcSub', { defaultValue: "Our partner adds +150% to your first deposit. It's your money — use it to bet with the AI." })}</div>
           </div>
 
           {/* Calc */}
           <div className="q-calc">
             <div className="q-copts">
               {[
-                { dep:'€50',  bonus:'€100',  total:'€150',  lbl:'Inizio' },
-                { dep:'€100', bonus:'€150',  total:'€250',  lbl:'Popolare', rec:true },
-                { dep:'€300', bonus:'€450',  total:'€750',  lbl:'Top' },
-                { dep:'€500', bonus:'€750',  total:'€1.250',lbl:'Massimo' },
+                { dep:'€50',  bonus:'€100',  total:'€150',  lbl:t('promo.calcLblStart', { defaultValue: 'Start' }) },
+                { dep:'€100', bonus:'€150',  total:'€250',  lbl:t('promo.calcLblPopular', { defaultValue: 'Popular' }), rec:true },
+                { dep:'€300', bonus:'€450',  total:'€750',  lbl:t('promo.calcLblTop', { defaultValue: 'Top' }) },
+                { dep:'€500', bonus:'€750',  total:'€1.250',lbl:t('promo.calcLblMax', { defaultValue: 'Max' }) },
               ].map((o, i) => (
                 <div key={i} className={`q-copt${calcSel===i?' on':''}`} onClick={()=>setCalcSel(i)}>
                   {o.rec && <div className="crec">🔥</div>}
@@ -173,20 +173,20 @@ export default function BookmakerPromo() {
               ].map((o, i) => calcSel===i && (
                 <div key={i} style={{display:'contents'}}>
                   <div className="q-cres-row">
-                    <div className="q-cres-lbl">Il tuo deposito</div>
+                    <div className="q-cres-lbl">{t('promo.calcYourDeposit', { defaultValue: 'Your deposit' })}</div>
                     <div className="q-cres-val">{o.dep}</div>
                   </div>
                   <div className="q-cbonus">
                     <div className="q-cbonus-ico">🎁</div>
                     <div>
-                      <div className="q-cbonus-ttl">+{o.bonus} bonus gratuito</div>
-                      <div className="q-cbonus-sub">Accreditato automaticamente — nessuna azione richiesta</div>
+                      <div className="q-cbonus-ttl">+{o.bonus} {t('promo.calcBonusFree', { defaultValue: 'free bonus' })}</div>
+                      <div className="q-cbonus-sub">{t('promo.calcBonusAuto', { defaultValue: 'Credited automatically — no action needed' })}</div>
                     </div>
                   </div>
                   <div className="q-ctotal">
-                    <div className="q-ctotal-lbl">Totale bankroll disponibile</div>
+                    <div className="q-ctotal-lbl">{t('promo.calcTotalLabel', { defaultValue: 'Total available bankroll' })}</div>
                     <div className="q-ctotal-num">{o.total}</div>
-                    <div className="q-ctotal-sub">sul conto — tuoi soldi, preleva quando vuoi</div>
+                    <div className="q-ctotal-sub">{t('promo.calcTotalSub', { defaultValue: 'in your account — your money, withdraw anytime' })}</div>
                   </div>
                 </div>
               ))}
@@ -196,15 +196,15 @@ export default function BookmakerPromo() {
           <div className="q-once">
             <div className="q-once-ico">⚠️</div>
             <div className="q-once-txt">
-              <strong>Offerta valida solo sul primo deposito.</strong> Dopo — il bonus svanisce per sempre. Hai una sola possibilità — usala al massimo.
+              <strong>{t('promo.calcOnceBold', { defaultValue: 'Valid only on the first deposit.' })}</strong> {t('promo.calcOnce', { defaultValue: 'After that the bonus is gone forever — you get one shot, make it count.' })}
             </div>
           </div>
         </div>
         <div className="q-foot">
           <button className="q-btn gold" onClick={next}>
-            Voglio il bonus massimo <ArrowRight />
+            {t('promo.calcCta', { defaultValue: 'I want the maximum bonus' })} <ArrowRight />
           </button>
-          <div className="q-hint">Più depositi — più guadagni con l'AI</div>
+          <div className="q-hint">{t('promo.calcHint', { defaultValue: 'The more you deposit, the more you earn with the AI' })}</div>
         </div>
       </div>
 
@@ -344,9 +344,9 @@ export default function BookmakerPromo() {
             <div className="fs">{t('promo.s5Sub')}</div>
           </div>
           <div className="q-bfloat">
-            <div className="q-bfl">Bonus massimo disponibile</div>
+            <div className="q-bfl">{t('promo.finalBonusLabel', { defaultValue: 'Maximum bonus available' })}</div>
             <div className="q-bfa">€750</div>
-            <div className="q-bfd">Deposita €500 → ricevi <strong>€750 gratis</strong> sul conto. Totale: €1.250 per scommettere.</div>
+            <div className="q-bfd">{t('promo.finalBonusDesc', { defaultValue: 'Deposit €500 → get €750 free in your account. Total: €1,250 to bet with.' })}</div>
           </div>
           <div className="q-mflow">
             <div className="q-mstep"><div className="q-mnum">1</div><div className="q-mlbl">{t('promo.s5Install')}</div></div>
