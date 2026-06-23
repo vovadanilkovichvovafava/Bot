@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../../betting/services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -382,6 +382,18 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
     }
   };
 
+  // Shortest path to the offer: when the pick carries a direct bookmaker deeplink,
+  // open it in one tap (with tracking) instead of routing through the multi-step
+  // promo funnel. No deeplink → fall back to the promo page.
+  const goToOffer = (deeplink, banner) => {
+    if (trackClick) trackClick(user?.id, banner);
+    if (deeplink && isAllowedDeeplink(deeplink) && user?.id) {
+      window.open(addTrackingToUrl(deeplink, user.id, banner), '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(deeplink ? `/promo?fonbet_deeplink=${encodeURIComponent(deeplink)}` : '/promo');
+    }
+  };
+
   const clearChat = () => {
     setMessages([{
       id: 'welcome',
@@ -465,7 +477,7 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
                       bets={msg.bets}
                       fallback={stripBets(msg.content)}
                       t={t}
-                      onPlace={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                      onPlace={(bet) => goToOffer(bet?.fonbetDeeplink, 'aichat_bet_card')}
                     />
                   </div>
                 )}
@@ -488,7 +500,7 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
             {msg.showAd && (
               canUseDeeplink ? (
                 <div
-                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); navigate('/promo'); }}
+                  onClick={() => goToOffer(msg.fonbetDeeplink, 'aichat_ad_place_bet')}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">
@@ -846,7 +858,7 @@ function BetList({ bets, fallback, t, onPlace }) {
                 </svg>
               </button>
               <button
-                onClick={onPlace}
+                onClick={() => onPlace(bet)}
                 className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2 transition-colors"
               >
                 {t('aiChat.placeBet', { defaultValue: 'Place bet' })}

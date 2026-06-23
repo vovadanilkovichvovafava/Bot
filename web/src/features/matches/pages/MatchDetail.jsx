@@ -12,7 +12,7 @@ import { generateMatchShareText } from '../../predictions/services/shareUtils';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../../betting/services/trackingService';
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
@@ -634,11 +634,17 @@ export default function MatchDetail() {
   const venueName = enriched?.fixture?.fixture?.venue?.name;
   const ptsDisplay = (isPremiumTop || isFunnel2Top || isFunnel4Top) ? '∞' : (aiRemaining ?? FREE_AI_LIMIT);
 
-  // Registered (use_deeplink) and PRO users go directly to bookmaker match
-  // Everyone else goes to offer link to register on bookmaker first
+  // Shortest path to the offer: if we have a direct bookmaker deeplink for this
+  // match, open it in one tap (with affiliate tracking) instead of the multi-step
+  // promo funnel. No deeplink → fall back to the promo page.
   const handlePromoClick = (source) => {
     trackClick(user?.id, source);
-    navigate('/promo');
+    const dl = fonbetMatch?.deeplink;
+    if (dl && isAllowedDeeplink(dl) && user?.id) {
+      window.open(addTrackingToUrl(dl, user.id, source), '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(dl ? `/promo?fonbet_deeplink=${encodeURIComponent(dl)}` : '/promo');
+    }
   };
 
   return (
@@ -914,7 +920,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                 bets={recommendedBets}
                 fallback={stripBets(prediction.claudeAnalysis)}
                 t={t}
-                onPlace={() => { trackClick(user?.id, 'match_bet_card'); navigate('/promo'); }}
+                onPlace={() => handlePromoClick('match_bet_card')}
               />
             </div>
           )}
@@ -987,7 +993,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
 
                 {/* CTA */}
                 <button
-                  onClick={() => { trackClick(user?.id, 'match_ad_get_bonus'); navigate('/promo'); }}
+                  onClick={() => handlePromoClick('match_ad_get_bonus')}
                   className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
                 >
