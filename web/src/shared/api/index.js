@@ -168,6 +168,12 @@ class ApiService {
   async register(phone, password, referralCode = null) {
     const body = { phone, password };
     if (referralCode) body.referral_code = referralCode;
+    // Capture the UI language the user registered in (i18next persists it here)
+    // so the user's real language is stored instead of defaulting to "en".
+    try {
+      const lang = (localStorage.getItem('i18nextLng') || navigator.language || '').slice(0, 2).toLowerCase();
+      if (lang) body.language = lang;
+    } catch { /* ignore */ }
     // Attach traffic source: ENV > URL param > localStorage > auto-detect from hostname
     const source = ENV.TRAFFIC_SOURCE
       || new URLSearchParams(window.location.search).get('source')

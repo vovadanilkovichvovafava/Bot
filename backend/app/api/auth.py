@@ -82,6 +82,7 @@ class UserRegister(BaseModel):
     utm_source: Optional[str] = None  # Рекламный источник: google, facebook, tiktok
     utm_campaign: Optional[str] = None  # Название рекламной кампании
     utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
+    language: Optional[str] = None  # UI language the user registered in (e.g. "pt")
 
     @field_validator("phone")
     @classmethod
@@ -218,6 +219,20 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
+    # Language: prefer the UI language the user actually registered in; fall back
+    # to the country's primary language; then English. (Previously every user was
+    # silently stored as "en" because registration never captured the language.)
+    _SUPPORTED_LANGS = {"en", "pt", "es", "fr", "it", "de", "pl", "ru", "ro", "tr", "ar", "hi", "zh"}
+    _COUNTRY_LANG = {
+        "PT": "pt", "BR": "pt", "AO": "pt", "MZ": "pt",
+        "ES": "es", "MX": "es", "AR": "es", "CO": "es", "CL": "es", "PE": "es",
+        "FR": "fr", "IT": "it", "DE": "de", "AT": "de", "PL": "pl",
+        "RU": "ru", "BY": "ru", "UA": "ru", "RO": "ro", "TR": "tr",
+        "CN": "zh", "IN": "hi", "SA": "ar", "AE": "ar", "EG": "ar",
+    }
+    _lang_in = (user.language or "").strip().lower()[:2]
+    language = _lang_in if _lang_in in _SUPPORTED_LANGS else _COUNTRY_LANG.get((country or "").upper(), "en")
+
     # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
     funnel = normalize_funnel(user.utm_funnel)
 
@@ -229,6 +244,7 @@ async def register(
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
         country=country,
+        language=language,
         referred_by_id=referrer.id if referrer else None,
         traffic_source=user.source,
         utm_source=user.utm_source,
@@ -248,6 +264,7 @@ async def register(
             password_hash=get_password_hash(user.password),
             registration_ip=client_ip,
             country=country,
+            language=language,
             referred_by_id=referrer.id if referrer else None,
             traffic_source=user.source,
         )
