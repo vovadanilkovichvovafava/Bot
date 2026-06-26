@@ -655,10 +655,14 @@ function FeaturedMatchBanner({ matches, advertiser, trackClick, userId, userFunn
   const { t } = useTranslation();
 
   // For PRO with smart bet data: use smart bet match instead of matches[0]
-  const smartBetMatch = (isPremium && smartBet?.found) ? {
-    teams: { home: smartBet.home, away: smartBet.away },
-    fixture: { status: { short: smartBet.is_live ? '1H' : 'NS' } },
-    goals: smartBet.score ? { home: parseInt(smartBet.score.split('-')[0]), away: parseInt(smartBet.score.split('-')[1]) } : {},
+  const smartBetMatch = (isPremium && smartBet?.found && smartBet.home?.name) ? {
+    teams: {
+      home: { name: smartBet.home.name, logo: smartBet.home.logo || '', id: smartBet.home.id },
+      away: { name: smartBet.away?.name || '?', logo: smartBet.away?.logo || '', id: smartBet.away?.id },
+    },
+    league: smartBet.league || {},
+    fixture: { status: { short: smartBet.is_live ? '1H' : 'NS' }, id: smartBet.fixture_id },
+    goals: smartBet.score ? { home: parseInt(smartBet.score.split('-')[0]) || 0, away: parseInt(smartBet.score.split('-')[1]) || 0 } : {},
   } : null;
 
   // Get the first match from top leagues as featured match
