@@ -482,14 +482,19 @@ function TopMatchCard({ fixture, navigate, t, realOdds }) {
 function MejorPickCard({ matches, smartBet, navigate, t, locked, advertiser, trackClick, userId, isPremium, realOdds }) {
   const sb = smartBet?.found ? smartBet : null;
   const m0 = matches?.[0];
-  const home = sb?.home || m0?.teams?.home?.name || 'Benfica';
-  const away = sb?.away || m0?.teams?.away?.name || 'Porto';
-  const league = sb?.league || m0?.league?.name || 'Primeira Liga';
+  // smartBet fields can arrive as either strings or {id,name,logo} objects.
+  // Coerce to a string before rendering — rendering the raw object crashes React
+  // (error #31: "Objects are not valid as a React child"). This hit PRO users on
+  // launch because smartBet is only fetched for premium accounts.
+  const txt = (v) => (v && typeof v === 'object') ? (v.name ?? v.title ?? '') : v;
+  const home = txt(sb?.home) || m0?.teams?.home?.name || 'Benfica';
+  const away = txt(sb?.away) || m0?.teams?.away?.name || 'Porto';
+  const league = txt(sb?.league) || m0?.league?.name || 'Primeira Liga';
   const confidence = sb?.confidence || 96;
   const fixtureId = sb?.fixture_id || m0?.fixture?.id;
   const realHome = realOdds?.[fixtureId]?.home;
   const odds = attractiveOdds(sb?.odds || realHome || genOdds(m0?.fixture?.id || 1).home, fixtureId || m0?.fixture?.id || 1);
-  const selection = sb?.bet?.market || t('home.pickHomeWin', { defaultValue: 'Home Win' });
+  const selection = txt(sb?.bet?.market) || t('home.pickHomeWin', { defaultValue: 'Home Win' });
 
   const handleCta = () => {
     if (locked) { navigate('/pro-access?reason=upgrade&feature=best-pick'); return; }
