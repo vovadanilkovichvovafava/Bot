@@ -14,6 +14,7 @@ const AdminML = lazy(() => import('./pages/AdminML'))
 const AdminPro = lazy(() => import('./pages/AdminPro'))
 const AdminFunnels = lazy(() => import('./pages/AdminFunnels'))
 const AdminTraffic = lazy(() => import('./pages/AdminTraffic'))
+const AdminPostbacks = lazy(() => import('./pages/AdminPostbacks'))
 const AdminTeam = lazy(() => import('./pages/AdminTeam'))
 
 function AdminProtectedRoute({ children }) {
@@ -54,6 +55,7 @@ export default function AdminRoutes() {
             <Route path="pro" element={<AdminPro />} />
             <Route path="funnels" element={<AdminFunnels />} />
             <Route path="traffic" element={<AdminTraffic />} />
+            <Route path="postbacks" element={<AdminPostbacks />} />
             <Route path="team" element={<AdminTeam />} />
           </Route>
           <Route path="*" element={<Navigate to="/admin" replace />} />

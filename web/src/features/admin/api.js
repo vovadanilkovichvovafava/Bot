@@ -123,4 +123,12 @@ export const adminApi = {
 
   // A/B Funnels
   getFunnelStats: () => request('/stats/users/funnel-stats'),
+
+  // Postback Logs
+  getPostbackLogs: (q = '', source = '', event = '', page = 1) => {
+    const params = new URLSearchParams({ q, page })
+    if (source) params.set('source', source)
+    if (event) params.set('event', event)
+    return request(`/stats/postback-logs?${params}`)
+  },
 }
