@@ -6,7 +6,10 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
 
-const TOTAL = 6;
+// Shortened funnel: show only step 1 (Free vs PRO) and step 6 (deposit CTA).
+// The other steps stay in the DOM but are never activated.
+const FLOW = [1, 6];
+const TOTAL = FLOW.length;
 
 const quizCSS = `
 :root{--qbg:#EEF1F7;--qcard:#FFF;--qprimary:#1B3A5C;--qaccent:#E8A317;--qgreen:#1DAA61;--qblue:#2B7AE8;--qpurple:#6366F1;--qred:#EF4444;--qtext:#1E293B;--qtext2:#5A6B80;--qtext3:#94A3B8;--qborder:#E2E8F0;--gold-g:linear-gradient(135deg,#F7C948 0%,#E8A317 100%);--blue-g:linear-gradient(135deg,#2B7AE8 0%,#1B6DD9 100%);--green-g:linear-gradient(135deg,#1DAA61 0%,#16894E 100%);--purple-g:linear-gradient(135deg,#6366F1 0%,#4F46E5 100%);--dark-g:linear-gradient(160deg,#0F2744 0%,#1B3A5C 40%,#2B5A8C 100%)}
@@ -209,19 +212,20 @@ export default function ProAccess() {
     setBookmakerLink(getTrackingLink(user.id, bannerName, user.funnel));
   }, [user?.id, feature]);
 
-  const next = () => { if (step < TOTAL) setStep(step + 1); };
-  const prev = () => { if (step > 1) setStep(step - 1); else navigate(-1); };
+  const pos = FLOW.indexOf(step);
+  const next = () => { const i = FLOW.indexOf(step); if (i < FLOW.length - 1) setStep(FLOW[i + 1]); };
+  const prev = () => { const i = FLOW.indexOf(step); if (i > 0) setStep(FLOW[i - 1]); else navigate(-1); };
 
   return (
     <div className="q-wrap">
       <style>{quizCSS}</style>
-      <div className="q-pbar"><div className="q-pfill" style={{ width: `${(step / TOTAL) * 100}%` }} /></div>
-      {step > 1 && (
+      <div className="q-pbar"><div className="q-pfill" style={{ width: `${((pos + 1) / TOTAL) * 100}%` }} /></div>
+      {pos > 0 && (
         <div className="q-back" onClick={prev}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
       )}
-      <div className="q-spill">{step} / {TOTAL}</div>
+      <div className="q-spill">{pos + 1} / {TOTAL}</div>
 
       {/* ═══════════════════════════════════════════
           STEP 1 — Free vs PRO  (БЕЗ ИЗМЕНЕНИЙ)
