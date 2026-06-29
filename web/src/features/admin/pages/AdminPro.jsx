@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { adminApi } from '../api';
 
@@ -203,9 +204,13 @@ function OverviewTab({ data }) {
 // ── PRO Users Tab ──
 
 function ProUsersTab({ users }) {
+  const navigate = useNavigate();
   const [sort, setSort] = useState('last_active');
   const [search, setSearch] = useState('');
   const [noDepOnly, setNoDepOnly] = useState(false);
+
+  // Open this user's support chat (pre-fills the search on the Chats page).
+  const openChat = (u) => navigate(`/admin/chats?user=${encodeURIComponent(u.public_id || u.phone || u.email || '')}`);
 
   const noDepCount = (users || []).filter(u => u.no_deposit).length;
 
@@ -289,11 +294,13 @@ function ProUsersTab({ users }) {
               <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                 <td className="py-2 px-2">
                   <div className="font-medium text-xs flex items-center gap-1.5">
-                    {u.email || u.phone || u.public_id}
+                    <button onClick={() => openChat(u)} className="text-blue-400 hover:text-blue-300 hover:underline text-left" title="Открыть чат с пользователем">
+                      {u.email || u.phone || u.public_id}
+                    </button>
                     {u.no_deposit && (
-                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold whitespace-nowrap" title="PRO без депозита — выдан за регистрацию (lead)">
-                        НЕТ ДЕПА
-                      </span>
+                      <button onClick={() => openChat(u)} className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold whitespace-nowrap hover:bg-red-500/30" title="PRO без депозита (lead). Нажми — откроется чат, чтобы написать с кнопкой депозита.">
+                        НЕТ ДЕПА · написать
+                      </button>
                     )}
                   </div>
                   <div className="text-[10px] text-slate-500">{u.public_id}</div>

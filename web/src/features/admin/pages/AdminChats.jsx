@@ -173,6 +173,7 @@ function SupportChatTab() {
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState('')
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
@@ -190,18 +191,29 @@ function SupportChatTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Deep-link from the PRO Users page: /admin/chats?user=<id> pre-fills search
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search).get('user')
+    if (u) setSearchQuery(u)
+  }, [])
+
   // Auto-translate when messages are loaded
   const autoTranslate = useCallback(async (sessionId, msgs) => {
     if (translations[sessionId] || !msgs.length) return
     setTranslating(true)
+    setTranslateError('')
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId && result?.translated?.length) {
-        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      if (translatingRef.current === sessionId) {
+        if (result?.translated?.length) {
+          setTranslations(prev => ({ ...prev, [sessionId]: result }))
+        } else if (result?.error) {
+          setTranslateError(result.error)
+        }
       }
     } catch (e) {
-      console.warn('Translate failed:', e)
+      setTranslateError(e?.message || 'translate failed')
     } finally {
       setTranslating(false)
     }
@@ -332,6 +344,13 @@ function SupportChatTab() {
                 ) : (
                   <>
                     {translating && !tr && <TranslatingSpinner />}
+                    {translateError && !tr && (
+                      <div className="px-4 pt-3">
+                        <div className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                          ⚠ Перевод и keyword-аналитика недоступны (AI): {translateError}
+                        </div>
+                      </div>
+                    )}
                     {tr?.keywords && (
                       <div className="px-4 pt-3">
                         <KeywordsBadge keywords={tr.keywords} />
@@ -419,6 +438,7 @@ function AIChatTab() {
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState('')
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
@@ -439,14 +459,19 @@ function AIChatTab() {
   const autoTranslate = useCallback(async (sessionId, msgs) => {
     if (translations[sessionId] || !msgs.length) return
     setTranslating(true)
+    setTranslateError('')
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId && result?.translated?.length) {
-        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      if (translatingRef.current === sessionId) {
+        if (result?.translated?.length) {
+          setTranslations(prev => ({ ...prev, [sessionId]: result }))
+        } else if (result?.error) {
+          setTranslateError(result.error)
+        }
       }
     } catch (e) {
-      console.warn('Translate failed:', e)
+      setTranslateError(e?.message || 'translate failed')
     } finally {
       setTranslating(false)
     }
@@ -583,6 +608,13 @@ function AIChatTab() {
                   ) : (
                     <>
                       {translating && !tr && <TranslatingSpinner />}
+                      {translateError && !tr && (
+                        <div className="px-4 pt-3">
+                          <div className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                            ⚠ Перевод и keyword-аналитика недоступны (AI): {translateError}
+                          </div>
+                        </div>
+                      )}
                       {tr?.keywords && (
                         <div className="px-4 pt-3">
                           <KeywordsBadge keywords={tr.keywords} />
