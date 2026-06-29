@@ -8,7 +8,7 @@ import { track } from '../../../shared/services/analytics';
    not live data. RECORD should match ACCURACY (43/56 ≈ 76.8%).
    ──────────────────────────────────────────────────────────────────────── */
 const ACCURACY = '76.8';
-const RECORD = { correct: 43, total: 56 };
+const FAIL_PCT = (100 - parseFloat(ACCURACY)).toFixed(1); // 23.2
 
 // Winning bets — biggest odds first (these "entered" ✓)
 const WINNING = [
@@ -84,7 +84,6 @@ export default function WorldCupRecap() {
             <span className="text-4xl font-black bg-gradient-to-r from-amber-300 to-yellow-500 bg-clip-text text-transparent">{ACCURACY}%</span>
             <span className="text-white/60 text-xs ml-1.5">de acerto</span>
           </div>
-          <p className="text-white/50 text-xs mb-1.5 ml-auto">{RECORD.correct}/{RECORD.total} prognósticos certos</p>
         </div>
       </button>
 
@@ -106,11 +105,11 @@ export default function WorldCupRecap() {
               <p className="text-white/70 text-sm">de prognósticos certos da nossa IA</p>
               <div className="flex justify-center gap-2 mt-4">
                 <div className="bg-green-500/15 border border-green-400/30 rounded-xl px-4 py-2">
-                  <div className="text-green-300 font-bold text-lg leading-none">{RECORD.correct}</div>
+                  <div className="text-green-300 font-bold text-lg leading-none">{ACCURACY}%</div>
                   <div className="text-green-200/70 text-[10px] mt-0.5">certos</div>
                 </div>
                 <div className="bg-red-500/15 border border-red-400/30 rounded-xl px-4 py-2">
-                  <div className="text-red-300 font-bold text-lg leading-none">{RECORD.total - RECORD.correct}</div>
+                  <div className="text-red-300 font-bold text-lg leading-none">{FAIL_PCT}%</div>
                   <div className="text-red-200/70 text-[10px] mt-0.5">falhados</div>
                 </div>
               </div>
