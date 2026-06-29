@@ -81,6 +81,15 @@ export const adminApi = {
   triggerTraining: () => request('/stats/ml/train', { method: 'POST' }),
   getSupportStats: () => request('/stats/support'),
 
+  // Postback logs
+  getPostbackLogs: (q = '', source, event, page = 1) => {
+    const params = new URLSearchParams({ page })
+    if (q) params.set('q', q)
+    if (source) params.set('source', source)
+    if (event) params.set('event', event)
+    return request(`/stats/postback-logs?${params}`)
+  },
+
   // Chats
   getSupportSessions: (limit = 30, offset = 0, q = '', locale = '') =>
     request(`/stats/chats/support-sessions?limit=${limit}&offset=${offset}&q=${encodeURIComponent(q)}&locale=${locale}`),
