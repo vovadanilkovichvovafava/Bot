@@ -808,8 +808,11 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
     // for a bet (e.g. "Recent form (Czechia & South Africa last 5 ... @ 6.00").
     const isBetType = (t) => {
       const s = (t || '').trim();
-      if (s.length < 3 || s.length > 35) return false;       // markets are short
-      if (s.split(/\s+/).length > 6) return false;           // not a sentence
+      // Markets and combos are short-ish labels — but combos like
+      // "Combo Winner: Germany and +1.5 goals" are legit, so keep the cap generous.
+      if (s.length < 3 || s.length > 55) return false;
+      if (s.split(/\s+/).length > 9) return false;           // not a full sentence
+      // Prose fragments are caught by keyword regardless of length.
       if (/recent form|last \d|head[- ]?to[- ]?head|\bh2h\b|confidence|average|per game|\bxg\b|possession|probabilit|implied/i.test(s)) return false;
       return true;
     };
