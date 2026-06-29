@@ -113,7 +113,7 @@ export default function WorldCup() {
   const { user } = useAuth();
   const countdown = useCountdown(WC_START);
 
-  const [tab, setTab] = useState('groups');
+  const [tab, setTab] = useState('bracket'); // open on the knockout/playoff stage by default
   const [groups, setGroups] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [liveMatches, setLiveMatches] = useState([]);
@@ -275,6 +275,43 @@ export default function WorldCup() {
 
         {/* ===== Live now ===== */}
         {liveMatches.length > 0 && <LiveNowStrip matches={liveMatches} onOpen={openMatch} t={t} />}
+
+        {/* ===== Today's WC match — highlight + AI analysis CTA ===== */}
+        {(() => {
+          const todayStr = new Date().toDateString();
+          const isToday = (m) => m?.fixture?.date && new Date(m.fixture.date).toDateString() === todayStr;
+          const liveToday = liveMatches.find(isToday);
+          const upcomingToday = [...fixtures]
+            .filter((m) => isToday(m) && m?.fixture?.status?.short === 'NS')
+            .sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date))[0];
+          const m = liveToday || upcomingToday || [...fixtures].filter(isToday)[0];
+          if (!m?.fixture?.id) return null;
+          const mLive = ['1H', '2H', 'ET', 'LIVE', 'P', 'BT', 'HT'].includes(m.fixture?.status?.short);
+          return (
+            <div className="rounded-2xl p-4 text-white shadow-lg" style={{ background: 'linear-gradient(120deg,#7c2d12 0%,#b91c1c 55%,#dc2626 100%)' }}>
+              <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-amber-200">
+                {mLive ? <span className="w-2 h-2 rounded-full bg-red-200 animate-pulse" /> : <span>🔥</span>}
+                {mLive ? t('worldCup.liveNow', { defaultValue: 'Ao vivo agora' }) : t('worldCup.todayMatch', { defaultValue: 'Jogo de hoje' })}
+              </div>
+              <div className="text-[19px] font-black mt-1.5 truncate">
+                {m.teams?.home?.name} <span className="text-white/60">vs</span> {m.teams?.away?.name}
+              </div>
+              <div className="text-xs text-white/85 mt-0.5">
+                {mLive
+                  ? `${m.goals?.home ?? 0}-${m.goals?.away ?? 0} · ${m.fixture?.status?.elapsed || 0}'`
+                  : new Date(m.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {m.league?.round ? ` · ${m.league.round}` : ''}
+              </div>
+              <button
+                onClick={() => navigate(`/match/${m.fixture.id}`)}
+                className="mt-3 w-full bg-white text-red-700 font-extrabold py-3 rounded-xl flex items-center justify-center gap-2 text-[15px] active:scale-[0.99] transition-transform"
+              >
+                ⚡ {t('worldCup.todayAiCta', { defaultValue: 'Análise da IA deste jogo' })}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+              </button>
+            </div>
+          );
+        })()}
 
         {/* ===== Match-cast hero — the live (or next) WC match ===== */}
         {(() => {

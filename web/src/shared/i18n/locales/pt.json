@@ -81,7 +81,10 @@
     "online": "ONLINE",
     "chatPlaceholder": "Escreve algo…",
     "chatSeed1": "Vamos Argentina! A Scaloneta está pronta.",
-    "chatSeed2": "Lamine Yamal vai ser a estrela do Mundial."
+    "chatSeed2": "Lamine Yamal vai ser a estrela do Mundial.",
+    "liveNow": "Ao vivo agora",
+    "todayMatch": "Jogo de hoje",
+    "todayAiCta": "Análise da IA deste jogo"
   },
   "home": {
     "welcome": "Bem-vindo",
