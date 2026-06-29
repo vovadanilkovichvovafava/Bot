@@ -891,6 +891,41 @@ async def check_new_messages(
     }
 
 
+@router.get("/admin-broadcasts")
+async def admin_broadcasts(
+    after_id: int = 0,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """System/admin messages addressed to the user regardless of session
+    (e.g. the deposit nudge after lead-granted PRO was revoked). The client
+    injects these into the support chat and dedupes by message id."""
+    user_id = current_user["user_id"]
+    stmt = (
+        select(SupportChatMessage)
+        .where(
+            SupportChatMessage.user_id == user_id,
+            SupportChatMessage.is_admin_reply == True,
+            SupportChatMessage.session_id.like("sys-%"),
+            SupportChatMessage.id > after_id,
+        )
+        .order_by(SupportChatMessage.created_at)
+    )
+    messages = (await db.execute(stmt)).scalars().all()
+    return {
+        "has_new": len(messages) > 0,
+        "messages": [
+            {
+                "id": m.id,
+                "content": m.content,
+                "agent_name": m.agent_name,
+                "created_at": str(m.created_at),
+            }
+            for m in messages
+        ],
+    }
+
+
 class SupportMessageOut(BaseModel):
     id: int
     user_id: int

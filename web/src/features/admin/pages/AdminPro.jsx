@@ -208,9 +208,30 @@ function ProUsersTab({ users }) {
   const [sort, setSort] = useState('last_active');
   const [search, setSearch] = useState('');
   const [noDepOnly, setNoDepOnly] = useState(false);
+  const [revoking, setRevoking] = useState(false);
 
   // Open this user's support chat (pre-fills the search on the Chats page).
   const openChat = (u) => navigate(`/admin/chats?user=${encodeURIComponent(u.public_id || u.phone || u.email || '')}`);
+
+  // Revoke PRO from everyone who got it without a real deposit + auto-message them.
+  const revokeNoDep = async () => {
+    setRevoking(true);
+    try {
+      const preview = await adminApi.revokeNoDepositPro(true);
+      if (!preview?.count) { alert('Нет PRO-юзеров без депозита.'); return; }
+      if (!window.confirm(
+        `Аннулировать PRO у ${preview.count} юзер(ов) без депозита и отправить им сообщение с кнопкой депозита?\n\n` +
+        `Это необратимо — они потеряют PRO прямо сейчас.`
+      )) return;
+      const res = await adminApi.revokeNoDepositPro(false);
+      alert(`Готово: аннулировано PRO — ${res.revoked}, отправлено сообщений — ${res.messaged}.`);
+      window.location.reload();
+    } catch (e) {
+      alert('Ошибка: ' + (e?.message || 'не удалось выполнить'));
+    } finally {
+      setRevoking(false);
+    }
+  };
 
   const noDepCount = (users || []).filter(u => u.no_deposit).length;
 
@@ -272,6 +293,17 @@ function ProUsersTab({ users }) {
         >
           ⚠ Без депозита ({noDepCount})
         </button>
+        {noDepCount > 0 && (
+          <button
+            type="button"
+            onClick={revokeNoDep}
+            disabled={revoking}
+            className="px-3 py-2 rounded-lg text-sm font-medium border border-red-600/50 bg-red-600/15 text-red-300 hover:bg-red-600/25 disabled:opacity-50 transition-colors"
+            title="Снять PRO у всех без депозита и отправить им сообщение с кнопкой депозита. Необратимо."
+          >
+            {revoking ? '…' : `Аннулировать PRO без депа (${noDepCount})`}
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto">

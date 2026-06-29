@@ -3090,6 +3090,79 @@ async def get_finance_stats(
 # ── Postback Logs ──────────────────────────────────────────────────
 
 
+@router.post("/pro/revoke-no-deposit")
+async def revoke_no_deposit_pro(
+    payload: dict = Body(default={}),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke PRO from users who got it WITHOUT a real deposit (granted from a
+    'lead'), and drop a deposit-CTA message into their support chat.
+
+    Pass {"dry_run": true} to PREVIEW the affected users without changing
+    anything. {"dry_run": false} performs the revocation + messaging.
+    """
+    import uuid as _uuid
+
+    now = datetime.now()
+    dry_run = bool(payload.get("dry_run", True))
+    message = payload.get("message") or (
+        "O teu acesso PRO de teste (24h por te teres registado) terminou. "
+        "Faz o teu primeiro depósito e o PRO é ativado automaticamente. {deposit}"
+    )
+
+    pro_rows = (await db.execute(
+        select(User).where(and_(User.is_premium == True, User.premium_until > now))
+    )).scalars().all()
+    pro_ids = [u.id for u in pro_rows]
+    if not pro_ids:
+        return {"dry_run": dry_run, "count": 0, "users": [], "revoked": 0, "messaged": 0}
+
+    dep_rows = (await db.execute(
+        select(func.distinct(PostbackLog.user_db_id)).where(
+            and_(
+                PostbackLog.user_db_id.in_(pro_ids),
+                or_(
+                    func.lower(PostbackLog.event).in_(
+                        ["sale", "deposit", "first_deposit", "ftd", "confirmed", "qualified"]),
+                    PostbackLog.amount > 0,
+                ),
+            )
+        )
+    )).scalars().all()
+    deposited = {r for r in dep_rows if r is not None}
+
+    targets = [u for u in pro_rows if u.id not in deposited]
+    preview = [
+        {"id": u.id, "public_id": u.public_id, "phone": u.phone,
+         "premium_until": u.premium_until.isoformat() if u.premium_until else None}
+        for u in targets
+    ]
+
+    if dry_run:
+        return {"dry_run": True, "count": len(targets), "users": preview, "revoked": 0, "messaged": 0}
+
+    messaged = 0
+    for u in targets:
+        u.is_premium = False
+        u.premium_until = None
+        if message:
+            db.add(SupportChatMessage(
+                user_id=u.id,
+                session_id=f"sys-deposit-{_uuid.uuid4().hex[:12]}",
+                role="assistant",
+                content=message,
+                locale=(u.language or "pt")[:5],
+                agent_name="Suporte",
+                is_admin_reply=True,
+            ))
+            messaged += 1
+    await db.commit()
+    logger.info("Revoked lead-only PRO from %s users (messaged=%s)", len(targets), messaged)
+    return {"dry_run": False, "count": len(targets), "users": preview,
+            "revoked": len(targets), "messaged": messaged}
+
+
 @router.get("/postback-logs")
 async def get_postback_logs(
     q: str = Query("", max_length=100),

@@ -114,6 +114,8 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const followUpTimerRef = useRef(null);
   const pollTimerRef = useRef(null);
   const lastAdminMsgIdRef = useRef(0);
+  const lastBroadcastIdRef = useRef(0);
+  const broadcastTimerRef = useRef(null);
 
   // Get current locale and agent name
   const locale = i18n.language?.slice(0, 2) || 'en';
@@ -237,6 +239,46 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
   }, [sessionId, isOpen, guest]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll for system broadcasts (e.g. deposit nudge after PRO revoke).
+  // Session-independent — reaches users who never opened support before.
+  useEffect(() => {
+    if (guest) return;
+
+    const pollBroadcasts = async () => {
+      try {
+        const data = await api.getAdminBroadcasts(lastBroadcastIdRef.current);
+        if (data.has_new && data.messages?.length > 0) {
+          const newMsgs = data.messages.map(m => ({
+            id: `bc_${m.id}`,
+            from: 'manager',
+            text: m.content,
+            time: new Date(m.created_at),
+            isAdminReply: true,
+          }));
+          setMessages(prev => {
+            const existingIds = new Set(prev.filter(m => m.isAdminReply).map(m => m.id));
+            const fresh = newMsgs.filter(m => !existingIds.has(m.id));
+            if (fresh.length === 0) return prev;
+            return [...prev, ...fresh];
+          });
+          lastBroadcastIdRef.current = Math.max(...data.messages.map(m => m.id));
+          data.messages.forEach(m => setChatHistory(prev => [...prev, { role: 'assistant', content: m.content }]));
+          if (!isOpen && onUnread) onUnread(true);
+        }
+      } catch {
+        // Silent — polling errors aren't critical
+      }
+    };
+
+    const interval = isOpen ? 30000 : 120000;
+    broadcastTimerRef.current = setInterval(pollBroadcasts, interval);
+    pollBroadcasts();
+
+    return () => {
+      if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
+    };
+  }, [guest, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mark as read when opened
   useEffect(() => {

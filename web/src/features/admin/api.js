@@ -127,6 +127,11 @@ export const adminApi = {
 
   // PRO Analytics
   getProAnalytics: () => request('/stats/pro'),
+  revokeNoDepositPro: (dryRun = true, message) =>
+    request('/stats/pro/revoke-no-deposit', {
+      method: 'POST',
+      body: JSON.stringify({ dry_run: dryRun, ...(message ? { message } : {}) }),
+    }),
 
   // Traffic Sources
   getTrafficStats: () => request('/stats/traffic'),

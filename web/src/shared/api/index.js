@@ -379,6 +379,11 @@ class ApiService {
     return this.request(`/support/new-messages?session_id=${encodeURIComponent(sessionId)}&after_id=${afterId}`);
   }
 
+  // System/admin broadcasts addressed to the user (works without a session)
+  async getAdminBroadcasts(afterId = 0) {
+    return this.request(`/support/admin-broadcasts?after_id=${afterId}`);
+  }
+
   // Guest Support Chat (no auth required — for login page password reset)
   async guestSupportChat(message, history = [], locale = 'en', sessionId = '') {
     const url = `${API_BASE}/support/guest-chat`;
