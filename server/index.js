@@ -293,7 +293,9 @@ app.get('/api/click', sensitiveLimiter, (req, res) => {
   });
 });
 
-const qualifyingGenericStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified', 'lead', 'sale', 'confirmed'];
+// 'lead' (registration only — no money) intentionally excluded: PRO is granted
+// for real deposits, not for signing up.
+const qualifyingGenericStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified', 'sale', 'confirmed'];
 
 /**
  * Core generic-postback processing, shared by the GET and POST routes.
@@ -724,7 +726,9 @@ app.all('/api/proxy/*', sensitiveLimiter, async (req, res) => {
 // KEITARO POSTBACK ENDPOINT
 // ============================================
 
-const qualifyingKeitaroStatuses = ['lead', 'sale', 'deposit', 'ftd', 'confirmed'];
+// 'lead' (registration only — no money) intentionally excluded: PRO is granted
+// for real deposits, not for signing up. Keitaro maps a deposit/FTD to 'sale'.
+const qualifyingKeitaroStatuses = ['sale', 'deposit', 'ftd', 'confirmed'];
 
 /**
  * Core Keitaro-postback processing, shared by the GET and POST routes.
