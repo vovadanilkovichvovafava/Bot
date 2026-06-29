@@ -77,6 +77,7 @@ export const adminApi = {
   getRecentRegistrations: () => request('/stats/users/recent-registrations'),
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
+  getWcPredictionStats: (until) => request(`/stats/predictions/world-cup${until ? `?until=${encodeURIComponent(until)}` : ''}`),
   getMLStats: () => request('/stats/ml'),
   triggerTraining: () => request('/stats/ml/train', { method: 'POST' }),
   getSupportStats: () => request('/stats/support'),

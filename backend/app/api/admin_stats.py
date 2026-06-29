@@ -1026,6 +1026,92 @@ async def toggle_user_ban(
     }
 
 
+@router.get("/predictions/world-cup")
+async def get_wc_prediction_stats(
+    until: Optional[str] = Query(None),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """World Cup prediction accuracy, deduped to UNIQUE bets (match + bet type).
+
+    The same bet saved for many users would otherwise inflate the count, so we
+    take one row per (match_id, bet_type). Round/stage isn't stored, so the
+    group stage is approximated with an optional `until` date cutoff (matches
+    kicking off before the knockouts). Without `until`, all WC bets are counted.
+    """
+    wc = "(league_code = 'WC' OR league ILIKE '%world cup%')"
+    params = {}
+    date_clause = ""
+    if until:
+        date_clause = " AND COALESCE(match_date, match_time, created_at) < :until"
+        params["until"] = until
+
+    rows = (await db.execute(text(f"""
+        SELECT DISTINCT ON (match_id, bet_type)
+          match_id, home_team, away_team, bet_type,
+          COALESCE(predicted_odds, odds) AS odds,
+          confidence, is_correct,
+          actual_home_score, actual_away_score,
+          COALESCE(match_date, match_time, created_at) AS mdate
+        FROM predictions
+        WHERE {wc} AND is_correct IS NOT NULL{date_clause}
+        ORDER BY match_id, bet_type, verified_at DESC NULLS LAST
+    """), params)).all()
+
+    total = len(rows)
+    correct = sum(1 for r in rows if r.is_correct)
+    accuracy = round(correct / total * 100, 1) if total else 0
+
+    pending = (await db.execute(text(
+        f"SELECT COUNT(DISTINCT (match_id, bet_type)) FROM predictions "
+        f"WHERE {wc} AND is_correct IS NULL{date_clause}"
+    ), params)).scalar() or 0
+
+    bt = {}
+    for r in rows:
+        b = bt.setdefault(r.bet_type or "—", {"total": 0, "correct": 0})
+        b["total"] += 1
+        if r.is_correct:
+            b["correct"] += 1
+    by_bet_type = sorted(
+        [
+            {"bet_type": k, "total": v["total"], "correct": v["correct"],
+             "accuracy": round(v["correct"] / v["total"] * 100, 1) if v["total"] else 0}
+            for k, v in bt.items()
+        ],
+        key=lambda x: -x["total"],
+    )
+
+    bets = [
+        {
+            "match": f"{r.home_team} vs {r.away_team}",
+            "bet_type": r.bet_type,
+            "odds": round(r.odds, 2) if r.odds else None,
+            "confidence": round(r.confidence) if r.confidence else None,
+            "is_correct": r.is_correct,
+            "score": (f"{r.actual_home_score}-{r.actual_away_score}"
+                      if r.actual_home_score is not None and r.actual_away_score is not None else None),
+            "date": r.mdate.isoformat() if r.mdate else None,
+        }
+        for r in sorted(rows, key=lambda r: (r.mdate or datetime.min), reverse=True)
+    ]
+
+    won_odds = [r.odds for r in rows if r.is_correct and r.odds]
+    avg_winning_odds = round(sum(won_odds) / len(won_odds), 2) if won_odds else 0
+
+    return {
+        "total": total,
+        "correct": correct,
+        "wrong": total - correct,
+        "accuracy": accuracy,
+        "pending": pending,
+        "avg_winning_odds": avg_winning_odds,
+        "by_bet_type": by_bet_type,
+        "bets": bets,
+        "group_stage_until": until,
+    }
+
+
 @router.get("/predictions")
 async def get_predictions_stats(
     admin: dict = Depends(get_current_admin),
