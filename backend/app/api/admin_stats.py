@@ -3033,6 +3033,7 @@ async def get_postback_logs(
             "country": l.country,
             "premium_activated": l.premium_activated,
             "error": l.error,
+            "raw_params": l.raw_params,
             "created_at": l.created_at.isoformat() if l.created_at else None,
         }
         for l in rows
