@@ -790,12 +790,18 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
             </div>
 
             <div className="space-y-2">
-              <button
-                onClick={() => { setShowLimitModal(false); trackClick(user?.id, 'aichat_limit_unlock'); navigate('/promo'); }}
+              {/* Direct deposit link — straight to the bookmaker (sub_id_10=userId for
+                  premium unlock postback), skipping the 6-step /promo funnel. */}
+              <a
+                href={getTrackingLink(user?.id, 'aichat_limit_unlock', user?.funnel) || '/promo'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => { setShowLimitModal(false); trackClick(user?.id, 'aichat_limit_unlock'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+                style={{ textDecoration: 'none' }}
               >
                 {t('aiChat.depositAndUnlock')}
-              </button>
+              </a>
               <button
                 onClick={() => setShowLimitModal(false)}
                 className="w-full text-gray-500 text-sm py-2"
