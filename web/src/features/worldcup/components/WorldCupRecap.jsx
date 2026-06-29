@@ -12,12 +12,14 @@ const FAIL_PCT = (100 - parseFloat(ACCURACY)).toFixed(1); // 23.2
 
 // Winning bets — biggest odds first (these "entered" ✓)
 const WINNING = [
+  { match: 'Cabo Verde 1–1 Uruguai', bet: 'Empate (X)', odds: 4.20 },
   { match: 'Marrocos 2–2 Croácia', bet: 'Ambas marcam + Mais 2.5', odds: 3.40 },
+  { match: 'Países Baixos 3–2 Suécia', bet: 'Mais de 4.5 golos', odds: 3.30 },
   { match: 'Japão 1–1 Senegal', bet: 'Empate ao intervalo', odds: 2.95 },
+  { match: 'Coreia do Sul 2–2 Equador', bet: 'Ambas marcam', odds: 2.45 },
   { match: 'México 2–1 Polónia', bet: 'Mais de 2.5 golos', odds: 2.30 },
   { match: 'Brasil 3–0 Sérvia', bet: 'Brasil -1.5 handicap', odds: 2.15 },
   { match: 'Portugal 2–0 Gana', bet: 'Portugal vence + Menos 3.5', odds: 1.98 },
-  { match: 'Espanha 1–0 Uruguai', bet: 'Menos de 2.5 golos', odds: 1.90 },
 ];
 
 // Losing bets — shown for honesty (these "did not enter" ✗)
