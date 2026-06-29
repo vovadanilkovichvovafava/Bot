@@ -5,7 +5,7 @@ import { track } from '../../../shared/services/analytics';
 
 /* ────────────────────────────────────────────────────────────────────────
    Curated "прогрев" content — edit freely. Numbers + reviews are marketing,
-   not live data. RECORD should match ACCURACY (43/56 ≈ 76.8%).
+   not live data. Only the percentage is shown (ACCURACY / FAIL_PCT).
    ──────────────────────────────────────────────────────────────────────── */
 const ACCURACY = '76.8';
 const FAIL_PCT = (100 - parseFloat(ACCURACY)).toFixed(1); // 23.2
