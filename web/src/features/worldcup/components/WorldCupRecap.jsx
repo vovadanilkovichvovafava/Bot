@@ -24,7 +24,7 @@ const LOSING = [];
 const REVIEWS = [
   { name: 'João M.', stars: 5, text: 'Nunca acreditei em apps de prognósticos, mas a IA acertou 4 dos meus 5 jogos na fase de grupos. Já levantei 340€.' },
   { name: 'Ricardo S.', stars: 5, text: 'A análise é super completa, mostra tudo. Logo na primeira aposta tive lucro — segui o palpite da IA no Argentina vs Argélia, Argentina com handicap -2.5 a 3.10, e entrou certinho!' },
-  { name: 'Tiago F.', stars: 5, text: 'O que mais gosto é que mostram também os jogos que falharam — dá muita confiança. Recomendo a toda a gente.' },
+  { name: 'Tiago F.', stars: 5, text: 'O que mais gosto é a quantidade de jogos e as estatísticas dos confrontos anteriores (com o PRO ativo). Uso no telemóvel como substituto do Flashscore.' },
   { name: 'Miguel A.', stars: 5, text: 'Melhor app de apostas que já usei. Os palpites de "mais de 2.5 golos" são incríveis. 5 estrelas!' },
   { name: 'André C.', stars: 4, text: 'Comecei com 50€ no Mundial e já vou em 280€. A IA é mesmo boa, principalmente nos golos.' },
 ];
