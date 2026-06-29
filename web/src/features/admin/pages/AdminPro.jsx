@@ -205,8 +205,12 @@ function OverviewTab({ data }) {
 function ProUsersTab({ users }) {
   const [sort, setSort] = useState('last_active');
   const [search, setSearch] = useState('');
+  const [noDepOnly, setNoDepOnly] = useState(false);
+
+  const noDepCount = (users || []).filter(u => u.no_deposit).length;
 
   const filtered = (users || []).filter(u => {
+    if (noDepOnly && !u.no_deposit) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (u.email || '').toLowerCase().includes(q) ||
@@ -251,6 +255,18 @@ function ProUsersTab({ users }) {
           <option value="days_remaining">Sort: Expiring Soon</option>
           <option value="accuracy">Sort: Accuracy</option>
         </select>
+        <button
+          type="button"
+          onClick={() => setNoDepOnly(v => !v)}
+          className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+            noDepOnly
+              ? 'bg-red-600/20 text-red-400 border-red-600/40'
+              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+          }`}
+          title="PRO без реального депозита — выдан за регистрацию (lead). Это те, кому нужно написать с кнопкой депозита."
+        >
+          ⚠ Без депозита ({noDepCount})
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -272,7 +288,14 @@ function ProUsersTab({ users }) {
             {sorted.map(u => (
               <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                 <td className="py-2 px-2">
-                  <div className="font-medium text-xs">{u.email || u.phone || u.public_id}</div>
+                  <div className="font-medium text-xs flex items-center gap-1.5">
+                    {u.email || u.phone || u.public_id}
+                    {u.no_deposit && (
+                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold whitespace-nowrap" title="PRO без депозита — выдан за регистрацию (lead)">
+                        НЕТ ДЕПА
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[10px] text-slate-500">{u.public_id}</div>
                 </td>
                 <td className="py-2 px-2 text-slate-400">{u.country || '-'}</td>

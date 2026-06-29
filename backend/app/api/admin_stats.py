@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends, Query, Body
-from sqlalchemy import select, func, case, and_, text
+from sqlalchemy import select, func, case, and_, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -2515,6 +2515,25 @@ async def get_pro_analytics(
             )).all()
             support_per_user = {r[0]: r[1] for r in sup_rows}
 
+        # Which PRO users actually have a real deposit postback (money), vs those
+        # who got PRO from a 'lead' (registration only) due to the postback bug.
+        deposited_ids = set()
+        if pro_user_ids:
+            dep_rows = (await db.execute(
+                select(func.distinct(PostbackLog.user_db_id)).where(
+                    and_(
+                        PostbackLog.user_db_id.in_(pro_user_ids),
+                        or_(
+                            func.lower(PostbackLog.event).in_(
+                                ['sale', 'deposit', 'first_deposit', 'ftd', 'confirmed', 'qualified']
+                            ),
+                            PostbackLog.amount > 0,
+                        ),
+                    )
+                )
+            )).scalars().all()
+            deposited_ids = {r for r in dep_rows if r is not None}
+
         pro_users_list = []
         for u in pro_rows:
             pro_start = (u.premium_until - timedelta(days=PRO_DURATION_DAYS)) if u.premium_until else u.created_at
@@ -2539,6 +2558,8 @@ async def get_pro_analytics(
                 "last_active_hours_ago": round(last_active_ago, 1),
                 "risk_level": u.risk_level,
                 "created_at": u.created_at.isoformat() if u.created_at else None,
+                # True = PRO but no real deposit postback (likely granted from a 'lead')
+                "no_deposit": u.id not in deposited_ids,
             })
 
         at_risk = [u for u in pro_users_list if 0 < u["days_remaining"] <= 7]
