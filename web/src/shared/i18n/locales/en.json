@@ -218,9 +218,9 @@
     "high": "High"
   },
   "auth": {
-    "benefit1": "5 free AI predictions to start",
-    "benefit2": "World Cup picks & live analysis",
-    "benefit3": "Real-time data from 900+ leagues",
+    "benefit1": "3 Free picks",
+    "benefit2": "AI Analysis",
+    "benefit3": "Free start",
     "socialProof": "18,000+ bettors already joined",
     "createAccount": "Create Account",
     "signUpSubtitle": "Sign up to get started",
@@ -281,9 +281,6 @@
     "registerSubheadline": "Join thousands of winning bettors",
     "registerCta": "Start winning now",
     "registerCtaSub": "3 free AI predictions · no card required",
-    "benefit1": "3 Free picks",
-    "benefit2": "AI Analysis",
-    "benefit3": "Free start",
     "toastFrom": "from",
     "toastAction": "just registered and got 3 free predictions",
     "toastJustNow": "now",
@@ -356,7 +353,8 @@
     "cantLogin": "I can't log in",
     "guestTitle": "Account Recovery",
     "resetPassword": "Reset my password",
-    "changePhone": "I changed my phone number"
+    "changePhone": "I changed my phone number",
+    "depositBtn": "Deposit & activate PRO"
   },
   "errors": {
     "somethingWrong": "Something went wrong",

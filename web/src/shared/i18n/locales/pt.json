@@ -218,9 +218,9 @@
     "high": "Alto"
   },
   "auth": {
-    "benefit1": "5 previsões de IA grátis para começar",
-    "benefit2": "Palpites da Copa do Mundo e análise ao vivo",
-    "benefit3": "Dados em tempo real de 900+ ligas",
+    "benefit1": "3 picks grátis",
+    "benefit2": "Análise IA",
+    "benefit3": "Início grátis",
     "socialProof": "Mais de 18.000 apostadores já se juntaram",
     "createAccount": "Criar Conta",
     "signUpSubtitle": "Cadastre-se para começar",
@@ -281,9 +281,6 @@
     "registerSubheadline": "Junte-se a milhares de apostadores vencedores",
     "registerCta": "Comece a ganhar agora",
     "registerCtaSub": "3 previsões IA grátis · sem cartão",
-    "benefit1": "3 picks grátis",
-    "benefit2": "Análise IA",
-    "benefit3": "Início grátis",
     "toastFrom": "de",
     "toastAction": "se cadastrou e recebeu 3 previsões grátis",
     "toastJustNow": "agora",
@@ -356,7 +353,8 @@
     "cantLogin": "Não consigo entrar",
     "guestTitle": "Recuperação de conta",
     "resetPassword": "Redefinir senha",
-    "changePhone": "Mudei meu número de telefone"
+    "changePhone": "Mudei meu número de telefone",
+    "depositBtn": "Depositar e ativar PRO"
   },
   "errors": {
     "somethingWrong": "Algo deu errado",

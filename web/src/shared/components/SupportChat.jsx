@@ -6,6 +6,11 @@ import { useAuth } from '../../features/auth/context/AuthContext';
 import api from '../api';
 import useKeyboardHeight from '../hooks/useKeyboardHeight';
 import { useBottomNav } from '../context/BottomNavContext';
+import { getTrackingLink } from '../../features/betting/services/trackingService';
+
+// Admin can drop {deposit} into a support reply → renders a direct deposit button
+// (straight to the bookmaker, sub_id_10=userId for the premium-unlock postback).
+const DEPOSIT_MARKER = /\{dep(?:osit)?\}/ig;
 
 // Agent names per locale (matches backend PERSONA_NAMES)
 const AGENT_NAMES = {
@@ -463,20 +468,39 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
               )}
 
               {/* Regular text message */}
-              {!msg.proCard && (
+              {!msg.proCard && (() => {
+                const showDepositBtn = msg.from !== 'user' && DEPOSIT_MARKER.test(msg.text || '');
+                const cleanText = (msg.text || '').replace(DEPOSIT_MARKER, '').replace(/\n{3,}/g, '\n\n').trim();
+                return (
                 <div className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     msg.from === 'user'
                       ? 'bg-primary-600 text-white rounded-br-md'
                       : 'bg-gray-100 text-gray-900 rounded-bl-md'
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    {cleanText && <p className="text-sm whitespace-pre-wrap">{cleanText}</p>}
+                    {showDepositBtn && user?.id && (
+                      <a
+                        href={getTrackingLink(user.id, 'support_admin_deposit', user.funnel) || '/promo'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => { try { trackClick(user.id, 'support_admin_deposit'); } catch {} }}
+                        className="mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        {t('support.depositBtn', { defaultValue: 'Depositar e ativar PRO' })}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                        </svg>
+                      </a>
+                    )}
                     <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
                       {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {/* Simple promo link under each manager response (not for PRO/funnel-2/guest) */}
               {!guest && !isPro && !isFunnel2 && msg.from === 'manager' && msg.id !== 1 && !msg.showAd && !msg.proCard && (
