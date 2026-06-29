@@ -11,6 +11,7 @@ import ProductTour from '../components/ProductTour';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
+import WorldCupRecap from '../../worldcup/components/WorldCupRecap';
 
 const FREE_AI_LIMIT = 5;
 const SMART_BET_CACHE_KEY = 'smart_bet_cache';
@@ -209,6 +210,9 @@ export default function Home() {
       <div className="px-4 pt-4 pb-6 space-y-5">
         {/* ===== Copa del Mundo countdown ===== */}
         <CopaMundoCard navigate={navigate} t={t} />
+
+        {/* ===== World Cup group-stage recap (social proof / прогрев) ===== */}
+        <WorldCupRecap />
 
         {/* ===== Bono / PRO EXCLUSIVE banner (free users) ===== */}
         {!unlocked && (
