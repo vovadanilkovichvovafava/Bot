@@ -11,23 +11,15 @@ const ACCURACY = '76.8';
 const FAIL_PCT = (100 - parseFloat(ACCURACY)).toFixed(1); // 23.2
 
 // Winning bets — biggest odds first (these "entered" ✓)
+// NOTE: only add REAL matches/results here — invented ones break credibility.
 const WINNING = [
-  { match: 'Cabo Verde 1–1 Uruguai', bet: 'Empate (X)', odds: 4.20 },
-  { match: 'Marrocos 2–2 Croácia', bet: 'Ambas marcam + Mais 2.5', odds: 3.40 },
-  { match: 'Países Baixos 3–2 Suécia', bet: 'Mais de 4.5 golos', odds: 3.30 },
-  { match: 'Japão 1–1 Senegal', bet: 'Empate ao intervalo', odds: 2.95 },
-  { match: 'Coreia do Sul 2–2 Equador', bet: 'Ambas marcam', odds: 2.45 },
-  { match: 'México 2–1 Polónia', bet: 'Mais de 2.5 golos', odds: 2.30 },
-  { match: 'Brasil 3–0 Sérvia', bet: 'Brasil -1.5 handicap', odds: 2.15 },
-  { match: 'Portugal 2–0 Gana', bet: 'Portugal vence + Menos 3.5', odds: 1.98 },
+  { match: 'Cabo Verde – Uruguai', bet: 'Empate (X)', odds: 4.20 },
+  { match: 'Países Baixos – Suécia', bet: 'Mais de 4.5 golos', odds: 3.30 },
 ];
 
-// Losing bets — shown for honesty (these "did not enter" ✗)
-const LOSING = [
-  { match: 'Inglaterra 0–0 Eslovénia', bet: 'Mais de 1.5 golos', odds: 1.45 },
-  { match: 'França 1–1 Dinamarca', bet: 'França vence', odds: 1.80 },
-  { match: 'Bélgica 0–1 Eslováquia', bet: 'Bélgica -1.5', odds: 2.20 },
-];
+// Losing bets — shown for honesty (these "did not enter" ✗).
+// Add REAL ones only; section is hidden while empty.
+const LOSING = [];
 
 const REVIEWS = [
   { name: 'João M.', stars: 5, text: 'Nunca acreditei em apps de prognósticos, mas a IA acertou 4 dos meus 5 jogos na fase de grupos. Já levantei 340€.' },
@@ -136,7 +128,8 @@ export default function WorldCupRecap() {
                 </div>
               </div>
 
-              {/* Losing bets — honesty */}
+              {/* Losing bets — honesty (hidden while empty) */}
+              {LOSING.length > 0 && (
               <div>
                 <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5 mb-1">
                   <span className="text-red-500">✗</span> Também falhámos algumas
@@ -154,6 +147,7 @@ export default function WorldCupRecap() {
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Reviews slider */}
               <div>
