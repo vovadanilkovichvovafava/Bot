@@ -15,7 +15,6 @@ export default function Register() {
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,6 @@ export default function Register() {
     if (!isValidPhone(phone, phoneCountry)) { setError(t('auth.errInvalidPhone')); return; }
     if (!password) { setError(t('auth.errEnterPassword')); return; }
     if (password.length < 6) { setError(t('auth.errPasswordLength')); return; }
-    if (confirm !== password) { setError(t('auth.errPasswordMismatch', { defaultValue: 'Passwords do not match' })); return; }
 
     setError('');
     setLoading(true);
@@ -84,7 +82,31 @@ export default function Register() {
 
         {/* Title */}
         <h1 className="text-2xl font-black text-white">{t('auth.createAccountTitle', { defaultValue: 'Create Account' })}</h1>
-        <p className="text-white/40 text-sm mt-1 mb-5">{t('auth.createAccountSub', { defaultValue: 'Join the elite community of professional analysts.' })}</p>
+        <p className="text-white/40 text-sm mt-1 mb-4">{t('auth.createAccountSub', { defaultValue: 'Join the elite community of professional analysts.' })}</p>
+
+        {/* Why register — give a cold visitor a concrete reason in 2 seconds */}
+        <div className="space-y-2 mb-3.5">
+          {[
+            t('auth.benefit1', { defaultValue: '5 free AI predictions to start' }),
+            t('auth.benefit2', { defaultValue: 'World Cup picks & live analysis' }),
+            t('auth.benefit3', { defaultValue: 'Real-time data from 900+ leagues' }),
+          ].map((b, i) => (
+            <div key={i} className="flex items-center gap-2.5 text-white/85 text-[13px]">
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+              </span>
+              {b}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 mb-5 text-white/45 text-xs">
+          <div className="flex -space-x-1.5">
+            {['LA', '3S', 'MP'].map((s, i) => (
+              <span key={i} className="w-5 h-5 rounded-full border border-[#0b1733] text-[8px] flex items-center justify-center font-bold text-white" style={{ background: ['#f87171', '#34d399', '#fbbf24'][i] }}>{s}</span>
+            ))}
+          </div>
+          {t('auth.socialProof', { defaultValue: '18,000+ bettors already joined' })}
+        </div>
 
         {error && (
           <div className="bg-red-500/15 text-red-300 text-sm p-3 rounded-xl mb-4 text-center flex items-center justify-center gap-2">
@@ -125,25 +147,6 @@ export default function Register() {
                 </svg>
               </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1.5">{t('auth.confirmLabel', { defaultValue: 'Confirm' })}</label>
-            <div className="relative">
-              {passwordIcon}
-              <input
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                placeholder={t('auth.passwordPlaceholder')}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                onFocus={onFormTouch}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              />
-            </div>
-            {confirm.length > 0 && confirm !== password && (
-              <p className="text-[11px] text-red-300/80 mt-1.5 px-1">{t('auth.errPasswordMismatch', { defaultValue: 'Passwords do not match' })}</p>
-            )}
           </div>
 
           <button

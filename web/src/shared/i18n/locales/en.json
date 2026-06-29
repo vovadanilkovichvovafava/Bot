@@ -218,6 +218,10 @@
     "high": "High"
   },
   "auth": {
+    "benefit1": "5 free AI predictions to start",
+    "benefit2": "World Cup picks & live analysis",
+    "benefit3": "Real-time data from 900+ leagues",
+    "socialProof": "18,000+ bettors already joined",
     "createAccount": "Create Account",
     "signUpSubtitle": "Sign up to get started",
     "signIn": "Sign In",
