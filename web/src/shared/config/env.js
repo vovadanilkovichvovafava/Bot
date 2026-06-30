@@ -11,6 +11,10 @@ export const ENV = {
   OFFER_URL:          rc.OFFER_URL          || import.meta.env.VITE_OFFER_URL          || 'https://siteofficialred.com/KnSQ1M',
   OFFER_URL_F2:       rc.OFFER_URL_F2       || import.meta.env.VITE_OFFER_URL_F2       || 'https://siteofficialred.com/724sSCYP',
   OFFER_URL_GOOGLE:   rc.OFFER_URL_GOOGLE   || import.meta.env.VITE_OFFER_URL_GOOGLE   || '',
+  // Geo-split offers by ?offer=/?geo= tag. Empty → fall back to OFFER_URL.
+  OFFER_URL_PT:       rc.OFFER_URL_PT       || import.meta.env.VITE_OFFER_URL_PT       || '',
+  OFFER_URL_ES:       rc.OFFER_URL_ES       || import.meta.env.VITE_OFFER_URL_ES       || '',
+  OFFER_URL_AR:       rc.OFFER_URL_AR       || import.meta.env.VITE_OFFER_URL_AR       || '',
   BKPROXY_URL:        rc.BKPROXY_URL        || import.meta.env.VITE_BKPROXY_URL        || 'https://bkproxy-production.up.railway.app',
   VAPID_PUBLIC_KEY:   rc.VAPID_PUBLIC_KEY   || import.meta.env.VITE_VAPID_PUBLIC_KEY   || '',
   BOOKMAKER_NAME:     rc.BOOKMAKER_NAME     || import.meta.env.VITE_BOOKMAKER_NAME     || 'Partner',

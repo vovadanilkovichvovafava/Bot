@@ -150,12 +150,29 @@ const OFFER_BASE_URL = ENV.OFFER_URL;
 const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 const OFFER_BASE_URL_GOOGLE = ENV.OFFER_URL_GOOGLE || '';
 
+// Гео-сплит оферов по тегу ?offer= (или ?geo=) во входящей партнёрской ссылке.
+// pt/br → OFFER_URL_PT, es → OFFER_URL_ES, ar → OFFER_URL_AR.
+// Тег сохраняется в sessionStorage (App.jsx persistTrackingParams) → переживает регистрацию.
+// Если нужный гео-офер не задан в env — откат на дефолтный OFFER_URL.
+function getGeoOfferUrl() {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const region = (p.get('offer') || p.get('geo')
+      || sessionStorage.getItem('tracking_offer') || sessionStorage.getItem('tracking_geo') || '').toLowerCase();
+    const map = { pt: ENV.OFFER_URL_PT, br: ENV.OFFER_URL_PT, es: ENV.OFFER_URL_ES, ar: ENV.OFFER_URL_AR };
+    return (region && map[region]) ? map[region] : '';
+  } catch { return ''; }
+}
+
 export function getTrackingLink(userId, banner = '', funnel = '') {
-  // Определяем base URL: Google offer > Funnel-2 offer > Default offer
+  // Базовый URL: Гео-офер (?offer=) > Google offer > Funnel-2 offer > Default offer
   const utmSource = new URLSearchParams(window.location.search).get('utm_source')
     || sessionStorage.getItem('tracking_utm_source') || '';
   const isGoogle = OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google';
-  const baseUrl = isGoogle
+  const geoOffer = getGeoOfferUrl();
+  const baseUrl = geoOffer
+    ? geoOffer
+    : isGoogle
     ? OFFER_BASE_URL_GOOGLE
     : (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
   if (!userId) return null;
