@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -183,6 +184,7 @@ CORS_ORIGINS = [
     "https://www.prescore.vip",
     "https://sportscoreai.com",
     "https://www.sportscoreai.com",
+    "https://bot-kwojmg.saturn.ac",   # Saturn deploy (frontend)
     "https://pwa-production-20b5.up.railway.app",
     "https://pwa-2-production.up.railway.app",
     "https://appbot-production-152e.up.railway.app",
@@ -199,9 +201,14 @@ _extra_origins = os.getenv("EXTRA_CORS_ORIGINS", "")
 if _extra_origins:
     CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
 
+# Regex covers this project's Saturn deploy URLs (subdomain can change on redeploy),
+# e.g. https://bot-kwojmg.saturn.ac, plus Railway preview URLs.
+CORS_ORIGIN_REGEX = r"https://(bot-[a-z0-9-]+\.saturn\.ac|[a-z0-9-]+\.up\.railway\.app)"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -214,7 +221,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {exc}")
     origin = request.headers.get("origin", "")
     headers = {}
-    if origin in CORS_ORIGINS:
+    if origin and (origin in CORS_ORIGINS or re.match(CORS_ORIGIN_REGEX, origin)):
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse(
