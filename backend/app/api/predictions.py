@@ -30,17 +30,17 @@ BET_NAMES = {
 
 # Degressive limits for funnel-1: day_number -> max_requests
 DEGRESSIVE_LIMITS = {
-    1: 5,  # First day of usage: 5 free requests
-    2: 5,  # Second day: 5 free requests
-    3: 5,  # Third day+: 5 free requests per day
+    1: 3,  # First day of usage: 3 free requests
+    2: 3,  # Second day: 3 free requests
+    3: 3,  # Third day+: 3 free requests per day
 }
 
 # Fixed daily limit for funnel-3
 FUNNEL3_DAILY_LIMIT = 7
 
-# funnel-1 (default): lifetime free limit — 5 free AI requests TOTAL (no daily
+# funnel-1 (default): lifetime free limit — 3 free AI requests TOTAL (no daily
 # reset). Once used up, only the PRO upgrade unlocks unlimited.
-FREE_LIFETIME_LIMIT = 5
+FREE_LIFETIME_LIMIT = 3
 
 
 def get_daily_limit(day_number: int, funnel: str = "funnel-1") -> int:
