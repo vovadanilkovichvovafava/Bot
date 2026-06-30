@@ -126,20 +126,6 @@ export default function YourStats() {
         </div>
 
         <div className="px-5 mt-4 space-y-4 pb-8">
-          {/* Rewards entry */}
-          <button
-            onClick={() => navigate('/rewards')}
-            className="w-full text-left rounded-2xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
-            style={{ background: 'linear-gradient(135deg, #14532D 0%, #1B5E3B 100%)' }}
-          >
-            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-2xl">⭐</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-emerald-300 text-[10px] font-black uppercase tracking-wide">{t('rewards.title', { defaultValue: 'Rewards' })}</p>
-              <p className="text-white font-bold text-[15px] leading-tight">{t('rewards.banner', { defaultValue: 'Turn correct picks into PRO & prizes' })}</p>
-            </div>
-            <svg className="w-5 h-5 text-white/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-          </button>
-
           {s.total === 0 ? (
             <div className="card text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

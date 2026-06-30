@@ -77,19 +77,9 @@ export const adminApi = {
   getRecentRegistrations: () => request('/stats/users/recent-registrations'),
   getRetentionStats: () => request('/stats/retention'),
   getPredictionsStats: () => request('/stats/predictions'),
-  getWcPredictionStats: (until) => request(`/stats/predictions/world-cup${until ? `?until=${encodeURIComponent(until)}` : ''}`),
   getMLStats: () => request('/stats/ml'),
   triggerTraining: () => request('/stats/ml/train', { method: 'POST' }),
   getSupportStats: () => request('/stats/support'),
-
-  // Postback logs
-  getPostbackLogs: (q = '', source, event, page = 1) => {
-    const params = new URLSearchParams({ page })
-    if (q) params.set('q', q)
-    if (source) params.set('source', source)
-    if (event) params.set('event', event)
-    return request(`/stats/postback-logs?${params}`)
-  },
 
   // Chats
   getSupportSessions: (limit = 30, offset = 0, q = '', locale = '') =>
@@ -127,16 +117,9 @@ export const adminApi = {
 
   // PRO Analytics
   getProAnalytics: () => request('/stats/pro'),
-  revokeNoDepositPro: (dryRun = true, message) =>
-    request('/stats/pro/revoke-no-deposit', {
-      method: 'POST',
-      body: JSON.stringify({ dry_run: dryRun, ...(message ? { message } : {}) }),
-    }),
 
   // Traffic Sources
   getTrafficStats: () => request('/stats/traffic'),
-  getRecentVisits: (limit = 50, offset = 0) => request(`/stats/recent-visits?limit=${limit}&offset=${offset}`),
-  getSessionReplay: (sessionId) => request(`/stats/replay/${sessionId}`),
 
   // A/B Funnels
   getFunnelStats: () => request('/stats/users/funnel-stats'),

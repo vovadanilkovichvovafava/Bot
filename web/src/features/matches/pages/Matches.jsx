@@ -2,340 +2,829 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import footballApi from '../api/footballApi';
+import MatchCard from '../components/MatchCard';
+import fonbetApi from '../../../services/fonbetApi';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { useAuth } from '../../auth/context/AuthContext';
-import { getFavouriteTeams, toggleFavouriteTeam } from '../services/favouritesStore';
+import {
+  getFavouriteTeams,
+  getFavouriteLeagues,
+  toggleFavouriteTeam,
+  isTeamFavourite,
+} from '../services/favouritesStore';
+import { addTrackingToUrl, getTrackingLink } from '../../betting/services/trackingService';
 
-const POPULAR_LEAGUE_IDS = [1, 2, 3, 39, 140, 78, 135, 61, 848, 88, 94];
+// Popular league IDs for API-Football
+const POPULAR_LEAGUE_IDS = [
+  1,    // World Cup
+  39,   // Premier League
+  140,  // La Liga
+  78,   // Bundesliga
+  135,  // Serie A
+  61,   // Ligue 1
+  2,    // Champions League
+  3,    // Europa League
+  848,  // Conference League
+  88,   // Eredivisie
+  94,   // Primeira Liga
+];
 
-const LIVE_ST = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
-const FIN_ST = ['FT', 'AET', 'PEN'];
-const UP_ST = ['NS', 'TBD'];
-
-const BETSLIP_KEY = 'bet_slip_data';
-
-function fmtDate(d) { return d.toISOString().split('T')[0]; }
-function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-
-// Deterministic synthetic odds per fixture
-function genOdds(seed) {
-  const r = (n) => { const x = Math.sin((seed || 1) * 9301 + n * 49297) * 233280; return x - Math.floor(x); };
-  return { home: (1.4 + r(1) * 2.4).toFixed(2), draw: (3.0 + r(2) * 2.2).toFixed(2), away: (1.8 + r(3) * 5).toFixed(2) };
-}
-
-function getBetslipCount() {
-  try { return (JSON.parse(localStorage.getItem(BETSLIP_KEY) || '{}').selections || []).length; } catch { return 0; }
-}
-function addToBetslip(fixture, pick, odd) {
-  try {
-    const raw = localStorage.getItem(BETSLIP_KEY);
-    const data = raw ? JSON.parse(raw) : { selections: [], stake: '', savedSlips: [] };
-    const event = `${fixture.teams.home.name} vs ${fixture.teams.away.name}`;
-    data.selections = [...(data.selections || []), { id: Date.now() + Math.random(), event, selection: pick, odds: parseFloat(odd) }];
-    localStorage.setItem(BETSLIP_KEY, JSON.stringify(data));
-    return data.selections.length;
-  } catch { return getBetslipCount(); }
-}
+// League info for display with logo URLs from API-Football
+const LEAGUES_INFO = {
+  national: [
+    { id: 1, code: 'WC', name: 'World Cup', country: 'International', logo: 'https://media.api-sports.io/football/leagues/1.png' },
+    { id: 5, code: 'UNL', name: 'UEFA Nations League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/5.png' },
+    { id: 10, code: 'FRI', name: 'Friendlies', country: 'International', logo: 'https://media.api-sports.io/football/leagues/10.png' },
+  ],
+  popular: [
+    { id: 39, code: 'PL', name: 'Premier League', country: 'England', logo: 'https://media.api-sports.io/football/leagues/39.png' },
+    { id: 140, code: 'PD', name: 'La Liga', country: 'Spain', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+    { id: 78, code: 'BL1', name: 'Bundesliga', country: 'Germany', logo: 'https://media.api-sports.io/football/leagues/78.png' },
+    { id: 135, code: 'SA', name: 'Serie A', country: 'Italy', logo: 'https://media.api-sports.io/football/leagues/135.png' },
+    { id: 61, code: 'FL1', name: 'Ligue 1', country: 'France', logo: 'https://media.api-sports.io/football/leagues/61.png' },
+  ],
+  euro: [
+    { id: 2, code: 'CL', name: 'Champions League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/2.png' },
+    { id: 3, code: 'EL', name: 'Europa League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/3.png' },
+    { id: 848, code: 'ECL', name: 'Conference League', country: 'Europe', logo: 'https://media.api-sports.io/football/leagues/848.png' },
+  ],
+  other: [
+    { id: 88, code: 'ERE', name: 'Eredivisie', country: 'Netherlands', logo: 'https://media.api-sports.io/football/leagues/88.png' },
+    { id: 94, code: 'PPL', name: 'Primeira Liga', country: 'Portugal', logo: 'https://media.api-sports.io/football/leagues/94.png' },
+    { id: 203, code: 'TUR', name: 'Süper Lig', country: 'Turkey', logo: 'https://media.api-sports.io/football/leagues/203.png' },
+    { id: 307, code: 'SAU', name: 'Saudi Pro League', country: 'Saudi Arabia', logo: 'https://media.api-sports.io/football/leagues/307.png' },
+    { id: 253, code: 'MLS', name: 'MLS', country: 'USA', logo: 'https://media.api-sports.io/football/leagues/253.png' },
+  ],
+};
 
 export default function Matches() {
+  const [tab, setTab] = useState('today');
+  const [todayFixtures, setTodayFixtures] = useState([]);
+  const [liveFixtures, setLiveFixtures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [liveLoading, setLiveLoading] = useState(true);
+  const [showAllLeagues, setShowAllLeagues] = useState(false);
+  const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
+  const [fonbetMap, setFonbetMap] = useState({}); // team1_team2 → fonbet event
+  const [favouriteTeamIds, setFavouriteTeamIds] = useState([]);
+  const [favouriteLeagueIds, setFavouriteLeagueIds] = useState([]);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const liveInterval = useRef(null);
   const { advertiser, trackClick } = useAdvertiser();
   const { user } = useAuth();
   const isFunnel2 = user?.funnel === 'funnel-2';
-  const isFunnel4 = user?.funnel === 'funnel-4';
-  const isPremium = user?.is_premium && !isFunnel2 && !isFunnel4;
-  const unlocked = isPremium || isFunnel2 || isFunnel4;
 
-  const [dateOffset, setDateOffset] = useState(0);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [fixtures, setFixtures] = useState([]);
-  const [oddsMap, setOddsMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [favIds, setFavIds] = useState([]);
-  const [cartCount, setCartCount] = useState(getBetslipCount());
-  const pollRef = useRef(null);
-
-  useEffect(() => { setFavIds(getFavouriteTeams().map((x) => x.id)); }, []);
+  // Load favourite IDs on mount
+  useEffect(() => {
+    const teams = getFavouriteTeams();
+    const leagues = getFavouriteLeagues();
+    setFavouriteTeamIds(teams.map(t => t.id));
+    setFavouriteLeagueIds(leagues.map(l => l.id));
+  }, []);
 
   useEffect(() => {
-    let alive = true;
-    const dateStr = fmtDate(addDays(new Date(), dateOffset));
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = dateOffset === 0
-          ? await footballApi.getTodayFixtures()
-          : await footballApi.getFixturesByDate(dateStr);
-        if (alive) setFixtures(data || []);
-      } catch (e) { console.error(e); }
-      finally { if (alive) setLoading(false); }
+    if (tab === 'today') loadTodayMatches();
+    if (tab === 'live') loadLive();
+
+    return () => {
+      if (liveInterval.current) clearInterval(liveInterval.current);
     };
-    load();
-    // Real 1X2 odds for the whole day (one cached backend batch). Falls back to synthetic.
-    footballApi.getOddsMapForDate(dateStr).then((m) => { if (alive) setOddsMap(m || {}); }).catch(() => {});
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (dateOffset === 0) pollRef.current = setInterval(load, 60000);
-    return () => { alive = false; if (pollRef.current) clearInterval(pollRef.current); };
-  }, [dateOffset]);
+  }, [tab]);
 
-  const matchStatus = (f) => {
-    const s = f.fixture?.status?.short;
-    if (LIVE_ST.includes(s)) return 'live';
-    if (FIN_ST.includes(s)) return 'finished';
-    return 'upcoming';
+  const loadTodayMatches = async () => {
+    setLoading(true);
+    try {
+      // Load from API-Football (with backend proxy caching)
+      const data = await footballApi.getTodayFixtures();
+      setTodayFixtures(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+
+    // Load Fonbet odds in background (never blocks, never crashes)
+    try {
+      const fbData = await fonbetApi.getTopLeaguesEvents('en');
+      if (fbData?.events) {
+        const map = {};
+        fbData.events.forEach(ev => {
+          const key = `${(ev.team1 || '').toLowerCase()}_${(ev.team2 || '').toLowerCase()}`;
+          map[key] = ev;
+        });
+        setFonbetMap(map);
+      }
+    } catch (_) { /* Fonbet unavailable — app works fine without it */ }
   };
 
-  const filtered = fixtures.filter((f) => {
-    if (!f?.teams?.home || !f?.teams?.away || !f?.league) return false;
-    if (statusFilter === 'all') return true;
-    return matchStatus(f) === statusFilter;
-  });
+  const loadLive = async () => {
+    setLiveLoading(true);
+    try {
+      const data = await footballApi.getLiveFixtures();
+      setLiveFixtures(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLiveLoading(false);
+    }
 
-  // Group by league, popular first
-  const byLeague = {};
-  filtered.forEach((f) => {
-    const id = f.league.id;
-    if (!byLeague[id]) byLeague[id] = { league: f.league, fixtures: [] };
-    byLeague[id].fixtures.push(f);
-  });
-  const leagueGroups = Object.values(byLeague).sort((a, b) => {
-    const ai = POPULAR_LEAGUE_IDS.indexOf(a.league.id);
-    const bi = POPULAR_LEAGUE_IDS.indexOf(b.league.id);
-    const ar = ai === -1 ? 999 : ai;
-    const br = bi === -1 ? 999 : bi;
-    if (ar !== br) return ar - br;
-    return (a.league.name || '').localeCompare(b.league.name || '');
-  });
-
-  const liveCount = fixtures.filter((f) => matchStatus(f) === 'live').length;
-
-  const onStar = (f) => {
-    toggleFavouriteTeam({ id: f.teams.home.id, name: f.teams.home.name, logo: f.teams.home.logo });
-    setFavIds(getFavouriteTeams().map((x) => x.id));
-  };
-  const onAddOdds = (f, pick, odd) => {
-    setCartCount(addToBetslip(f, pick, odd));
+    if (liveInterval.current) clearInterval(liveInterval.current);
+    liveInterval.current = setInterval(async () => {
+      try {
+        const data = await footballApi.getLiveFixtures();
+        setLiveFixtures(data || []);
+      } catch (_) {}
+    }, 60000); // Update every 60 seconds instead of 30
   };
 
-  // 7-day strip: today + next 6
-  const days = [0, 1, 2, 3, 4, 5, 6];
-  const filters = [
-    { key: 'all', label: t('matches.filterAll', { defaultValue: 'All' }) },
-    { key: 'live', label: t('matches.live', { defaultValue: 'Live' }), live: true, count: liveCount },
-    { key: 'upcoming', label: t('matches.filterUpcoming', { defaultValue: 'Upcoming' }) },
-    { key: 'finished', label: t('matches.filterFinished', { defaultValue: 'Finished' }) },
+  // Check if league is popular
+  const isPopularLeague = (leagueId) => POPULAR_LEAGUE_IDS.includes(leagueId);
+
+  // Check if match involves favourite teams or leagues
+  const isFavouriteMatch = (fixture) => {
+    const homeId = fixture.teams?.home?.id;
+    const awayId = fixture.teams?.away?.id;
+    const leagueId = fixture.league?.id;
+    return (
+      favouriteTeamIds.includes(homeId) ||
+      favouriteTeamIds.includes(awayId) ||
+      favouriteLeagueIds.includes(leagueId)
+    );
+  };
+
+  // Group fixtures by popular/other
+  const groupFixtures = (fixtures, filterFavourites = false) => {
+    let filtered = fixtures;
+    if (filterFavourites) {
+      filtered = fixtures.filter(isFavouriteMatch);
+    }
+
+    const popular = [];
+    const other = [];
+
+    filtered.forEach(f => {
+      if (isPopularLeague(f.league.id)) {
+        popular.push(f);
+      } else {
+        other.push(f);
+      }
+    });
+
+    // Group by league within each category
+    const groupByLeague = (items) => {
+      return items.reduce((acc, f) => {
+        const key = f.league.id;
+        if (!acc[key]) acc[key] = { league: f.league, fixtures: [] };
+        acc[key].fixtures.push(f);
+        return acc;
+      }, {});
+    };
+
+    return {
+      popular: groupByLeague(popular),
+      other: groupByLeague(other),
+      popularCount: popular.length,
+      otherCount: other.length,
+      totalFiltered: filtered.length,
+    };
+  };
+
+  const todayGrouped = groupFixtures(todayFixtures, showFavouritesOnly);
+  const liveGrouped = groupFixtures(liveFixtures, showFavouritesOnly);
+  const hasFavourites = favouriteTeamIds.length > 0 || favouriteLeagueIds.length > 0;
+
+  const tabs = [
+    { key: 'today', label: t('matches.today'), count: todayFixtures.length },
+    { key: 'live', label: t('matches.live'), count: liveFixtures.length, isLive: true },
+    { key: 'leagues', label: t('matches.leagues') },
   ];
 
   return (
-    <div className="bg-[#F0F2F5] min-h-screen pb-24">
+    <div className="pb-4">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4" style={{ background: 'linear-gradient(135deg, #1B2138 0%, #232a45 100%)' }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/settings')} className="w-10 h-10 rounded-full bg-white/15 ring-2 ring-white/10 flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-base">{(user?.username || 'U')[0].toUpperCase()}</span>
-          </button>
-          <h1 className="flex-1 text-white text-xl font-black tracking-wide">STATSPRO</h1>
-          <button onClick={() => navigate(unlocked ? '/settings' : '/pro-access')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5 shrink-0">
-            <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
-            </span>
-            <span className="text-emerald-400 font-bold text-sm">{unlocked ? '∞' : 'PRO'} {unlocked ? t('home.pts', { defaultValue: 'pts' }) : ''}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Date strip */}
-      <div className="bg-white px-3 pt-3 pb-2 border-b border-gray-100">
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          {days.map((offset) => {
-            const d = addDays(new Date(), offset);
-            const active = dateOffset === offset;
-            const needsPro = !unlocked && offset !== 0;
-            const wd = d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase().slice(0, 3);
-            return (
-              <button
-                key={offset}
-                onClick={() => { if (needsPro) { navigate('/pro-access?reason=upgrade&feature=matches-dates'); return; } setDateOffset(offset); }}
-                className={`shrink-0 w-12 py-2 rounded-xl flex flex-col items-center transition-colors relative ${active ? 'bg-[#1B2138] text-white' : 'text-gray-500'}`}
-              >
-                <span className={`text-[10px] font-semibold ${active ? 'text-white/60' : 'text-gray-400'}`}>{wd}</span>
-                <span className="text-base font-black leading-tight">{d.getDate()}</span>
-                {active && <span className="w-1 h-1 bg-emerald-400 rounded-full mt-0.5" />}
-                {needsPro && <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full" />}
-              </button>
-            );
-          })}
-          <div className="shrink-0 w-10 flex items-center justify-center text-gray-300">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
-          </div>
-        </div>
-
-        {/* Filter chips */}
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-none pb-1">
-          {filters.map((fl) => {
-            const active = statusFilter === fl.key;
-            return (
-              <button
-                key={fl.key}
-                onClick={() => setStatusFilter(fl.key)}
-                className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-bold transition-colors ${
-                  active ? 'bg-[#1B2138] text-white' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {fl.live && <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-rose-400' : 'bg-rose-500'} ${fl.count ? 'animate-pulse' : ''}`} />}
-                {fl.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="px-4 pt-4 space-y-5">
-        {/* Partner banner */}
-        <div onClick={() => { trackClick(user?.id, 'matches_partner_banner'); navigate('/promo?banner=matches_partner_banner'); }} className="flex items-center gap-3 rounded-2xl p-3.5 cursor-pointer" style={{ background: 'linear-gradient(135deg, #14532D, #1B5E3B)' }}>
-          <span className="text-xl">🎁</span>
-          <p className="flex-1 min-w-0 text-white text-xs font-semibold">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser?.name })}</p>
-          <span className="text-emerald-300 text-xs font-bold shrink-0">{t('matches.getIt')} →</span>
-        </div>
-
-        {loading ? (
-          <LoadingSkeleton />
-        ) : leagueGroups.length === 0 ? (
-          <EmptyState title={t('matches.noMatchesToday')} subtitle={t('matches.checkBackLater')} />
-        ) : (
-          leagueGroups.map((g) => (
-            <LeagueGroup
-              key={g.league.id}
-              league={g.league}
-              fixtures={g.fixtures}
-              navigate={navigate}
-              t={t}
-              favIds={favIds}
-              onStar={onStar}
-              onAddOdds={onAddOdds}
-              matchStatus={matchStatus}
-              oddsMap={oddsMap}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Floating betslip cart */}
-      <button
-        onClick={() => navigate('/bet-slip-builder')}
-        className="fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-emerald-600 shadow-lg shadow-emerald-600/40 flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-[#F0F2F5]">{cartCount}</span>
-        )}
-      </button>
-    </div>
-  );
-}
-
-function LeagueGroup({ league, fixtures, navigate, t, favIds, onStar, onAddOdds, matchStatus, oddsMap }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 mb-3">
-        {league.logo && <img src={league.logo} alt="" className="w-5 h-5 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />}
-        <h3 className="text-base font-black text-[#1B2138]">{league.name}</h3>
-        <svg className={`w-4 h-4 text-gray-400 ml-auto transition-transform ${open ? '' : '-rotate-90'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-      </button>
-      {open && (
-        <div className="space-y-3">
-          {fixtures.map((f) => (
-            <MatchCardNew key={f.fixture.id} fixture={f} st={matchStatus(f)} navigate={navigate} t={t} fav={favIds.includes(f.teams.home.id)} onStar={onStar} onAddOdds={onAddOdds} realOdds={oddsMap[f.fixture.id]} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TeamCol({ team }) {
-  return (
-    <div className="flex flex-col items-center gap-2 w-20">
-      <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
-        {team?.logo ? <img src={team.logo} alt="" className="w-9 h-9 object-contain" onError={(e) => { e.target.style.display = 'none'; }} /> : <span className="text-gray-400 font-bold">{team?.name?.[0]}</span>}
-      </div>
-      <span className="text-[12px] font-bold text-gray-900 text-center leading-tight truncate w-full">{team?.name}</span>
-    </div>
-  );
-}
-
-function MatchCardNew({ fixture, st, navigate, t, fav, onStar, onAddOdds, realOdds }) {
-  const f = fixture;
-  const elapsed = f.fixture?.status?.elapsed;
-  const short = f.fixture?.status?.short;
-  const gh = f.goals?.home ?? 0;
-  const ga = f.goals?.away ?? 0;
-  const ht = f.score?.halftime;
-  let time = '--:--';
-  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch {}
-  const odds = (realOdds && realOdds.home) ? realOdds : genOdds(f.fixture.id);
-  const goTo = () => navigate(st === 'live' ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`);
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Top row */}
-      <div className="flex items-center justify-between px-4 pt-3">
-        {st === 'live' ? (
-          <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-600 text-[11px] font-black px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-            {short === 'HT' ? 'HT' : elapsed ? `${elapsed}'` : 'LIVE'}
-          </span>
-        ) : st === 'finished' ? (
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">{t('matches.filterFinished', { defaultValue: 'Finished' })}</span>
-        ) : (
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">{time}</span>
-        )}
-        <button onClick={(e) => { e.stopPropagation(); onStar(f); }} className="p-1 -mr-1">
-          <svg className={`w-5 h-5 ${fav ? 'text-amber-400' : 'text-gray-300'}`} fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.5a.56.56 0 011.04 0l2.12 5.11a.56.56 0 00.48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 00-.18.56l1.28 5.38a.56.56 0 01-.84.61l-4.72-2.88a.56.56 0 00-.59 0l-4.72 2.88a.56.56 0 01-.84-.61l1.28-5.38a.56.56 0 00-.18-.56l-4.2-3.6a.56.56 0 01.32-.99l5.52-.44a.56.56 0 00.48-.35L11.48 3.5z" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Teams + score */}
-      <div onClick={goTo} className="flex items-center justify-between px-4 py-2 cursor-pointer">
-        <TeamCol team={f.teams.home} />
-        <div className="flex flex-col items-center px-2">
-          {st === 'upcoming' ? (
-            <span className="text-sm font-bold text-gray-300">VS</span>
-          ) : (
-            <>
-              <span className="text-[26px] font-black text-[#1B2138] leading-none">{gh} - {ga}</span>
-              <span className="text-[10px] text-gray-400 mt-1">
-                {st === 'finished' ? 'FT' : ht && ht.home != null ? `HT: ${ht.home}-${ht.away}` : ''}
-              </span>
-            </>
-          )}
-        </div>
-        <TeamCol team={f.teams.away} />
-      </div>
-
-      {/* Odds (not for finished) */}
-      {st !== 'finished' && (
-        <div className="flex gap-2 px-4 pb-3 pt-1">
-          {[
-            { k: '1', v: odds.home },
-            { k: 'X', v: odds.draw },
-            { k: '2', v: odds.away },
-          ].map((o) => (
+      <div className="bg-white px-5 pt-6 pb-0 sticky top-0 z-10">
+        <h1 className="text-xl font-bold text-center mb-4">{t('matches.title')}</h1>
+        <div className="flex border-b border-gray-100">
+          {tabs.map(t => (
             <button
-              key={o.k}
-              onClick={(e) => { e.stopPropagation(); onAddOdds(f, o.k, o.v); }}
-              className="flex-1 bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-xl py-2 text-center transition-colors active:scale-95"
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-3 text-sm font-medium relative flex items-center justify-center gap-1.5 ${
+                tab === t.key ? 'text-primary-600' : 'text-gray-400'
+              }`}
             >
-              <span className="text-[10px] text-gray-400 font-semibold block">{o.k}</span>
-              <span className="text-sm font-bold text-primary-600 block">{o.v}</span>
+              {t.label}
+              {t.count > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                  t.isLive ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {t.count}
+                </span>
+              )}
+              {tab === t.key && (
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-primary-600 rounded-full"/>
+              )}
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="px-5 pt-4">
+        {/* Partner Banner — bigger for funnel-2 */}
+        {isFunnel2 ? (
+          <div
+            onClick={() => { trackClick(user?.id, 'matches_bonus_banner'); navigate('/promo'); }}
+            className="rounded-xl overflow-hidden mb-4 cursor-pointer shadow-lg"
+            style={{ background: 'linear-gradient(160deg, #0F2744 0%, #1B3A5C 40%, #2B5A8C 100%)' }}
+          >
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #F7C948, #E8A317)' }}>
+                  <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#F7C948' }}>{t('advertiser.freeBetLabel')}</p>
+                  <p className="text-white text-sm font-bold">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur border border-white/20 rounded-lg px-3 py-2">
+                  <p className="text-lg font-black" style={{ color: '#F7C948' }}>{advertiser?.bonusBanner?.bonus}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-3 mt-3 text-[10px] text-white/40 font-medium">
+                <span>🔒 {t('aiChat.trustSafe')}</span>
+                <span>✓ {t('aiChat.trustLicensed')}</span>
+                <span>⭐ 4.9/5</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => navigate('/promo?banner=matches_partner_banner')}
+            className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 mb-4 cursor-pointer"
+          >
+            <span className="text-lg">🎯</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-medium">{t('matches.bonusAt', { bonus: advertiser?.bonusBanner?.bonus || '', name: advertiser.name })}</p>
+            </div>
+            <span className="text-slate-400 text-xs">{t('matches.getIt')} →</span>
+          </div>
+        )}
+
+        {/* TODAY TAB */}
+        {tab === 'today' && (
+          <>
+            {loading ? (
+              <LoadingSkeleton />
+            ) : todayFixtures.length === 0 ? (
+              <EmptyState title={t('matches.noMatchesToday')} subtitle={t('matches.checkBackLater')}/>
+            ) : (
+              <>
+                {/* Filter toggle */}
+                <FilterToggle
+                  showAll={showAllLeagues}
+                  setShowAll={setShowAllLeagues}
+                  popularCount={todayGrouped.popularCount}
+                  otherCount={todayGrouped.otherCount}
+                  showFavouritesOnly={showFavouritesOnly}
+                  setShowFavouritesOnly={setShowFavouritesOnly}
+                  hasFavourites={hasFavourites}
+                  navigate={navigate}
+                />
+
+                {/* Empty state for favourites filter */}
+                {showFavouritesOnly && todayGrouped.totalFiltered === 0 && (
+                  <div className="text-center py-8 bg-amber-50 rounded-xl border border-amber-100">
+                    <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+                    </svg>
+                    <p className="text-amber-700 font-medium">{t('matches.noFavouritesToday')}</p>
+                    <button onClick={() => setShowFavouritesOnly(false)} className="text-amber-600 text-sm underline mt-2">
+                      {t('matches.showAllMatches')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Popular leagues */}
+                {Object.keys(todayGrouped.popular).length > 0 && (
+                  <LeagueSection
+                    leagues={todayGrouped.popular}
+                    navigate={navigate}
+                    isLive={false}
+                    isPopular={true}
+                    fonbetMap={fonbetMap}
+                    userId={user?.id}
+                  />
+                )}
+
+                {/* Inline ad banner between league sections */}
+                <MatchesAdBanner
+                  advertiser={advertiser}
+                  trackClick={trackClick}
+                  userId={user?.id}
+                  navigate={navigate}
+                  t={t}
+                />
+
+                {/* Other leagues */}
+                {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
+                  <LeagueSection
+                    leagues={todayGrouped.other}
+                    navigate={navigate}
+                    isLive={false}
+                    isPopular={false}
+                    collapsed
+                    fonbetMap={fonbetMap}
+                    userId={user?.id}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* LIVE TAB */}
+        {tab === 'live' && (
+          <>
+            {liveLoading ? (
+              <LoadingSkeleton />
+            ) : liveFixtures.length === 0 ? (
+              <EmptyState title={t('matches.noLiveMatches')} subtitle={t('matches.noMatchesNow')}/>
+            ) : (
+              <>
+                {/* Live indicator */}
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-4">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
+                  {t('matches.updatesEvery60')}
+                </div>
+
+                {/* Filter toggle */}
+                <FilterToggle
+                  showAll={showAllLeagues}
+                  setShowAll={setShowAllLeagues}
+                  popularCount={liveGrouped.popularCount}
+                  otherCount={liveGrouped.otherCount}
+                  showFavouritesOnly={showFavouritesOnly}
+                  setShowFavouritesOnly={setShowFavouritesOnly}
+                  hasFavourites={hasFavourites}
+                  navigate={navigate}
+                />
+
+                {/* Empty state for favourites filter */}
+                {showFavouritesOnly && liveGrouped.totalFiltered === 0 && (
+                  <div className="text-center py-8 bg-amber-50 rounded-xl border border-amber-100">
+                    <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+                    </svg>
+                    <p className="text-amber-700 font-medium">{t('matches.noFavouritesLive')}</p>
+                    <button onClick={() => setShowFavouritesOnly(false)} className="text-amber-600 text-sm underline mt-2">
+                      {t('matches.showAllLive')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Popular leagues */}
+                {Object.keys(liveGrouped.popular).length > 0 && (
+                  <LeagueSection
+                    leagues={liveGrouped.popular}
+                    navigate={navigate}
+                    isLive={true}
+                    isPopular={true}
+                  />
+                )}
+
+                {/* Inline ad banner between league sections */}
+                <MatchesAdBanner
+                  advertiser={advertiser}
+                  trackClick={trackClick}
+                  userId={user?.id}
+                  navigate={navigate}
+                  t={t}
+                  isLive
+                />
+
+                {/* Other leagues */}
+                {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
+                  <LeagueSection
+                    leagues={liveGrouped.other}
+                    navigate={navigate}
+                    isLive={true}
+                    isPopular={false}
+                    collapsed
+                  />
+                )}
+
+                {/* No popular leagues live */}
+                {Object.keys(liveGrouped.popular).length === 0 && !showAllLeagues && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm mb-3">{t('matches.noTopLeagueMatches')}</p>
+                    <button
+                      onClick={() => setShowAllLeagues(true)}
+                      className="text-primary-600 text-sm font-medium"
+                    >
+                      {t('matches.showAllCount', { count: liveGrouped.otherCount })} →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* LEAGUES TAB */}
+        {tab === 'leagues' && (
+          <div className="space-y-6">
+            {/* National teams */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                🌍 {t('matches.nationalTeams')}
+              </h3>
+              <div className="space-y-2">
+                {LEAGUES_INFO.national.map(league => (
+                  <LeagueCard key={league.id} league={league} navigate={navigate}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Popular */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                ⭐ {t('matches.top5Leagues')}
+              </h3>
+              <div className="space-y-2">
+                {LEAGUES_INFO.popular.map(league => (
+                  <LeagueCard key={league.id} league={league} navigate={navigate}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Euro */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                🏆 {t('matches.europeanCups')}
+              </h3>
+              <div className="space-y-2">
+                {LEAGUES_INFO.euro.map(league => (
+                  <LeagueCard key={league.id} league={league} navigate={navigate}/>
+                ))}
+              </div>
+            </div>
+
+            {/* Other popular */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                🌍 {t('matches.otherPopular')}
+              </h3>
+              <div className="space-y-2">
+                {LEAGUES_INFO.other.map(league => (
+                  <LeagueCard key={league.id} league={league} navigate={navigate}/>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FilterToggle({ showAll, setShowAll, popularCount, otherCount, showFavouritesOnly, setShowFavouritesOnly, hasFavourites, navigate }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2 mb-4 flex-wrap">
+      {hasFavourites && (
+        <button
+          onClick={() => setShowFavouritesOnly(!showFavouritesOnly)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
+            showFavouritesOnly
+              ? 'bg-amber-500 text-white'
+              : 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+          </svg>
+          {t('matches.favourites')}
+        </button>
       )}
+      {!hasFavourites && (
+        <button
+          onClick={() => navigate('/favourites')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 flex items-center gap-1"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+          </svg>
+          {t('matches.addFavourites')}
+        </button>
+      )}
+      <button
+        onClick={() => { setShowAll(false); setShowFavouritesOnly(false); }}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          !showAll && !showFavouritesOnly
+            ? 'bg-primary-600 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        {t('matches.topLeagues')} ({popularCount})
+      </button>
+      <button
+        onClick={() => { setShowAll(true); setShowFavouritesOnly(false); }}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          showAll && !showFavouritesOnly
+            ? 'bg-primary-600 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        {t('matches.all')} ({popularCount + otherCount})
+      </button>
+    </div>
+  );
+}
+
+function MatchesAdBanner({ advertiser, trackClick, userId, navigate, t, isLive }) {
+  return (
+    <div className="my-4">
+      {/* Express banner */}
+      <div
+        onClick={() => navigate('/express')}
+        className="rounded-xl overflow-hidden cursor-pointer shadow-md"
+        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)' }}
+      >
+        <div className="p-3.5 flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm">
+              {t('matches.aiExpressBanner', { defaultValue: 'AI Express — 3 ready accumulators' })}
+            </p>
+            <p className="text-white/60 text-[11px]">
+              {t('matches.expressSubtitle', { defaultValue: 'Safe, Value & Big express from top leagues' })}
+            </p>
+          </div>
+          <svg className="w-5 h-5 text-white/50 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Bonus mini-banner */}
+      <div
+        onClick={() => { trackClick(userId, isLive ? 'matches_live_inline_bonus' : 'matches_inline_bonus'); navigate('/promo'); }}
+        className="mt-2 rounded-xl bg-slate-800 p-3 cursor-pointer flex items-center gap-3"
+      >
+        <span className="text-lg">🎁</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-xs font-bold">
+            {t('matches.inlineBonusText', { bonus: advertiser?.bonusBanner?.bonus || '€100', defaultValue: `Free bet ${advertiser?.bonusBanner?.bonus || '€100'} — bet on any match` })}
+          </p>
+        </div>
+        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full shrink-0">
+          {advertiser?.bonusBanner?.bonus || '€100'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular, fonbetMap, userId }) {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(!collapsed);
+  const leagueList = Object.values(leagues);
+
+  if (leagueList.length === 0) return null;
+
+  const matchCount = leagueList.reduce((acc, l) => acc + l.fixtures.length, 0);
+
+  return (
+    <div className={`mb-6 rounded-2xl overflow-hidden ${isPopular ? 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200' : 'bg-gray-50 border border-gray-200'}`}>
+      {/* Section Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`flex items-center justify-between w-full px-4 py-3 ${isPopular ? 'bg-gradient-to-r from-amber-100 to-orange-100' : 'bg-gray-100'}`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
+          <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
+            {isPopular ? t('matches.topLeagues') : t('matches.otherLeagues')}
+          </h3>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
+            {matchCount} {t('matches.matchesCount')}
+          </span>
+        </div>
+        <svg
+          className={`w-5 h-5 transition-transform ${isPopular ? 'text-amber-600' : 'text-gray-500'} ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className="p-4 space-y-4">
+          {leagueList.map(({ league, fixtures }) => (
+            <div key={league.id}>
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200/50">
+                <img src={league.logo} alt="" className="w-5 h-5 object-contain"/>
+                <span className="text-sm font-semibold text-gray-700">{league.name}</span>
+                <span className="text-[10px] text-gray-400 ml-auto">{league.country}</span>
+              </div>
+              <div className="rounded-xl overflow-hidden">
+                {fixtures.map(f => (
+                  isLive ? (
+                    <LiveMatchCard
+                      key={f.fixture.id}
+                      fixture={f}
+                      onClick={() => navigate(`/live/${f.fixture.id}`)}
+                    />
+                  ) : (
+                    <FixtureCard
+                      key={f.fixture.id}
+                      fixture={f}
+                      onClick={() => navigate(`/match/${f.fixture.id}`)}
+                      fonbetMap={fonbetMap}
+                      userId={userId}
+                    />
+                  )
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FixtureCard({ fixture, onClick, fonbetMap, userId }) {
+  const navigate = useNavigate();
+  const f = fixture;
+  const date = new Date(f.fixture.date);
+  const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const status = f.fixture.status.short;
+
+  // Try to find Fonbet odds for this fixture (safe — never crashes)
+  let fbOdds = null;
+  let fbDeeplink = null;
+  try {
+    if (fonbetMap && f.teams?.home?.name && f.teams?.away?.name) {
+      const key = `${f.teams.home.name.toLowerCase()}_${f.teams.away.name.toLowerCase()}`;
+      const fbEvent = fonbetMap[key];
+      if (fbEvent?.odds?.['1']) {
+        fbOdds = fbEvent.odds;
+        fbDeeplink = fbEvent.deeplink;
+      }
+    }
+  } catch (_) { /* safe fallback */ }
+
+  return (
+    <div
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+      onClick={onClick}
+    >
+      <div className="flex items-center py-3 px-3">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
+          </div>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
+          </div>
+        </div>
+
+        {/* Fonbet odds 1/X/2 — only if available */}
+        {fbOdds && status === 'NS' && (
+          <div className="flex gap-1 mr-2 flex-shrink-0">
+            {[
+              { label: '1', val: fbOdds['1'] },
+              { label: 'X', val: fbOdds['X'] },
+              { label: '2', val: fbOdds['2'] },
+            ].map(o => o.val ? (
+              <div
+                key={o.label}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (fbDeeplink) navigate('/promo');
+                }}
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded px-1.5 py-1 text-center cursor-pointer transition-colors min-w-[36px]"
+              >
+                <span className="text-[9px] text-blue-400 font-medium block leading-tight">{o.label}</span>
+                <span className="text-[11px] text-blue-700 font-bold block leading-tight">{o.val}</span>
+              </div>
+            ) : null)}
+          </div>
+        )}
+
+        {/* Time/Score column */}
+        <div className="flex-shrink-0 text-right ml-3">
+          {status === 'NS' ? (
+            <span className="text-sm text-gray-500">{time}</span>
+          ) : status === 'FT' ? (
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-bold text-gray-900">{f.goals.home}</span>
+              <span className="text-sm font-bold text-gray-900">{f.goals.away}</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">FT</span>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-500">{status}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveMatchCard({ fixture, onClick }) {
+  const f = fixture;
+  const elapsed = f.fixture.status.elapsed;
+  const statusShort = f.fixture.status.short;
+  const minuteDisplay = statusShort === 'HT' ? 'HT' : elapsed ? `${elapsed}'` : statusShort;
+
+  return (
+    <div
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 border-l-2 border-l-red-500"
+      onClick={onClick}
+    >
+      <div className="flex items-center py-3 px-3">
+        {/* Teams column */}
+        <div className="flex-1 min-w-0">
+          {/* Home team */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <img
+              src={f.teams.home.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.home.name}</span>
+          </div>
+          {/* Away team */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={f.teams.away.logo}
+              alt=""
+              className="w-5 h-5 object-contain flex-shrink-0"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <span className="text-sm text-gray-900 truncate">{f.teams.away.name}</span>
+          </div>
+        </div>
+
+        {/* Score column */}
+        <div className="flex flex-col items-end mr-3">
+          <span className="text-sm font-bold text-gray-900">{f.goals.home ?? 0}</span>
+          <span className="text-sm font-bold text-gray-900">{f.goals.away ?? 0}</span>
+        </div>
+
+        {/* Live indicator */}
+        <div className="flex-shrink-0">
+          <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center gap-1">
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"/>
+            {minuteDisplay}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeagueCard({ league, navigate }) {
+  return (
+    <div
+      onClick={() => navigate(`/league/${league.code}`)}
+      className="bg-white rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
+    >
+      <img
+        src={league.logo}
+        alt={league.name}
+        className="w-8 h-8 object-contain"
+        onError={(e) => { e.target.style.display = 'none'; }}
+      />
+      <div className="flex-1">
+        <p className="font-semibold text-gray-900">{league.name}</p>
+        <p className="text-xs text-gray-500">{league.country}</p>
+      </div>
+      <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+      </svg>
     </div>
   );
 }
@@ -343,9 +832,9 @@ function MatchCardNew({ fixture, st, navigate, t, fav, onStar, onAddOdds, realOd
 function LoadingSkeleton() {
   return (
     <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100">
-          <div className="h-20 w-full rounded-lg bg-gray-100 animate-pulse" />
+      {[1,2,3,4].map(i => (
+        <div key={i} className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="shimmer h-12 w-full rounded-lg"/>
         </div>
       ))}
     </div>
@@ -356,7 +845,9 @@ function EmptyState({ title, subtitle }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+        <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+        </svg>
       </div>
       <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
       <p className="text-gray-500 text-sm">{subtitle}</p>

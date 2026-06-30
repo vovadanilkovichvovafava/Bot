@@ -6,7 +6,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import api from '../../../shared/api';
 import { enrichMessage } from '../services/chatEnrichment';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import useKeyboardHeight from '../../../shared/hooks/useKeyboardHeight';
 import { useBottomNav } from '../../../shared/context/BottomNavContext';
@@ -126,8 +126,8 @@ export default function AIChat() {
       return;
     }
     api.getChatLimit()
-      .then(data => setRemaining(data.remaining ?? data.limit ?? 5))
-      .catch(() => setRemaining(5)); // Fallback to 5 on error
+      .then(data => setRemaining(data.remaining ?? data.limit ?? 3))
+      .catch(() => setRemaining(3)); // Fallback to 3 on error
   }, [isPremium, isFunnel2]);
 
   // Load cached chat history from localStorage
@@ -193,17 +193,7 @@ export default function AIChat() {
       medium: 'Balanced - standard 1X2, over/under, BTTS. 2-5% stakes.',
       high: 'Aggressive - value picks, accumulators, correct scores. 5-10% stakes.'
     };
-    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this odds range.
-
-OUTPUT FORMAT: recommend 2-3 bets from DIFFERENT markets, one per line, in this EXACT format (each bet on a SINGLE line — no line breaks inside a bet):
-[BET] <Bet Type> @ <Odds> | <analysis>
-
-The <analysis> after "|" MUST be a rich 5-7 sentence breakdown written like a sharp professional football analyst — packed with concrete numbers and proper terminology so the user trusts the pick. Weave in: recent form (last 5-6 results as W-D-L), head-to-head record, expected goals (xG / xGA), goals scored & conceded per game, shots on target, possession %, big-chance creation / set-piece threat, home-vs-away splits, key injuries or suspensions, the tactical matchup, and why the price offers value versus its implied probability. Be confident and specific with figures. Use the real data provided above where available and stay consistent with it.
-
-Example:
-[BET] Over 2.5 Goals @ 1.85 | Both sides are firing in attack — the hosts average 2.1 goals per game with a division-high 6.8 shots on target at home, and the combined xG for this fixture profiles around 2.9. The visitors have conceded 1.7 per away match and kept just one clean sheet in their last 11 on the road, looking especially fragile from set-pieces. Form agrees: 4 of the hosts' last 5 cleared Over 2.5, as did all four head-to-head meetings, with both teams scoring in each. The hosts dominate possession (58%) but defend with a high line that concedes space in transition — exactly the open profile that breeds goals. With neither manager wired to shut up shop, the goals market is the standout read. At 1.85 (implied 54%) there's clear value against a model closer to 62%.
-
-All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minimal intro, no fluff before the list.]`;
+    return `\n\n[USER BETTING PREFERENCES: Odds range ${minOdds}-${maxOdds}, Risk: ${riskLevel.toUpperCase()} (${riskDesc[riskLevel]}). Only recommend bets within this range. IMPORTANT: If you recommend bets, end with a FINAL RECOMMENDATIONS section with 2-3 bets from different markets. Each line: [BET] Bet Type @ Odds. Example:\n**FINAL RECOMMENDATIONS**\n1. [BET] Over 2.5 Goals @ 1.85\n2. [BET] Home Win @ 2.10\n3. [BET] Both Teams to Score @ 1.75\nAll odds must be between ${minOdds} and ${maxOdds}.]`;
   };
 
   // Parse bets from AI response (multiple [BET] tags)
@@ -212,20 +202,20 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
     const bets = [];
     const seen = new Set();
 
-    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85 | reason
-    const betTagRe = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
+    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85
+    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
     let m;
     while ((m = betTagRe.exec(content)) !== null) {
       const key = m[1].trim().toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
-        bets.push({ type: m[1].trim(), odds: parseFloat(m[2]), reason: (m[3] || '').trim() });
+        bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) });
       }
     }
 
-    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85 | reason"
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85" or "1. **Over 2.5 Goals** @ 1.85"
     if (bets.length === 0) {
-      const numberedRe = /^\s*\d+[.)]\s*\**\s*([^\n@–—|]+?)\**\s*[@–—-]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
       while ((m = numberedRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
@@ -233,15 +223,15 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
           const key = type.toLowerCase();
           if (!seen.has(key)) {
             seen.add(key);
-            bets.push({ type, odds, reason: (m[3] || '').trim() });
+            bets.push({ type, odds });
           }
         }
       }
     }
 
-    // 3) Fallback: "Bet Type @ odds | reason" anywhere in text
+    // 3) Fallback: "Bet Type @ odds" or "Bet Type — odds" anywhere in text
     if (bets.length === 0) {
-      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**([^\n@–—|]+?)\**\s*[@–—]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
       while ((m = fallbackRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
         const odds = parseFloat(m[2]);
@@ -249,7 +239,7 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
           const key = type.toLowerCase();
           if (!seen.has(key)) {
             seen.add(key);
-            bets.push({ type, odds, reason: (m[3] || '').trim() });
+            bets.push({ type, odds });
           }
         }
       }
@@ -338,25 +328,18 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
         }
       }
 
-      // The backend returns AI-service failures as a normal 200 with an error
-      // string (e.g. "AI service error: Invalid request"). Detect those so we
-      // don't treat them as a real pick or persist them — otherwise a transient
-      // failure (e.g. credits ran out) sticks in the 2h chat cache and keeps
-      // showing even after the AI recovers.
-      const isAiError = /^(AI service|AI authentication|AI assistant is not available|Sorry, AI)/i.test((data.response || '').trim());
-
       const newMessages = [...messages, userMsg, {
         id: Date.now() + 1,
         role: 'assistant',
         content: data.response,
         hasData: !!matchContext,
-        showAd: !isAiError,
+        showAd: true,
         bet: firstBet,
         bets: parsedBets,
         fonbetDeeplink,
       }];
       setMessages(newMessages);
-      if (!isAiError) saveChatHistory(newMessages);
+      saveChatHistory(newMessages);
     } catch (e) {
       console.error('AI Chat error:', e);
       // Safely extract error message
@@ -379,18 +362,6 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
     } finally {
       setLoading(false);
       setEnriching(false);
-    }
-  };
-
-  // Shortest path to the offer: when the pick carries a direct bookmaker deeplink,
-  // open it in one tap (with tracking) instead of routing through the multi-step
-  // promo funnel. No deeplink → fall back to the promo page.
-  const goToOffer = (deeplink, banner) => {
-    if (trackClick) trackClick(user?.id, banner);
-    if (deeplink && isAllowedDeeplink(deeplink) && user?.id) {
-      window.open(addTrackingToUrl(deeplink, user.id, banner), '_blank', 'noopener,noreferrer');
-    } else {
-      navigate(deeplink ? `/promo?fonbet_deeplink=${encodeURIComponent(deeplink)}` : '/promo');
     }
   };
 
@@ -463,22 +434,42 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 text-primary-600 font-medium">{t('aiChat.aiAnalysis')}</span>
                   </div>
                 )}
-                {!(msg.role === 'assistant' && msg.bets?.length > 0) && (
-                  <MessageContent content={msg.content} isUser={msg.role === 'user'} />
-                )}
+                <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
-                {/* Bets-first: clean picks with a per-bet Analysis toggle */}
+                {/* Best bets list — clean white card style */}
                 {msg.bets?.length > 0 && msg.role === 'assistant' && (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mb-2.5">
-                      <span>🔥</span>{t('aiChat.aiPicks', { defaultValue: 'AI Picks' })}
-                    </p>
-                    <BetList
-                      bets={msg.bets}
-                      fallback={stripBets(msg.content)}
-                      t={t}
-                      onPlace={(bet) => goToOffer(bet?.fonbetDeeplink, 'aichat_bet_card')}
-                    />
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="rounded-xl border border-gray-100 overflow-hidden">
+                      {/* Header */}
+                      <div className="px-3 pt-3 pb-2">
+                        <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                          <span>🔥</span>
+                          {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
+                        </p>
+                      </div>
+                      {/* Bet rows */}
+                      <div className="px-3 pb-3 space-y-2">
+                        {msg.bets.slice(0, 3).map((bet, idx) => {
+                          const conf = bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26);
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => { trackClick(user?.id, 'aichat_bet_card'); navigate('/promo'); }}
+                              className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                                </div>
+                              </div>
+                              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -500,7 +491,7 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
             {msg.showAd && (
               canUseDeeplink ? (
                 <div
-                  onClick={() => goToOffer(msg.fonbetDeeplink, 'aichat_ad_place_bet')}
+                  onClick={() => { trackClick(user?.id, 'aichat_ad_place_bet'); navigate('/promo'); }}
                   className="mt-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3">
@@ -539,10 +530,7 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
                     {/* Dynamic text with match info */}
                     {(() => {
                       const userMsg = messages[messages.indexOf(msg) - 1];
-                      // matchName is the user's previous chat message — untrusted.
-                      // It is interpolated into HTML below (i18next escapeValue is off),
-                      // so it MUST be escaped to prevent stored XSS.
-                      const matchName = escapeHtml(userMsg?.content?.slice(0, 40) || '');
+                      const matchName = userMsg?.content?.slice(0, 40) || '';
                       const confidence = msg.bets?.[0] ? 70 + ((msg.bets[0].type || '').length * 7 + Math.round(msg.bets[0].odds * 13)) % 26 : 78;
                       return (
                         <p
@@ -790,18 +778,12 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
             </div>
 
             <div className="space-y-2">
-              {/* Direct deposit link — straight to the bookmaker (sub_id_10=userId for
-                  premium unlock postback), skipping the 6-step /promo funnel. */}
-              <a
-                href={getTrackingLink(user?.id, 'aichat_limit_unlock', user?.funnel) || '/promo'}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => { setShowLimitModal(false); trackClick(user?.id, 'aichat_limit_unlock'); }}
+              <button
+                onClick={() => { setShowLimitModal(false); trackClick(user?.id, 'aichat_limit_unlock'); navigate('/promo'); }}
                 className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
-                style={{ textDecoration: 'none' }}
               >
                 {t('aiChat.depositAndUnlock')}
-              </a>
+              </button>
               <button
                 onClick={() => setShowLimitModal(false)}
                 className="w-full text-gray-500 text-sm py-2"
@@ -812,75 +794,6 @@ All odds must be between ${minOdds} and ${maxOdds}. Lead with the bets — minim
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/**
- * Strip [BET] lines and the FINAL RECOMMENDATIONS header — used as fallback analysis text.
- */
-function stripBets(content) {
-  return (content || '')
-    .replace(/\[BET\][^\n]*/gi, '')
-    .replace(/\*\*?FINAL RECOMMENDATIONS\*\*?/gi, '')
-    .replace(/FINAL RECOMMENDATIONS/gi, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-/**
- * Bets-first list: each pick shows odds + confidence, with an "Analysis" button
- * that expands the explanation of why the AI recommends this bet.
- */
-function BetList({ bets, fallback, t, onPlace }) {
-  const [openIdx, setOpenIdx] = useState(null);
-  return (
-    <div className="space-y-2.5">
-      {bets.slice(0, 4).map((bet, idx) => {
-        const conf = bet.confidence || (70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26);
-        const analysis = bet.reason || fallback;
-        const isOpen = openIdx === idx;
-        return (
-          <div key={idx} className="rounded-xl border border-gray-100 overflow-hidden bg-white">
-            <div className="flex items-center justify-between px-3 py-2.5">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                </div>
-              </div>
-              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-            </div>
-
-            <div className="flex gap-2 px-3 pb-3">
-              <button
-                onClick={() => setOpenIdx(isOpen ? null : idx)}
-                className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 rounded-lg py-2 transition-colors"
-              >
-                {t('aiChat.analysis', { defaultValue: 'Analysis' })}
-                <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </button>
-              <button
-                onClick={() => onPlace(bet)}
-                className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2 transition-colors"
-              >
-                {t('aiChat.placeBet', { defaultValue: 'Place bet' })}
-              </button>
-            </div>
-
-            {isOpen && analysis && (
-              <div className="px-3 pb-3 -mt-0.5">
-                <div className="bg-gray-50 rounded-lg p-3 text-[13px] text-gray-700 leading-relaxed border-l-2 border-primary-500 whitespace-pre-line">
-                  {analysis}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }

@@ -827,18 +827,6 @@ export async function enrichMessage(message) {
  * Detect if the message is asking about a specific match.
  * Handles both "Team A vs Team B" and "матч Команда1 Команда2" patterns.
  */
-// Reduce a noisy captured side ("quien gana en el partido francia") to the known
-// team it contains ("francia"); else just strip noise words. The non-greedy "vs"
-// pattern can swallow the whole prefix into the home side, so this rescues it.
-function reduceToKnownTeam(name) {
-  const lower = (name || '').toLowerCase();
-  let best = null;
-  for (const team of KNOWN_TEAMS) {
-    if (team.length > 2 && lower.includes(team) && (!best || team.length > best.length)) best = team;
-  }
-  return best || cleanTeamName(name);
-}
-
 function detectMatchQuery(lower, original) {
   // 1. Try explicit "vs" / "—" patterns first
   for (const pattern of MATCH_PATTERNS_VS) {
@@ -847,7 +835,7 @@ function detectMatchQuery(lower, original) {
       const home = (match[1] || '').trim();
       const away = (match[2] || '').trim();
       if (home.length > 1 && away.length > 1) {
-        return { home: reduceToKnownTeam(home), away: reduceToKnownTeam(away) };
+        return { home: cleanTeamName(home), away: cleanTeamName(away) };
       }
     }
   }
@@ -1129,12 +1117,12 @@ async function enrichMatchQuery(homeTeam, awayTeam) {
     if (fbMatch?.odds) {
       const fo = fbMatch.odds;
       parts.push('');
-      parts.push('--- Partner Real Odds (live bookmaker) ---');
+      parts.push('--- Fonbet Real Odds (live bookmaker) ---');
       if (fo['1']) parts.push(`Match Winner: 1=${fo['1']}, X=${fo['X']}, 2=${fo['2']}`);
       if (fo['over_2.5']) parts.push(`Total: Over 2.5=${fo['over_2.5']}, Under 2.5=${fo['under_2.5']}`);
       if (fo['btts_yes']) parts.push(`BTTS: Yes=${fo['btts_yes']}, No=${fo['btts_no']}`);
       if (fo['1X']) parts.push(`Double Chance: 1X=${fo['1X']}, 12=${fo['12']}, X2=${fo['X2']}`);
-      if (fbMatch.deeplink) parts.push(`Partner link: ${fbMatch.deeplink}`);
+      if (fbMatch.deeplink) parts.push(`Fonbet link: ${fbMatch.deeplink}`);
       fonbetDeeplink = fbMatch.deeplink || null;
     }
   } catch (_) { /* Fonbet unavailable — no problem, AI works without it */ }
@@ -1209,23 +1197,10 @@ async function enrichDayOverview(day) {
     const fixtures = await footballApi.getFixturesByDate(date);
     if (!fixtures?.length) return `No fixtures found for ${day} (${date}).`;
 
-    // World Cup takes absolute priority: while the tournament is running, the AI
-    // should give picks ONLY on World Cup matches.
-    const WC_LEAGUE_ID = 1;
-    const wcFixtures = fixtures.filter(f => f.league.id === WC_LEAGUE_ID);
-
-    // Group by league, limit to top leagues (WC included as top priority)
-    const topLeagueIds = new Set([WC_LEAGUE_ID, 39, 140, 78, 135, 61, 2, 3, 88, 94, 40, 71, 253]);
-    let useFixtures;
-    let wcMode = false;
-    if (wcFixtures.length > 0) {
-      // World Cup is on today → focus exclusively on it
-      useFixtures = wcFixtures;
-      wcMode = true;
-    } else {
-      const topFixtures = fixtures.filter(f => topLeagueIds.has(f.league.id));
-      useFixtures = topFixtures.length > 0 ? topFixtures : fixtures.slice(0, 30);
-    }
+    // Group by league, limit to top leagues
+    const topLeagueIds = new Set([39, 140, 78, 135, 61, 2, 3, 88, 94, 40, 71, 253]);
+    const topFixtures = fixtures.filter(f => topLeagueIds.has(f.league.id));
+    const useFixtures = topFixtures.length > 0 ? topFixtures : fixtures.slice(0, 30);
 
     const byLeague = {};
     for (const f of useFixtures) {
@@ -1235,10 +1210,7 @@ async function enrichDayOverview(day) {
     }
 
     const parts = [`Football fixtures for ${day} (${date}):`];
-    if (wcMode) {
-      parts.push(`The FIFA World Cup is in progress. Give betting picks ONLY for these World Cup matches — ignore all other competitions.`);
-    }
-    parts.push(`Total: ${fixtures.length} matches${wcMode ? ` (${useFixtures.length} World Cup matches)` : ' (showing top leagues)'}`);
+    parts.push(`Total: ${fixtures.length} matches (showing top leagues)`);
     parts.push('');
 
     for (const [league, matches] of Object.entries(byLeague)) {
