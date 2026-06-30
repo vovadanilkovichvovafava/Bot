@@ -1326,7 +1326,16 @@
       "teams": "Nenhum time encontrado",
       "leagues": "Nenhuma liga encontrada"
     },
-    "popularLeagues": "Ligas populares:"
+    "popularLeagues": "Ligas populares:",
+    "myFavourites": "Os Meus Favoritos",
+    "subtitle": "Acompanha os teus jogos, equipas e ligas de elite.",
+    "tabMatches": "JOGOS",
+    "tabLeagues": "LIGAS",
+    "liveUpcoming": "AO VIVO E PRÓXIMOS",
+    "finished": "TERMINADOS",
+    "todayAt": "HOJE",
+    "noMatchesTitle": "Sem jogos favoritos hoje",
+    "noMatchesDesc": "Adiciona equipas ou ligas para veres os jogos aqui."
   },
   "kelly": {
     "title": "Calculadora Kelly",
@@ -1808,5 +1817,19 @@
     "qualifies": "Avança",
     "knockoutLocked": "Quadro eliminatório",
     "knockoutLockedDesc": "Desbloqueia após a fase de grupos. Primeiro palpita os grupos — depois escolhe quem levanta o troféu. 🏆"
+  },
+  "wcTeam": {
+    "recentForm": "FORMA RECENTE",
+    "worldRanking": "RANKING MUNDIAL",
+    "teamStats": "ESTATÍSTICAS DA EQUIPA",
+    "avgGoals": "Média de Golos",
+    "possession": "Posse de Bola",
+    "shotsPerGame": "Remates/Jogo",
+    "playerRoster": "PLANTEL",
+    "nextMatch": "PRÓXIMO JOGO",
+    "matchDate": "DOM 14 JULHO",
+    "opponent": "A DEFINIR",
+    "betOnMatch": "APOSTAR NESTE JOGO",
+    "position": "1.º LUGAR"
   }
 }

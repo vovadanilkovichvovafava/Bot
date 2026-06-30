@@ -8,6 +8,7 @@ const COUNTRIES = [
   { code: 'IT', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}', mask: '(___) ___-____', digits: 10, minDigits: 9 },
   { code: 'ES', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
   { code: 'PT', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
+  { code: 'BR', dial: '+55', flag: '\u{1F1E7}\u{1F1F7}', mask: '(__) _____-____', digits: 11, minDigits: 10 },
   { code: 'AR', dial: '+54', flag: '\u{1F1E6}\u{1F1F7}', mask: '(__) ____-____', digits: 10, minDigits: 10 },
   { code: 'MX', dial: '+52', flag: '\u{1F1F2}\u{1F1FD}', mask: '(___) ___-____', digits: 10, minDigits: 10 },
   { code: 'FR', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}', mask: '(_ __) __-__-__', digits: 9, minDigits: 9 },

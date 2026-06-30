@@ -219,9 +219,6 @@ export default function BookmakerPromo() {
           <div className="q-ctable">
             <div className="q-chead"><Clock />{t('promo.s1TableHead')}</div>
             <div className="q-crow"><div className="q-cname top">{t('promo.s1OurPartner')}</div><div className="q-bwrap"><div className="q-bar top" style={{ width: '95%' }}>{ex.ourOdds} <span className="q-btag">TOP</span></div></div></div>
-            <div className="q-crow"><div className="q-cname">Bet365</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '82%' }}>{ex.bet365Odds}</div></div></div>
-            <div className="q-crow"><div className="q-cname">Unibet</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '74%' }}>{ex.unibetOdds}</div></div></div>
-            <div className="q-crow"><div className="q-cname">William Hill</div><div className="q-bwrap"><div className="q-bar other" style={{ width: '86%' }}>{ex.williamHillOdds}</div></div></div>
           </div>
           <div className="q-callout gold"><strong>{t('promo.s1CalloutBold')}</strong> {t('promo.s1Callout')}</div>
           <div className="q-bet-ex">
@@ -230,8 +227,6 @@ export default function BookmakerPromo() {
               {t('promo.s1BetExample')}
             </div>
             <div className="q-bet-row"><div className="q-bet-name top">{t('promo.s1OurPartner')} ({ex.ourOdds})</div><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><div className="q-bet-gain top">{ex.ourProfit}</div><div className="q-bet-diff">{ex.profitDiff}</div></div></div>
-            <div className="q-bet-row"><div className="q-bet-name">Bet365 ({ex.bet365Odds})</div><div className="q-bet-gain gray">{ex.bet365Profit}</div></div>
-            <div className="q-bet-row"><div className="q-bet-name">William Hill ({ex.williamHillOdds})</div><div className="q-bet-gain gray">{ex.williamHillProfit}</div></div>
           </div>
         </div>
         <div className="q-foot"><button className="q-btn blue" onClick={next}>{t('promo.s1Btn')}<ArrowRight /></button></div>
