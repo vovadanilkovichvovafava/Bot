@@ -2,7 +2,6 @@
 API-Football proxy endpoints with server-side caching.
 Frontend calls these endpoints instead of API-Football directly.
 """
-import asyncio
 import json
 import logging
 import time
@@ -14,6 +13,7 @@ import anthropic
 import os
 
 from app.services.api_football import api_football, get_cache_stats, clear_expired_cache
+from app.services.football_api import fetch_fixtures_fallback, fetch_live_fallback
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -23,22 +23,47 @@ logger = logging.getLogger(__name__)
 
 @router.get("/fixtures/date/{date}")
 async def get_fixtures_by_date(date: str) -> List[Dict]:
-    """Get all fixtures for a specific date (YYYY-MM-DD)."""
+    """Get all fixtures for a specific date (YYYY-MM-DD).
+    Falls back to Football-Data.org when API-Football returns empty (rate limit)."""
     try:
-        return await api_football.get_fixtures_by_date(date) or []
+        fixtures = await api_football.get_fixtures_by_date(date)
+        if fixtures:
+            return fixtures
+        # API-Football returned empty — try Football-Data.org fallback
+        logger.warning(f"API-Football empty for {date}, trying Football-Data.org fallback")
+        fallback = await fetch_fixtures_fallback(date)
+        if fallback:
+            return fallback
+        return fixtures  # return original empty list
     except Exception as e:
         logger.error(f"Error fetching fixtures for date {date}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch fixtures")
+        # Even on error, try fallback
+        try:
+            return await fetch_fixtures_fallback(date)
+        except Exception:
+            raise HTTPException(status_code=502, detail="Failed to fetch fixtures")
 
 
 @router.get("/fixtures/live")
 async def get_live_fixtures() -> List[Dict]:
-    """Get all currently live fixtures."""
+    """Get all currently live fixtures.
+    Falls back to Football-Data.org when API-Football returns empty (rate limit)."""
     try:
-        return await api_football.get_live_fixtures() or []
+        fixtures = await api_football.get_live_fixtures()
+        if fixtures:
+            return fixtures
+        # API-Football returned empty — try Football-Data.org fallback
+        logger.warning("API-Football live empty, trying Football-Data.org fallback")
+        fallback = await fetch_live_fallback()
+        if fallback:
+            return fallback
+        return fixtures
     except Exception as e:
         logger.error(f"Error fetching live fixtures: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch live fixtures")
+        try:
+            return await fetch_live_fallback()
+        except Exception:
+            raise HTTPException(status_code=502, detail="Failed to fetch live fixtures")
 
 
 @router.get("/fixtures/{fixture_id}")
@@ -61,16 +86,6 @@ async def get_league_fixtures(league_id: int, next_count: int = Query(20, ge=1, 
         raise HTTPException(status_code=502, detail="Failed to fetch league fixtures")
 
 
-@router.get("/fixtures/league/{league_id}/season/{season}")
-async def get_league_season_fixtures(league_id: int, season: int) -> List[Dict]:
-    """Get ALL fixtures for a league+season (group stage + knockouts). Used for tournament views like the World Cup."""
-    try:
-        return await api_football.get_league_season_fixtures(league_id, season)
-    except Exception as e:
-        logger.error(f"Error fetching all fixtures for league {league_id}, season {season}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch tournament fixtures")
-
-
 @router.get("/fixtures/team/{team_id}")
 async def get_fixtures_by_team(
     team_id: int,
@@ -83,16 +98,6 @@ async def get_fixtures_by_team(
     except Exception as e:
         logger.error(f"Error fetching fixtures for team {team_id}: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch team fixtures")
-
-
-@router.get("/teams/{team_id}/recent")
-async def get_team_recent(team_id: int, last: int = Query(10, ge=1, le=30)) -> List[Dict]:
-    """Get a team's most recent finished fixtures (for form / derived stats)."""
-    try:
-        return await api_football.get_team_recent(team_id, last)
-    except Exception as e:
-        logger.error(f"Error fetching recent fixtures for team {team_id}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch recent fixtures")
 
 
 @router.get("/fixtures/{fixture_id}/enriched")
@@ -137,122 +142,6 @@ async def get_fixture_lineups(fixture_id: int) -> List[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch lineups")
 
 
-# === Match-cast AI commentary ===
-
-_COMMENTARY_LANGS = {
-    "en": "English", "pt": "Portuguese", "es": "Spanish", "ru": "Russian",
-    "fr": "French", "it": "Italian", "de": "German", "pl": "Polish",
-}
-_commentary_cache: Dict[str, Dict] = {}  # key -> {"ts": float, "text": str}
-_COMMENTARY_TTL = 45  # seconds — repeated polls / many viewers reuse the same line
-
-
-def _fallback_commentary(last_event: Optional[Dict], home: str, away: str,
-                         gh: int, ga: int, minute: int) -> str:
-    """Templated commentary when the AI key is unavailable."""
-    if not last_event:
-        if (minute or 0) <= 0:
-            return f"Kickoff approaching — {home} vs {away}. Stay tuned for the action!"
-        return f"{home} {gh}-{ga} {away} · {minute}' — the game is underway."
-    ev_team = (last_event.get("team") or {}).get("name") or ""
-    player = (last_event.get("player") or {}).get("name") or "the player"
-    etype = (last_event.get("type") or "").lower()
-    detail = (last_event.get("detail") or "").lower()
-    minute = (last_event.get("time") or {}).get("elapsed") or minute
-    if etype == "goal":
-        return f"⚽ GOAL! {player} scores for {ev_team}! {home} {gh}-{ga} {away} ({minute}')."
-    if etype == "card" and "yellow" in detail:
-        return f"🟨 Yellow card for {player} ({ev_team}) at {minute}'."
-    if etype == "card" and "red" in detail:
-        return f"🟥 Red card! {player} is sent off for {ev_team} ({minute}')."
-    if etype == "subst":
-        return f"🔄 {ev_team} make a change — {player} comes on at {minute}'."
-    if etype == "var":
-        return f"📺 VAR check for {ev_team} at {minute}'..."
-    return f"{home} {gh}-{ga} {away} · {minute}' — {ev_team} pushing forward."
-
-
-@router.get("/fixtures/{fixture_id}/commentary")
-async def get_match_commentary(fixture_id: int, lang: str = Query("en")):
-    """One punchy live-commentary line for the match-cast.
-
-    AI (Haiku) when a key is set, otherwise a templated line. Cached per
-    (fixture, latest-state) so many concurrent viewers share one generation.
-    """
-    try:
-        fx, events = await asyncio.gather(
-            api_football.get_fixture(fixture_id),
-            api_football.get_fixture_events(fixture_id),
-            return_exceptions=True,
-        )
-        fixture = fx if isinstance(fx, dict) else None
-        events = events if isinstance(events, list) else []
-        if not fixture:
-            return {"text": ""}
-
-        teams = fixture.get("teams") or {}
-        home = (teams.get("home") or {}).get("name") or "Home"
-        away = (teams.get("away") or {}).get("name") or "Away"
-        goals = fixture.get("goals") or {}
-        gh = goals.get("home") or 0
-        ga = goals.get("away") or 0
-        status = (fixture.get("fixture") or {}).get("status") or {}
-        minute = status.get("elapsed") or 0
-        last = events[-1] if events else None
-
-        # Cache key changes when score/events/5-min-bucket change → fresh line on news.
-        key = f"{fixture_id}:{len(events)}:{gh}:{ga}:{minute // 5}:{lang}"
-        now = time.time()
-        cached = _commentary_cache.get(key)
-        if cached and now - cached["ts"] < _COMMENTARY_TTL:
-            return {"text": cached["text"], "cached": True}
-
-        claude_key = os.getenv("CLAUDE_API_KEY", "")
-        text = ""
-        if claude_key:
-            ev_lines = []
-            for e in events[-6:]:
-                t = (e.get("time") or {}).get("elapsed")
-                tm = (e.get("team") or {}).get("name")
-                ev_lines.append(f"{t}' {tm}: {e.get('type')}/{e.get('detail')} - {(e.get('player') or {}).get('name')}")
-            events_text = "\n".join(ev_lines) or "no events yet"
-            lang_name = _COMMENTARY_LANGS.get(lang, "English")
-            prompt = (
-                f"You are an energetic live football commentator.\n"
-                f"Match: {home} {gh}-{ga} {away}, minute {minute}.\n"
-                f"Recent events:\n{events_text}\n\n"
-                f"Write ONE punchy live-commentary line (max 16 words) about the CURRENT moment, "
-                f"in {lang_name}. At most one emoji. No quotes. Output only the line."
-            )
-            try:
-                client = anthropic.AsyncAnthropic(api_key=claude_key)
-                resp = await client.messages.create(
-                    model="claude-haiku-4-5-20251001",
-                    max_tokens=80,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                text = (resp.content[0].text or "").strip()
-            except Exception as e:
-                logger.error(f"Commentary AI error for {fixture_id}: {e}")
-
-        ai_ok = bool(text)
-        if not text:
-            text = _fallback_commentary(last, home, away, gh, ga, minute)
-
-        # Cache real AI lines, and templated lines when no API key is configured
-        # (that fallback is intentional and stable). But do NOT cache a fallback
-        # produced because the AI call FAILED — otherwise a transient Claude error
-        # (billing/rate-limit) sticks the templated line until the key rotates.
-        if ai_ok or not claude_key:
-            if len(_commentary_cache) > 500:
-                _commentary_cache.clear()
-            _commentary_cache[key] = {"ts": now, "text": text}
-        return {"text": text}
-    except Exception as e:
-        logger.error(f"Error building commentary for fixture {fixture_id}: {e}")
-        return {"text": ""}
-
-
 # === Predictions & Odds ===
 
 @router.get("/fixtures/{fixture_id}/prediction")
@@ -275,26 +164,6 @@ async def get_odds(fixture_id: int) -> List[Dict]:
         raise HTTPException(status_code=502, detail="Failed to fetch odds")
 
 
-@router.get("/fixtures/{fixture_id}/odds/live")
-async def get_live_odds(fixture_id: int) -> List[Dict]:
-    """Get in-play (live) odds for a fixture."""
-    try:
-        return await api_football.get_live_odds(fixture_id)
-    except Exception as e:
-        logger.error(f"Error fetching live odds for fixture {fixture_id}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch live odds")
-
-
-@router.get("/odds/date/{date}")
-async def get_odds_map_by_date(date: str) -> Dict:
-    """Batch 1X2 odds for all fixtures on a date → {fixture_id: {home, draw, away}}."""
-    try:
-        return await api_football.get_odds_map_by_date(date)
-    except Exception as e:
-        logger.error(f"Error fetching odds map for date {date}: {e}")
-        return {}
-
-
 # === Teams ===
 
 @router.get("/teams/search")
@@ -315,123 +184,6 @@ async def get_team(team_id: int) -> Optional[Dict]:
     except Exception as e:
         logger.error(f"Error fetching team {team_id}: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch team")
-
-
-@router.get("/teams/{team_id}/squad")
-async def get_squad(team_id: int) -> List[Dict]:
-    """Get current squad (player list) for a team"""
-    try:
-        return await api_football.get_squad(team_id)
-    except Exception as e:
-        logger.error(f"Error fetching squad for team {team_id}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch squad")
-
-
-@router.get("/teams/{team_id}/statistics")
-async def get_team_statistics(
-    team_id: int,
-    season: int = Query(..., ge=2000, le=2030),
-    league: int = Query(..., ge=1),
-) -> Dict:
-    """Get aggregated season statistics for a team in a league."""
-    try:
-        return await api_football.get_team_statistics(team_id, season, league) or {}
-    except Exception as e:
-        logger.error(f"Error fetching team statistics for team {team_id}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch team statistics")
-
-
-# === Players ===
-
-@router.get("/players/topscorers/{league_id}/{season}")
-async def get_top_scorers(league_id: int, season: int) -> List[Dict]:
-    """Get top scorers for a league+season."""
-    try:
-        return await api_football.get_top_scorers(league_id, season)
-    except Exception as e:
-        logger.error(f"Error fetching top scorers for league {league_id}, season {season}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch top scorers")
-
-
-def _player_stat_entry(entry: Dict) -> Optional[Dict]:
-    """Normalize one api-sports topscorers/topassists entry → flat player+stats dict."""
-    player = entry.get("player") or {}
-    pid = player.get("id")
-    if pid is None:
-        return None
-    stats = (entry.get("statistics") or [{}])[0] or {}
-    goals_block = stats.get("goals") or {}
-    team = stats.get("team") or {}
-    return {
-        "id": pid,
-        "name": player.get("name"),
-        "photo": player.get("photo"),
-        "nationality": player.get("nationality"),
-        "team": {"name": team.get("name"), "logo": team.get("logo")},
-        "goals": goals_block.get("total") or 0,
-        "assists": goals_block.get("assists") or 0,
-    }
-
-
-@router.get("/players/top/{league_id}/{season}")
-async def get_top_players(
-    league_id: int,
-    season: int,
-    limit: int = Query(12, ge=1, le=30),
-) -> List[Dict]:
-    """Top players for a league+season ranked by goals+assists.
-
-    Merges top scorers and top assist providers (so assist-heavy players surface
-    too), de-duplicates by player id, and returns real photos + stats.
-    """
-    try:
-        scorers, assisters = await asyncio.gather(
-            api_football.get_top_scorers(league_id, season),
-            api_football.get_top_assists(league_id, season),
-            return_exceptions=True,
-        )
-        scorers = scorers if isinstance(scorers, list) else []
-        assisters = assisters if isinstance(assisters, list) else []
-
-        merged: Dict[Any, Dict] = {}
-        for entry in [*scorers, *assisters]:
-            flat = _player_stat_entry(entry)
-            if not flat:
-                continue
-            cur = merged.get(flat["id"])
-            if cur:
-                # Same player can appear in both lists — keep the richer figures.
-                cur["goals"] = max(cur["goals"], flat["goals"])
-                cur["assists"] = max(cur["assists"], flat["assists"])
-                if not cur.get("photo"):
-                    cur["photo"] = flat["photo"]
-            else:
-                merged[flat["id"]] = flat
-
-        out = list(merged.values())
-        for p in out:
-            p["ga"] = (p["goals"] or 0) + (p["assists"] or 0)
-        out.sort(key=lambda x: (x["ga"], x["goals"]), reverse=True)
-        return out[:limit]
-    except Exception as e:
-        logger.error(f"Error fetching top players for league {league_id}, season {season}: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch top players")
-
-
-# === Leagues ===
-
-@router.get("/leagues")
-async def get_leagues(
-    country: Optional[str] = Query(None),
-    search: Optional[str] = Query(None, min_length=2),
-    id: Optional[int] = Query(None, ge=1),
-) -> List[Dict]:
-    """List or search leagues (by country, name, or id)."""
-    try:
-        return await api_football.get_leagues(country=country, search=search, league_id=id)
-    except Exception as e:
-        logger.error(f"Error fetching leagues (country={country}, search={search}, id={id}): {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch leagues")
 
 
 # === Injuries ===
@@ -516,20 +268,33 @@ async def get_smart_bet() -> Dict:
 async def _compute_smart_bet() -> Dict:
     """Find the best match and use AI to pick the best market."""
 
-    # Step 1: Get LIVE fixtures
+    # Step 1: Get LIVE fixtures (with fallback)
     live_fixtures = []
     try:
-        live_fixtures = await api_football.get_live_fixtures() or []
+        live_fixtures = await api_football.get_live_fixtures()
+        if not live_fixtures:
+            live_fixtures = await fetch_live_fallback()
     except Exception as e:
         logger.warning(f"Failed to fetch live fixtures: {e}")
+        try:
+            live_fixtures = await fetch_live_fallback()
+        except Exception:
+            pass
 
-    # Step 2: Get today's fixtures
+    # Step 2: Get today's fixtures (with fallback)
     today_fixtures = []
     try:
         today = datetime.utcnow().strftime("%Y-%m-%d")
-        today_fixtures = await api_football.get_fixtures_by_date(today) or []
+        today_fixtures = await api_football.get_fixtures_by_date(today)
+        if not today_fixtures:
+            today_fixtures = await fetch_fixtures_fallback(today)
     except Exception as e:
         logger.warning(f"Failed to fetch today fixtures: {e}")
+        try:
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            today_fixtures = await fetch_fixtures_fallback(today)
+        except Exception:
+            pass
 
     # Step 3: Pick the best match by priority
     chosen_fixture = None
@@ -754,8 +519,8 @@ IMPORTANT: You MUST pick a market from the real bookmaker odds list above. Prefe
 Only respond with JSON."""
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=claude_key)
-        response = await client.messages.create(
+        client = anthropic.Anthropic(api_key=claude_key)
+        response = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],

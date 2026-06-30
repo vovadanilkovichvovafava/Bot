@@ -7,9 +7,6 @@ const COUNTRIES = [
   { code: 'PL', dial: '+48', flag: '\u{1F1F5}\u{1F1F1}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
   { code: 'IT', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}', mask: '(___) ___-____', digits: 10, minDigits: 9 },
   { code: 'ES', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'PT', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'AR', dial: '+54', flag: '\u{1F1E6}\u{1F1F7}', mask: '(__) ____-____', digits: 10, minDigits: 10 },
-  { code: 'MX', dial: '+52', flag: '\u{1F1F2}\u{1F1FD}', mask: '(___) ___-____', digits: 10, minDigits: 10 },
   { code: 'FR', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}', mask: '(_ __) __-__-__', digits: 9, minDigits: 9 },
   { code: 'CZ', dial: '+420', flag: '\u{1F1E8}\u{1F1FF}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
   { code: 'IL', dial: '+972', flag: '\u{1F1EE}\u{1F1F1}', mask: '(__) ___-__-__', digits: 9, minDigits: 7 },
@@ -89,21 +86,17 @@ export function detectCountry() {
       return 'FR';
     if (tz.startsWith('Europe/Prague'))
       return 'CZ';
-    if (tz.startsWith('Europe/Lisbon') || tz.startsWith('Atlantic/Madeira') || tz.startsWith('Atlantic/Azores'))
-      return 'PT';
     if (tz.startsWith('Asia/Jerusalem') || tz.startsWith('Asia/Tel_Aviv'))
       return 'IL';
     if (tz.startsWith('Asia/Dubai'))
       return 'AE';
   } catch {}
 
-  return 'PT'; // default — Portuguese-first audience
+  return 'US'; // default
 }
 
 export function getCountryByCode(code) {
-  return COUNTRIES.find((c) => c.code === code)
-    || COUNTRIES.find((c) => c.code === 'PT')
-    || COUNTRIES[0];
+  return COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
 }
 
 export { COUNTRIES };

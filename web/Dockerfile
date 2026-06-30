@@ -5,10 +5,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-EXPOSE 3000
-ENTRYPOINT ["/docker-entrypoint.sh"]
+FROM node:18-alpine
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=build /app/dist ./dist
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+EXPOSE ${PORT:-3000}
+ENTRYPOINT ["./docker-entrypoint.sh"]

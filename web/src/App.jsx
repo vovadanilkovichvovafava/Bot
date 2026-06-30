@@ -3,8 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './features/auth/context/AuthContext';
 import FootballSpinner from './shared/components/FootballSpinner';
 import { saveTrackingParams } from './features/betting/services/trackingService';
-import { track, SESSION_ID } from './shared/services/analytics';
-import replayRecorder from './shared/services/replayRecorder';
+import { track } from './shared/services/analytics';
 import Layout from './shared/components/Layout';
 
 // ErrorBoundary — catches React render crashes, shows fallback instead of white screen
@@ -78,10 +77,6 @@ const Matches = lazy(() => import('./features/matches/pages/Matches'));
 const MatchDetail = lazy(() => import('./features/matches/pages/MatchDetail'));
 const AIChat = lazy(() => import('./features/predictions/pages/AIChat'));
 const ProTools = lazy(() => import('./features/tools/pages/ProTools'));
-const WorldCup = lazy(() => import('./features/worldcup/pages/WorldCup'));
-const WCTeamDetail = lazy(() => import('./features/worldcup/pages/WCTeamDetail'));
-const WorldCupPredict = lazy(() => import('./features/worldcup/pages/WorldCupPredict'));
-const Rewards = lazy(() => import('./features/predictions/pages/Rewards'));
 const Settings = lazy(() => import('./features/tools/pages/Settings'));
 const Statistics = lazy(() => import('./features/predictions/pages/Statistics'));
 const Favourites = lazy(() => import('./features/matches/pages/Favourites'));
@@ -91,7 +86,6 @@ const PredictionHistory = lazy(() => import('./features/predictions/pages/Predic
 const OddsConverter = lazy(() => import('./features/tools/pages/OddsConverter'));
 const YourStats = lazy(() => import('./features/predictions/pages/YourStats'));
 const LiveMatchDetail = lazy(() => import('./features/matches/pages/LiveMatchDetail'));
-const MatchCast = lazy(() => import('./features/matches/pages/MatchCast'));
 const BookmakerPromo = lazy(() => import('./features/betting/pages/BookmakerPromo'));
 const ProAccess = lazy(() => import('./features/betting/pages/ProAccess'));
 const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'));
@@ -197,12 +191,6 @@ export default function App() {
     }
   }, [location]);
 
-  // Session replay (rrweb) — record once per tab; played back in the admin panel
-  useEffect(() => {
-    replayRecorder.init(SESSION_ID);
-    return () => replayRecorder.destroy();
-  }, []);
-
   // Сохранить fbclid/utm параметры из URL при первом заходе
   useEffect(() => {
     if (user?.id && !trackingSaved.current) {
@@ -229,26 +217,15 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="matches" element={<Matches />} />
           <Route path="ai-chat" element={<AIChat />} />
-          <Route path="world-cup" element={<WorldCup />} />
           <Route path="pro-tools" element={<ProTools />} />
           <Route path="settings" element={<Settings />} />
         </Route>
-        <Route path="/world-cup/predict" element={
-          <ProtectedRoute><WorldCupPredict /></ProtectedRoute>
-        } />
-        <Route path="/rewards" element={
-          <ProtectedRoute><Rewards /></ProtectedRoute>
-        } />
-        <Route path="/world-cup/team/:id" element={
-          <ProtectedRoute><WCTeamDetail /></ProtectedRoute>
-        } />
         <Route path="/match/:id" element={
           <ProtectedRoute><MatchDetail /></ProtectedRoute>
         } />
         <Route path="/live/:id" element={
           <ProtectedRoute><LiveMatchDetail /></ProtectedRoute>
         } />
-        <Route path="/matchcast/:id" element={<MatchCast />} />
         <Route path="/premium" element={<Navigate to="/pro-access" replace />} />
         <Route path="/value-finder" element={
           <ProtectedRoute><ValueFinder /></ProtectedRoute>

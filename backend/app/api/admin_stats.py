@@ -6,15 +6,15 @@ All endpoints require admin authentication.
 import logging
 import os
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from typing import Optional, Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends, Query, Body
-from sqlalchemy import select, func, case, and_, or_, text
+from sqlalchemy import select, func, case, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.admin_auth import get_current_admin, require_admin_role
+from app.api.admin_auth import get_current_admin
 from app.models.user import User
 from app.models.prediction import Prediction
 from app.models.support_chat import SupportChatMessage
@@ -212,21 +212,6 @@ async def get_overview(
     except Exception as e:
         logger.error(f"Overview: predictions query failed: {e}")
         await db.rollback()
-
-    # WC group predictions + AI-chat questions also count as "predictions" on the
-    # dashboard (verified/accuracy stay from the predictions table only).
-    for label, sql in (
-        ("wc_predictions", "SELECT COUNT(*) AS t, COUNT(*) FILTER (WHERE created_at >= :today) AS td, COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yd FROM wc_predictions"),
-        ("ai_chat", "SELECT COUNT(*) AS t, COUNT(*) FILTER (WHERE created_at >= :today) AS td, COUNT(*) FILTER (WHERE created_at >= :yesterday AND created_at < :today) AS yd FROM ai_chat_messages WHERE role = 'user'"),
-    ):
-        try:
-            r = (await db.execute(text(sql), {"today": today_start, "yesterday": yesterday_start})).one()
-            pred_data["total"] = (pred_data.get("total") or 0) + (r[0] or 0)
-            pred_data["today"] = (pred_data.get("today") or 0) + (r[1] or 0)
-            pred_data["yesterday"] = (pred_data.get("yesterday") or 0) + (r[2] or 0)
-        except Exception as e:
-            logger.warning(f"Overview: {label} count failed: {e}")
-            await db.rollback()
 
     # ── Chat/support + online ──
     try:
@@ -595,7 +580,7 @@ async def export_users_csv(
     status: Optional[str] = Query(None),
     country: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),
-    admin: dict = Depends(require_admin_role("owner", "admin")),
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Export users as CSV file."""
@@ -968,7 +953,7 @@ async def get_user_profile(
 async def toggle_user_premium(
     user_id: int,
     days: int = Body(15, embed=False),
-    admin: dict = Depends(require_admin_role("owner", "admin")),
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle premium status for a user (admin action)."""
@@ -1003,7 +988,7 @@ async def toggle_user_premium(
 @router.post("/users/{user_id}/toggle-ban")
 async def toggle_user_ban(
     user_id: int,
-    admin: dict = Depends(require_admin_role("owner", "admin")),
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle ban status for a user (admin action)."""
@@ -1023,92 +1008,6 @@ async def toggle_user_ban(
         "user_id": user.id,
         "public_id": user.public_id,
         "is_banned": user.is_banned,
-    }
-
-
-@router.get("/predictions/world-cup")
-async def get_wc_prediction_stats(
-    until: Optional[str] = Query(None),
-    admin: dict = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """World Cup prediction accuracy, deduped to UNIQUE bets (match + bet type).
-
-    The same bet saved for many users would otherwise inflate the count, so we
-    take one row per (match_id, bet_type). Round/stage isn't stored, so the
-    group stage is approximated with an optional `until` date cutoff (matches
-    kicking off before the knockouts). Without `until`, all WC bets are counted.
-    """
-    wc = "(league_code = 'WC' OR league ILIKE '%world cup%')"
-    params = {}
-    date_clause = ""
-    if until:
-        date_clause = " AND COALESCE(match_date, match_time, created_at) < :until"
-        params["until"] = until
-
-    rows = (await db.execute(text(f"""
-        SELECT DISTINCT ON (match_id, bet_type)
-          match_id, home_team, away_team, bet_type,
-          COALESCE(predicted_odds, odds) AS odds,
-          confidence, is_correct,
-          actual_home_score, actual_away_score,
-          COALESCE(match_date, match_time, created_at) AS mdate
-        FROM predictions
-        WHERE {wc} AND is_correct IS NOT NULL{date_clause}
-        ORDER BY match_id, bet_type, verified_at DESC NULLS LAST
-    """), params)).all()
-
-    total = len(rows)
-    correct = sum(1 for r in rows if r.is_correct)
-    accuracy = round(correct / total * 100, 1) if total else 0
-
-    pending = (await db.execute(text(
-        f"SELECT COUNT(DISTINCT (match_id, bet_type)) FROM predictions "
-        f"WHERE {wc} AND is_correct IS NULL{date_clause}"
-    ), params)).scalar() or 0
-
-    bt = {}
-    for r in rows:
-        b = bt.setdefault(r.bet_type or "—", {"total": 0, "correct": 0})
-        b["total"] += 1
-        if r.is_correct:
-            b["correct"] += 1
-    by_bet_type = sorted(
-        [
-            {"bet_type": k, "total": v["total"], "correct": v["correct"],
-             "accuracy": round(v["correct"] / v["total"] * 100, 1) if v["total"] else 0}
-            for k, v in bt.items()
-        ],
-        key=lambda x: -x["total"],
-    )
-
-    bets = [
-        {
-            "match": f"{r.home_team} vs {r.away_team}",
-            "bet_type": r.bet_type,
-            "odds": round(r.odds, 2) if r.odds else None,
-            "confidence": round(r.confidence) if r.confidence else None,
-            "is_correct": r.is_correct,
-            "score": (f"{r.actual_home_score}-{r.actual_away_score}"
-                      if r.actual_home_score is not None and r.actual_away_score is not None else None),
-            "date": r.mdate.isoformat() if r.mdate else None,
-        }
-        for r in sorted(rows, key=lambda r: (r.mdate or datetime.min), reverse=True)
-    ]
-
-    won_odds = [r.odds for r in rows if r.is_correct and r.odds]
-    avg_winning_odds = round(sum(won_odds) / len(won_odds), 2) if won_odds else 0
-
-    return {
-        "total": total,
-        "correct": correct,
-        "wrong": total - correct,
-        "accuracy": accuracy,
-        "pending": pending,
-        "avg_winning_odds": avg_winning_odds,
-        "by_bet_type": by_bet_type,
-        "bets": bets,
-        "group_stage_until": until,
     }
 
 
@@ -1142,25 +1041,18 @@ async def get_predictions_stats(
         for r in bet_rows
     ]
 
-    # Daily predictions — last 30 days, combining match predictions + WC group
-    # predictions + AI-chat questions. Per-table (each in its own try) so one
-    # failing source can't blank out the whole chart.
-    cutoff = now - timedelta(days=30)
-    daily_map = {}
-    for label, src_sql in (
-        ("predictions", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM predictions WHERE created_at >= :cutoff GROUP BY (created_at)::date"),
-        ("wc_predictions", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM wc_predictions WHERE created_at >= :cutoff GROUP BY (created_at)::date"),
-        ("ai_chat", "SELECT (created_at)::date AS d, COUNT(*) AS c FROM ai_chat_messages WHERE role = 'user' AND created_at >= :cutoff GROUP BY (created_at)::date"),
-    ):
-        try:
-            rows = (await db.execute(text(src_sql), {"cutoff": cutoff})).all()
-            for r in rows:
-                daily_map[str(r[0])] = daily_map.get(str(r[0]), 0) + (r[1] or 0)
-        except Exception as e:
-            logger.warning(f"Daily predictions: {label} query failed: {e}")
-            await db.rollback()
+    # Daily predictions — last 30 days
+    daily_rows = (await db.execute(
+        select(
+            func.date(Prediction.created_at).label("day"),
+            func.count(Prediction.id).label("cnt"),
+        )
+        .where(Prediction.created_at >= now - timedelta(days=30))
+        .group_by(func.date(Prediction.created_at))
+        .order_by(func.date(Prediction.created_at))
+    )).all()
     daily_predictions = _fill_daily_gaps(
-        [{"date": d, "count": c} for d, c in sorted(daily_map.items())], days=30
+        [{"date": str(r[0]), "count": r[1]} for r in daily_rows], days=30
     )
 
     # By league (top 10)
@@ -1339,7 +1231,7 @@ async def get_ml_stats(
 
 @router.post("/ml/train")
 async def trigger_ml_training(
-    admin: dict = Depends(require_admin_role("owner", "admin")),
+    admin: dict = Depends(get_current_admin),
 ):
     """Manually trigger ML model training with full enrichment pipeline."""
     import asyncio
@@ -1427,7 +1319,7 @@ async def trigger_ml_training(
 
 @router.post("/ml/backfill")
 async def trigger_backfill(
-    admin: dict = Depends(require_admin_role("owner", "admin")),
+    admin: dict = Depends(get_current_admin),
 ):
     """Manually trigger data backfill + enrichment + training."""
     import asyncio
@@ -1485,6 +1377,7 @@ async def get_ml_diagnostics(
     diag["environment"] = {
         "API_FOOTBALL_KEY": "set" if api_football_key else "MISSING — data collection will fail!",
         "API_FOOTBALL_KEY_length": len(api_football_key),
+        "FOOTBALL_API_KEY": "set" if os.getenv("FOOTBALL_API_KEY") else "missing",
         "DATABASE_URL": "set" if os.getenv("DATABASE_URL") else "using default localhost",
     }
     if not api_football_key:
@@ -2343,8 +2236,8 @@ async def get_chat_insights(
         idx_map.append({"session_id": sid, "type": src})
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=api_key)
-        resp = await client.messages.create(
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=3000,
             messages=[{
@@ -2601,25 +2494,6 @@ async def get_pro_analytics(
             )).all()
             support_per_user = {r[0]: r[1] for r in sup_rows}
 
-        # Which PRO users actually have a real deposit postback (money), vs those
-        # who got PRO from a 'lead' (registration only) due to the postback bug.
-        deposited_ids = set()
-        if pro_user_ids:
-            dep_rows = (await db.execute(
-                select(func.distinct(PostbackLog.user_db_id)).where(
-                    and_(
-                        PostbackLog.user_db_id.in_(pro_user_ids),
-                        or_(
-                            func.lower(PostbackLog.event).in_(
-                                ['sale', 'deposit', 'first_deposit', 'ftd', 'confirmed', 'qualified']
-                            ),
-                            PostbackLog.amount > 0,
-                        ),
-                    )
-                )
-            )).scalars().all()
-            deposited_ids = {r for r in dep_rows if r is not None}
-
         pro_users_list = []
         for u in pro_rows:
             pro_start = (u.premium_until - timedelta(days=PRO_DURATION_DAYS)) if u.premium_until else u.created_at
@@ -2644,8 +2518,6 @@ async def get_pro_analytics(
                 "last_active_hours_ago": round(last_active_ago, 1),
                 "risk_level": u.risk_level,
                 "created_at": u.created_at.isoformat() if u.created_at else None,
-                # True = PRO but no real deposit postback (likely granted from a 'lead')
-                "no_deposit": u.id not in deposited_ids,
             })
 
         at_risk = [u for u in pro_users_list if 0 < u["days_remaining"] <= 7]
@@ -3090,79 +2962,6 @@ async def get_finance_stats(
 # ── Postback Logs ──────────────────────────────────────────────────
 
 
-@router.post("/pro/revoke-no-deposit")
-async def revoke_no_deposit_pro(
-    payload: dict = Body(default={}),
-    admin: dict = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """Revoke PRO from users who got it WITHOUT a real deposit (granted from a
-    'lead'), and drop a deposit-CTA message into their support chat.
-
-    Pass {"dry_run": true} to PREVIEW the affected users without changing
-    anything. {"dry_run": false} performs the revocation + messaging.
-    """
-    import uuid as _uuid
-
-    now = datetime.now()
-    dry_run = bool(payload.get("dry_run", True))
-    message = payload.get("message") or (
-        "O teu acesso PRO de teste (24h por te teres registado) terminou. "
-        "Faz o teu primeiro depósito e o PRO é ativado automaticamente. {deposit}"
-    )
-
-    pro_rows = (await db.execute(
-        select(User).where(and_(User.is_premium == True, User.premium_until > now))
-    )).scalars().all()
-    pro_ids = [u.id for u in pro_rows]
-    if not pro_ids:
-        return {"dry_run": dry_run, "count": 0, "users": [], "revoked": 0, "messaged": 0}
-
-    dep_rows = (await db.execute(
-        select(func.distinct(PostbackLog.user_db_id)).where(
-            and_(
-                PostbackLog.user_db_id.in_(pro_ids),
-                or_(
-                    func.lower(PostbackLog.event).in_(
-                        ["sale", "deposit", "first_deposit", "ftd", "confirmed", "qualified"]),
-                    PostbackLog.amount > 0,
-                ),
-            )
-        )
-    )).scalars().all()
-    deposited = {r for r in dep_rows if r is not None}
-
-    targets = [u for u in pro_rows if u.id not in deposited]
-    preview = [
-        {"id": u.id, "public_id": u.public_id, "phone": u.phone,
-         "premium_until": u.premium_until.isoformat() if u.premium_until else None}
-        for u in targets
-    ]
-
-    if dry_run:
-        return {"dry_run": True, "count": len(targets), "users": preview, "revoked": 0, "messaged": 0}
-
-    messaged = 0
-    for u in targets:
-        u.is_premium = False
-        u.premium_until = None
-        if message:
-            db.add(SupportChatMessage(
-                user_id=u.id,
-                session_id=f"sys-deposit-{_uuid.uuid4().hex[:12]}",
-                role="assistant",
-                content=message,
-                locale=(u.language or "pt")[:5],
-                agent_name="Suporte",
-                is_admin_reply=True,
-            ))
-            messaged += 1
-    await db.commit()
-    logger.info("Revoked lead-only PRO from %s users (messaged=%s)", len(targets), messaged)
-    return {"dry_run": False, "count": len(targets), "users": preview,
-            "revoked": len(targets), "messaged": messaged}
-
-
 @router.get("/postback-logs")
 async def get_postback_logs(
     q: str = Query("", max_length=100),
@@ -3213,7 +3012,6 @@ async def get_postback_logs(
             "country": l.country,
             "premium_activated": l.premium_activated,
             "error": l.error,
-            "raw_params": l.raw_params,
             "created_at": l.created_at.isoformat() if l.created_at else None,
         }
         for l in rows
@@ -3316,217 +3114,3 @@ async def get_banner_clicks_stats(
         logger.error(traceback.format_exc())
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Banner analytics error: {str(e)}")
-
-
-# ── Maintenance: purge users by traffic source (owner only) ──────────────────
-
-@router.post("/maintenance/purge-source")
-async def purge_users_by_source(
-    source: str = Body(..., embed=True),
-    confirm: bool = Body(False, embed=True),
-    admin: dict = Depends(require_admin_role("owner")),
-    db: AsyncSession = Depends(get_db),
-):
-    """Delete all users with a given traffic_source plus their related rows.
-
-    Owner-only, requires confirm=true. Used to clear legacy/old-domain test data
-    (e.g. source='prescoreai_com') so the dashboard reflects only the new domain.
-    """
-    from fastapi import HTTPException
-    source = (source or "").strip()
-    if not source:
-        raise HTTPException(status_code=400, detail="source is required")
-    if not confirm:
-        raise HTTPException(status_code=400, detail="confirm must be true")
-
-    # How many users match (for the response / sanity)
-    target_count = (await db.execute(
-        text("SELECT COUNT(*) FROM users WHERE traffic_source = :s"), {"s": source}
-    )).scalar() or 0
-    if target_count == 0:
-        return {"deleted_users": 0, "source": source, "message": "No users matched."}
-
-    sub = "(SELECT id FROM users WHERE traffic_source = :s)"
-    # Children first (FK to users.id), then null the self-referential referrer link,
-    # then the users themselves.
-    child_tables = [
-        "predictions", "fantasy_ledger", "wc_predictions",
-        "community_picks", "match_chat_messages", "support_chat_messages",
-        "ai_chat_messages",
-    ]
-    deleted = {}
-    for tbl in child_tables:
-        res = await db.execute(text(f"DELETE FROM {tbl} WHERE user_id IN {sub}"), {"s": source})
-        deleted[tbl] = res.rowcount
-    await db.execute(text(f"UPDATE users SET referred_by_id = NULL WHERE referred_by_id IN {sub}"), {"s": source})
-    res = await db.execute(text("DELETE FROM users WHERE traffic_source = :s"), {"s": source})
-    deleted_users = res.rowcount
-    await db.commit()
-
-    logger.warning("PURGE source=%s by admin=%s: removed %s users, children=%s",
-                   source, admin.get("email"), deleted_users, deleted)
-    return {"deleted_users": deleted_users, "source": source, "children": deleted}
-
-
-# ── Session replay: visitor sessions list + replay playback (admin only) ──────
-
-@router.get("/recent-visits")
-async def get_recent_visits(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    admin: dict = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """Recent visitor sessions (grouped analytics_events), flagged if a replay exists."""
-    sql = text("""
-        WITH sessions AS (
-            SELECT ae.session_id,
-                   MIN(ae.created_at) AS first_seen,
-                   MAX(ae.created_at) AS last_seen,
-                   COUNT(*) AS events,
-                   COUNT(DISTINCT ae.page) AS pages,
-                   MAX(ae.user_id) AS user_id,
-                   MAX(ae.country) AS country,
-                   MAX(ae.referrer) AS referrer,
-                   MAX(ae.user_agent) AS user_agent,
-                   (ARRAY_AGG(ae.page ORDER BY ae.created_at DESC))[1] AS last_page
-            FROM analytics_events ae
-            WHERE ae.session_id IS NOT NULL AND ae.session_id <> ''
-            GROUP BY ae.session_id
-        ),
-        ranked AS (
-            SELECT s.*,
-                   CASE WHEN s.user_id IS NOT NULL AND s.user_id <> ''
-                        THEN ROW_NUMBER() OVER (PARTITION BY s.user_id ORDER BY s.first_seen ASC)
-                   END AS visit_number,
-                   CASE WHEN s.user_id IS NOT NULL AND s.user_id <> ''
-                        THEN COUNT(*) OVER (PARTITION BY s.user_id)
-                   END AS total_visits
-            FROM sessions s
-        )
-        SELECT r.*,
-               (SELECT COUNT(*) FROM session_replays sr WHERE sr.session_id = r.session_id) AS has_replay
-        FROM ranked r
-        ORDER BY r.last_seen DESC
-        LIMIT :limit OFFSET :offset
-    """)
-    rows = (await db.execute(sql, {"limit": limit, "offset": offset})).mappings().all()
-    now = datetime.now(timezone.utc)
-    visits = []
-    for r in rows:
-        first, last = r["first_seen"], r["last_seen"]
-        dur = int((last - first).total_seconds()) if (first and last) else 0
-        is_live = False
-        try:
-            la = last.replace(tzinfo=timezone.utc) if (last and last.tzinfo is None) else last
-            is_live = bool(la and (now - la).total_seconds() < 120)
-        except Exception:
-            pass
-        visits.append({
-            "session_id": r["session_id"],
-            "visit_time": first.isoformat() if first else None,
-            "last_activity": last.isoformat() if last else None,
-            "duration_sec": dur,
-            "events": r["events"],
-            "page_views": r["pages"],
-            "user_id": r["user_id"],
-            "country": r["country"],
-            "referrer": r["referrer"],
-            "user_agent": r["user_agent"],
-            "last_page": r["last_page"],
-            "has_replay": bool(r["has_replay"]),
-            "is_live": is_live,
-            "visit_number": r["visit_number"],   # Nth visit of this user (None if anonymous)
-            "total_visits": r["total_visits"],    # total visits of this user
-        })
-    return {"visits": visits, "limit": limit, "offset": offset}
-
-
-@router.get("/replay/{session_id}")
-async def get_session_replay(
-    session_id: str,
-    admin: dict = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """Merge all replay chunks for a session and return rrweb events for playback."""
-    import json as _json
-    from fastapi import HTTPException
-    from app.models.session_replay import SessionReplay, ReplayChunk
-
-    replay = (await db.execute(
-        select(SessionReplay).where(SessionReplay.session_id == session_id)
-    )).scalar_one_or_none()
-    if not replay:
-        raise HTTPException(status_code=404, detail="No replay data for this session")
-
-    chunks = (await db.execute(
-        select(ReplayChunk).where(ReplayChunk.session_id == session_id)
-        .order_by(ReplayChunk.chunk_index.asc(), ReplayChunk.id.asc())
-    )).scalars().all()
-
-    all_events = []
-    for chunk in chunks:
-        try:
-            ev = _json.loads(chunk.events_json)
-            if isinstance(ev, list):
-                all_events.extend(ev)
-        except Exception:
-            continue
-    if not all_events:
-        raise HTTPException(status_code=404, detail="No valid replay events")
-
-    return {
-        "session_id": session_id,
-        "events": all_events,
-        "events_count": len(all_events),
-        "chunks": len(chunks),
-        "size_bytes": replay.total_size,
-        "is_complete": replay.is_complete,
-    }
-
-
-@router.get("/ip-check")
-async def ip_check(
-    ips: str = Query(..., description="Comma-separated IPs to check"),
-    admin: dict = Depends(require_admin_role("owner", "admin")),
-    db: AsyncSession = Depends(get_db),
-):
-    """Is an IP 'ours'? Returns this backend's egress IP (so you can compare) and,
-    for each given IP, how many app requests we logged from it (analytics_events).
-    NOTE: postback/Keitaro requests are NOT IP-logged, so they can't be counted here.
-    """
-    import httpx
-
-    egress = None
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            r = await client.get("https://api.ipify.org")
-            egress = (r.text or "").strip()
-    except Exception:
-        egress = None
-
-    ip_list = [s.strip() for s in (ips or "").split(",") if s.strip()][:20]
-    out = []
-    for ip in ip_list:
-        row = (await db.execute(text("""
-            SELECT COUNT(*) AS events,
-                   COUNT(DISTINCT session_id) AS sessions,
-                   MIN(created_at) AS first_seen,
-                   MAX(created_at) AS last_seen,
-                   COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL AND user_id <> '') AS users
-            FROM analytics_events WHERE ip = :ip
-        """), {"ip": ip})).mappings().first()
-        reg = (await db.execute(text(
-            "SELECT COUNT(*) FROM users WHERE registration_ip = :ip"
-        ), {"ip": ip})).scalar() or 0
-        out.append({
-            "ip": ip,
-            "is_our_backend_egress": bool(egress and ip == egress),
-            "app_events": row["events"] or 0,
-            "sessions": row["sessions"] or 0,
-            "users_seen": row["users"] or 0,
-            "registrations_from_ip": int(reg),
-            "first_seen": row["first_seen"].isoformat() if row["first_seen"] else None,
-            "last_seen": row["last_seen"].isoformat() if row["last_seen"] else None,
-        })
-    return {"our_backend_egress_ip": egress, "ips": out}

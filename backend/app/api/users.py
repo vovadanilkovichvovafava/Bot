@@ -1,20 +1,23 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
-from typing import Optional, List, Any
+from typing import Optional, List
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import os
 import json
 
-from app.core.security import get_current_user, verify_internal_secret
+from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-# Maximum premium grant from a single postback (defense against forged/long expiry)
-MAX_PREMIUM_DAYS = 31
+# Internal secret for server-to-server calls — must be set via environment variable
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET")
+if not INTERNAL_SECRET:
+    raise RuntimeError("POSTBACK_SECRET environment variable is not set")
 
 router = APIRouter()
 
@@ -204,9 +207,7 @@ async def save_predictions(
 class PremiumActivation(BaseModel):
     premium: bool
     source: str
-    # Accept number or string (the postback server sends a parsed numeric amount);
-    # this field is informational only and not used for the grant.
-    depositAmount: Optional[Any] = None
+    depositAmount: Optional[str] = None
     currency: Optional[str] = None
     expiresAt: Optional[str] = None
 
@@ -220,8 +221,8 @@ async def activate_premium(
 ):
     """Activate premium for user (internal endpoint for postback server)"""
 
-    # Verify internal secret (constant-time; fails closed when secret unset)
-    if not verify_internal_secret(x_internal_secret):
+    # Verify internal secret
+    if x_internal_secret != INTERNAL_SECRET:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid internal secret"
@@ -261,21 +262,11 @@ async def activate_premium(
     if activation.premium:
         user.use_deeplink = True
 
-    now = datetime.utcnow()
-    max_until = now + timedelta(days=MAX_PREMIUM_DAYS)
     if activation.expiresAt:
-        try:
-            parsed = datetime.fromisoformat(activation.expiresAt.replace('Z', '+00:00'))
-            # Normalize to naive UTC for comparison/storage consistency
-            if parsed.tzinfo is not None:
-                parsed = parsed.astimezone(tz=None).replace(tzinfo=None)
-        except (ValueError, TypeError):
-            parsed = now + timedelta(days=15)
-        # Clamp: never in the past, never beyond the allowed maximum
-        user.premium_until = min(max(parsed, now + timedelta(days=1)), max_until)
+        user.premium_until = datetime.fromisoformat(activation.expiresAt.replace('Z', '+00:00'))
     else:
         # Default 15 days
-        user.premium_until = now + timedelta(days=15)
+        user.premium_until = datetime.utcnow() + timedelta(days=15)
 
     await db.commit()
 
@@ -295,7 +286,7 @@ async def lookup_user(
     db: AsyncSession = Depends(get_db)
 ):
     """Lookup user by username (internal endpoint for admin)"""
-    if not verify_internal_secret(x_internal_secret):
+    if x_internal_secret != INTERNAL_SECRET:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal secret")
 
     result = await db.execute(select(User).where(User.username == username))

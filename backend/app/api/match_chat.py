@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, validator
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
@@ -7,7 +7,6 @@ from typing import List, Optional
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.match_chat import MatchChatMessage
-from app.models.user import User
 
 router = APIRouter()
 
@@ -18,8 +17,7 @@ MAX_MESSAGES_PER_PAGE = 50
 class SendMessageRequest(BaseModel):
     message: str
 
-    @field_validator("message")
-    @classmethod
+    @validator("message")
     def validate_message(cls, v):
         v = v.strip()
         if not v:
@@ -53,8 +51,7 @@ async def send_message(
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    db_user = await db.get(User, user_id)
-    username = (db_user.username or (db_user.email or "User").split("@")[0]) if db_user else "User"
+    username = current_user.get("username") or current_user.get("email", "User").split("@")[0]
 
     msg = MatchChatMessage(
         user_id=user_id,

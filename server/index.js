@@ -3,7 +3,6 @@ import cors from 'cors';
 import geoip from 'geoip-lite';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
 
 dotenv.config();
 
@@ -14,21 +13,13 @@ const PORT = process.env.PORT || 3001;
 const CONFIG = {
   // Bookmaker partner info
   BOOKMAKER_NAME: process.env.BOOKMAKER_NAME || '1xBet',
-  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || '',
+  BOOKMAKER_AFFILIATE_ID: process.env.BOOKMAKER_AFFILIATE_ID || (() => { throw new Error('BOOKMAKER_AFFILIATE_ID environment variable is not set'); })(),
 
   // Main API backend
-  MAIN_API_URL: process.env.MAIN_API_URL || 'http://563fed01-57d2-4dc6-9148-0cddbd48c02d:8000/api/v1',
+  MAIN_API_URL: process.env.MAIN_API_URL || 'https://appbot-production-152e.up.railway.app/api/v1',
 
-  // Internal secret used to authenticate server→backend calls
-  POSTBACK_SECRET: process.env.POSTBACK_SECRET || '',
-
-  // Secret required on Keitaro postbacks (falls back to POSTBACK_SECRET).
-  // Configure Keitaro to append &secret=<value> (or send X-Postback-Secret header).
-  KEITARO_SECRET: process.env.KEITARO_SECRET || process.env.POSTBACK_SECRET || '',
-
-  // Separate credential for admin/debug endpoints (falls back to POSTBACK_SECRET).
-  // Prefer setting this to a distinct value so leaking it does not expose the postback secret.
-  ADMIN_SECRET: process.env.ADMIN_SECRET || process.env.POSTBACK_SECRET || '',
+  // Postback secret for verification
+  POSTBACK_SECRET: process.env.POSTBACK_SECRET || (() => { throw new Error('POSTBACK_SECRET environment variable is not set'); })(),
 
   // Countries where bookmaker is blocked (ISO 3166-1 alpha-2 codes)
   BLOCKED_COUNTRIES: (process.env.BLOCKED_COUNTRIES || 'RU,BY,UA,KZ,AZ,AM,GE,MD,KG,TJ,TM,UZ').split(','),
@@ -38,111 +29,7 @@ const CONFIG = {
 
   // Safe landing page for blocked countries
   SAFE_LANDING: process.env.SAFE_LANDING || '/blocked',
-
-  // Comma-separated list of browser origins allowed via CORS. Empty = no cross-origin
-  // (the frontend reaches this service same-origin through the nginx /geo proxy).
-  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
-
-  // Number of trusted reverse-proxy hops in front of this server (Cloudflare/Saturn).
-  TRUST_PROXY_HOPS: Number(process.env.TRUST_PROXY_HOPS || 1),
 };
-
-// Startup validation
-const requiredEnvVars = ['POSTBACK_SECRET'];
-for (const envVar of requiredEnvVars) {
-  if (!CONFIG[envVar]) {
-    console.error(`[STARTUP] Missing required env var: ${envVar}`);
-    process.exit(1);
-  }
-}
-if (!CONFIG.BOOKMAKER_AFFILIATE_ID) {
-  console.warn('[STARTUP] BOOKMAKER_AFFILIATE_ID not set — affiliate links will be empty');
-}
-if (CONFIG.ADMIN_SECRET === CONFIG.POSTBACK_SECRET) {
-  console.warn('[STARTUP] ADMIN_SECRET not set separately — reusing POSTBACK_SECRET for admin auth. Set a distinct ADMIN_SECRET in production.');
-}
-
-// ============================================
-// SECURITY HELPERS
-// ============================================
-
-/** Constant-time string comparison that is safe against length/timing oracles. */
-function secretsMatch(provided, expected) {
-  if (typeof provided !== 'string' || typeof expected !== 'string' || expected.length === 0) {
-    return false;
-  }
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) {
-    // Compare against itself to keep timing roughly constant, then fail.
-    crypto.timingSafeEqual(a, a);
-    return false;
-  }
-  return crypto.timingSafeEqual(a, b);
-}
-
-/** Extract the postback/admin secret from a header or query param. */
-function extractSecret(req) {
-  return (
-    req.headers['x-postback-secret'] ||
-    req.headers['x-admin-secret'] ||
-    req.query.secret ||
-    ''
-  );
-}
-
-/**
- * Resolve the real client IP. Behind Cloudflare, CF-Connecting-IP is authoritative
- * (Cloudflare strips any client-supplied value). Otherwise fall back to Express's
- * req.ip, which respects the configured `trust proxy` hop count. We deliberately do
- * NOT trust a raw, full X-Forwarded-For chain for security decisions.
- */
-function getClientIp(req) {
-  const cf = req.headers['cf-connecting-ip'];
-  if (typeof cf === 'string' && cf.trim()) return cf.trim();
-  return req.ip || '';
-}
-
-/** Parse a money amount defensively: finite, non-negative, capped. */
-function parseAmount(value) {
-  const n = parseFloat(value);
-  if (!Number.isFinite(n) || n < 0) return 0;
-  return Math.min(n, 1_000_000);
-}
-
-/** Strip secrets before persisting/forwarding raw postback params. */
-function redactParams(query) {
-  const clone = { ...(query || {}) };
-  delete clone.secret;
-  return clone;
-}
-
-/** Minimal in-memory fixed-window rate limiter (no external dependency). */
-function createRateLimiter({ windowMs, max, name }) {
-  const hits = new Map();
-  const timer = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of hits) {
-      if (now > entry.reset) hits.delete(key);
-    }
-  }, windowMs);
-  if (typeof timer.unref === 'function') timer.unref();
-
-  return (req, res, next) => {
-    const key = `${name}:${getClientIp(req) || 'unknown'}`;
-    const now = Date.now();
-    let entry = hits.get(key);
-    if (!entry || now > entry.reset) {
-      entry = { count: 0, reset: now + windowMs };
-      hits.set(key, entry);
-    }
-    entry.count++;
-    if (entry.count > max) {
-      return res.status(429).json({ error: 'Too many requests' });
-    }
-    next();
-  };
-}
 
 // In-memory storage for demo (use Redis/DB in production)
 const postbackStore = new Map();
@@ -181,29 +68,14 @@ setInterval(() => {
   }
 }, 30 * 60 * 1000);
 
-// Trust a bounded number of proxy hops so req.ip reflects the real client.
-app.set('trust proxy', CONFIG.TRUST_PROXY_HOPS);
-
-// Restrict CORS to an explicit allowlist. With no allowlist configured, browser
-// cross-origin requests are rejected (same-origin nginx proxy still works).
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin) return callback(null, true); // non-browser / same-origin / server-to-server
-    if (CONFIG.ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    return callback(null, false);
-  },
-}));
-
-app.use(express.json({ limit: '64kb' }));
-app.use(express.urlencoded({ extended: true, limit: '64kb' }));
-
-// Global rate limit (generous); sensitive routes get stricter limits below.
-app.use(createRateLimiter({ windowMs: 60 * 1000, max: 300, name: 'global' }));
-const sensitiveLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 30, name: 'sensitive' });
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Logging middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${getClientIp(req)}`);
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - IP: ${clientIp}`);
   next();
 });
 
@@ -215,16 +87,8 @@ app.use((req, res, next) => {
  * Get geo info for IP address
  */
 function getGeoInfo(ip) {
-  if (typeof ip !== 'string' || !ip) {
-    return { country: 'UNKNOWN', region: '', city: '', isBlocked: false };
-  }
-
   // Handle localhost/private IPs
-  if (
-    ip === '127.0.0.1' || ip === '::1' ||
-    ip.startsWith('192.168.') || ip.startsWith('10.') ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
-  ) {
+  if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
     return { country: 'US', region: 'CA', city: 'Test City', isBlocked: false };
   }
 
@@ -247,7 +111,7 @@ function getGeoInfo(ip) {
  * Frontend calls this to determine if cloaking is needed
  */
 app.get('/api/geo', (req, res) => {
-  const clientIp = getClientIp(req);
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
   const geoInfo = getGeoInfo(clientIp);
 
   res.json({
@@ -266,7 +130,7 @@ app.get('/api/geo', (req, res) => {
  * Generate unique click ID for user tracking
  * Called when user clicks affiliate link
  */
-app.get('/api/click', sensitiveLimiter, (req, res) => {
+app.get('/api/click', (req, res) => {
   const { userId, source } = req.query;
 
   if (!userId) {
@@ -293,49 +157,62 @@ app.get('/api/click', sensitiveLimiter, (req, res) => {
   });
 });
 
-// 'lead' (registration only — no money) intentionally excluded: PRO is granted
-// for real deposits, not for signing up.
-const qualifyingGenericStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified', 'sale', 'confirmed'];
-
 /**
- * Core generic-postback processing, shared by the GET and POST routes.
- * Authentication (secret) MUST be verified before this is called.
+ * Postback endpoint - called by bookmaker when user makes deposit
+ *
+ * Standard postback parameters:
+ * - click_id: The click ID we generated
+ * - status: registration, deposit, first_deposit, etc.
+ * - amount: Deposit amount (if applicable)
+ * - currency: Currency code
+ * - user_id: Bookmaker's internal user ID (optional)
  */
-async function processGenericPostback(query) {
+app.get('/api/postback', async (req, res) => {
   const {
     click_id,
-    clickId,
+    clickId, // alternative param name
     status,
-    event,
+    event, // Keitaro alias for status
     amount,
-    payout,
+    payout, // Keitaro alias for amount
     currency,
     user_id,
-    external_id,
-    sub_id_10,
-  } = query;
+    external_id, // our tracking links set external_id = userId
+    sub_id_10,   // our tracking links also set sub_id_10 = userId
+    secret
+  } = req.query;
 
   const actualClickId = click_id || clickId;
-  const actualStatus = status || event;
-  const actualAmount = amount || payout;
+  const actualStatus = status || event; // Support both status and event params
+  const actualAmount = amount || payout; // Support both amount and payout params
 
   console.log(`[POSTBACK] Received: click_id=${actualClickId}, user_id=${user_id}, external_id=${external_id}, sub_id_10=${sub_id_10}, status=${actualStatus}, amount=${actualAmount}`);
 
+  // Verify postback secret (optional but recommended)
+  if (secret && secret !== CONFIG.POSTBACK_SECRET) {
+    console.log('[POSTBACK] Invalid secret');
+    return res.status(403).json({ error: 'Invalid secret' });
+  }
+
+  // Find the click record by click_id
   const clickRecord = actualClickId ? postbackStore.get(actualClickId) : null;
+
+  // Determine userId: from click record, or from tracking params (external_id, sub_id_10, user_id)
   const userId = clickRecord?.userId || external_id || sub_id_10 || user_id;
 
   if (!userId) {
     console.log(`[POSTBACK] No userId found (click_id=${actualClickId}, user_id=${user_id}) - ignoring`);
-    return;
+    return res.status(200).send('OK');
   }
 
-  console.log(`[POSTBACK] Resolved userId: ${userId} (from ${clickRecord ? 'click record' : 'tracking param'})`);
+  console.log(`[POSTBACK] Resolved userId: ${userId} (from ${clickRecord ? 'click record' : 'user_id param'})`);
 
+  // Update click record if exists
   if (clickRecord) {
     clickRecord.status = actualStatus;
     if (actualAmount) {
       clickRecord.deposits.push({
-        amount: parseAmount(actualAmount),
+        amount: parseFloat(actualAmount),
         currency: currency || 'USD',
         timestamp: new Date().toISOString(),
         bookmakerId: user_id,
@@ -343,26 +220,32 @@ async function processGenericPostback(query) {
     }
     postbackStore.set(actualClickId, clickRecord);
   } else {
-    const recordKey = `direct_${userId}_${Date.now()}`;
+    // Store a new record for direct user_id postbacks (Keitaro format)
+    const recordKey = `direct_${user_id}_${Date.now()}`;
     postbackStore.set(recordKey, {
-      userId,
+      userId: user_id,
       source: 'keitaro_direct',
       timestamp: new Date().toISOString(),
       status: actualStatus,
       deposits: actualAmount ? [{
-        amount: parseAmount(actualAmount),
+        amount: parseFloat(actualAmount),
         currency: currency || 'USD',
         timestamp: new Date().toISOString(),
       }] : [],
     });
   }
 
-  if (qualifyingGenericStatuses.includes(actualStatus?.toLowerCase())) {
+  // Check if this is a qualifying action for Premium activation
+  const qualifyingStatuses = ['deposit', 'first_deposit', 'ftd', 'qualified', 'lead', 'sale', 'confirmed'];
+
+  if (qualifyingStatuses.includes(actualStatus?.toLowerCase())) {
     console.log(`[POSTBACK] Qualifying event (${actualStatus})! Activating Premium for user: ${userId}`);
+
     try {
+      // Activate Premium for the user
       await activatePremium(userId, {
         clickId: actualClickId,
-        depositAmount: parseAmount(actualAmount),
+        depositAmount: actualAmount,
         currency: currency || 'USD',
         source: clickRecord ? 'bookmaker_postback' : 'keitaro_direct',
       });
@@ -372,47 +255,38 @@ async function processGenericPostback(query) {
         clickRecord.premiumActivatedAt = new Date().toISOString();
         postbackStore.set(actualClickId, clickRecord);
       }
+
       console.log(`[POSTBACK] Premium activated for user: ${userId}`);
     } catch (error) {
       console.error('[POSTBACK] Failed to activate Premium:', error.message);
     }
   }
 
+  // Log postback to database
   logPostback({
     user_id: userId,
     source: 'generic',
     click_id: actualClickId,
     event: actualStatus,
-    amount: actualAmount != null ? parseAmount(actualAmount) : null,
+    amount: actualAmount,
     currency: currency || 'USD',
     premium_activated: clickRecord?.premiumActivated || false,
-    raw_params: JSON.stringify(redactParams(query)),
+    raw_params: JSON.stringify(req.query),
   });
-}
 
-/**
- * Postback endpoint - called by bookmaker when user makes deposit
- */
-app.get('/api/postback', sensitiveLimiter, async (req, res) => {
-  if (!secretsMatch(extractSecret(req), CONFIG.POSTBACK_SECRET)) {
-    console.log('[POSTBACK] Missing or invalid secret');
-    return res.status(403).json({ error: 'Invalid secret' });
-  }
-  await processGenericPostback(req.query);
+  // Respond with OK (bookmaker expects simple response)
   res.status(200).send('OK');
 });
 
 /**
  * Alternative POST endpoint for postbacks
  */
-app.post('/api/postback', sensitiveLimiter, async (req, res) => {
-  if (!secretsMatch(extractSecret(req), CONFIG.POSTBACK_SECRET)) {
-    console.log('[POSTBACK] Missing or invalid secret');
-    return res.status(403).json({ error: 'Invalid secret' });
-  }
-  // Merge body params over query so either transport works.
-  await processGenericPostback({ ...req.query, ...req.body });
-  res.status(200).send('OK');
+app.post('/api/postback', express.json(), async (req, res) => {
+  const { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret } = req.body;
+
+  // Reuse GET logic - support both original and Keitaro param names
+  req.query = { click_id, clickId, status, event, amount, payout, currency, user_id, external_id, sub_id_10, secret };
+  return app._router.handle(req, res, () => {});
 });
 
 /**
@@ -420,8 +294,7 @@ app.post('/api/postback', sensitiveLimiter, async (req, res) => {
  */
 async function logPostback(data) {
   try {
-    const baseUrl = new URL(CONFIG.MAIN_API_URL).origin;
-    await fetch(`${baseUrl}/api/v1/postbacks/log`, {
+    await fetch(`${CONFIG.MAIN_API_URL.replace('/users', '').replace('/api/v1', '/api/v1/postbacks')}/log`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -504,18 +377,10 @@ app.get('/api/premium/check/:userId', (req, res) => {
 // MANUAL VERIFICATION ENDPOINTS
 // ============================================
 
-/** Admin auth guard: validates ADMIN_SECRET via header or query, constant-time. */
-function requireAdmin(req, res, next) {
-  if (!secretsMatch(extractSecret(req), CONFIG.ADMIN_SECRET)) {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
-  next();
-}
-
 /**
  * Submit verification request (for existing bookmaker accounts)
  */
-app.post('/api/verification/request', sensitiveLimiter, (req, res) => {
+app.post('/api/verification/request', (req, res) => {
   const { userId, email, bookmakerId, bookmaker } = req.body;
 
   if (!userId || !bookmakerId) {
@@ -543,7 +408,13 @@ app.post('/api/verification/request', sensitiveLimiter, (req, res) => {
 /**
  * Get all verification requests (admin only)
  */
-app.get('/api/admin/verifications', requireAdmin, (req, res) => {
+app.get('/api/admin/verifications', (req, res) => {
+  const { secret } = req.query;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
   const requests = Array.from(verificationRequests.values())
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -553,8 +424,13 @@ app.get('/api/admin/verifications', requireAdmin, (req, res) => {
 /**
  * Approve verification request (admin only)
  */
-app.post('/api/admin/verifications/:requestId/approve', requireAdmin, async (req, res) => {
+app.post('/api/admin/verifications/:requestId/approve', async (req, res) => {
+  const { secret } = req.query;
   const { requestId } = req.params;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
 
   const request = verificationRequests.get(requestId);
   if (!request) {
@@ -584,9 +460,14 @@ app.post('/api/admin/verifications/:requestId/approve', requireAdmin, async (req
 /**
  * Reject verification request (admin only)
  */
-app.post('/api/admin/verifications/:requestId/reject', requireAdmin, (req, res) => {
+app.post('/api/admin/verifications/:requestId/reject', (req, res) => {
+  const { secret } = req.query;
   const { requestId } = req.params;
   const { reason } = req.body;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
 
   const request = verificationRequests.get(requestId);
   if (!request) {
@@ -611,7 +492,7 @@ app.post('/api/admin/verifications/:requestId/reject', requireAdmin, (req, res) 
  */
 app.get('/api/bookmaker/link', (req, res) => {
   const { userId, campaign } = req.query;
-  const clientIp = getClientIp(req);
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
   const geoInfo = getGeoInfo(clientIp);
 
   // Generate click ID
@@ -650,51 +531,20 @@ app.get('/api/bookmaker/link', (req, res) => {
   }
 });
 
-// Hosts the proxy is allowed to reach (bookmaker domain + mirror only).
-function buildProxyAllowlist() {
-  const hosts = new Set();
-  try { hosts.add(new URL(`https://${CONFIG.BOOKMAKER_NAME.toLowerCase()}.com`).host); } catch { /* ignore */ }
-  try { hosts.add(new URL(CONFIG.MIRROR_DOMAIN).host); } catch { /* ignore */ }
-  return hosts;
-}
-const PROXY_ALLOWED_HOSTS = buildProxyAllowlist();
-const PROXY_ALLOWED_METHODS = new Set(['GET', 'POST']);
-
 /**
  * Proxy endpoint for making requests to bookmaker API
- * Useful for bypassing CORS and geo-blocks. Restricted to allowlisted hosts only.
+ * Useful for bypassing CORS and geo-blocks
  */
-app.all('/api/proxy/*', sensitiveLimiter, async (req, res) => {
-  if (!PROXY_ALLOWED_METHODS.has(req.method)) {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const targetPath = req.params[0] || '';
-  // Reject anything that could escape the intended host or change scheme.
-  if (/[\\@]|\.\.|:\/\/|[\x00-\x1f]/.test(targetPath) || targetPath.startsWith('/')) {
-    return res.status(400).json({ error: 'Invalid proxy path' });
-  }
-
-  const clientIp = getClientIp(req);
+app.all('/api/proxy/*', async (req, res) => {
+  const targetPath = req.params[0];
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
   const geoInfo = getGeoInfo(clientIp);
+
+  console.log(`[PROXY] Request to: ${targetPath} from: ${geoInfo.country}`);
 
   // Determine which domain to use based on geo
   const baseDomain = geoInfo.isBlocked ? CONFIG.MIRROR_DOMAIN : `https://${CONFIG.BOOKMAKER_NAME.toLowerCase()}.com`;
-
-  let targetUrl;
-  try {
-    targetUrl = new URL(targetPath, baseDomain.endsWith('/') ? baseDomain : `${baseDomain}/`);
-  } catch {
-    return res.status(400).json({ error: 'Invalid proxy path' });
-  }
-
-  // Enforce scheme + host allowlist on the FINAL resolved URL (anti-SSRF).
-  if (targetUrl.protocol !== 'https:' || !PROXY_ALLOWED_HOSTS.has(targetUrl.host)) {
-    console.warn(`[PROXY] Blocked disallowed target: ${targetUrl.href}`);
-    return res.status(400).json({ error: 'Target not allowed' });
-  }
-
-  console.log(`[PROXY] ${req.method} ${targetUrl.host}${targetUrl.pathname} from: ${geoInfo.country}`);
+  const targetUrl = `${baseDomain}/${targetPath}`;
 
   try {
     const response = await fetch(targetUrl, {
@@ -702,7 +552,7 @@ app.all('/api/proxy/*', sensitiveLimiter, async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': req.headers['user-agent'] || 'BettingBot/1.0',
-        // Set XFF from the verified client IP — never forward an attacker-supplied chain.
+        // Forward original IP for bookmaker's geo handling
         'X-Forwarded-For': clientIp,
       },
       body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined,
@@ -717,8 +567,7 @@ app.all('/api/proxy/*', sensitiveLimiter, async (req, res) => {
 
   } catch (error) {
     console.error(`[PROXY] Error: ${error.message}`);
-    // Do not leak internal error detail (hostnames, DNS, timeouts) to the client.
-    res.status(502).json({ error: 'Proxy error' });
+    res.status(502).json({ error: 'Proxy error', message: error.message });
   }
 });
 
@@ -726,33 +575,44 @@ app.all('/api/proxy/*', sensitiveLimiter, async (req, res) => {
 // KEITARO POSTBACK ENDPOINT
 // ============================================
 
-// 'lead' (registration only — no money) intentionally excluded: PRO is granted
-// for real deposits, not for signing up. Keitaro maps a deposit/FTD to 'sale'.
-const qualifyingKeitaroStatuses = ['sale', 'deposit', 'ftd', 'confirmed'];
-
 /**
- * Core Keitaro-postback processing, shared by the GET and POST routes.
- * Authentication (secret) MUST be verified before this is called.
+ * Keitaro Postback endpoint
+ *
+ * URL format: /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
+ *
+ * Parameters:
+ * - subid: Keitaro click ID (unique click identifier)
+ * - status: Conversion status (lead, sale, rejected, hold)
+ * - payout: Payout amount
+ * - currency: Currency (optional)
+ * - sub2: User ID (our tracking parameter)
+ * - sub1, sub3-sub5: Additional tracking params (optional)
+ *
+ * Configure in Keitaro:
+ * Postback URL: https://your-server.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub2={sub2}
  */
-async function processKeitaroPostback(query) {
-  const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id } = query;
+app.get('/api/keitaro/postback', async (req, res) => {
+  const { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id } = req.query;
 
   console.log(`[KEITARO POSTBACK] Received: subid=${subid}, status=${status}, payout=${payout}, sub2=${sub2}, sub10=${sub10}, external_id=${external_id}`);
 
+  // userId: our tracking links set external_id and sub_id_10 (Keitaro sends as sub10)
+  // sub2 kept for backwards compatibility
   const userId = sub10 || external_id || sub2;
 
   if (!userId) {
-    console.log('[KEITARO POSTBACK] Missing userId (sub10/external_id/sub2) - ignoring postback');
-    return;
+    console.log('[KEITARO POSTBACK] Missing sub2 (userId) - ignoring postback');
+    return res.status(200).send('OK'); // Always return OK to Keitaro
   }
 
+  // Store postback record
   const postbackRecord = {
     userId,
     keitaroSubid: subid,
     status,
-    payout: payout ? parseAmount(payout) : null,
+    payout: payout ? parseFloat(payout) : null,
     currency: currency || 'EUR',
-    campaign: sub1,
+    campaign: sub1, // sub1 for campaign/source tracking
     sub3,
     sub4,
     sub5,
@@ -760,25 +620,30 @@ async function processKeitaroPostback(query) {
     source: 'keitaro',
   };
 
+  // Store with subid as key for deduplication
   const recordKey = subid || `${userId}_${status}_${Date.now()}`;
   postbackStore.set(`keitaro_${recordKey}`, postbackRecord);
 
   console.log(`[KEITARO POSTBACK] Stored record: keitaro_${recordKey}`);
 
-  if (qualifyingKeitaroStatuses.includes(status?.toLowerCase())) {
-    const payoutAmount = parseAmount(payout);
+  // Check if this is a qualifying action for Premium activation
+  // Keitaro statuses: lead, sale, rejected, hold
+  const qualifyingStatuses = ['lead', 'sale', 'deposit', 'ftd', 'confirmed'];
+
+  if (qualifyingStatuses.includes(status?.toLowerCase())) {
+    const payoutAmount = parseFloat(payout) || 0;
 
     console.log(`[KEITARO POSTBACK] Qualifying conversion (${status})! Activating Premium for user: ${userId}`);
 
     try {
+      // Activate Premium for the user
       await activatePremium(userId, {
         source: 'keitaro',
         keitaroSubid: subid,
         status,
         payout: payoutAmount,
-        depositAmount: payoutAmount,
         currency: currency || 'EUR',
-        campaign: sub1,
+        campaign: sub1, // sub1 for campaign/source tracking
       });
 
       postbackRecord.premiumActivated = true;
@@ -796,42 +661,44 @@ async function processKeitaroPostback(query) {
     console.log(`[KEITARO POSTBACK] Non-qualifying status (${status}) - no premium activation`);
   }
 
+  // Log postback to database
   logPostback({
     user_id: userId,
     source: 'keitaro',
     click_id: subid,
     event: status,
-    amount: payout != null ? parseAmount(payout) : null,
+    amount: payout,
     currency: currency || 'EUR',
     premium_activated: postbackRecord.premiumActivated || false,
     error: postbackRecord.error,
-    raw_params: JSON.stringify(redactParams(query)),
+    raw_params: JSON.stringify(req.query),
   });
-}
 
-/**
- * Keitaro Postback endpoint (GET). Requires a valid secret (KEITARO_SECRET).
- * Configure in Keitaro by appending &secret=<value> to the postback URL.
- */
-app.get('/api/keitaro/postback', sensitiveLimiter, async (req, res) => {
-  if (!secretsMatch(extractSecret(req), CONFIG.KEITARO_SECRET)) {
-    console.log('[KEITARO POSTBACK] Missing or invalid secret');
-    return res.status(403).json({ error: 'Invalid secret' });
-  }
-  await processKeitaroPostback(req.query);
-  res.status(200).send('OK'); // Keitaro expects a simple OK
+  // Always respond with OK to Keitaro
+  res.status(200).send('OK');
 });
 
 /**
- * Keitaro Postback POST endpoint (alternative). Requires a valid secret.
+ * Keitaro Postback POST endpoint (alternative)
  */
-app.post('/api/keitaro/postback', sensitiveLimiter, async (req, res) => {
-  if (!secretsMatch(extractSecret(req), CONFIG.KEITARO_SECRET)) {
-    console.log('[KEITARO POSTBACK] Missing or invalid secret');
-    return res.status(403).json({ error: 'Invalid secret' });
-  }
-  await processKeitaroPostback({ ...req.query, ...req.body });
-  res.status(200).send('OK');
+app.post('/api/keitaro/postback', async (req, res) => {
+  // Support both query params and body
+  const subid = req.query.subid || req.body.subid;
+  const status = req.query.status || req.body.status;
+  const payout = req.query.payout || req.body.payout;
+  const currency = req.query.currency || req.body.currency;
+  const sub1 = req.query.sub1 || req.body.sub1;
+  const sub2 = req.query.sub2 || req.body.sub2;
+  const sub3 = req.query.sub3 || req.body.sub3;
+  const sub4 = req.query.sub4 || req.body.sub4;
+  const sub5 = req.query.sub5 || req.body.sub5;
+  const sub10 = req.query.sub10 || req.body.sub10;
+  const external_id = req.query.external_id || req.body.external_id;
+
+  req.query = { subid, status, payout, currency, sub1, sub2, sub3, sub4, sub5, sub10, external_id };
+
+  // Forward to GET handler
+  return app._router.handle({ ...req, method: 'GET' }, res, () => {});
 });
 
 // ============================================
@@ -841,7 +708,13 @@ app.post('/api/keitaro/postback', sensitiveLimiter, async (req, res) => {
 /**
  * View all postback records (admin only)
  */
-app.get('/api/admin/postbacks', requireAdmin, (req, res) => {
+app.get('/api/admin/postbacks', (req, res) => {
+  const { secret } = req.query;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
   const records = Array.from(postbackStore.entries()).map(([clickId, data]) => ({
     clickId,
     ...data,
@@ -853,7 +726,13 @@ app.get('/api/admin/postbacks', requireAdmin, (req, res) => {
 /**
  * View all premium activations (admin only)
  */
-app.get('/api/admin/premiums', requireAdmin, (req, res) => {
+app.get('/api/admin/premiums', (req, res) => {
+  const { secret } = req.query;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
   const records = Array.from(premiumActivations.entries()).map(([userId, data]) => ({
     userId,
     ...data,
@@ -865,8 +744,12 @@ app.get('/api/admin/premiums', requireAdmin, (req, res) => {
 /**
  * Test postback manually (for testing)
  */
-app.get('/api/admin/test-postback', requireAdmin, async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/admin/test-postback', async (req, res) => {
+  const { secret, userId } = req.query;
+
+  if (secret !== CONFIG.POSTBACK_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
 
   if (!userId) {
     return res.status(400).json({ error: 'userId is required' });
@@ -882,13 +765,17 @@ app.get('/api/admin/test-postback', requireAdmin, async (req, res) => {
     deposits: [],
   });
 
+  // Simulate deposit postback
+  req.query = { click_id: clickId, status: 'first_deposit', amount: '100', currency: 'USD' };
+
   console.log(`[TEST] Simulating postback for user: ${userId}`);
 
+  // Manually process
   const clickRecord = postbackStore.get(clickId);
   clickRecord.status = 'first_deposit';
   clickRecord.deposits.push({ amount: 100, currency: 'USD', timestamp: new Date().toISOString() });
 
-  await activatePremium(userId, { clickId, depositAmount: 100, currency: 'USD' });
+  await activatePremium(userId, { clickId, depositAmount: '100', currency: 'USD' });
 
   res.json({
     success: true,
@@ -921,11 +808,11 @@ app.get('/', (req, res) => {
     endpoints: {
       geo: 'GET /api/geo - Get geo info for current IP',
       click: 'GET /api/click?userId=xxx - Generate affiliate click ID',
-      postback: 'GET/POST /api/postback - Bookmaker postback endpoint (requires secret)',
-      keitaroPostback: 'GET/POST /api/keitaro/postback?...&secret=xxx (requires secret)',
+      postback: 'GET/POST /api/postback - Bookmaker postback endpoint',
+      keitaroPostback: 'GET/POST /api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}',
       premiumCheck: 'GET /api/premium/check/:userId - Check premium status',
       bookmakerLink: 'GET /api/bookmaker/link?userId=xxx - Get bookmaker link with cloaking',
-      proxy: 'GET/POST /api/proxy/* - Proxy requests to bookmaker (allowlisted hosts only)',
+      proxy: 'ALL /api/proxy/* - Proxy requests to bookmaker',
     },
   });
 });
@@ -937,18 +824,18 @@ const server = app.listen(PORT, () => {
   Betting Bot Server running on port ${PORT}
   ==========================================
 
-  Postback URL for bookmaker (append &secret=<POSTBACK_SECRET>):
-  https://your-domain.com/api/postback?click_id={click_id}&status={status}&amount={amount}&currency={currency}&secret=<secret>
+  Postback URL for bookmaker:
+  https://your-domain.com/api/postback?click_id={click_id}&status={status}&amount={amount}&currency={currency}
 
-  KEITARO Postback URL (append &secret=<KEITARO_SECRET>; use sub10 or external_id for userId):
-  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}&secret=<secret>
+  KEITARO Postback URL (use sub10 or external_id for userId):
+  https://your-domain.com/api/keitaro/postback?subid={subid}&status={status}&payout={payout}&sub10={sub_id_10}&external_id={external_id}
 
   Blocked countries: ${CONFIG.BLOCKED_COUNTRIES.join(', ')}
 
-  Admin endpoints (require ADMIN_SECRET via X-Admin-Secret header or ?secret=):
-  - GET /api/admin/postbacks
-  - GET /api/admin/premiums
-  - GET /api/admin/test-postback?userId=xxx
+  Admin endpoints (require secret):
+  - GET /api/admin/postbacks?secret=xxx
+  - GET /api/admin/premiums?secret=xxx
+  - GET /api/admin/test-postback?secret=xxx&userId=xxx
   `);
 });
 

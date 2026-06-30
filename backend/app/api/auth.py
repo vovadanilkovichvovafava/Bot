@@ -13,10 +13,6 @@ from app.core.phone_country import detect_country_from_phone
 from app.config import settings
 from app.core.database import get_db
 from app.models.user import User
-from app.models.fantasy import FantasyLedger
-
-# Fantasy points granted to every new account so they can start staking predictions.
-WELCOME_FANTASY_POINTS = 100
 
 logger = logging.getLogger(__name__)
 
@@ -37,39 +33,11 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 
 
 def get_client_ip(request: Request) -> str:
-    """
-    Real client IP for anti-abuse (per-IP registration cap).
-
-    Behind Cloudflare, CF-Connecting-IP is authoritative — Cloudflare strips any
-    client-supplied value, so it cannot be spoofed. We deliberately do NOT trust
-    the leftmost X-Forwarded-For entry (attacker-controlled), which would let a
-    farmer bypass the 5-accounts/IP limit by sending a fresh fake IP each time.
-    """
-    cf = request.headers.get("CF-Connecting-IP")
-    if cf and cf.strip():
-        return cf.strip()
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        # Use the LAST hop (added by the trusted proxy), not the spoofable first.
-        parts = [p.strip() for p in xff.split(",") if p.strip()]
-        if parts:
-            return parts[-1]
+    """Get client IP from request, considering proxies"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
-
-
-VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4"}
-
-
-def normalize_funnel(raw) -> str:
-    """Map an incoming utm_funnel value ('2', 'funnel-2', etc.) to a valid funnel."""
-    if not raw:
-        return "funnel-1"
-    r = str(raw).strip().lower()
-    if r in VALID_FUNNELS:
-        return r
-    if r in {"1", "2", "3", "4"}:
-        return f"funnel-{r}"
-    return "funnel-1"
 
 
 class UserRegister(BaseModel):
@@ -82,7 +50,6 @@ class UserRegister(BaseModel):
     utm_source: Optional[str] = None  # Рекламный источник: google, facebook, tiktok
     utm_campaign: Optional[str] = None  # Название рекламной кампании
     utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
-    language: Optional[str] = None  # UI language the user registered in (e.g. "pt")
 
     @field_validator("phone")
     @classmethod
@@ -219,22 +186,8 @@ async def register(
     # Detect country from phone prefix
     country = detect_country_from_phone(user.phone)
 
-    # Language: prefer the UI language the user actually registered in; fall back
-    # to the country's primary language; then English. (Previously every user was
-    # silently stored as "en" because registration never captured the language.)
-    _SUPPORTED_LANGS = {"en", "pt", "es", "fr", "it", "de", "pl", "ru", "ro", "tr", "ar", "hi", "zh"}
-    _COUNTRY_LANG = {
-        "PT": "pt", "BR": "pt", "AO": "pt", "MZ": "pt",
-        "ES": "es", "MX": "es", "AR": "es", "CO": "es", "CL": "es", "PE": "es",
-        "FR": "fr", "IT": "it", "DE": "de", "AT": "de", "PL": "pl",
-        "RU": "ru", "BY": "ru", "UA": "ru", "RO": "ro", "TR": "tr",
-        "CN": "zh", "IN": "hi", "SA": "ar", "AE": "ar", "EG": "ar",
-    }
-    _lang_in = (user.language or "").strip().lower()[:2]
-    language = _lang_in if _lang_in in _SUPPORTED_LANGS else _COUNTRY_LANG.get((country or "").upper(), "en")
-
-    # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
-    funnel = normalize_funnel(user.utm_funnel)
+    # All new users go to funnel-1
+    funnel = "funnel-1"
 
     # Create new user
     new_user = User(
@@ -244,7 +197,6 @@ async def register(
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
         country=country,
-        language=language,
         referred_by_id=referrer.id if referrer else None,
         traffic_source=user.source,
         utm_source=user.utm_source,
@@ -264,7 +216,6 @@ async def register(
             password_hash=get_password_hash(user.password),
             registration_ip=client_ip,
             country=country,
-            language=language,
             referred_by_id=referrer.id if referrer else None,
             traffic_source=user.source,
         )
@@ -274,11 +225,6 @@ async def register(
 
     # Generate unique referral code for new user
     new_user.referral_code = f"PS{new_user.id:04X}{int(new_user.created_at.timestamp()) % 10000:04X}"
-
-    # Welcome bonus — 100 starting fantasy points (the signup_bonus ledger row also
-    # makes the existing-user backfill idempotent: it skips anyone who already has one).
-    new_user.fantasy_points = WELCOME_FANTASY_POINTS
-    db.add(FantasyLedger(user_id=new_user.id, kind="signup_bonus", points=WELCOME_FANTASY_POINTS, reason="welcome_bonus"))
 
     # Award referrer with bonus
     if referrer:

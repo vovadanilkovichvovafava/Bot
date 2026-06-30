@@ -4,6 +4,7 @@ Postback log API — record and query postback events.
 - GET /  — admin endpoint for viewing logs
 """
 
+import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,12 +14,15 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import verify_internal_secret
 from app.api.admin_auth import get_current_admin
 from app.models.postback_log import PostbackLog
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+INTERNAL_SECRET = os.getenv("POSTBACK_SECRET")
+if not INTERNAL_SECRET:
+    raise RuntimeError("POSTBACK_SECRET environment variable is not set")
 
 router = APIRouter()
 
@@ -30,7 +34,7 @@ async def record_postback(
     db: AsyncSession = Depends(get_db),
 ):
     """Record a postback event (called by postback server)."""
-    if not verify_internal_secret(x_internal_secret):
+    if x_internal_secret != INTERNAL_SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
 
     user_id = data.get("user_id")

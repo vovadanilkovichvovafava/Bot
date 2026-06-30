@@ -15,7 +15,6 @@ const AdminPro = lazy(() => import('./pages/AdminPro'))
 const AdminFunnels = lazy(() => import('./pages/AdminFunnels'))
 const AdminTraffic = lazy(() => import('./pages/AdminTraffic'))
 const AdminTeam = lazy(() => import('./pages/AdminTeam'))
-const AdminPostbacks = lazy(() => import('./pages/AdminPostbacks'))
 
 function AdminProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAdminAuth()
@@ -56,7 +55,6 @@ export default function AdminRoutes() {
             <Route path="funnels" element={<AdminFunnels />} />
             <Route path="traffic" element={<AdminTraffic />} />
             <Route path="team" element={<AdminTeam />} />
-            <Route path="postbacks" element={<AdminPostbacks />} />
           </Route>
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

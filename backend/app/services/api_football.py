@@ -175,14 +175,6 @@ class ApiFootballService:
         """Get upcoming fixtures for a specific team"""
         return await self._request("/fixtures", {"team": team_id, "season": season, "next": next_count}, "fixtures")
 
-    async def get_league_season_fixtures(self, league_id: int, season: int) -> List[Dict]:
-        """Get ALL fixtures for a league+season (group stage + knockouts). Used for tournament views like the World Cup."""
-        return await self._request("/fixtures", {"league": league_id, "season": season}, "fixtures")
-
-    async def get_team_recent(self, team_id: int, last: int = 10) -> List[Dict]:
-        """Get a team's most recent finished fixtures (for form / derived stats)."""
-        return await self._request("/fixtures", {"team": team_id, "last": last}, "fixtures")
-
     # === Statistics ===
 
     async def get_fixture_statistics(self, fixture_id: int) -> List[Dict]:
@@ -208,47 +200,6 @@ class ApiFootballService:
         """Get betting odds for fixture"""
         return await self._request("/odds", {"fixture": fixture_id}, "odds")
 
-    async def get_odds_map_by_date(self, date: str) -> Dict[int, Dict]:
-        """Batch 1X2 odds for all fixtures on a date → {fixture_id: {home, draw, away}}.
-
-        Uses API-Football /odds?date=&bet=1 (Match Winner) with pagination.
-        Bounded to 8 pages to cap quota cost; result cached server-side (odds TTL).
-        """
-        cache_key = f"odds_map:{date}"
-        cached = _get_cache(cache_key)
-        if cached is not None:
-            return cached
-
-        odds_map: Dict[int, Dict] = {}
-        for page in range(1, 9):
-            try:
-                resp = await self._request("/odds", {"date": date, "bet": 1, "page": page}, "odds")
-            except Exception:
-                break
-            if not resp:
-                break
-            for item in resp:
-                try:
-                    fid = (item.get("fixture") or {}).get("id")
-                    bookmakers = item.get("bookmakers") or []
-                    if not fid or fid in odds_map or not bookmakers:
-                        continue
-                    bets = bookmakers[0].get("bets") or []
-                    mw = next((b for b in bets if b.get("id") == 1 or b.get("name") == "Match Winner"), None)
-                    if not mw:
-                        continue
-                    vals = {v.get("value"): v.get("odd") for v in (mw.get("values") or [])}
-                    home = vals.get("Home")
-                    if home:
-                        odds_map[fid] = {"home": home, "draw": vals.get("Draw"), "away": vals.get("Away")}
-                except Exception:
-                    continue
-            if len(resp) < 10:  # last page
-                break
-
-        _set_cache(cache_key, odds_map, "odds")
-        return odds_map
-
     # === Teams ===
 
     async def get_team(self, team_id: int) -> Optional[Dict]:
@@ -259,10 +210,6 @@ class ApiFootballService:
     async def search_teams(self, name: str) -> List[Dict]:
         """Search teams by name"""
         return await self._request("/teams", {"search": name}, "teams")
-
-    async def get_squad(self, team_id: int) -> List[Dict]:
-        """Get current squad (player list) for a team"""
-        return await self._request("/players/squads", {"team": team_id}, "teams")
 
     # === Injuries ===
 
@@ -282,44 +229,6 @@ class ApiFootballService:
         """Get head-to-head matches"""
         h2h = f"{team1_id}-{team2_id}"
         return await self._request("/fixtures/headtohead", {"h2h": h2h, "last": last}, "fixtures")
-
-    # === Team Statistics / Players / Leagues / Live Odds ===
-
-    async def get_team_statistics(self, team_id: int, season: int, league_id: int) -> Any:
-        """Get aggregated season statistics for a team in a league (response is an object)."""
-        return await self._request(
-            "/teams/statistics",
-            {"team": team_id, "season": season, "league": league_id},
-            "teams",
-        )
-
-    async def get_top_scorers(self, league_id: int, season: int) -> List[Dict]:
-        """Get top scorers for a league+season."""
-        return await self._request("/players/topscorers", {"league": league_id, "season": season}, "standings")
-
-    async def get_top_assists(self, league_id: int, season: int) -> List[Dict]:
-        """Get top assist providers for a league+season."""
-        return await self._request("/players/topassists", {"league": league_id, "season": season}, "standings")
-
-    async def get_leagues(
-        self,
-        country: Optional[str] = None,
-        search: Optional[str] = None,
-        league_id: Optional[int] = None,
-    ) -> List[Dict]:
-        """List/search leagues."""
-        params: Dict[str, Any] = {}
-        if country:
-            params["country"] = country
-        if search:
-            params["search"] = search
-        if league_id:
-            params["id"] = league_id
-        return await self._request("/leagues", params, "standings")
-
-    async def get_live_odds(self, fixture_id: int) -> List[Dict]:
-        """Get in-play (live) odds for a fixture."""
-        return await self._request("/odds/live", {"fixture": fixture_id}, "live")
 
     # === Enriched Data (combines multiple calls) ===
 

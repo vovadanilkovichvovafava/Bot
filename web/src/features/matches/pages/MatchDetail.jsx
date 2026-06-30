@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
-import ProBlur from '../../../shared/components/ProBlur';
 import api from '../../../shared/api';
 import footballApi from '../api/footballApi';
 import { savePrediction, getSavedAnalysis, updatePredictionAnalysis } from '../../predictions/services/predictionStore';
@@ -12,15 +11,15 @@ import { generateMatchShareText } from '../../predictions/services/shareUtils';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import fonbetApi from '../../../services/fonbetApi';
-import { getTrackingLink, addTrackingToUrl, isAllowedDeeplink } from '../../betting/services/trackingService';
+import { getTrackingLink, addTrackingToUrl } from '../../betting/services/trackingService';
 import CommunityPick from '../components/CommunityPick';
 import MatchChat from '../components/MatchChat';
 
-const TAB_KEYS = ['overview', 'stats', 'lineups', 'fans'];
+const TAB_KEYS = ['overview', 'fans', 'stats', 'lineups'];
 const PREDICTION_CACHE_KEY = 'match_predictions_cache';
 const PREDICTION_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
 
-const FREE_AI_LIMIT = 5;
+const FREE_AI_LIMIT = 3;
 
 // Helper functions for prediction caching
 const getCachedPrediction = (matchId) => {
@@ -70,9 +69,6 @@ export default function MatchDetail() {
   // Only users registered on bookmaker (use_deeplink=true) or PRO users go directly to match
   // Everyone else must first register through the offer
   const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
-  const isFunnel2Top = user?.funnel === 'funnel-2';
-  const isFunnel4Top = user?.funnel === 'funnel-4';
-  const isPremiumTop = user?.is_premium && !isFunnel2Top && !isFunnel4Top;
   const [match, setMatch] = useState(null);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
@@ -430,13 +426,18 @@ export default function MatchDetail() {
     prompt += `\nIf a market's odds are outside this range, find a DIFFERENT market that fits.`;
     prompt += `\nFor example, if Match Winner odds are 1.10 (below ${minOdds}), suggest Over/Under, BTTS, Handicap, or Corners instead.`;
 
-    prompt += `\n\n**OUTPUT FORMAT:** Reply with ONLY 2-3 bets from DIFFERENT markets, one per line, in this EXACT format (each bet on a SINGLE line — no line breaks inside a bet):`;
-    prompt += `\n[BET] <Bet Type> @ <Odds> | <analysis>`;
-    prompt += `\nThe <analysis> after "|" MUST be a rich 5-7 sentence breakdown written like a sharp professional football analyst — packed with concrete numbers and proper terminology so the user trusts the pick. Weave in: recent form (last 5-6 as W-D-L), head-to-head, expected goals (xG/xGA), goals scored & conceded per game, shots on target, possession %, big-chance/set-piece threat, home-vs-away splits, key injuries/suspensions, the tactical matchup, and why the price offers value vs implied probability. Be confident and specific with figures; use the real data above where available.`;
-    prompt += `\nExample:`;
-    prompt += `\n[BET] Over 2.5 Goals @ 1.85 | Both sides are firing — the hosts average 2.1 goals per game with 6.8 shots on target at home and a combined xG near 2.9 here. The visitors concede 1.7 per away match, one clean sheet in 11 on the road, and look fragile from set-pieces. 4 of the hosts' last 5 cleared Over 2.5, as did all four H2H meetings with BTTS in each. The hosts run 58% possession but defend a high line that bleeds space in transition. Neither manager parks the bus, so the goals market is the standout. At 1.85 (implied 54%) that's value against a model closer to 62%.`;
-    prompt += `\nLead with the bets — no long intro. All odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
-    prompt += `\n\nNON-NEGOTIABLE: Be a confident tipster. ALWAYS give the 2-3 bets, even if some data above is missing — lean on your expert football knowledge for whatever isn't provided. NEVER ask the user for odds, form, injuries, head-to-head, lineups or venue. NEVER write "I lack data", "missing data", "please supply/provide", "once you provide", or list what's missing. No hedging, no disclaimers — just the confident picks with analysis.`;
+    prompt += `\n\nProvide a detailed prediction with probabilities and key factors.`;
+    prompt += `\n\n**IMPORTANT: End your analysis with a FINAL RECOMMENDATIONS section containing 2-3 bets from DIFFERENT markets.**`;
+    prompt += `\nEach recommendation MUST use this exact format on its own line:`;
+    prompt += `\n[BET] Bet Type @ Odds`;
+    prompt += `\n`;
+    prompt += `\nExample final section:`;
+    prompt += `\n**FINAL RECOMMENDATIONS**`;
+    prompt += `\n1. [BET] Over 2.5 Goals @ 1.85`;
+    prompt += `\n2. [BET] ${home} Win @ 2.10`;
+    prompt += `\n3. [BET] Both Teams to Score @ 1.75`;
+    prompt += `\n`;
+    prompt += `\nAll odds MUST be between ${minOdds} and ${maxOdds}. Pick different markets (1X2, Over/Under, BTTS, Handicap, Corners, etc).`;
     return prompt;
   };
 
@@ -626,72 +627,83 @@ export default function MatchDetail() {
 
   const odds1x2 = getOdds1x2();
 
-  // Hero display helpers
-  const kickoffTime = formatTime(match.match_date);
-  const _md = new Date(match.match_date);
-  const isMatchToday = _md.toDateString() === new Date().toDateString();
-  const dateLabel = isMatchToday ? t('matches.today', { defaultValue: 'Today' }) : formatDate(match.match_date);
-  const venueName = enriched?.fixture?.fixture?.venue?.name;
-  const ptsDisplay = (isPremiumTop || isFunnel2Top || isFunnel4Top) ? '∞' : (aiRemaining ?? FREE_AI_LIMIT);
-
-  // Shortest path to the offer: if we have a direct bookmaker deeplink for this
-  // match, open it in one tap (with affiliate tracking) instead of the multi-step
-  // promo funnel. No deeplink → fall back to the promo page.
+  // Registered (use_deeplink) and PRO users go directly to bookmaker match
+  // Everyone else goes to offer link to register on bookmaker first
   const handlePromoClick = (source) => {
     trackClick(user?.id, source);
-    const dl = fonbetMatch?.deeplink;
-    if (dl && isAllowedDeeplink(dl) && user?.id) {
-      window.open(addTrackingToUrl(dl, user.id, source), '_blank', 'noopener,noreferrer');
-    } else {
-      navigate(dl ? `/promo?fonbet_deeplink=${encodeURIComponent(dl)}` : '/promo');
-    }
+    navigate('/promo');
   };
 
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5]">
      <div className="flex-1 min-h-0 overflow-y-auto">
-      {/* Header — STATSPRO dark navy */}
-      <div className="px-4 pt-5 pb-4" style={{ background: 'linear-gradient(135deg, #1B2138 0%, #232a45 100%)' }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+      {/* Header */}
+      <div className="bg-white px-5 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
           </button>
-          <h1 className="flex-1 text-white text-lg font-black tracking-wide">STATSPRO</h1>
-          <button onClick={() => navigate((isPremiumTop || isFunnel2Top || isFunnel4Top) ? '/settings' : '/pro-access')} className="flex items-center gap-1.5 bg-black/25 rounded-full pl-2 pr-3 py-1.5 shrink-0">
-            <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
-            </span>
-            <span className="text-emerald-400 font-bold text-sm">{ptsDisplay} {t('home.pts', { defaultValue: 'pts' })}</span>
-          </button>
-          <button onClick={() => navigate('/settings')} className="w-9 h-9 rounded-full bg-white/15 ring-2 ring-white/10 flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-sm">{(user?.username || 'U')[0].toUpperCase()}</span>
-          </button>
+          <h1 className="text-lg font-bold text-gray-900">{match.league}</h1>
+          <div className="w-10"/>
         </div>
-      </div>
 
-      <div className="px-4 pt-4">
-        {/* Blue hero */}
-        <div className="rounded-2xl p-5 text-white" style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center gap-2 w-24">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                {match.home_team?.logo && <img src={match.home_team.logo} alt="" className="w-11 h-11 object-contain" onError={(e) => e.target.style.display='none'}/>}
-              </div>
-              <span className="text-[13px] font-bold text-center leading-tight">{match.home_team?.name}</span>
+        {/* Match Info Card */}
+        <div className="card border border-gray-100">
+          <p className="text-gray-500 text-center text-sm">{formatDate(match.match_date)} &bull; {formatTime(match.match_date)}</p>
+
+          <div className="flex items-center justify-between mt-4 px-2">
+            <div className="flex-1 text-center">
+              {match.home_team?.logo && (
+                <img src={match.home_team.logo} alt="" className="w-16 h-16 mx-auto mb-2 object-contain" onError={(e) => e.target.style.display='none'}/>
+              )}
+              <p className="font-semibold text-sm">{match.home_team?.name}</p>
             </div>
-            <div className="flex flex-col items-center px-2">
-              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t('matchDetail.kickoff', { defaultValue: 'Kickoff' })}</span>
-              <span className="text-3xl font-black leading-tight my-0.5">{kickoffTime}</span>
-              <span className="bg-white/15 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">{dateLabel}</span>
-              {venueName && <span className="text-white/50 text-[10px] mt-1.5 text-center max-w-[110px] truncate">{venueName}</span>}
+
+            <div className="px-4 text-center">
+              <span className="text-2xl font-bold text-gray-300">{t('matchDetail.vs')}</span>
+              <p className={`text-xs mt-1 font-medium ${statusLabel(match.status) === 'Live' ? 'text-red-500' : 'text-amber-500'}`}>
+                {statusLabel(match.status)}
+              </p>
             </div>
-            <div className="flex flex-col items-center gap-2 w-24">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                {match.away_team?.logo && <img src={match.away_team.logo} alt="" className="w-11 h-11 object-contain" onError={(e) => e.target.style.display='none'}/>}
-              </div>
-              <span className="text-[13px] font-bold text-center leading-tight">{match.away_team?.name}</span>
+
+            <div className="flex-1 text-center">
+              {match.away_team?.logo && (
+                <img src={match.away_team.logo} alt="" className="w-16 h-16 mx-auto mb-2 object-contain" onError={(e) => e.target.style.display='none'}/>
+              )}
+              <p className="font-semibold text-sm">{match.away_team?.name}</p>
             </div>
           </div>
+
+          {/* Odds row - clickable */}
+          {odds1x2 && (
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-3 gap-2">
+                <div
+                  onClick={() => handlePromoClick('match_odds_home')}
+                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
+                >
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.home')}</p>
+                  <p className="text-sm font-bold text-blue-600">{odds1x2.home}</p>
+                </div>
+                <div
+                  onClick={() => handlePromoClick('match_odds_draw')}
+                  className="bg-gray-50 hover:bg-gray-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-gray-200"
+                >
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">{t('matchDetail.draw')}</p>
+                  <p className="text-sm font-bold text-gray-700">{odds1x2.draw}</p>
+                </div>
+                <div
+                  onClick={() => handlePromoClick('match_odds_away')}
+                  className="bg-blue-50 hover:bg-blue-100 rounded-lg py-2 text-center cursor-pointer transition-colors border border-blue-200"
+                >
+                  <p className="text-[10px] text-blue-500 uppercase font-medium">{t('matchDetail.away')}</p>
+                  <p className="text-sm font-bold text-blue-600">{odds1x2.away}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -700,7 +712,7 @@ export default function MatchDetail() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 min-w-0 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-1 ${
+              className={`flex-1 min-w-0 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${
                 activeTab === tab
                   ? 'text-primary-600 border-primary-600'
                   : 'text-gray-400 border-transparent'
@@ -712,7 +724,7 @@ export default function MatchDetail() {
         </div>
       </div>
 
-      <div className="px-4 mt-4 space-y-4 pb-8">
+      <div className="px-5 mt-4 space-y-4 pb-8">
         {activeTab === 'overview' && (
           <OverviewTab
             matchId={id}
@@ -738,22 +750,10 @@ export default function MatchDetail() {
           />
         )}
         {activeTab === 'stats' && (
-          isPremiumTop || isFunnel2Top ? (
-            <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
-          ) : (
-            <ProBlur feature="match-stats" label={t('matchDetail.statsPro', { defaultValue: 'Match Statistics' })}>
-              <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
-            </ProBlur>
-          )
+          <StatsTab enriched={enriched} loading={enrichedLoading} match={match} t={t} />
         )}
         {activeTab === 'lineups' && (
-          isPremiumTop || isFunnel2Top ? (
-            <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
-          ) : (
-            <ProBlur feature="lineups" label={t('matchDetail.lineupsPro', { defaultValue: 'Starting Lineups' })}>
-              <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
-            </ProBlur>
-          )
+          <LineupsTab enriched={enriched} loading={enrichedLoading} t={t} />
         )}
         {activeTab === 'fans' && (
           <FansAreaTab matchId={id} match={match} t={t} />
@@ -803,46 +803,36 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
     const seen = new Set();
     let m;
 
-    // A real bet "type" is a short market label, not a prose sentence. This guard
-    // rejects fragments of the analysis text that the regexes can otherwise mistake
-    // for a bet (e.g. "Recent form (Czechia & South Africa last 5 ... @ 6.00").
-    const isBetType = (t) => {
-      const s = (t || '').trim();
-      // Markets and combos are short-ish labels — but combos like
-      // "Combo Winner: Germany and +1.5 goals" are legit, so keep the cap generous.
-      if (s.length < 3 || s.length > 55) return false;
-      if (s.split(/\s+/).length > 9) return false;           // not a full sentence
-      // Prose fragments are caught by keyword regardless of length.
-      if (/recent form|last \d|head[- ]?to[- ]?head|\bh2h\b|confidence|average|per game|\bxg\b|possession|probabilit|implied/i.test(s)) return false;
-      return true;
-    };
-    const oddsOk = (o) => o >= 1.01 && o <= 25;
-    const add = (type, oddsStr, reason) => {
-      const t = (type || '').trim();
-      const odds = parseFloat(oddsStr);
-      if (!isBetType(t) || !oddsOk(odds)) return;
-      const key = t.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); bets.push({ type: t, odds, reason: (reason || '').trim() }); }
-    };
+    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85
+    const betTagRe = /\[BET\]\s*(.+?)\s*@\s*([\d.]+)/gi;
+    while ((m = betTagRe.exec(content)) !== null) {
+      const key = m[1].trim().toLowerCase();
+      if (!seen.has(key)) { seen.add(key); bets.push({ type: m[1].trim(), odds: parseFloat(m[2]) }); }
+    }
 
-    // 1) Explicit [BET] tags: [BET] Over 2.5 Goals @ 1.85 | reason
-    const betTagRe = /\[BET\]\s*([^\n@]+?)\s*@\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gi;
-    while ((m = betTagRe.exec(content)) !== null) add(m[1], m[2], m[3]);
-
-    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85 | reason"
+    // 2) Numbered list: "1. Over 2.5 Goals @ 1.85" or "1. **Over 2.5** @ 1.85"
     if (bets.length === 0) {
-      const numberedRe = /^\s*\d+[.)]\s*\**\s*([^\n@–—|]+?)\**\s*[@–—-]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
+      const numberedRe = /^\s*\d+[.)]\s*\**\s*(.+?)\**\s*[@–—-]\s*([\d.]+)/gim;
       while ((m = numberedRe.exec(content)) !== null) {
-        add(m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, ''), m[2], m[3]);
+        const type = m[1].replace(/\*+/g, '').replace(/\s*\(.*?\)\s*$/, '').trim();
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+        }
       }
     }
 
-    // 3) Fallback: "Bet Type @ odds | reason" anywhere
+    // 3) Fallback: "Bet Type @ odds" anywhere
     if (bets.length === 0) {
-      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**([^\n@–—|]+?)\**\s*[@–—]\s*([\d.]+)(?:\s*\|\s*([^\n]+))?/gim;
+      const fallbackRe = /(?:^|\n)[•\-*]?\s*\**(.+?)\**\s*[@–—]\s*([\d.]+)/gim;
       while ((m = fallbackRe.exec(content)) !== null) {
         const type = m[1].replace(/\*+/g, '').replace(/\[BET\]/gi, '').replace(/\s*\(.*?\)\s*$/, '').trim();
-        if (!type.includes(':')) add(type, m[2], m[3]);
+        const odds = parseFloat(m[2]);
+        if (odds >= 1.01 && odds <= 50 && type.length > 2 && !type.includes(':')) {
+          const key = type.toLowerCase();
+          if (!seen.has(key)) { seen.add(key); bets.push({ type, odds }); }
+        }
       }
     }
 
@@ -895,6 +885,18 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             </div>
           </div>
 
+          {/* API-Football Prediction - win probability */}
+          {pred?.predictions?.percent && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.winProbability')}</p>
+              <div className="space-y-2">
+                <ProbBar label={match.home_team?.name} pct={parseInt(pred.predictions.percent.home)} color="bg-blue-500"/>
+                <ProbBar label={t('matchDetail.draw')} pct={parseInt(pred.predictions.percent.draw)} color="bg-gray-400"/>
+                <ProbBar label={match.away_team?.name} pct={parseInt(pred.predictions.percent.away)} color="bg-red-500"/>
+              </div>
+            </div>
+          )}
+
           {/* API-Football advice */}
           {pred?.predictions?.advice && (
             <div className="bg-amber-50 rounded-xl px-4 py-2.5 text-sm text-amber-800 font-medium mb-4">
@@ -913,24 +915,47 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             </div>
           )}
 
-          {/* Bets-first: AI picks with per-bet "Analysis details" toggle */}
-          {recommendedBets.length > 0 && (
-            <div className="mt-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mb-2.5">
-                <span>🔥</span>{t('aiChat.aiPicks', { defaultValue: 'AI Picks' })}
-              </p>
-              <MatchBetList
-                bets={recommendedBets}
-                fallback={stripBets(prediction.claudeAnalysis)}
-                t={t}
-                onPlace={() => handlePromoClick('match_bet_card')}
-              />
-            </div>
-          )}
+          {/* Claude AI Analysis text */}
+          {(pred?.predictions || pred?.comparison) && <div className="border-t border-gray-100 my-4"/>}
+          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('matchDetail.expertAnalysis')}</p>
+          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {prediction.claudeAnalysis?.split('\n').map((line, i) => {
+              const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+              return <p key={i} className={line === '' ? 'h-2' : ''} dangerouslySetInnerHTML={{ __html: bold }}/>;
+            })}
+          </div>
 
-          {/* Promo block (free users) */}
+          {/* Combined: Best Bet cards + Promo block (merged into one card) */}
           {!isPremium && (
             <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+              {/* Best Bet section — only if bets exist */}
+              {recommendedBets.length > 0 && (
+                <>
+                  <div className="bg-white px-4 pt-3 pb-2">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                      <span>🔥</span>
+                      {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
+                    </p>
+                  </div>
+                  <div className="bg-white px-4 pb-3 space-y-2">
+                    {recommendedBets.map((bet, idx) => {
+                      const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+                      return (
+                        <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                              <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {/* Promo header bar */}
               <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
@@ -946,9 +971,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                 <p
                   className="text-sm text-gray-700 leading-relaxed mb-3"
                   dangerouslySetInnerHTML={{ __html: t('aiChat.bonusBannerText', {
-                    // Escape interpolated names — i18next escapeValue is off and this is an HTML sink.
-                    match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`
-                      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+                    match: `${match?.home_team?.name || ''} — ${match?.away_team?.name || ''}`,
                     confidence: recommendedBet ? 70 + ((recommendedBet.type || '').length * 7 + Math.round(recommendedBet.odds * 13)) % 26 : 78,
                     bonus: advertiser?.bonusBanner?.bonus || '',
                   }) }}
@@ -996,7 +1019,7 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
 
                 {/* CTA */}
                 <button
-                  onClick={() => handlePromoClick('match_ad_get_bonus')}
+                  onClick={() => { trackClick(user?.id, 'match_ad_get_bonus'); navigate('/promo'); }}
                   className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
                 >
@@ -1127,22 +1150,10 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
       <TeamFormCard enriched={enriched} match={match} t={t} />
 
       {/* H2H Matches */}
-      {isPremium || isFunnel2 ? (
-        <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
-      ) : (
-        <ProBlur feature="h2h" label={t('matchDetail.h2hPro', { defaultValue: 'Head-to-Head History' })}>
-          <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
-        </ProBlur>
-      )}
+      <H2HList enriched={enriched} match={match} t={t} formatDate={formatDate} />
 
       {/* League Standings */}
-      {isPremium || isFunnel2 ? (
-        <StandingsTable enriched={enriched} match={match} t={t} />
-      ) : (
-        <ProBlur feature="standings" label={t('matchDetail.standingsPro', { defaultValue: 'League Standings' })}>
-          <StandingsTable enriched={enriched} match={match} t={t} />
-        </ProBlur>
-      )}
+      <StandingsTable enriched={enriched} match={match} t={t} />
 
       {/* Match Info */}
       <div className="card border border-gray-100">
@@ -1330,6 +1341,18 @@ function LineupsTab({ enriched, loading, t }) {
 // ============================
 // Shared Components
 // ============================
+
+function ProbBar({ label, pct, color }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-gray-600 w-24 truncate">{label}</span>
+      <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}/>
+      </div>
+      <span className="text-xs font-bold text-gray-900 w-10 text-right">{pct}%</span>
+    </div>
+  );
+}
 
 function CompareBar({ label, home, away }) {
   const h = parseInt(home) || 0;
@@ -1739,60 +1762,3 @@ function MatchBonusCard({ match, advertiser, user, trackClick, recommendedBet, p
   );
 }
 
-
-/* Strip [BET] lines and the FINAL RECOMMENDATIONS header — fallback analysis text */
-function stripBets(content) {
-  return (content || '')
-    .replace(/\[BET\][^\n]*/gi, '')
-    .replace(/\*\*?FINAL RECOMMENDATIONS\*\*?/gi, '')
-    .replace(/FINAL RECOMMENDATIONS/gi, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-/* Bets-first list with a per-bet "Analysis details" toggle */
-function MatchBetList({ bets, fallback, t, onPlace }) {
-  const [openIdx, setOpenIdx] = useState(null);
-  return (
-    <div className="space-y-2.5">
-      {bets.slice(0, 4).map((bet, idx) => {
-        const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
-        const analysis = bet.reason || fallback;
-        const isOpen = openIdx === idx;
-        return (
-          <div key={idx} className="rounded-xl border border-gray-100 overflow-hidden bg-white">
-            <div className="flex items-center justify-between px-3 py-2.5">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                  <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                </div>
-              </div>
-              <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-            </div>
-            <div className="flex gap-2 px-3 pb-3">
-              <button
-                onClick={() => setOpenIdx(isOpen ? null : idx)}
-                className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 rounded-lg py-2"
-              >
-                {t('matchDetail.analysisDetails', { defaultValue: 'Analysis details' })}
-                <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-              </button>
-              <button onClick={onPlace} className="flex-1 text-xs font-bold text-white bg-emerald-600 rounded-lg py-2">
-                {t('aiChat.placeBet', { defaultValue: 'Place bet' })}
-              </button>
-            </div>
-            {isOpen && analysis && (
-              <div className="px-3 pb-3 -mt-0.5">
-                <div className="bg-gray-50 rounded-lg p-3 text-[13px] text-gray-700 leading-relaxed border-l-2 border-primary-500 whitespace-pre-line">
-                  {analysis}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}

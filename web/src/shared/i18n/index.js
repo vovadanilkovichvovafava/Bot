@@ -5,18 +5,16 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translations — supported languages
 import en from './locales/en.json';
 import es from './locales/es.json';
-import pt from './locales/pt.json';
 import fr from './locales/fr.json';
 import it from './locales/it.json';
 import pl from './locales/pl.json';
 import de from './locales/de.json';
 
-const SUPPORTED_LANGS = ['en', 'es', 'pt', 'fr', 'it', 'pl', 'de'];
+const SUPPORTED_LANGS = ['en', 'es', 'fr', 'it', 'pl', 'de'];
 
 const resources = {
   en: { translation: en },
   es: { translation: es },
-  pt: { translation: pt },
   fr: { translation: fr },
   it: { translation: it },
   pl: { translation: pl },
@@ -28,7 +26,6 @@ const resources = {
 // All other regions → en (fallback)
 const COUNTRY_TO_LANG = {
   ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es',
-  PT: 'pt', BR: 'pt', AO: 'pt', MZ: 'pt',
   FR: 'fr', BE: 'fr',
   IT: 'it',
   PL: 'pl',

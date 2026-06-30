@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 
 const SOURCE_COLORS = {
@@ -25,13 +25,6 @@ export default function Postbacks() {
   const [summary, setSummary] = useState({})
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [expanded, setExpanded] = useState(() => new Set())
-
-  const toggleRow = (id) => setExpanded(prev => {
-    const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
-    return next
-  })
 
   const load = useCallback(async (q, source, event, p) => {
     setLoading(true)
@@ -137,10 +130,8 @@ export default function Postbacks() {
             ) : logs.length === 0 ? (
               <tr><td colSpan="7" className="px-4 py-8 text-center text-dark-500">No postback logs yet</td></tr>
             ) : logs.map(l => (
-              <Fragment key={l.id}>
-              <tr onClick={() => toggleRow(l.id)} className="hover:bg-dark-700/50 transition-colors cursor-pointer">
+              <tr key={l.id} className="hover:bg-dark-700/50 transition-colors">
                 <td className="px-4 py-3 text-xs text-dark-400 whitespace-nowrap">
-                  <span className="inline-block w-3 text-dark-500">{expanded.has(l.id) ? '▾' : '▸'}</span>{' '}
                   {l.created_at ? new Date(l.created_at).toLocaleString() : '—'}
                 </td>
                 <td className="px-4 py-3">
@@ -171,37 +162,6 @@ export default function Postbacks() {
                   {l.error || ''}
                 </td>
               </tr>
-              {expanded.has(l.id) && (
-                <tr key={l.id + '-detail'} className="bg-dark-900/60">
-                  <td colSpan="7" className="px-4 py-3">
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-                      <div>
-                        <span className="text-dark-500">click_id: </span>
-                        <span className="font-mono text-dark-200 select-all break-all">{l.click_id || '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-dark-500">transaction_id: </span>
-                        <span className="font-mono text-dark-200 select-all break-all">{l.transaction_id || '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-dark-500">country: </span>
-                        <span className="font-mono text-dark-200">{l.country || '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-dark-500">user_db_id: </span>
-                        <span className="font-mono text-dark-200">{l.user_db_id ?? '—'}</span>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-dark-500 mb-1 text-xs">raw params (sub_id / keitaro subid):</p>
-                      <pre className="bg-dark-950 border border-dark-700 rounded-lg p-3 text-[11px] text-dark-300 overflow-x-auto whitespace-pre-wrap break-all select-all">
-{l.raw_params ? (typeof l.raw_params === 'string' ? l.raw_params : JSON.stringify(l.raw_params, null, 2)) : '— no raw params recorded —'}
-                      </pre>
-                    </div>
-                  </td>
-                </tr>
-              )}
-              </Fragment>
             ))}
           </tbody>
         </table>

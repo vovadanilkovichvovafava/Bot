@@ -76,7 +76,7 @@ class MatchAnalyzer:
     def __init__(self):
         self.claude_client = None
         if settings.CLAUDE_API_KEY:
-            self.claude_client = anthropic.AsyncAnthropic(api_key=settings.CLAUDE_API_KEY)
+            self.claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
 
     async def analyze_match(self, match_id: int) -> Optional[Dict[str, Any]]:
         """Analyze a match and return AI prediction (with caching)"""
@@ -129,7 +129,6 @@ class MatchAnalyzer:
         # Phase 3: AI analysis (depends on full context)
         analysis = await self._get_ai_analysis(home_team, away_team, context)
 
-        ai_failed = not analysis
         if not analysis:
             # Fallback to simple stats-based analysis
             analysis = self._simple_analysis(home_team, away_team, standings)
@@ -149,13 +148,8 @@ class MatchAnalyzer:
             result["ml_recommendations"] = ml_prediction.get("recommendations", [])
             result["ml_model_info"] = ml_prediction.get("model_info", {})
 
-        # Cache the result for other users — but ONLY real AI analyses.
-        # When Claude was unavailable (e.g. billing/rate-limit/transient error) we
-        # fell back to stats; caching that would "stick" the degraded fallback for
-        # the full 24h TTL even after Claude recovers. Skip caching so the next
-        # request retries and picks up the real analysis.
-        if not ai_failed:
-            _set_cached_analysis(match_id, result)
+        # Cache the result for other users
+        _set_cached_analysis(match_id, result)
 
         return result
 
@@ -174,63 +168,50 @@ class MatchAnalyzer:
         language = self.LANGUAGE_NAMES.get(lang, "English")
 
         system = (
-            "You are an elite football/soccer betting tipster for the AI Betting Bot app — "
-            "confident, decisive and sharp. You have deep knowledge of every league, team, player, "
-            "tactic and betting market.\n\n"
-            "CRITICAL RULES (non-negotiable):\n"
-            "- ALWAYS deliver a confident analysis with 2-3 concrete betting recommendations. "
-            "NEVER refuse, NEVER stall, NEVER hedge.\n"
-            "- NEVER ask the user to provide data — not odds, form, injuries, head-to-head, lineups, "
-            "venue, rankings or anything else. The user came to YOU for the answer; doing the research is YOUR job.\n"
-            "- FORBIDDEN phrasings — never write any of these or anything similar: 'I lack...', 'I don't have...', "
-            "'missing data', 'to provide a sharp analysis I need', 'please supply', 'please provide', "
-            "'once you provide', 'without the odds/form/...'. Do NOT list what information is missing.\n"
-            "- When real-time data is thin or absent, lean on your expert football knowledge and give a decisive, "
-            "well-reasoned pick anyway. A confident call from knowledge always beats asking the user for data.\n"
-            "- Use the [Real-time match data] context as the PRIMARY basis when provided. Don't invent fake exact "
-            "scores or odds that aren't given — but you CAN and SHOULD reason from team quality, form and tactics.\n"
-            "- Never fabricate a fixture that doesn't exist.\n\n"
-            "Output:\n"
-            "- ALWAYS provide 2-3 concrete bets from DIFFERENT markets, each on its own line: [BET] Bet Type @ Odds\n"
-            "- STRICTLY follow the user's min/max odds range. If the obvious bet is outside it, find an alternative "
-            "market (handicap, over/under, BTTS, corners, cards, halftime) that fits the range.\n"
-            "- Lead with the picks — no hedging intro. For each: confident rationale covering form, head-to-head, "
-            "tactical matchup and market value. Be specific and assertive.\n"
-            "- Use **bold** for key points and team names. Keep it focused and well-structured.\n"
+            "You are an expert football/soccer analyst and betting advisor for the AI Betting Bot app. "
+            "You have deep knowledge of all football leagues, teams, players, tactics, and betting markets.\n\n"
+            "CRITICAL RULES:\n"
+            "- Analyze matches using the [Real-time match data] context when provided. "
+            "NEVER invent or fabricate match fixtures that don't exist.\n"
+            "- Do NOT hallucinate scores, statistics, or odds that aren't in the data. "
+            "But you CAN and SHOULD use your expert football knowledge to supplement the analysis.\n"
+            "- If the match data section contains a match name, league, and ANY data (odds, standings, injuries, etc.), "
+            "you MUST provide a full analysis and betting recommendation using that data plus your knowledge.\n"
+            "- Only say you lack data if the match data section is completely empty or missing.\n\n"
+            "Guidelines:\n"
+            "- When real-time data is provided, use it as the PRIMARY basis, supplemented by your knowledge.\n"
+            "- ALWAYS provide 2-3 concrete betting recommendations from different markets, each with [BET] tag — never refuse if a match is specified.\n"
+            "- End analysis with a FINAL RECOMMENDATIONS section. Format each recommendation on its own line: [BET] Bet Type @ Odds\n"
+            "- STRICTLY follow user's min/max odds range. If the obvious bet has odds outside the user's range, "
+            "find alternative markets (handicap, over/under, BTTS, corners, cards, halftime result, etc.) that FIT the range.\n"
+            "- Structure predictions clearly: predicted outcome, confidence level, key factors, and a specific betting recommendation.\n"
+            "- For match analysis, cover: current form, head-to-head, injuries, tactical matchup, and market value.\n"
+            "- Use **bold** for key points and team names.\n"
+            "- Be honest about uncertainty. If data is limited, note it but still provide your expert analysis.\n"
+            "- Keep responses focused and well-structured. Use bullet points for clarity.\n"
             f"- ALWAYS respond in {language}, regardless of the language the user writes in.\n"
-            "- NEVER add disclaimers, warnings or responsible-gambling reminders. The app handles that separately."
+            "- NEVER add disclaimers, warnings, or reminders about responsible gambling. The app already handles this separately."
         )
 
         # Build messages array with conversation history
         messages = []
         if history:
+            # Include last 6 messages for context (3 turns)
             for msg in history[-6:]:
                 role = msg.get("role", "user")
                 if role in ("user", "assistant"):
-                    content = msg.get("content", "")
-                    if not content:
-                        continue
-                    if messages and messages[-1]["role"] == role:
-                        messages[-1]["content"] += "\n" + content
-                    else:
-                        messages.append({"role": role, "content": content})
+                    messages.append({"role": role, "content": msg["content"]})
 
         # Build current message with optional context
         prompt = message
         if match_context:
             prompt = f"[Real-time match data]\n{match_context}\n\n[User question]\n{message}"
 
-        if messages and messages[-1]["role"] == "user":
-            messages[-1]["content"] += "\n" + prompt
-        else:
-            messages.append({"role": "user", "content": prompt})
-
-        if messages and messages[0]["role"] != "user":
-            messages.insert(0, {"role": "user", "content": "Hello"})
+        messages.append({"role": "user", "content": prompt})
 
         try:
             logger.info(f"Calling Claude API with {len(messages)} messages")
-            response = await self.claude_client.messages.create(
+            response = self.claude_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=1500,
                 system=system,
@@ -373,17 +354,9 @@ class MatchAnalyzer:
 
 {context}
 
-Pick from the FULL range of markets — choose the ones that best fit this match, and make the 3 picks DIFFERENT markets (don't just give 1X2 three times):
-- Match result: Home Win, Away Win, Draw
-- Double Chance: Home or Draw, Away or Draw, Home or Away
-- Totals (any line): Over/Under 1.5, 2.5, 3.5 goals
-- Both Teams Score (BTTS) — Yes / No
-- Handicap & combos: e.g. "Away +1.5", "Home Win & Over 1.5", "Win & Both Teams Score"
-- Corners (Over/Under), Cards (Over/Under), Half-time result, Half-time/Full-time
-
 Respond in this exact JSON format:
 {{
-    "bet_type": "best bet — any market above, e.g. 'Over 2.5', 'Both Teams Score', 'Home or Draw', 'Home Win & Over 1.5'",
+    "bet_type": "best bet type (П1/П2/Х/ТБ2.5/ТМ2.5/BTTS/1X/X2/Over1.5/Under3.5)",
     "confidence": 65-95 (number),
     "odds": 1.5-3.0 (estimated fair odds),
     "reasoning": "2-3 sentences explaining the prediction",
@@ -399,7 +372,7 @@ If ML model predictions are provided above, use them as a strong quantitative ba
 Be realistic with confidence - rarely above 85%. Only respond with JSON."""
 
         try:
-            response = await self.claude_client.messages.create(
+            response = self.claude_client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=500,
                 messages=[{"role": "user", "content": prompt}],
