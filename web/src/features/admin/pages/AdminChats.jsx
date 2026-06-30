@@ -173,6 +173,7 @@ function SupportChatTab() {
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState('')
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
@@ -190,18 +191,29 @@ function SupportChatTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Deep-link from the PRO Users page: /admin/chats?user=<id> pre-fills search
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search).get('user')
+    if (u) setSearchQuery(u)
+  }, [])
+
   // Auto-translate when messages are loaded
   const autoTranslate = useCallback(async (sessionId, msgs) => {
     if (translations[sessionId] || !msgs.length) return
     setTranslating(true)
+    setTranslateError('')
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId && result?.translated?.length) {
-        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      if (translatingRef.current === sessionId) {
+        if (result?.translated?.length) {
+          setTranslations(prev => ({ ...prev, [sessionId]: result }))
+        } else if (result?.error) {
+          setTranslateError(result.error)
+        }
       }
     } catch (e) {
-      console.warn('Translate failed:', e)
+      setTranslateError(e?.message || 'translate failed')
     } finally {
       setTranslating(false)
     }
@@ -332,6 +344,13 @@ function SupportChatTab() {
                 ) : (
                   <>
                     {translating && !tr && <TranslatingSpinner />}
+                    {translateError && !tr && (
+                      <div className="px-4 pt-3">
+                        <div className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                          ⚠ Перевод и keyword-аналитика недоступны (AI): {translateError}
+                        </div>
+                      </div>
+                    )}
                     {tr?.keywords && (
                       <div className="px-4 pt-3">
                         <KeywordsBadge keywords={tr.keywords} />
@@ -339,22 +358,36 @@ function SupportChatTab() {
                     )}
                     <ChatMessages messages={messages} translation={tr} assistantLabel={null} />
                     {/* Admin reply input */}
-                    <div className="px-4 py-3 border-t border-slate-800 flex gap-2">
-                      <input
-                        type="text"
-                        value={replyText}
-                        onChange={e => setReplyText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply(s.session_id)}
-                        placeholder="Reply to user..."
-                        className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
-                      />
-                      <button
-                        onClick={() => sendReply(s.session_id)}
-                        disabled={!replyText.trim() || sending}
-                        className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors shrink-0"
-                      >
-                        {sending ? '...' : 'Send'}
-                      </button>
+                    <div className="px-4 py-3 border-t border-slate-800 space-y-2">
+                      {/* Toolbar: insert a deposit button into the message */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setReplyText(t => (t ? t.replace(/\s*$/, '') + ' {deposit}' : '{deposit}'))}
+                          className="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 text-xs font-medium rounded-lg transition-colors"
+                          title="Вставит метку {deposit}. У юзера она превратится в кнопку «Депозит» с прямой ссылкой на оплату."
+                        >
+                          + Кнопка «Депозит»
+                        </button>
+                        <span className="text-[11px] text-slate-500">метка <code className="text-slate-400">{'{deposit}'}</code> → кнопка на оплату у юзера</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply(s.session_id)}
+                          placeholder="Reply to user..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                        />
+                        <button
+                          onClick={() => sendReply(s.session_id)}
+                          disabled={!replyText.trim() || sending}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+                        >
+                          {sending ? '...' : 'Send'}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -405,6 +438,7 @@ function AIChatTab() {
   const [msgLoading, setMsgLoading] = useState(false)
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState('')
   const translatingRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLocale, setSearchLocale] = useState('')
@@ -425,14 +459,19 @@ function AIChatTab() {
   const autoTranslate = useCallback(async (sessionId, msgs) => {
     if (translations[sessionId] || !msgs.length) return
     setTranslating(true)
+    setTranslateError('')
     translatingRef.current = sessionId
     try {
       const result = await adminApi.translateMessages(msgs)
-      if (translatingRef.current === sessionId && result?.translated?.length) {
-        setTranslations(prev => ({ ...prev, [sessionId]: result }))
+      if (translatingRef.current === sessionId) {
+        if (result?.translated?.length) {
+          setTranslations(prev => ({ ...prev, [sessionId]: result }))
+        } else if (result?.error) {
+          setTranslateError(result.error)
+        }
       }
     } catch (e) {
-      console.warn('Translate failed:', e)
+      setTranslateError(e?.message || 'translate failed')
     } finally {
       setTranslating(false)
     }
@@ -569,6 +608,13 @@ function AIChatTab() {
                   ) : (
                     <>
                       {translating && !tr && <TranslatingSpinner />}
+                      {translateError && !tr && (
+                        <div className="px-4 pt-3">
+                          <div className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                            ⚠ Перевод и keyword-аналитика недоступны (AI): {translateError}
+                          </div>
+                        </div>
+                      )}
                       {tr?.keywords && (
                         <div className="px-4 pt-3">
                           <KeywordsBadge keywords={tr.keywords} />

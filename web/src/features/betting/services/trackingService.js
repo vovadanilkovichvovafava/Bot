@@ -149,21 +149,41 @@ export async function saveTrackingParams(userId) {
 const OFFER_BASE_URL = ENV.OFFER_URL;
 const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 const OFFER_BASE_URL_GOOGLE = ENV.OFFER_URL_GOOGLE || '';
+const OFFER_BASE_URL_AR = ENV.OFFER_URL_AR || '';
+const OFFER_BASE_URL_PT = ENV.OFFER_URL_PT || '';
+
+/**
+ * Выбор offer-ссылки по гео — у партнёра разные офферы под Аргентину и Португалию.
+ * Приоритет:
+ *   1) явный тег ?offer=ar|pt|br во входящей (партнёрской) ссылке — детерминированно;
+ *   2) определённая страна юзера (AdvertiserContext → localStorage.countryCode);
+ *   3) Google-оффер (utm_source=google) → Funnel-2 оффер → дефолтный OFFER_URL.
+ * AR → OFFER_URL_AR, PT/BR → OFFER_URL_PT. Если нужный оффер не задан — откат на OFFER_URL.
+ */
+function pickOfferBase(getParam, isGoogle, funnel) {
+  let region = (getParam('offer') || getParam('geo') || '').toLowerCase();
+  if (!region) {
+    try { region = (localStorage.getItem('countryCode') || '').toLowerCase(); } catch { /* ignore */ }
+  }
+  if (region === 'ar' && OFFER_BASE_URL_AR) return OFFER_BASE_URL_AR;
+  if ((region === 'pt' || region === 'br') && OFFER_BASE_URL_PT) return OFFER_BASE_URL_PT;
+  if (isGoogle) return OFFER_BASE_URL_GOOGLE;
+  if (funnel === 'funnel-2' || funnel === 'funnel-4') return OFFER_BASE_URL_F2;
+  return OFFER_BASE_URL;
+}
 
 export function getTrackingLink(userId, banner = '', funnel = '') {
-  // Определяем base URL: Google offer > Funnel-2 offer > Default offer
-  const utmSource = new URLSearchParams(window.location.search).get('utm_source')
-    || sessionStorage.getItem('tracking_utm_source') || '';
-  const isGoogle = OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google';
-  const baseUrl = isGoogle
-    ? OFFER_BASE_URL_GOOGLE
-    : (funnel === 'funnel-2' || funnel === 'funnel-4') ? OFFER_BASE_URL_F2 : OFFER_BASE_URL;
   if (!userId) return null;
 
   try {
     const params = new URLSearchParams();
     const urlParams = new URLSearchParams(window.location.search);
     const getParam = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || '';
+
+    // Определяем base URL: гео-оффер (AR/PT) > Google > Funnel-2 > дефолтный
+    const utmSource = getParam('utm_source');
+    const isGoogle = !!(OFFER_BASE_URL_GOOGLE && utmSource.toLowerCase() === 'google');
+    const baseUrl = pickOfferBase(getParam, isGoogle, funnel);
 
     // Наш userId как external_id для постбэков
     params.set('external_id', String(userId));
@@ -213,7 +233,45 @@ export function getTrackingLink(userId, banner = '', funnel = '') {
     return link;
   } catch (err) {
     console.warn('[Tracking] Failed to build link:', err.message);
-    return `${baseUrl}?external_id=${userId}`;
+    // baseUrl is block-scoped to the try above and may not exist here — use the
+    // module-level default offer base for the fallback.
+    return `${OFFER_BASE_URL}?external_id=${userId}`;
+  }
+}
+
+/**
+ * Open-redirect guard for externally-supplied bookmaker deeplinks
+ * (e.g. the ?fonbet_deeplink= query param). Only https URLs whose host matches
+ * a configured offer/bookmaker host (or a subdomain of one) are allowed.
+ * Returns false for anything else, including javascript:/data: schemes.
+ */
+function deeplinkAllowedHosts() {
+  const hosts = new Set();
+  const add = (u) => { try { if (u) hosts.add(new URL(u).host.toLowerCase()); } catch { /* ignore */ } };
+  add(OFFER_BASE_URL);
+  add(OFFER_BASE_URL_F2);
+  add(OFFER_BASE_URL_GOOGLE);
+  add(OFFER_BASE_URL_AR);
+  add(OFFER_BASE_URL_PT);
+  add(ENV.BOOKMAKER_LINK);
+  (ENV.DEEPLINK_HOSTS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .forEach((h) => hosts.add(h));
+  return hosts;
+}
+
+export function isAllowedDeeplink(url) {
+  if (!url) return false;
+  try {
+    const u = new URL(url, window.location.origin);
+    if (u.protocol !== 'https:') return false;
+    const host = u.host.toLowerCase();
+    const allow = deeplinkAllowedHosts();
+    return [...allow].some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
   }
 }
 

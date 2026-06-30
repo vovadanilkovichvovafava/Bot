@@ -8,16 +8,62 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from sqlalchemy import select, func, and_, case
+from sqlalchemy import select, func, and_, case, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.models.prediction import Prediction
+from app.models.user import User
+from app.models.fantasy import FantasyLedger
 from app.models.ml_models import MatchFeature, LearningLog
 from app.services.api_football import ApiFootballService
 from app.services.feature_engineer import update_elo_after_match
 
 logger = logging.getLogger(__name__)
+
+# Fantasy points awarded for a correct prediction (confidence-weighted).
+FANTASY_BASE_POINTS = 100
+# Wrong predictions cost points — the more confident the pick, the bigger the risk.
+# penalty = clamp(confidence * factor, min, max). Reward stays larger than risk
+# (e.g. conf 80 → +180 if right, −40 if wrong) so the game rewards skill, not caution.
+WRONG_PENALTY_FACTOR = 0.5
+WRONG_PENALTY_MIN = 20
+WRONG_PENALTY_MAX = 100
+
+
+def _wrong_penalty(confidence: int) -> int:
+    """Points lost on a wrong prediction, scaled by how confident the pick was."""
+    return int(min(WRONG_PENALTY_MAX, max(WRONG_PENALTY_MIN, round(confidence * WRONG_PENALTY_FACTOR))))
+
+
+async def _award_fantasy_points(db: AsyncSession, user_id: int, points: int, reason: str, ref: str):
+    """Credit fantasy points to a user and record a ledger entry (same transaction)."""
+    if not user_id or points <= 0:
+        return
+    await db.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(
+            fantasy_points=func.coalesce(User.fantasy_points, 0) + points,
+            fantasy_points_lifetime=func.coalesce(User.fantasy_points_lifetime, 0) + points,
+        )
+    )
+    db.add(FantasyLedger(user_id=user_id, kind="earn", points=points, reason=reason, ref=str(ref) if ref else None))
+
+
+async def _penalize_fantasy_points(db: AsyncSession, user_id: int, penalty: int, reason: str, ref: str):
+    """Deduct fantasy points for a wrong prediction, flooring both balances at 0."""
+    if not user_id or penalty <= 0:
+        return
+    await db.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(
+            fantasy_points=func.greatest(0, func.coalesce(User.fantasy_points, 0) - penalty),
+            fantasy_points_lifetime=func.greatest(0, func.coalesce(User.fantasy_points_lifetime, 0) - penalty),
+        )
+    )
+    db.add(FantasyLedger(user_id=user_id, kind="penalty", points=-penalty, reason=reason, ref=str(ref) if ref else None))
 
 # Bet type verification logic
 # Maps bet_type to a function(home_goals, away_goals) -> bool
@@ -37,9 +83,15 @@ BET_VERIFIERS = {
     "Under 1.5": lambda h, a: h + a < 2,
     "Over 3.5": lambda h, a: h + a > 3,
     "Under 3.5": lambda h, a: h + a < 4,
+    "Over 0.5": lambda h, a: h + a > 0,
+    "Under 0.5": lambda h, a: h + a == 0,
+    "Over 4.5": lambda h, a: h + a > 4,
+    "Under 4.5": lambda h, a: h + a < 5,
     # BTTS
     "Both Teams Score": lambda h, a: h > 0 and a > 0,
     "BTTS": lambda h, a: h > 0 and a > 0,
+    "Both Teams Score - No": lambda h, a: not (h > 0 and a > 0),
+    "BTTS No": lambda h, a: not (h > 0 and a > 0),
     # Russian bet type names
     "П1": lambda h, a: h > a,
     "П2": lambda h, a: a > h,
@@ -61,7 +113,7 @@ def verify_bet(bet_type: str, home_goals: int, away_goals: int) -> Optional[bool
     bt = bet_type.lower().strip()
 
     # Generic win patterns
-    if "home" in bt or "win" in bt and "away" not in bt:
+    if ("home" in bt or "win" in bt) and "away" not in bt:
         return home_goals > away_goals
     if "away" in bt:
         return away_goals > home_goals
@@ -172,6 +224,23 @@ async def verify_pending_predictions():
                     # Determine if prediction was correct
                     is_correct = _check_prediction(pred, home_goals, away_goals, fixture)
                     pred.is_correct = is_correct
+
+                    # Fantasy points settle once per prediction: win → reward,
+                    # wrong → confidence-scaled penalty (you can lose points).
+                    if not pred.points_awarded and pred.user_id:
+                        conf = int(min(max(pred.confidence or 0, 0), 100))
+                        if is_correct:
+                            await _award_fantasy_points(
+                                db, pred.user_id, FANTASY_BASE_POINTS + conf,
+                                "correct_prediction", pred.match_id,
+                            )
+                        else:
+                            await _penalize_fantasy_points(
+                                db, pred.user_id, _wrong_penalty(conf),
+                                "wrong_prediction", pred.match_id,
+                            )
+                    pred.points_awarded = True
+
                     verified_count += 1
 
                     logger.info(
@@ -259,10 +328,15 @@ def _check_prediction(pred: Prediction, home_goals: int, away_goals: int, fixtur
 
 async def update_ml_after_verification():
     """
-    After predictions are verified, update ML training data:
-    1. Mark MatchFeature records as verified (fill actual results)
-    2. Update Elo ratings based on match results
-    3. Log the event
+    After predictions are verified, mark MatchFeature records as verified.
+
+    NOTE: Elo updates are deliberately NOT done here. Elo is applied exclusively
+    by feature_engineer.process_verified_matches(), which processes verified
+    matches in chronological order, recording the PRE-match Elo as a training
+    feature *before* advancing the rating. Updating Elo here as well would
+    advance ratings out of order and leak the match's own outcome into its
+    training features (home_elo/away_elo/elo_diff) — inflating offline accuracy
+    and miscalibrating live predictions.
     """
     import json
 
@@ -286,20 +360,8 @@ async def update_ml_after_verification():
             updated = 0
             for match in unverified:
                 try:
-                    # Update Elo ratings
-                    if match.result and match.home_team_id and match.away_team_id:
-                        await update_elo_after_match(
-                            db=db,
-                            home_team_id=match.home_team_id,
-                            away_team_id=match.away_team_id,
-                            home_team_name=match.home_team_name,
-                            away_team_name=match.away_team_name,
-                            league_id=match.league_id,
-                            league_name=match.league_name or "",
-                            home_goals=match.home_goals,
-                            away_goals=match.away_goals,
-                        )
-
+                    # Only mark as verified. Elo is updated later, in chronological
+                    # order, by process_verified_matches() to avoid target leakage.
                     match.is_verified = True
                     match.verified_at = datetime.utcnow()
                     updated += 1
@@ -572,6 +634,15 @@ async def verification_loop():
                     logger.error(f"Error updating ML after verification: {e}")
             else:
                 logger.info("Verification cycle: no new verifications")
+
+            # Settle World Cup group predictions (no-op until a group table is final)
+            try:
+                from app.services.wc_settlement import settle_wc_predictions
+                settled = await settle_wc_predictions()
+                if settled:
+                    logger.info(f"WC predictions: settled {settled} group results")
+            except Exception as e:
+                logger.error(f"Error settling WC predictions: {e}")
         except Exception as e:
             logger.error(f"Verification loop error: {e}")
 

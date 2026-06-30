@@ -1,17 +1,14 @@
 /**
  * Football API Service
  *
- * Calls go through our backend proxy for server-side caching.
- * This saves API requests by sharing cache between all users.
- *
- * Fallback to direct API-Football calls if backend is unavailable.
+ * All calls go through our backend proxy for server-side caching and to keep
+ * the API-Football key server-side. The key is intentionally NOT exposed to the
+ * browser; when the backend is unavailable, football data degrades gracefully.
  */
 
 import { ENV } from '../../../shared/config/env';
 
 const BACKEND_BASE = ENV.API_URL;
-const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
-const API_KEY = ENV.API_FOOTBALL_KEY;
 
 // Local cache for fallback mode (when backend is down)
 const localCache = new Map();
@@ -45,9 +42,82 @@ function normalize(name) {
     .trim();
 }
 
+// Localized national-team names → api-sports English name. api-sports returns
+// English ("France"), but users type "Francia"/"франция"/"Frankreich" — without
+// this map the fuzzy match fails and the AI gets no fixture data. Keys are the
+// raw lowercased localized name (Cyrillic kept, since normalize() would strip it).
+const NATIONAL_TEAM_ALIASES = {
+  // France
+  francia: 'France', frankreich: 'France', франция: 'France', francja: 'France',
+  // Germany
+  alemania: 'Germany', allemagne: 'Germany', deutschland: 'Germany', германия: 'Germany', niemcy: 'Germany',
+  // Spain
+  españa: 'Spain', espana: 'Spain', espagne: 'Spain', spagna: 'Spain', spanien: 'Spain', испания: 'Spain', hiszpania: 'Spain',
+  // Brazil
+  brasil: 'Brazil', brasile: 'Brazil', brésil: 'Brazil', bresil: 'Brazil', бразилия: 'Brazil', brazylia: 'Brazil',
+  // England
+  inglaterra: 'England', inghilterra: 'England', angleterre: 'England', англия: 'England', anglia: 'England',
+  // Netherlands
+  'países bajos': 'Netherlands', 'paises bajos': 'Netherlands', holanda: 'Netherlands', olanda: 'Netherlands', 'pays-bas': 'Netherlands', нидерланды: 'Netherlands', голландия: 'Netherlands', holandia: 'Netherlands',
+  // Belgium
+  bélgica: 'Belgium', belgica: 'Belgium', belgique: 'Belgium', belgio: 'Belgium', belgien: 'Belgium', бельгия: 'Belgium', belgia: 'Belgium',
+  // Italy
+  italia: 'Italy', italie: 'Italy', italien: 'Italy', италия: 'Italy', włochy: 'Italy',
+  // Croatia
+  croacia: 'Croatia', croazia: 'Croatia', croatie: 'Croatia', kroatien: 'Croatia', хорватия: 'Croatia', chorwacja: 'Croatia',
+  // Portugal
+  portugalia: 'Portugal', португалия: 'Portugal',
+  // Switzerland
+  suiza: 'Switzerland', suisse: 'Switzerland', svizzera: 'Switzerland', schweiz: 'Switzerland', швейцария: 'Switzerland', szwajcaria: 'Switzerland',
+  // Mexico
+  méxico: 'Mexico', мексика: 'Mexico', meksyk: 'Mexico',
+  // Morocco
+  marruecos: 'Morocco', maroc: 'Morocco', marocco: 'Morocco', marokko: 'Morocco', марокко: 'Morocco', maroko: 'Morocco',
+  // South Korea
+  'corea del sur': 'South Korea', 'corée du sud': 'South Korea', südkorea: 'South Korea', 'южная корея': 'South Korea', 'korea południowa': 'South Korea', corea: 'South Korea',
+  // Japan
+  japón: 'Japan', japon: 'Japan', giappone: 'Japan', япония: 'Japan', japonia: 'Japan',
+  // Tunisia
+  túnez: 'Tunisia', tunez: 'Tunisia', tunisie: 'Tunisia', тунис: 'Tunisia', tunezja: 'Tunisia',
+  // Saudi Arabia
+  'arabia saudita': 'Saudi Arabia', 'arabie saoudite': 'Saudi Arabia', 'saudi-arabien': 'Saudi Arabia', 'саудовская аравия': 'Saudi Arabia', 'arabia saudí': 'Saudi Arabia',
+  // Algeria
+  argelia: 'Algeria', algérie: 'Algeria', algerie: 'Algeria', algerien: 'Algeria', алжир: 'Algeria', algieria: 'Algeria',
+  // Norway
+  noruega: 'Norway', norvège: 'Norway', norvegia: 'Norway', norwegen: 'Norway', норвегия: 'Norway', norwegia: 'Norway',
+  // USA
+  'estados unidos': 'USA', 'états-unis': 'USA', сша: 'USA', eeuu: 'USA',
+  // Scotland
+  escocia: 'Scotland', écosse: 'Scotland', schottland: 'Scotland', шотландия: 'Scotland', szkocja: 'Scotland',
+  // Türkiye
+  turquía: 'Türkiye', turquia: 'Türkiye', turchia: 'Türkiye', türkei: 'Türkiye', турция: 'Türkiye', turcja: 'Türkiye',
+  // Czech Republic
+  'república checa': 'Czech Republic', 'republica checa': 'Czech Republic', tchéquie: 'Czech Republic', tschechien: 'Czech Republic', чехия: 'Czech Republic', czechy: 'Czech Republic',
+  // South Africa
+  sudáfrica: 'South Africa', sudafrica: 'South Africa', 'afrique du sud': 'South Africa', südafrika: 'South Africa', юар: 'South Africa', rpa: 'South Africa',
+  // others (Cyrillic mainly — they'd otherwise normalize to empty)
+  аргентина: 'Argentina', уругвай: 'Uruguay', колумбия: 'Colombia',
+  канада: 'Canada', canadá: 'Canada', катар: 'Qatar', catar: 'Qatar', эквадор: 'Ecuador',
+  сенегал: 'Senegal', иран: 'Iran', irán: 'Iran', ирак: 'Iraq', irak: 'Iraq',
+  египет: 'Egypt', egipto: 'Egypt', égypte: 'Egypt', гана: 'Ghana', панама: 'Panama', panamá: 'Panama',
+  парагвай: 'Paraguay', гаити: 'Haiti', haití: 'Haiti', иордания: 'Jordan', jordania: 'Jordan',
+  австрия: 'Austria', autriche: 'Austria', österreich: 'Austria', австралия: 'Australia',
+  узбекистан: 'Uzbekistan', uzbekistán: 'Uzbekistan', швеция: 'Sweden', suecia: 'Sweden', suède: 'Sweden',
+  'кот-д\'ивуар': 'Ivory Coast', 'costa de marfil': 'Ivory Coast', 'côte d\'ivoire': 'Ivory Coast',
+  'cabo verde': 'Cape Verde', 'кабо-верде': 'Cape Verde', curazao: 'Curaçao', кюрасао: 'Curaçao',
+  'nueva zelanda': 'New Zealand', 'новая зеландия': 'New Zealand', 'rd congo': 'DR Congo', 'др конго': 'DR Congo',
+  'bosnia y herzegovina': 'Bosnia and Herzegovina', босния: 'Bosnia and Herzegovina',
+};
+
+function resolveTeamAlias(name) {
+  const key = (name || '').toLowerCase().trim();
+  return NATIONAL_TEAM_ALIASES[key] || name;
+}
+
 function teamMatch(apiName, ourName) {
   const a = normalize(apiName);
-  const b = normalize(ourName);
+  const b = normalize(resolveTeamAlias(ourName));
+  if (!a || !b) return false;       // empty (e.g. Cyrillic stripped) must not match everything
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
   const aWords = a.match(/[a-z]{3,}/g) || [];
@@ -100,31 +170,13 @@ class FootballApiService {
     }
   }
 
-  // === Direct API-Football Requests (fallback) ===
+  // === Direct API-Football Requests (disabled) ===
 
-  async directRequest(endpoint, params = {}) {
-    if (!API_KEY) return [];
-
-    const cacheKey = endpoint + JSON.stringify(params);
-    const cached = getLocalCache(cacheKey);
-    if (cached) return cached;
-
-    const query = new URLSearchParams(params).toString();
-    const url = `${API_FOOTBALL_BASE}${endpoint}${query ? '?' + query : ''}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'x-apisports-key': API_KEY },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API-Football HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const result = data.response || [];
-    setLocalCache(cacheKey, result);
-    return result;
+  // Direct browser → API-Football calls are intentionally disabled so the API
+  // key is never shipped to the client. All data flows through the backend
+  // proxy; if the backend is down we degrade gracefully by returning no data.
+  async directRequest() {
+    return [];
   }
 
   // === Unified Request Method ===
@@ -197,6 +249,15 @@ class FootballApiService {
 
     const res = await this.directRequest('/fixtures', { id: fixtureId });
     return res[0] || null;
+  }
+
+  // A team's most recent finished fixtures (for form / derived stats)
+  async getTeamRecentFixtures(teamId, last = 10) {
+    try {
+      return await this.backendRequest(`/teams/${teamId}/recent?last=${last}`);
+    } catch {
+      return [];
+    }
   }
 
   // === Find Fixture by Team Names ===
@@ -283,6 +344,15 @@ class FootballApiService {
     return this.request(`/fixtures/${fixtureId}/statistics`, '/fixtures/statistics', { fixture: fixtureId });
   }
 
+  // Live AI commentator line for the match-cast (cached server-side per state)
+  async getMatchCommentary(fixtureId, lang = 'en') {
+    try {
+      return await this.backendRequest(`/fixtures/${fixtureId}/commentary?lang=${encodeURIComponent(lang)}`);
+    } catch {
+      return { text: '' };
+    }
+  }
+
   async getFixtureEvents(fixtureId) {
     return this.request(`/fixtures/${fixtureId}/events`, '/fixtures/events', { fixture: fixtureId });
   }
@@ -309,8 +379,23 @@ class FootballApiService {
   }
 
   async getLiveOdds(fixtureId) {
-    // Live odds only from direct API
-    return this.directRequest('/odds/live', { fixture: fixtureId });
+    try {
+      return await this.backendRequest(`/fixtures/${fixtureId}/odds/live`);
+    } catch {
+      return [];
+    }
+  }
+
+  // Batch 1X2 odds for a whole date → { [fixtureId]: { home, draw, away } }
+  // Backend-only (server paginates + caches). Returns {} on any failure so
+  // callers fall back to synthetic odds without breaking.
+  async getOddsMapForDate(date) {
+    try {
+      const data = await this.backendRequest(`/odds/date/${date}`);
+      return data && typeof data === 'object' ? data : {};
+    } catch {
+      return {};
+    }
   }
 
   // === Teams ===
@@ -324,6 +409,17 @@ class FootballApiService {
 
     const res = await this.directRequest('/teams', { id: teamId });
     return res[0] || null;
+  }
+
+  async getSquad(teamId) {
+    // Returns array like [{ team, players: [...] }]
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/teams/${teamId}/squad`);
+      }
+    } catch {}
+
+    return this.directRequest('/players/squads', { team: teamId });
   }
 
   async searchTeam(name) {
@@ -345,6 +441,7 @@ class FootballApiService {
         name: item.team?.name || item.name,
         logo: item.team?.logo || item.logo,
         country: item.team?.country || item.country,
+        national: item.team?.national ?? item.national ?? false,
       })).filter(t => t.id && t.name);
     } catch (e) {
       console.error('Team search failed:', e);
@@ -352,13 +449,28 @@ class FootballApiService {
     }
   }
 
+  // Resolve a country/team name to its SENIOR national team (excludes youth/women
+  // sides, which API search otherwise returns first for some countries).
+  async resolveNationalTeam(name) {
+    if (!name) return null;
+    const youth = /\bU-?\d{2}\b|\bW\b|women|olympic|futsal|amateur|beach/i;
+    const results = await this.searchTeams(name);
+    const seniors = results.filter(t => t.national && !youth.test(t.name || ''));
+    const norm = (s) => (s || '').toLowerCase().replace(/[^a-z]/g, '');
+    return (
+      seniors.find(t => norm(t.name) === norm(name)) ||
+      seniors[0] ||
+      results[0] ||
+      null
+    );
+  }
+
   async getTeamStatistics(teamId, season, leagueId) {
-    // Complex query - direct API
-    return this.directRequest('/teams/statistics', {
-      team: teamId,
-      season,
-      league: leagueId,
-    });
+    try {
+      return await this.backendRequest(`/teams/${teamId}/statistics?season=${season}&league=${leagueId}`);
+    } catch {
+      return null;
+    }
   }
 
   // === Injuries ===
@@ -381,6 +493,30 @@ class FootballApiService {
     return res[0]?.league?.standings?.[0] || [];
   }
 
+  // Returns ALL standings groups (array of group tables) — for tournaments like the World Cup with 12 groups
+  async getAllStandings(leagueId, season) {
+    try {
+      if (this.useBackend) {
+        const res = await this.backendRequest(`/standings/${leagueId}/${season}`);
+        return res[0]?.league?.standings || [];
+      }
+    } catch {}
+
+    const res = await this.directRequest('/standings', { league: leagueId, season });
+    return res[0]?.league?.standings || [];
+  }
+
+  // Returns ALL fixtures for a league+season (group stage + knockouts) — for tournament brackets
+  async getTournamentFixtures(leagueId, season) {
+    try {
+      if (this.useBackend) {
+        return await this.backendRequest(`/fixtures/league/${leagueId}/season/${season}`);
+      }
+    } catch {}
+
+    return this.directRequest('/fixtures', { league: leagueId, season });
+  }
+
   // === Head to Head ===
 
   async getHeadToHead(team1Id, team2Id, last = 10) {
@@ -399,23 +535,48 @@ class FootballApiService {
   // === Players ===
 
   async getTopScorers(leagueId, season) {
-    return this.directRequest('/players/topscorers', { league: leagueId, season });
+    try {
+      return await this.backendRequest(`/players/topscorers/${leagueId}/${season}`);
+    } catch {
+      return [];
+    }
+  }
+
+  // Top players ranked by goals+assists (merged scorers+assists, real photos + stats)
+  async getTopPlayers(leagueId, season, limit = 12) {
+    try {
+      return await this.backendRequest(`/players/top/${leagueId}/${season}?limit=${limit}`);
+    } catch {
+      return [];
+    }
   }
 
   // === Leagues ===
 
   async getLeagues(country) {
-    const params = country ? { country } : {};
-    return this.directRequest('/leagues', params);
+    try {
+      const qs = country ? `?country=${encodeURIComponent(country)}` : '';
+      return await this.backendRequest(`/leagues${qs}`);
+    } catch {
+      return [];
+    }
   }
 
   async getLeagueById(leagueId) {
-    const res = await this.directRequest('/leagues', { id: leagueId });
-    return res[0] || null;
+    try {
+      const res = await this.backendRequest(`/leagues?id=${leagueId}`);
+      return res[0] || null;
+    } catch {
+      return null;
+    }
   }
 
   async searchLeague(name) {
-    return this.directRequest('/leagues', { search: name });
+    try {
+      return await this.backendRequest(`/leagues?search=${encodeURIComponent(name)}`);
+    } catch {
+      return [];
+    }
   }
 
   // === Fixtures with Odds (optimized) ===

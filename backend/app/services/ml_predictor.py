@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import select, and_
 
 from app.core.database import async_session_maker
-from app.models.ml_models import MatchFeature, CachedPrediction, LearningLog
+from app.models.ml_models import MatchFeature, CachedPrediction, LearningLog, MLModel
 from app.services.ml_trainer import load_active_model
 from app.services.feature_engineer import build_feature_vector, enrich_features_for_match
 

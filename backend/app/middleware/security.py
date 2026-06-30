@@ -41,7 +41,7 @@ _SECURITY_HEADERS = {
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
-        "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://api.football-data.org https://mc.yandex.ru; "
+        "connect-src 'self' https://api-football-v1.p.rapidapi.com https://v3.football.api-sports.io https://mc.yandex.ru; "
         "frame-ancestors https://webvisor.com https://*.webvisor.com https://metrika.yandex.ru https://*.metrika.yandex.ru; "
         "base-uri 'self'; "
         "form-action 'self';"
@@ -74,21 +74,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     AUTH_LIMIT = 20
     WINDOW_SECONDS = 60
 
-    # Allowed CORS origins — must match main.py CORS config
+    # Allowed CORS origins — must match main.py CORS config.
+    # Locked to the single production domain (bot-kwojmg.saturn.ac) + local dev.
     CORS_ORIGINS = {
-        "https://prescoreai.com",
-        "https://www.prescoreai.com",
-        "https://prescore.vip",
-        "https://www.prescore.vip",
-        "https://prescoreai.vip",
-        "https://www.prescoreai.vip",
-        "https://sportscoreai.com",
-        "https://www.sportscoreai.com",
-        "https://pwa-production-20b5.up.railway.app",
-        "https://pwa-2-production.up.railway.app",
-        "https://appbot-production-152e.up.railway.app",
+        "https://bot-kwojmg.saturn.ac",
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",
     }
 
     # Add extra origins from env for multi-domain deployments

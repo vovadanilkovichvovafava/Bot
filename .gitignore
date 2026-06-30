@@ -33,6 +33,15 @@ web/dist/
 .env.local
 *.env
 
+# Secrets / Android signing material (never commit)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+**/key.properties
+**/local.properties
+
 # OS
 .DS_Store
 Thumbs.db
@@ -40,3 +49,5 @@ Thumbs.db
 # Logs
 *.log
 logs/
+.gstack/
+test-results/

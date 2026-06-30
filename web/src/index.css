@@ -127,3 +127,12 @@ input, select, textarea {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ===== FIFA World Cup 2026 brand motion ===== */
+/* Rounded "pill" numerals — approximates the custom FWC 26 typeface */
+.wc-num {
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-weight: 800;
+  font-feature-settings: 'tnum';
+}
+

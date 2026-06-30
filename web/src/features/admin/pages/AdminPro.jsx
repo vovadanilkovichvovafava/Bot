@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { adminApi } from '../api';
 
@@ -203,10 +204,39 @@ function OverviewTab({ data }) {
 // ── PRO Users Tab ──
 
 function ProUsersTab({ users }) {
+  const navigate = useNavigate();
   const [sort, setSort] = useState('last_active');
   const [search, setSearch] = useState('');
+  const [noDepOnly, setNoDepOnly] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+
+  // Open this user's support chat (pre-fills the search on the Chats page).
+  const openChat = (u) => navigate(`/admin/chats?user=${encodeURIComponent(u.public_id || u.phone || u.email || '')}`);
+
+  // Revoke PRO from everyone who got it without a real deposit + auto-message them.
+  const revokeNoDep = async () => {
+    setRevoking(true);
+    try {
+      const preview = await adminApi.revokeNoDepositPro(true);
+      if (!preview?.count) { alert('Нет PRO-юзеров без депозита.'); return; }
+      if (!window.confirm(
+        `Аннулировать PRO у ${preview.count} юзер(ов) без депозита и отправить им сообщение с кнопкой депозита?\n\n` +
+        `Это необратимо — они потеряют PRO прямо сейчас.`
+      )) return;
+      const res = await adminApi.revokeNoDepositPro(false);
+      alert(`Готово: аннулировано PRO — ${res.revoked}, отправлено сообщений — ${res.messaged}.`);
+      window.location.reload();
+    } catch (e) {
+      alert('Ошибка: ' + (e?.message || 'не удалось выполнить'));
+    } finally {
+      setRevoking(false);
+    }
+  };
+
+  const noDepCount = (users || []).filter(u => u.no_deposit).length;
 
   const filtered = (users || []).filter(u => {
+    if (noDepOnly && !u.no_deposit) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (u.email || '').toLowerCase().includes(q) ||
@@ -251,6 +281,29 @@ function ProUsersTab({ users }) {
           <option value="days_remaining">Sort: Expiring Soon</option>
           <option value="accuracy">Sort: Accuracy</option>
         </select>
+        <button
+          type="button"
+          onClick={() => setNoDepOnly(v => !v)}
+          className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+            noDepOnly
+              ? 'bg-red-600/20 text-red-400 border-red-600/40'
+              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+          }`}
+          title="PRO без реального депозита — выдан за регистрацию (lead). Это те, кому нужно написать с кнопкой депозита."
+        >
+          ⚠ Без депозита ({noDepCount})
+        </button>
+        {noDepCount > 0 && (
+          <button
+            type="button"
+            onClick={revokeNoDep}
+            disabled={revoking}
+            className="px-3 py-2 rounded-lg text-sm font-medium border border-red-600/50 bg-red-600/15 text-red-300 hover:bg-red-600/25 disabled:opacity-50 transition-colors"
+            title="Снять PRO у всех без депозита и отправить им сообщение с кнопкой депозита. Необратимо."
+          >
+            {revoking ? '…' : `Аннулировать PRO без депа (${noDepCount})`}
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -272,7 +325,16 @@ function ProUsersTab({ users }) {
             {sorted.map(u => (
               <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                 <td className="py-2 px-2">
-                  <div className="font-medium text-xs">{u.email || u.phone || u.public_id}</div>
+                  <div className="font-medium text-xs flex items-center gap-1.5">
+                    <button onClick={() => openChat(u)} className="text-blue-400 hover:text-blue-300 hover:underline text-left" title="Открыть чат с пользователем">
+                      {u.email || u.phone || u.public_id}
+                    </button>
+                    {u.no_deposit && (
+                      <button onClick={() => openChat(u)} className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold whitespace-nowrap hover:bg-red-500/30" title="PRO без депозита (lead). Нажми — откроется чат, чтобы написать с кнопкой депозита.">
+                        НЕТ ДЕПА · написать
+                      </button>
+                    )}
+                  </div>
                   <div className="text-[10px] text-slate-500">{u.public_id}</div>
                 </td>
                 <td className="py-2 px-2 text-slate-400">{u.country || '-'}</td>

@@ -166,9 +166,14 @@ class ApiService {
   }
 
   async register(phone, password, referralCode = null) {
-    const { ENV } = await import('../config/env');
     const body = { phone, password };
     if (referralCode) body.referral_code = referralCode;
+    // Capture the UI language the user registered in (i18next persists it here)
+    // so the user's real language is stored instead of defaulting to "en".
+    try {
+      const lang = (localStorage.getItem('i18nextLng') || navigator.language || '').slice(0, 2).toLowerCase();
+      if (lang) body.language = lang;
+    } catch { /* ignore */ }
     // Attach traffic source: ENV > URL param > localStorage > auto-detect from hostname
     const source = ENV.TRAFFIC_SOURCE
       || new URLSearchParams(window.location.search).get('source')
@@ -225,6 +230,37 @@ class ApiService {
 
   async getReferralStats() {
     return this.request('/users/me/referral');
+  }
+
+  // === Fantasy rewards ===
+  async getFantasy() {
+    return this.request('/fantasy/me');
+  }
+
+  async redeemFantasy(tierId) {
+    return this.request('/fantasy/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ tier_id: tierId }),
+    });
+  }
+
+  async getFantasyLeaderboard() {
+    return this.request('/fantasy/leaderboard');
+  }
+
+  async getWcPredict() {
+    return this.request('/fantasy/wc-predict');
+  }
+
+  async saveWcPredict(picks) {
+    return this.request('/fantasy/wc-predict', {
+      method: 'POST',
+      body: JSON.stringify({ picks }),
+    });
+  }
+
+  async finalizeWcPredict() {
+    return this.request('/fantasy/wc-predict/finalize', { method: 'POST' });
   }
 
   async getMyPredictions() {
@@ -299,7 +335,7 @@ class ApiService {
     });
   }
 
-  // AI Chat limit (degressive system: Day1=3, Day2=2, Day3+=1/day)
+  // AI Chat limit (free tier: 5 requests/day)
   async getChatLimit() {
     return this.request('/predictions/chat/limit');
   }
@@ -341,6 +377,11 @@ class ApiService {
   // Check for new admin replies in support chat
   async checkNewSupportMessages(sessionId, afterId = 0) {
     return this.request(`/support/new-messages?session_id=${encodeURIComponent(sessionId)}&after_id=${afterId}`);
+  }
+
+  // System/admin broadcasts addressed to the user (works without a session)
+  async getAdminBroadcasts(afterId = 0) {
+    return this.request(`/support/admin-broadcasts?after_id=${afterId}`);
   }
 
   // Guest Support Chat (no auth required — for login page password reset)

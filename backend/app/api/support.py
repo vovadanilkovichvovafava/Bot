@@ -21,14 +21,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user
 from app.core.database import get_db
+from app.api.admin_auth import get_current_admin
 from app.models.user import User
 from app.models.support_chat import SupportChatMessage
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Partner bookmaker config — change via env vars, no code edits needed
-PARTNER_NAME = os.getenv("PARTNER_NAME", "Fonbet")
+# Partner bookmaker config — change via env vars, no code edits needed.
+# Default is the generic word "Partner" so no bookmaker brand leaks into chat.
+PARTNER_NAME = os.getenv("PARTNER_NAME", "Partner")
 PARTNER_OFFER_URL = os.getenv("PARTNER_OFFER_URL", "")
 
 
@@ -432,13 +434,15 @@ def find_relevant_knowledge(message: str, full_history: str = "") -> str:
 # System Prompt Builder
 # ============================================================
 
-LANGUAGE_NAMES = {"en": "English", "it": "Italian", "de": "German", "pl": "Polish"}
+LANGUAGE_NAMES = {
+    "en": "English", "es": "Spanish", "pt": "Portuguese", "it": "Italian",
+    "de": "German", "pl": "Polish", "fr": "French", "ru": "Russian",
+    "ar": "Arabic", "hi": "Hindi", "tr": "Turkish", "ro": "Romanian", "zh": "Chinese",
+}
 
 PERSONA_NAMES = {
-    "en": "Alex",
-    "it": "Marco",
-    "de": "Max",
-    "pl": "Kuba",
+    "en": "Alex", "es": "Alex", "pt": "Alex", "it": "Marco",
+    "de": "Max", "pl": "Kuba", "fr": "Alex", "ru": "Alex",
 }
 
 
@@ -479,7 +483,10 @@ Our official partner bookmaker is {PARTNER_NAME}. Always refer to it by name whe
 - If they ask "how to start" — explain how to use features they already have
 
 === LANGUAGE ===
-- ALWAYS respond in {language}. Write naturally like a native speaker in a messenger.
+- Reply in the SAME language the user wrote their LAST message in — detect it from
+  their actual message, never from a setting. (App locale hint, may be wrong: {language}.)
+- E.g. if they write in Spanish, reply in Spanish; if they switch language, switch with them.
+- Write naturally like a native speaker in a messenger.
 - Use casual, informal language. Light slang is ok.
 
 === STYLE ===
@@ -637,10 +644,10 @@ async def support_chat(
         if not api_key:
             raise HTTPException(status_code=503, detail="AI service not configured")
 
-        client = anthropic.Anthropic(api_key=api_key)
+        client = anthropic.AsyncAnthropic(api_key=api_key)
 
         logger.info(f"Support chat: user={user_id}, lang={lang}, pro={is_pro}, msgs={len(messages)}")
-        response = client.messages.create(
+        response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=350,
             system=system_prompt,
@@ -758,7 +765,7 @@ async def guest_support_chat(
 {KNOWLEDGE_BASE["password_reset"]}
 
 === LANGUAGE ===
-- ALWAYS respond in {language}.
+- Reply in the SAME language the user wrote in — detect it from their message, not a setting. (Locale hint, may be wrong: {language}.)
 
 === STYLE ===
 - 2-4 sentences max. Casual, friendly.
@@ -784,8 +791,8 @@ async def guest_support_chat(
         if not api_key:
             raise HTTPException(status_code=503, detail="AI service not configured")
 
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=300,
             system=system_prompt,
@@ -884,6 +891,41 @@ async def check_new_messages(
     }
 
 
+@router.get("/admin-broadcasts")
+async def admin_broadcasts(
+    after_id: int = 0,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """System/admin messages addressed to the user regardless of session
+    (e.g. the deposit nudge after lead-granted PRO was revoked). The client
+    injects these into the support chat and dedupes by message id."""
+    user_id = current_user["user_id"]
+    stmt = (
+        select(SupportChatMessage)
+        .where(
+            SupportChatMessage.user_id == user_id,
+            SupportChatMessage.is_admin_reply == True,
+            SupportChatMessage.session_id.like("sys-%"),
+            SupportChatMessage.id > after_id,
+        )
+        .order_by(SupportChatMessage.created_at)
+    )
+    messages = (await db.execute(stmt)).scalars().all()
+    return {
+        "has_new": len(messages) > 0,
+        "messages": [
+            {
+                "id": m.id,
+                "content": m.content,
+                "agent_name": m.agent_name,
+                "created_at": str(m.created_at),
+            }
+            for m in messages
+        ],
+    }
+
+
 class SupportMessageOut(BaseModel):
     id: int
     user_id: int
@@ -909,23 +951,19 @@ class SupportSessionOut(BaseModel):
 
 @router.get("/messages")
 async def get_support_messages(
-    key: str,
     user_id: Optional[int] = None,
     session_id: Optional[str] = None,
     role: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to read support chat messages.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     Filters: user_id, session_id, role (user/assistant)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import desc
 
     stmt = select(SupportChatMessage)
@@ -963,19 +1001,15 @@ async def get_support_messages(
 
 @router.get("/sessions")
 async def get_support_sessions(
-    key: str,
     limit: int = 50,
     offset: int = 0,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to list all support chat sessions with summary.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import func as sa_func, desc
 
     # Get sessions grouped
@@ -1039,17 +1073,13 @@ async def get_support_sessions(
 
 @router.get("/stats")
 async def get_support_stats(
-    key: str,
+    admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Admin endpoint to get support chat statistics.
-    Auth: ?key=SECRET_KEY
+    Auth: admin JWT (Authorization: Bearer / admin_token cookie)
     """
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or key != secret:
-        raise HTTPException(status_code=403, detail="Invalid key")
-
     from sqlalchemy import func as sa_func, distinct, cast, Date
 
     total = await db.execute(

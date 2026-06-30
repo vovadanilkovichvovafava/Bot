@@ -47,12 +47,19 @@ Base = declarative_base()
 async def init_db():
     """Create all tables and run migrations"""
     # Import all models so they register with Base.metadata
+    import app.models.user  # noqa: F401
+    import app.models.prediction  # noqa: F401
+    import app.models.support_chat  # noqa: F401
+    import app.models.postback_log  # noqa: F401
+    import app.models.banner_click  # noqa: F401
     import app.models.ml_models  # noqa: F401
     import app.models.admin  # noqa: F401
     import app.models.ai_chat  # noqa: F401
     import app.models.community_pick  # noqa: F401
     import app.models.match_chat  # noqa: F401
     import app.models.express_bet  # noqa: F401
+    import app.models.fantasy  # noqa: F401
+    import app.models.session_replay  # noqa: F401
 
     async with engine.begin() as conn:
         # Create all tables (will not modify existing ones — that's fine,
@@ -94,6 +101,20 @@ async def init_db():
             # Country column for user geo tracking
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_country ON users(country)",
+            # Backfill country for Latin-American phones (prefixes added later) —
+            # longest prefix first; only fills rows where country is missing.
+            "UPDATE users SET country='UY' WHERE (country IS NULL OR country='') AND phone LIKE '+598%'",
+            "UPDATE users SET country='PY' WHERE (country IS NULL OR country='') AND phone LIKE '+595%'",
+            "UPDATE users SET country='EC' WHERE (country IS NULL OR country='') AND phone LIKE '+593%'",
+            "UPDATE users SET country='BO' WHERE (country IS NULL OR country='') AND phone LIKE '+591%'",
+            "UPDATE users SET country='AR' WHERE (country IS NULL OR country='') AND phone LIKE '+54%'",
+            "UPDATE users SET country='BR' WHERE (country IS NULL OR country='') AND phone LIKE '+55%'",
+            "UPDATE users SET country='MX' WHERE (country IS NULL OR country='') AND phone LIKE '+52%'",
+            "UPDATE users SET country='PE' WHERE (country IS NULL OR country='') AND phone LIKE '+51%'",
+            "UPDATE users SET country='CL' WHERE (country IS NULL OR country='') AND phone LIKE '+56%'",
+            "UPDATE users SET country='CO' WHERE (country IS NULL OR country='') AND phone LIKE '+57%'",
+            "UPDATE users SET country='VE' WHERE (country IS NULL OR country='') AND phone LIKE '+58%'",
+            "UPDATE users SET country='CU' WHERE (country IS NULL OR country='') AND phone LIKE '+53%'",
             # Traffic source tracking (pwa-1, pwa-2, organic, etc.)
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS traffic_source VARCHAR",
             "CREATE INDEX IF NOT EXISTS ix_users_traffic_source ON users(traffic_source)",
@@ -109,6 +130,20 @@ async def init_db():
             "ALTER TABLE support_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
             # Admin reply flag for AI chat messages
             "ALTER TABLE ai_chat_messages ADD COLUMN IF NOT EXISTS is_admin_reply BOOLEAN DEFAULT FALSE",
+            # ── analytics_events table (must precede its indexes) ──
+            """CREATE TABLE IF NOT EXISTS analytics_events (
+                id SERIAL PRIMARY KEY,
+                event VARCHAR NOT NULL,
+                page VARCHAR,
+                user_id VARCHAR,
+                session_id VARCHAR,
+                ip VARCHAR,
+                country VARCHAR,
+                user_agent VARCHAR,
+                referrer VARCHAR,
+                metadata JSONB,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
             # ── Performance indexes ──────────────────────────────────
             "CREATE INDEX IF NOT EXISTS ix_predictions_user_created ON predictions(user_id, created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_predictions_bet_accuracy ON predictions(bet_type, is_correct)",
@@ -192,9 +227,45 @@ async def init_db():
             "CREATE INDEX IF NOT EXISTS ix_match_chat_match ON match_chat_messages(match_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_user ON match_chat_messages(user_id)",
             "CREATE INDEX IF NOT EXISTS ix_match_chat_created ON match_chat_messages(created_at DESC)",
-            # ── analytics_events indexes (heavily queried by admin dashboard) ──
+            # ── analytics_events indexes ──
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
+            # ── Fantasy / rewards (points → PRO now, $ freebet later) ──
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points_lifetime INTEGER DEFAULT 0",
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS points_awarded BOOLEAN DEFAULT FALSE",
+            """CREATE TABLE IF NOT EXISTS fantasy_ledger (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                kind VARCHAR NOT NULL,
+                points INTEGER NOT NULL,
+                reason VARCHAR,
+                ref VARCHAR,
+                created_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_fantasy_ledger_user ON fantasy_ledger(user_id, created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS ix_users_fantasy_lifetime ON users(fantasy_points_lifetime DESC) WHERE fantasy_points_lifetime > 0",
+            # One-time welcome bonus: 100 starting points for every user who never got one.
+            # Idempotent via the signup_bonus ledger marker — safe to run on every boot,
+            # and new accounts already insert their own marker at registration.
+            """UPDATE users SET fantasy_points = COALESCE(fantasy_points, 0) + 100
+                WHERE id NOT IN (SELECT user_id FROM fantasy_ledger WHERE kind = 'signup_bonus')""",
+            """INSERT INTO fantasy_ledger (user_id, kind, points, reason, created_at)
+                SELECT id, 'signup_bonus', 100, 'welcome_bonus', NOW() FROM users
+                WHERE id NOT IN (SELECT user_id FROM fantasy_ledger WHERE kind = 'signup_bonus')""",
+            """CREATE TABLE IF NOT EXISTS wc_predictions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) UNIQUE,
+                picks_json TEXT NOT NULL,
+                scored_groups TEXT,
+                points_awarded INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )""",
+            "CREATE INDEX IF NOT EXISTS ix_wc_predictions_user ON wc_predictions(user_id)",
+            # A prediction only counts/scores once the user finalizes it
+            "ALTER TABLE wc_predictions ADD COLUMN IF NOT EXISTS finalized BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE wc_predictions ADD COLUMN IF NOT EXISTS finalized_at TIMESTAMP",
         ]
 
         for migration in migrations:

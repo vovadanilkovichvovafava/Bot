@@ -1,0 +1,325 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import api from '../../../shared/api';
+
+const STORAGE_KEY = 'wc_predict_groups_v1';
+
+// 12 groups — 4 teams each: [name, flagCode, apiSportsTeamId]
+const GROUPS = {
+  A: [['Mexico', 'mx', 16], ['South Africa', 'za', 1531], ['South Korea', 'kr', 17], ['Czech Republic', 'cz', 770]],
+  B: [['Canada', 'ca', 5529], ['Bosnia & H.', 'ba', 1113], ['Qatar', 'qa', 1569], ['Switzerland', 'ch', 15]],
+  C: [['Brazil', 'br', 6], ['Morocco', 'ma', 31], ['Haiti', 'ht', 2386], ['Scotland', 'gb-sct', 1108]],
+  D: [['United States', 'us', 2384], ['Paraguay', 'py', 2380], ['Australia', 'au', 20], ['Türkiye', 'tr', 777]],
+  E: [['Germany', 'de', 25], ['Curaçao', 'cw', 5530], ['Ivory Coast', 'ci', 1501], ['Ecuador', 'ec', 2382]],
+  F: [['Netherlands', 'nl', 1118], ['Japan', 'jp', 12], ['Sweden', 'se', 5], ['Tunisia', 'tn', 28]],
+  G: [['Belgium', 'be', 1], ['Egypt', 'eg', 32], ['Iran', 'ir', 22], ['New Zealand', 'nz', 4673]],
+  H: [['Spain', 'es', 9], ['Cape Verde', 'cv', 1533], ['Saudi Arabia', 'sa', 23], ['Uruguay', 'uy', 7]],
+  I: [['France', 'fr', 2], ['Senegal', 'sn', 13], ['Iraq', 'iq', 1567], ['Norway', 'no', 1090]],
+  J: [['Argentina', 'ar', 26], ['Algeria', 'dz', 1532], ['Austria', 'at', 775], ['Jordan', 'jo', 1548]],
+  K: [['Portugal', 'pt', 27], ['DR Congo', 'cd', 1508], ['Uzbekistan', 'uz', 1568], ['Colombia', 'co', 8]],
+  L: [['England', 'gb-eng', 10], ['Croatia', 'hr', 3], ['Ghana', 'gh', 1504], ['Panama', 'pa', 11]],
+};
+
+const LETTERS = Object.keys(GROUPS);
+
+// Convert positional picks ({A:['A0','A2',...]}) <-> api-sports ids ({A:[16,17,...]})
+const apiIdOf = (posId) => {
+  const letter = posId[0];
+  const idx = Number(posId.slice(1));
+  return GROUPS[letter]?.[idx]?.[2] ?? null;
+};
+const picksToApi = (picks) => {
+  const out = {};
+  for (const [l, order] of Object.entries(picks || {})) {
+    const ids = (order || []).map(apiIdOf).filter((x) => x != null);
+    if (ids.length) out[l] = ids;
+  }
+  return out;
+};
+const apiToPicks = (serverPicks) => {
+  const out = {};
+  for (const [l, ids] of Object.entries(serverPicks || {})) {
+    const order = (ids || [])
+      .map((apiId) => GROUPS[l]?.findIndex((tm) => tm[2] === apiId))
+      .filter((i) => i != null && i >= 0)
+      .map((i) => `${l}${i}`);
+    if (order.length) out[l] = order;
+  }
+  return out;
+};
+
+const ACCENT = {
+  A: '#FB7185', B: '#38BDF8', C: '#34D399', D: '#A78BFA',
+  E: '#FBBF24', F: '#22D3EE', G: '#F472B6', H: '#818CF8',
+  I: '#FB923C', J: '#2DD4BF', K: '#E879F9', L: '#A3E635',
+};
+
+function teamOf(letter, idx) {
+  const [name, code] = GROUPS[letter][idx];
+  return { id: `${letter}${idx}`, name, code, logo: `https://flagcdn.com/w80/${code}.png` };
+}
+
+export default function WorldCupPredict() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  // picks: { [letter]: [teamId, teamId, ...] } in predicted finishing order
+  const [picks, setPicks] = useState({});
+  const [pointsAwarded, setPointsAwarded] = useState(0);
+  const [locked, setLocked] = useState(false);
+  const [finalized, setFinalized] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      // Prefer server-saved picks (so they can be scored into fantasy points)
+      try {
+        const res = await api.getWcPredict();
+        if (!alive) return;
+        if (res?.locked) setLocked(true);
+        if (res?.finalized) setFinalized(true);
+        const serverPicks = apiToPicks(res?.picks || {});
+        if (Object.keys(serverPicks).length) {
+          setPicks(serverPicks);
+          setPointsAwarded(res?.points_awarded || 0);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serverPicks)); } catch {}
+          return;
+        }
+      } catch {}
+      // Fallback to any locally-saved draft
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && alive) setPicks(JSON.parse(raw));
+      } catch {}
+    })();
+    return () => { alive = false; if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, []);
+
+  const persist = (p) => {
+    setPicks(p);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
+    // Debounced sync to the server so completed groups get scored into points
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api.saveWcPredict(picksToApi(p)).catch(() => {});
+    }, 800);
+  };
+
+  const toggle = (letter, teamId) => {
+    if (locked || finalized) return; // closed after the deadline, or already finalized
+    const cur = picks[letter] || [];
+    let next;
+    if (cur.includes(teamId)) {
+      next = cur.filter((x) => x !== teamId);
+    } else if (cur.length < 4) {
+      next = [...cur, teamId];
+    } else {
+      return;
+    }
+    // when 3 are placed, the last remaining team takes 4th automatically
+    if (next.length === 3) {
+      const remaining = GROUPS[letter].map((_, i) => `${letter}${i}`).filter((id) => !next.includes(id));
+      if (remaining.length === 1) next = [...next, remaining[0]];
+    }
+    persist({ ...picks, [letter]: next });
+  };
+
+  const reset = () => { if (!locked && !finalized) persist({}); };
+
+  const isComplete = (letter) => (picks[letter]?.length || 0) === 4;
+  const groupsDone = LETTERS.filter(isComplete).length;
+  const progressPct = Math.round((groupsDone / LETTERS.length) * 100);
+  const allGroupsDone = groupsDone === LETTERS.length;
+
+  const doFinalize = async () => {
+    if (finalizing || finalized || locked || !allGroupsDone) return;
+    setFinalizing(true);
+    try {
+      // Make sure the latest picks are saved before locking them in
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      await api.saveWcPredict(picksToApi(picks)).catch(() => {});
+      const res = await api.finalizeWcPredict();
+      if (res?.finalized) setFinalized(true);
+    } catch (e) {
+      // surface a soft message; keep the form editable on failure
+      console.warn('finalize failed', e?.message);
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#070710] text-white pb-28">
+      {/* Top accent */}
+      <div className="flex h-1.5">
+        <div className="flex-1 bg-[#5B16E8]" />
+        <div className="flex-1 bg-[#E10600]" />
+        <div className="flex-1 bg-[#00B140]" />
+        <div className="flex-1 bg-[#B4E600]" />
+      </div>
+
+      <div className="px-5 pt-5">
+        <button onClick={() => navigate('/world-cup')} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors text-sm mb-4">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+          {t('common.back', { defaultValue: 'Back' })}
+        </button>
+
+        {finalized && (
+          <div className="rounded-2xl p-4 mb-4 bg-emerald-500/15 border border-emerald-400/30 flex items-start gap-2">
+            <span className="text-xl leading-none">✅</span>
+            <div>
+              <p className="text-emerald-300 font-bold text-sm">{t('predict.finalizedTitle', { defaultValue: 'Prediction locked in' })}</p>
+              <p className="text-white/60 text-xs mt-0.5">{t('predict.finalizedHint', { defaultValue: 'Your prediction is final and counts for points. It can no longer be changed.' })}</p>
+            </div>
+          </div>
+        )}
+
+        {locked && !finalized && (
+          <div className="rounded-2xl p-4 mb-4 bg-amber-500/15 border border-amber-400/30 flex items-start gap-2">
+            <span className="text-xl leading-none">🔒</span>
+            <div>
+              <p className="text-amber-300 font-bold text-sm">{t('predict.closedTitle', { defaultValue: 'Group predictions are closed' })}</p>
+              <p className="text-white/60 text-xs mt-0.5">{t('predict.closedHint', { defaultValue: 'The deadline has passed — your picks are locked and being scored.' })}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Hero */}
+        <div className="rounded-2xl p-5 mb-5" style={{ background: 'linear-gradient(135deg, #20253a 0%, #2a3050 100%)' }}>
+          <p className="text-emerald-400 text-[11px] font-black uppercase tracking-[0.15em]">{t('predict.fantasy', { defaultValue: 'Fantasy Predict' })}</p>
+          <h1 className="text-2xl font-black mt-1 leading-tight">{t('predict.groupStageTitle', { defaultValue: 'Predict the group stage' })}</h1>
+          <p className="text-white/50 text-sm mt-1.5">{t('predict.groupStageHint', { defaultValue: "Tap teams in the order you think they'll finish. Top 2 advance." })}</p>
+          <p className="text-emerald-400/90 text-xs mt-1.5 font-semibold">
+            {pointsAwarded > 0
+              ? `⭐ ${t('predict.earned', { points: pointsAwarded, defaultValue: `You've earned ${pointsAwarded} pts` })}`
+              : t('predict.earnHint', { defaultValue: '+50 fantasy points for each team you place in the exact right spot' })}
+          </p>
+
+          <div className="mt-4">
+            <div className="flex justify-between text-[11px] text-white/40 mb-1.5">
+              <span>{t('predict.groupsDone', { defaultValue: 'Groups completed' })}</span>
+              <span>{groupsDone}/{LETTERS.length}</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Group cards */}
+        <div className="space-y-4">
+          {LETTERS.map((letter) => (
+            <GroupCard
+              key={letter}
+              letter={letter}
+              order={picks[letter] || []}
+              complete={isComplete(letter)}
+              onToggle={(id) => toggle(letter, id)}
+              t={t}
+            />
+          ))}
+        </div>
+
+        {/* Finalize — lock in the prediction (only then does it count) */}
+        {!finalized && !locked && (
+          <div className="mt-6">
+            <button
+              onClick={doFinalize}
+              disabled={!allGroupsDone || finalizing}
+              className={`w-full py-3.5 rounded-2xl font-black text-[15px] transition-all ${
+                allGroupsDone && !finalizing
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white/40 cursor-not-allowed'
+              }`}
+            >
+              {finalizing
+                ? t('predict.finalizing', { defaultValue: 'Locking in…' })
+                : allGroupsDone
+                  ? `✅ ${t('predict.finalize', { defaultValue: 'Finalize prediction' })}`
+                  : t('predict.finalizeProgress', { count: groupsDone, total: LETTERS.length, defaultValue: `Fill all groups to finalize (${groupsDone}/${LETTERS.length})` })}
+            </button>
+            <p className="text-center text-white/40 text-[11px] mt-2">
+              {t('predict.finalizeNote', { defaultValue: 'Only a finalized prediction counts for points. After finalizing it cannot be changed.' })}
+            </p>
+          </div>
+        )}
+
+        {/* Locked knockout stage */}
+        <div className="mt-6 rounded-2xl border border-white/[0.08] bg-[#0d0d18] p-5 text-center relative overflow-hidden">
+          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-white/40" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+          </div>
+          <h3 className="font-bold text-white/80">{t('predict.knockoutLocked', { defaultValue: 'Knockout bracket' })}</h3>
+          <p className="text-sm text-white/40 mt-1 max-w-xs mx-auto leading-relaxed">{t('predict.knockoutLockedDesc', { defaultValue: 'Unlocks after the group stage. First predict the groups — then pick who lifts the trophy. 🏆' })}</p>
+        </div>
+
+        {/* Reset */}
+        {groupsDone > 0 && !finalized && (
+          <button onClick={reset} disabled={locked} className={`w-full mt-6 py-3 rounded-xl border border-white/15 text-white/60 text-sm font-semibold transition-colors ${locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5'}`}>
+            {t('predict.reset', { defaultValue: 'Reset predictions' })}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GroupCard({ letter, order, complete, onToggle, t }) {
+  const teams = GROUPS[letter].map((_, i) => teamOf(letter, i));
+  const posOf = (id) => {
+    const i = order.indexOf(id);
+    return i === -1 ? null : i + 1;
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden bg-[#0d0d18] border border-white/[0.08]" style={{ borderLeft: `4px solid ${ACCENT[letter]}` }}>
+      <div className="px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: ACCENT[letter] }}>
+            <span className="text-sm font-black text-[#0d0d18]">{letter}</span>
+          </div>
+          <h3 className="font-bold text-sm tracking-wide text-white">{t('predict.group', { defaultValue: 'Group' })} {letter}</h3>
+        </div>
+        {complete && (
+          <span className="flex items-center gap-1 text-emerald-400 text-[11px] font-bold">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+          </span>
+        )}
+      </div>
+
+      <div className="divide-y divide-white/[0.04]">
+        {teams.map((tm) => {
+          const pos = posOf(tm.id);
+          const qualifies = pos === 1 || pos === 2;
+          return (
+            <button
+              key={tm.id}
+              onClick={() => onToggle(tm.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${qualifies ? 'bg-emerald-500/[0.07]' : 'hover:bg-white/[0.04]'}`}
+            >
+              {/* Position circle */}
+              <span
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 border ${
+                  pos == null
+                    ? 'border-dashed border-white/20 text-white/30'
+                    : qualifies
+                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                      : 'bg-white/10 border-white/10 text-white/60'
+                }`}
+              >
+                {pos ?? '+'}
+              </span>
+              <img src={tm.logo} alt="" className="w-7 h-5 object-contain rounded-sm shrink-0" loading="lazy" />
+              <span className={`flex-1 text-sm truncate ${pos ? 'font-bold text-white' : 'font-medium text-white/70'}`}>{tm.name}</span>
+              {qualifies && (
+                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wide shrink-0">{t('predict.qualifies', { defaultValue: 'Advances' })}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

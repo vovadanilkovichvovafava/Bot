@@ -42,12 +42,12 @@ def create_admin_token(admin_id: int, email: str, role: str, *, is_refresh: bool
         "type": "admin_refresh" if is_refresh else "admin",
         "exp": expire,
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return jwt.encode(payload, settings.ADMIN_SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def verify_admin_token(token: str, *, allow_refresh: bool = False) -> dict:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.ADMIN_SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type = payload.get("type", "")
         valid_types = {"admin"}
         if allow_refresh:
@@ -62,8 +62,14 @@ def verify_admin_token(token: str, *, allow_refresh: bool = False) -> dict:
 async def get_current_admin(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(admin_security),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Dependency: extract & verify admin JWT."""
+    """
+    Dependency: extract & verify admin JWT, then re-load the admin on every
+    request to enforce that the account still exists and is active. The role
+    is taken from the database (not the token) so deactivation/role changes
+    take effect immediately rather than at token expiry.
+    """
     token = None
     if credentials:
         token = credentials.credentials
@@ -71,7 +77,28 @@ async def get_current_admin(
         token = request.cookies.get("admin_token")
     if not token:
         raise HTTPException(status_code=401, detail="Admin auth required")
-    return verify_admin_token(token)
+
+    payload = verify_admin_token(token)
+
+    admin = (await db.execute(
+        select(AdminUser).where(AdminUser.id == payload.get("admin_id"))
+    )).scalar_one_or_none()
+    if not admin or not admin.is_active:
+        raise HTTPException(status_code=401, detail="Admin not found or deactivated")
+
+    # Authoritative claims come from the DB row, not the (possibly stale) token.
+    payload["role"] = admin.role
+    payload["email"] = admin.email
+    return payload
+
+
+def require_admin_role(*roles: str):
+    """Dependency factory: enforce that the current admin has one of `roles`."""
+    async def _checker(admin: dict = Depends(get_current_admin)) -> dict:
+        if admin.get("role") not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient admin role")
+        return admin
+    return _checker
 
 
 # ── Pydantic schemas ─────────────────────────────────────────

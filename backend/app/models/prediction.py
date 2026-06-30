@@ -48,6 +48,7 @@ class Prediction(Base):
     # Metadata
     created_at = Column(DateTime, server_default=func.now())
     verified_at = Column(DateTime, nullable=True)
+    points_awarded = Column(Boolean, nullable=True, default=False)  # fantasy points granted once
 
     # Relationship
     user = relationship("User", backref="predictions")

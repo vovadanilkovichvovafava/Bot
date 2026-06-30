@@ -51,6 +51,104 @@ function BarChart({ data, color = 'green' }) {
   )
 }
 
+function WorldCupSection() {
+  const [until, setUntil] = useState('')
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    adminApi.getWcPredictionStats(until || undefined)
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false))
+  }, [until])
+
+  return (
+    <div className="bg-slate-900 border border-amber-600/30 rounded-xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-amber-400">🏆 Чемпионат мира — точность прогнозов</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Уникальные ставки (матч + тип), уже завершённые. Стадия не хранится — групповой этап задаётся датой-отсечкой.</p>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-slate-400 whitespace-nowrap">
+          Групповой этап до:
+          <input type="date" value={until} onChange={e => setUntil(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200" />
+          {until && <button onClick={() => setUntil('')} className="text-slate-500 hover:text-slate-300">×</button>}
+        </label>
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-slate-600 py-6 text-center">Загрузка…</p>
+      ) : !data || data.total === 0 ? (
+        <p className="text-xs text-slate-600 py-6 text-center">Нет завершённых WC-прогнозов{until ? ' в этом периоде' : ''} (или они ещё не верифицированы).</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { label: 'Ставок', value: data.total },
+              { label: 'Зашло', value: data.correct, color: 'text-green-400' },
+              { label: 'Не зашло', value: data.wrong, color: 'text-red-400' },
+              { label: 'Точность', value: `${data.accuracy}%`, color: data.accuracy >= 55 ? 'text-green-400' : data.accuracy >= 45 ? 'text-amber-400' : 'text-red-400' },
+              { label: 'Ср. кф захода', value: data.avg_winning_odds || '—' },
+            ].map(m => (
+              <div key={m.label} className="bg-slate-800/60 rounded-lg p-3 text-center">
+                <div className={`text-xl font-bold ${m.color || 'text-white'}`}>{m.value}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">{m.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {data.by_bet_type?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {data.by_bet_type.map(b => (
+                <span key={b.bet_type} className="text-[11px] bg-slate-800 border border-slate-700 rounded-lg px-2 py-1">
+                  <span className="text-slate-300">{b.bet_type}</span>
+                  <span className="text-slate-500"> {b.correct}/{b.total} · </span>
+                  <span className={b.accuracy >= 55 ? 'text-green-400' : b.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'}>{b.accuracy}%</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="overflow-x-auto max-h-96 overflow-y-auto border border-slate-800 rounded-lg">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-slate-900">
+                <tr className="text-slate-500 border-b border-slate-800">
+                  <th className="text-left px-3 py-2 font-medium">Матч</th>
+                  <th className="text-left px-3 py-2 font-medium">Ставка</th>
+                  <th className="text-right px-3 py-2 font-medium">Кф</th>
+                  <th className="text-center px-3 py-2 font-medium">Счёт</th>
+                  <th className="text-center px-3 py-2 font-medium">Итог</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {data.bets.map((b, i) => (
+                  <tr key={i} className="hover:bg-slate-800/30">
+                    <td className="px-3 py-2 text-slate-300">{b.match}</td>
+                    <td className="px-3 py-2 text-slate-400">{b.bet_type}</td>
+                    <td className="px-3 py-2 text-right font-mono text-slate-400">{b.odds ?? '—'}</td>
+                    <td className="px-3 py-2 text-center font-mono text-slate-500">{b.score ?? '—'}</td>
+                    <td className="px-3 py-2 text-center">
+                      {b.is_correct
+                        ? <span className="text-green-400 font-bold">✓</span>
+                        : <span className="text-red-400 font-bold">✗</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {data.pending > 0 && (
+            <p className="text-[11px] text-slate-500">Ещё не сыграно/не верифицировано: {data.pending} ставок.</p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function AdminPredictions() {
   const [stats, setStats] = useState(null)
   const [overview, setOverview] = useState(null)
@@ -83,6 +181,8 @@ export default function AdminPredictions() {
         <h1 className="text-xl font-semibold">Predictions</h1>
         <p className="text-sm text-slate-500 mt-1">Performance analytics and accuracy breakdown</p>
       </div>
+
+      <WorldCupSection />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

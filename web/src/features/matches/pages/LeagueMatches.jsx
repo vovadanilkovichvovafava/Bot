@@ -5,9 +5,6 @@ import footballApi from '../api/footballApi';
 
 // Map league codes to API-Football league IDs
 const LEAGUE_MAP = {
-  WC: { id: 1, name: 'World Cup' },
-  UNL: { id: 5, name: 'UEFA Nations League' },
-  FRI: { id: 10, name: 'Friendlies' },
   PL: { id: 39, name: 'Premier League' },
   PD: { id: 140, name: 'La Liga' },
   BL1: { id: 78, name: 'Bundesliga' },

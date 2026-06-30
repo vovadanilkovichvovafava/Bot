@@ -62,6 +62,10 @@ class User(Base):
     referred_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     referral_bonus_requests = Column(Integer, default=0)  # Free AI requests earned
 
+    # Fantasy rewards: spendable balance + lifetime total (for rank/level)
+    fantasy_points = Column(Integer, default=0)
+    fantasy_points_lifetime = Column(Integer, default=0)
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

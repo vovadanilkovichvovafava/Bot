@@ -1,20 +1,21 @@
 import asyncio
 import logging
 import os
-import re
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express
+from app.api import auth, matches, predictions, users, football, analytics, support, admin_auth, admin_stats, postback_logs, fonbet, community_picks, match_chat, express, fantasy, replay
+from app.api.admin_auth import get_current_admin
 from app.core.database import init_db
 from app.services.prediction_verifier import verification_loop
 from app.services.data_collector import data_collection_loop
 from app.services.ml_trainer import training_loop
 from app.services.ml_monitor import monitoring_loop
 from app.services.match_analyzer import prewarm_cache_loop
+from app.services.football_api import fetch_matches
 from app.middleware import (
     SecurityHeadersMiddleware,
     RateLimitMiddleware,
@@ -40,11 +41,8 @@ def check_security_config():
     if not os.getenv("CLAUDE_API_KEY"):
         warnings.append("WARNING: CLAUDE_API_KEY not set. AI features will be unavailable.")
 
-    if not os.getenv("FOOTBALL_API_KEY"):
-        warnings.append("WARNING: FOOTBALL_API_KEY not set. Match data may be limited.")
-
     if not os.getenv("API_FOOTBALL_KEY"):
-        warnings.append("WARNING: API_FOOTBALL_KEY not set. Live data will be unavailable.")
+        warnings.append("WARNING: API_FOOTBALL_KEY not set. Match and live data will be unavailable.")
 
     for warning in warnings:
         logger.warning(f"\n{'='*60}\n{warning}\n{'='*60}")
@@ -137,9 +135,14 @@ async def lifespan(app: FastAPI):
     background_tasks.append(monitor_task)
     logger.info("ML monitoring worker scheduled (daily)")
 
-    prewarm_task = asyncio.create_task(safe_task("prewarm", prewarm_cache_loop()))
-    background_tasks.append(prewarm_task)
-    logger.info("Cache pre-warm worker scheduled (every 30 min)")
+    # Cache pre-warm worker DISABLED — analysis is now on-demand only.
+    # It used to call Claude for ~20 matches every 30 min in the background
+    # (no user request), which silently burned the Anthropic credit balance.
+    # Now a match is analyzed by Claude only when a user actually opens/asks for it
+    # (result still cached 24h for everyone). To re-enable, restore the task below.
+    # prewarm_task = asyncio.create_task(safe_task("prewarm", prewarm_cache_loop()))
+    # background_tasks.append(prewarm_task)
+    logger.info("Cache pre-warm worker DISABLED (on-demand analysis only)")
 
     try:
         from app.services.express_generator import express_generation_loop
@@ -175,19 +178,12 @@ app.add_middleware(InjectionDetectionMiddleware)
 # CORS - MUST be added LAST so it runs FIRST (LIFO order)
 # Note: When allow_credentials=True, cannot use wildcard "*" for origins
 # Instead, we list specific origins or use allow_origin_regex
+# Single production domain — only bot-kwojmg.saturn.ac may call this API from a
+# browser. Old marketing domains (prescoreai.*, prescore.vip, sportscoreai.com)
+# and the dead Railway apps are intentionally removed so no other frontend can
+# feed this backend/DB. Add more via EXTRA_CORS_ORIGINS if ever needed.
 CORS_ORIGINS = [
-    "https://prescoreai.com",
-    "https://www.prescoreai.com",
-    "https://prescoreai.vip",
-    "https://www.prescoreai.vip",
-    "https://prescore.vip",
-    "https://www.prescore.vip",
-    "https://sportscoreai.com",
-    "https://www.sportscoreai.com",
-    "https://bot-kwojmg.saturn.ac",   # Saturn deploy (frontend)
-    "https://pwa-production-20b5.up.railway.app",
-    "https://pwa-2-production.up.railway.app",
-    "https://appbot-production-152e.up.railway.app",
+    "https://bot-kwojmg.saturn.ac",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
@@ -196,23 +192,23 @@ CORS_ORIGINS = [
     "http://127.0.0.1:5174",
 ]
 
-# Allow extra CORS origins via env (comma-separated) for multi-domain deployments
+# Allow extra CORS origins via env (comma-separated) for multi-domain deployments.
+# Only accept well-formed http(s) origins so a malformed env entry can't widen the policy.
 _extra_origins = os.getenv("EXTRA_CORS_ORIGINS", "")
 if _extra_origins:
-    CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
-
-# Regex covers this project's Saturn deploy URLs (subdomain can change on redeploy),
-# e.g. https://bot-kwojmg.saturn.ac, plus Railway preview URLs.
-CORS_ORIGIN_REGEX = r"https://(bot-[a-z0-9-]+\.saturn\.ac|[a-z0-9-]+\.up\.railway\.app)"
+    for o in _extra_origins.split(","):
+        o = o.strip()
+        if o and o.startswith(("https://", "http://")) and o != "*":
+            CORS_ORIGINS.append(o)
+        elif o:
+            logger.warning("Ignoring invalid EXTRA_CORS_ORIGINS entry: %r", o)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Global exception handler — ensures unhandled errors still get CORS headers
@@ -221,7 +217,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception on {request.method} {request.url.path}: {type(exc).__name__}: {exc}")
     origin = request.headers.get("origin", "")
     headers = {}
-    if origin and (origin in CORS_ORIGINS or re.match(CORS_ORIGIN_REGEX, origin)):
+    if origin in CORS_ORIGINS:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse(
@@ -238,6 +234,7 @@ app.include_router(matches.router, prefix="/api/v1/matches", tags=["matches"])
 app.include_router(predictions.router, prefix="/api/v1/predictions", tags=["predictions"])
 app.include_router(football.router, prefix="/api/v1/football", tags=["football"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(replay.router, prefix="/api/v1/analytics", tags=["replay"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["support"])
 app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["admin"])
 app.include_router(admin_stats.router, prefix="/api/v1/admin/stats", tags=["admin-stats"])
@@ -246,6 +243,7 @@ app.include_router(fonbet.router, prefix="/api/v1/fonbet", tags=["fonbet"])
 app.include_router(community_picks.router, prefix="/api/v1/community-picks", tags=["community-picks"])
 app.include_router(match_chat.router, prefix="/api/v1/match-chat", tags=["match-chat"])
 app.include_router(express.router, prefix="/api/v1/express", tags=["express"])
+app.include_router(fantasy.router, prefix="/api/v1/fantasy", tags=["fantasy"])
 
 
 @app.get("/")
@@ -262,7 +260,6 @@ async def root():
 async def health_check():
     from app.core.database import async_session_maker
     from sqlalchemy import text
-    from app.services.football_api import get_football_api_key
     from app.services.api_football import get_api_football_key
     import os
 
@@ -278,7 +275,6 @@ async def health_check():
         "version": "1.0.2",
         "database": db_status,
         "apis": {
-            "football_data": "configured" if get_football_api_key() else "missing",
             "api_football": "configured" if get_api_football_key() else "missing",
             "claude": "configured" if os.getenv("CLAUDE_API_KEY") else "missing",
         }
@@ -286,8 +282,8 @@ async def health_check():
 
 
 @app.get("/debug/user/{public_id}")
-async def debug_user(public_id: str):
-    """Debug endpoint to check user premium status by public_id"""
+async def debug_user(public_id: str, admin: dict = Depends(get_current_admin)):
+    """Debug endpoint to check user premium status by public_id (admin only)"""
     from app.core.database import async_session_maker as async_session
     from app.models.user import User
     from sqlalchemy import select
@@ -319,8 +315,8 @@ async def debug_user(public_id: str):
 
 
 @app.get("/debug/registrations")
-async def debug_registrations():
-    """Debug: daily registrations by country for the last 7 days"""
+async def debug_registrations(admin: dict = Depends(get_current_admin)):
+    """Debug: daily registrations by country for the last 7 days (admin only)"""
     from app.core.database import async_session_maker as async_session
     from app.models.user import User
     from sqlalchemy import select, func
@@ -346,8 +342,8 @@ async def debug_registrations():
 
 
 @app.get("/debug/ml-pipeline")
-async def debug_ml_pipeline():
-    """Quick ML pipeline status check — no auth required."""
+async def debug_ml_pipeline(admin: dict = Depends(get_current_admin)):
+    """Quick ML pipeline status check (admin only)."""
     from app.core.database import async_session_maker
     from app.models.ml_models import MatchFeature, MLModel, EloRating, LearningLog
     from sqlalchemy import select, func, and_
@@ -435,56 +431,24 @@ async def debug_ml_pipeline():
 
 
 @app.get("/debug/football-api")
-async def debug_football_api():
-    """Debug endpoint to test Football API connection"""
+async def debug_football_api(admin: dict = Depends(get_current_admin)):
+    """Debug endpoint to test Football API connection (admin only)"""
     import os
     import httpx
     import traceback
-    from app.services.football_api import fetch_matches, get_football_api_key
     from app.services.api_football import get_api_football_key
     from datetime import datetime
 
-    # Check all API keys
-    football_data_key = get_football_api_key()
     api_football_key = get_api_football_key()
     claude_key = os.getenv("CLAUDE_API_KEY", "")
 
     result = {
         "env_vars": {
-            "FOOTBALL_API_KEY": {"exists": bool(football_data_key), "length": len(football_data_key)},
             "API_FOOTBALL_KEY": {"exists": bool(api_football_key), "length": len(api_football_key)},
             "CLAUDE_API_KEY": {"exists": bool(claude_key), "length": len(claude_key)},
         },
-        "football_data_org": {"status": "not_tested"},
         "api_football": {"status": "not_tested"},
     }
-
-    # Test Football-Data.org API
-    if football_data_key:
-        try:
-            headers = {"X-Auth-Token": football_data_key}
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    "https://api.football-data.org/v4/competitions/PL/matches",
-                    headers=headers,
-                    params={"status": "SCHEDULED"},
-                    timeout=15.0
-                )
-                result["football_data_org"]["status_code"] = response.status_code
-
-                if response.status_code == 200:
-                    data = response.json()
-                    result["football_data_org"]["status"] = "working"
-                    result["football_data_org"]["matches_count"] = len(data.get("matches", []))
-                    result["football_data_org"]["competition"] = data.get("competition", {}).get("name")
-                else:
-                    result["football_data_org"]["status"] = "error"
-                    result["football_data_org"]["error"] = response.text[:300]
-        except Exception as e:
-            result["football_data_org"]["status"] = "error"
-            result["football_data_org"]["error"] = f"{type(e).__name__}: {str(e)}"
-    else:
-        result["football_data_org"]["status"] = "no_key"
 
     # Test API-Football
     if api_football_key:

@@ -7,8 +7,19 @@ import { ENV } from '../config/env';
 
 const API_BASE = ENV.API_URL;
 
-// Unique session ID per browser tab
-const SESSION_ID = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+// Unique session ID per browser tab — persisted so analytics events and the
+// session replay recorder share the same id across reloads/navigation.
+function _initSessionId() {
+  const make = () => `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    let sid = sessionStorage.getItem('_sid');
+    if (!sid) { sid = make(); sessionStorage.setItem('_sid', sid); }
+    return sid;
+  } catch {
+    return make();
+  }
+}
+export const SESSION_ID = _initSessionId();
 
 function getUserId() {
   try {
