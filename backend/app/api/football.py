@@ -146,6 +146,19 @@ _COMMENTARY_LANGS = {
 _commentary_cache: Dict[str, Dict] = {}  # key -> {"ts": float, "text": str}
 _COMMENTARY_TTL = 45  # seconds — repeated polls / many viewers reuse the same line
 
+# Best-bet cache — one Claude call per match, shared across all viewers (like the
+# full match analysis). Pre-match bets are stable, so a long TTL; live bets change
+# with the score/minute, so the key includes them and the TTL is short.
+_bestbet_cache: Dict[str, Dict] = {}  # key -> {"ts": float, "bet": dict}
+_BESTBET_TTL_PRE = 86400   # 24h pre-match (parity with the match-analysis cache)
+_BESTBET_TTL_LIVE = 90     # 90s during a live match — fresh but shared across viewers
+
+
+def _bestbet_key(match_id, is_live, score, minute) -> str:
+    if is_live:
+        return f"{match_id}:live:{score}:{(minute or 0) // 5}"
+    return f"{match_id}:pre"
+
 
 def _fallback_commentary(last_event: Optional[Dict], home: str, away: str,
                          gh: int, ga: int, minute: int) -> str:
@@ -596,6 +609,7 @@ async def _compute_smart_bet() -> Dict:
         minute=status.get("elapsed"),
         prediction=prediction,
         real_odds=real_odds,
+        match_id=fixture_id,
     )
 
     return {
@@ -713,8 +727,17 @@ async def _ai_pick_best_bet(
     is_live: bool, score: str | None, minute: int | None,
     prediction: dict | None,
     real_odds: Dict[str, float] | None = None,
+    match_id: int | None = None,
 ) -> Dict:
-    """Use Claude AI to pick the single most attractive bet."""
+    """Use Claude AI to pick the single most attractive bet (cached per match)."""
+
+    # Cache HIT — reuse the same AI pick for every viewer, no Claude call.
+    cache_key = _bestbet_key(match_id, is_live, score, minute) if match_id else None
+    if cache_key:
+        hit = _bestbet_cache.get(cache_key)
+        ttl = _BESTBET_TTL_LIVE if is_live else _BESTBET_TTL_PRE
+        if hit and time.time() - hit["ts"] < ttl:
+            return hit["bet"]
 
     claude_key = os.getenv("CLAUDE_API_KEY", "")
     if not claude_key:
@@ -769,12 +792,18 @@ Only respond with JSON."""
                 market = str(parsed.get("market", ""))
                 # Use real odds if available
                 matched_odds = _match_real_odds(market, real_odds) if real_odds else None
-                return {
+                result = {
                     "market": market,
                     "odds": matched_odds or float(parsed.get("odds", 1.80)),
                     "confidence": int(parsed.get("confidence", 65)),
                     "reason": str(parsed.get("reason", "")),
                 }
+                # Cache only the real AI pick (never the fallback), shared for all viewers.
+                if cache_key:
+                    if len(_bestbet_cache) > 500:
+                        _bestbet_cache.clear()
+                    _bestbet_cache[cache_key] = {"ts": time.time(), "bet": result}
+                return result
     except Exception as e:
         logger.error(f"Smart bet AI error: {e}")
 
