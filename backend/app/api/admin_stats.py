@@ -3244,6 +3244,43 @@ async def get_postback_logs(
 # ── Banner Click Analytics ──────────────────────────────────────────
 
 
+@router.get("/banner-attribution")
+async def get_banner_attribution(
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Which in-app banners the depositing users engaged with. Attributes by
+    user overlap (clicked banner AND later deposited), not by fragile sub_id echo."""
+    rows = (await db.execute(text("""
+        WITH dep AS (
+            SELECT DISTINCT user_id FROM postback_logs
+            WHERE user_id IS NOT NULL
+              AND (LOWER(event) IN ('sale','deposit','first_deposit','ftd','confirmed','qualified')
+                   OR amount > 0)
+        )
+        SELECT bc.banner,
+               COUNT(*) AS clicks,
+               COUNT(DISTINCT bc.user_id) AS users,
+               COUNT(DISTINCT bc.user_id) FILTER (WHERE bc.user_id IN (SELECT user_id FROM dep)) AS depositors
+        FROM banner_clicks bc
+        GROUP BY bc.banner
+        ORDER BY depositors DESC, clicks DESC
+        LIMIT 50
+    """))).all()
+    return {
+        "banners": [
+            {
+                "banner": r.banner,
+                "clicks": r.clicks,
+                "users": r.users,
+                "depositors": r.depositors,
+                "deposit_rate": round(r.depositors / r.users * 100, 1) if r.users else 0,
+            }
+            for r in rows
+        ]
+    }
+
+
 @router.get("/banner-clicks")
 async def get_banner_clicks_stats(
     admin: dict = Depends(get_current_admin),
