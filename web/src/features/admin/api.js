@@ -120,6 +120,7 @@ export const adminApi = {
 
   // Traffic Sources
   getTrafficStats: () => request('/stats/traffic'),
+  getBannerAttribution: () => request('/stats/banner-attribution'),
 
   // A/B Funnels
   getFunnelStats: () => request('/stats/users/funnel-stats'),

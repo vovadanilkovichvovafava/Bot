@@ -7,6 +7,55 @@ const SOURCE_COLORS = [
 
 function getColor(i) { return SOURCE_COLORS[i % SOURCE_COLORS.length]; }
 
+/* Which in-app banners the depositing users clicked (banner → deposit). */
+function BannerAttribution() {
+  const [banners, setBanners] = useState(null);
+
+  useEffect(() => {
+    adminApi.getBannerAttribution()
+      .then((d) => setBanners(d?.banners || []))
+      .catch(() => setBanners([]));
+  }, []);
+
+  if (!banners) return null;
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-slate-300 mb-1">Атрибуция по баннерам (клик → депозит)</h2>
+      <p className="text-xs text-slate-500 mb-3">Какие внутренние баннеры кликали юзеры, которые потом задепали.</p>
+      <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-800 text-slate-500 text-xs">
+              <th className="text-left px-4 py-3 font-medium">Баннер</th>
+              <th className="text-right px-3 py-3 font-medium">Клики</th>
+              <th className="text-right px-3 py-3 font-medium">Юзеров</th>
+              <th className="text-right px-3 py-3 font-medium">Задепали</th>
+              <th className="text-right px-4 py-3 font-medium">Конв. в деп</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50">
+            {banners.map((b) => (
+              <tr key={b.banner} className="hover:bg-slate-800/30">
+                <td className="px-4 py-2.5 font-mono text-xs text-slate-300">{b.banner}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-xs text-slate-400">{b.clicks}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-xs text-slate-400">{b.users}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-xs font-bold text-emerald-400">{b.depositors}</td>
+                <td className={`px-4 py-2.5 text-right font-mono text-xs font-bold ${b.deposit_rate >= 5 ? 'text-emerald-400' : b.deposit_rate >= 1 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {b.deposit_rate}%
+                </td>
+              </tr>
+            ))}
+            {!banners.length && (
+              <tr><td colSpan="5" className="px-4 py-6 text-center text-slate-600 text-xs">Нет данных по баннерам</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminTraffic() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +113,8 @@ export default function AdminTraffic() {
         <h1 className="text-xl font-semibold">Traffic Sources</h1>
         <p className="text-sm text-slate-400 mt-1">Registrations, conversions and retention by traffic source</p>
       </div>
+
+      <BannerAttribution />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
