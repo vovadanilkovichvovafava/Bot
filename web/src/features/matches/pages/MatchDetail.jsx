@@ -925,38 +925,45 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
             })}
           </div>
 
-          {/* Combined: Best Bet cards + Promo block (merged into one card) */}
+          {/* Best Bet cards — shown for EVERYONE (incl. PRO); clickable → place bet */}
+          {recommendedBets.length > 0 && (
+            <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+              <div className="px-4 pt-3 pb-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                  <span>🔥</span>
+                  {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
+                </p>
+              </div>
+              <div className="px-4 pb-3 space-y-2">
+                {recommendedBets.map((bet, idx) => {
+                  const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => { trackClick(user?.id, 'match_bet_card'); navigate('/promo?banner=match_bet_card'); }}
+                      className="w-full flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 text-left hover:border-emerald-300 active:scale-[0.99] transition-all"
+                    >
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
+                          <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
+                        </div>
+                      </div>
+                      <span className="flex items-center gap-1.5 ml-3 shrink-0">
+                        <span className="text-lg font-black text-emerald-600 tabular-nums">{bet.odds.toFixed(2)}</span>
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Promo / deposit upsell — free users only */}
           {!isPremium && (
             <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-              {/* Best Bet section — only if bets exist */}
-              {recommendedBets.length > 0 && (
-                <>
-                  <div className="bg-white px-4 pt-3 pb-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-                      <span>🔥</span>
-                      {t('matchDetail.bestBet', { defaultValue: 'BEST BET' })}
-                    </p>
-                  </div>
-                  <div className="bg-white px-4 pb-3 space-y-2">
-                    {recommendedBets.map((bet, idx) => {
-                      const conf = 70 + ((bet.type || '').length * 7 + Math.round(bet.odds * 13)) % 26;
-                      return (
-                        <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5">
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-400'}`} />
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-gray-900 truncate">{bet.type}</p>
-                              <p className="text-[11px] text-gray-400">{t('aiChat.aiConfidence', { defaultValue: 'AI confidence' })}: {conf}%</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-black text-emerald-600 ml-3 tabular-nums">{bet.odds.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
               {/* Promo header bar */}
               <div className="bg-gray-900 px-4 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
