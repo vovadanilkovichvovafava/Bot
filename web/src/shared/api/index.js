@@ -289,6 +289,11 @@ class ApiService {
     return this.request(`/predictions/history?limit=${limit}`);
   }
 
+  // A real recently-won pick (odds > 2) for the 'you missed this' nudge
+  async getRecentWin() {
+    return this.request('/predictions/recent-win');
+  }
+
   // AI Chat (uses Claude AI via predictions/chat endpoint)
   async aiChat(message, history = [], matchContext = null, locale = 'en') {
     const body = { message, history, locale };

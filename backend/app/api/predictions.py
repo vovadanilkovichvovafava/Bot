@@ -267,6 +267,36 @@ class MLDashboardResponse(BaseModel):
 
 # === Endpoints ===
 
+@router.get("/recent-win")
+async def recent_winning_pick(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """A REAL recently-verified winning pick with odds > 2. Powers the
+    'you missed this' loss-aversion nudge shown to non-PRO users. Returns
+    found=False when no such real pick exists (never fabricate)."""
+    row = (await db.execute(text("""
+        SELECT home_team, away_team, bet_type,
+               COALESCE(predicted_odds, odds) AS odds,
+               COALESCE(match_date, match_time, verified_at, created_at) AS mdate
+        FROM predictions
+        WHERE is_correct = TRUE
+          AND COALESCE(predicted_odds, odds) > 2
+          AND bet_type <> ''
+        ORDER BY verified_at DESC NULLS LAST
+        LIMIT 1
+    """))).first()
+    if not row:
+        return {"found": False}
+    return {
+        "found": True,
+        "match": f"{row.home_team} vs {row.away_team}",
+        "market": row.bet_type,
+        "odds": round(row.odds, 2) if row.odds else None,
+        "date": row.mdate.isoformat() if row.mdate else None,
+    }
+
+
 @router.get("/chat/limit", response_model=ChatLimitResponse)
 async def get_chat_limit(
     current_user: dict = Depends(get_current_user),

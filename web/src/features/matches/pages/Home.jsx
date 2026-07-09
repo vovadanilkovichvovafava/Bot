@@ -12,6 +12,7 @@ import WelcomeModal from '../components/WelcomeModal';
 import ProTrialTimer from '../components/ProTrialTimer';
 import ReviewsSlider from '../../../shared/components/social/ReviewsSlider';
 import WinProofs from '../../../shared/components/social/WinProofs';
+import MissedWinModal from '../components/MissedWinModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
@@ -517,6 +518,9 @@ export default function Home() {
 
         <div className="h-4"/>
       </div>
+
+      {/* Loss-aversion nudge for non-PRO users (self-gated) */}
+      <MissedWinModal />
 
       {/* Welcome modal for new registrations */}
       {showWelcome && (
