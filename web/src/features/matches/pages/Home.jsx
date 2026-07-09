@@ -9,6 +9,7 @@ import { getStats } from '../../predictions/services/predictionStore';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
+import ProTrialTimer from '../components/ProTrialTimer';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
@@ -197,6 +198,9 @@ export default function Home() {
       </div>
 
       <div className="px-5 -mt-4 space-y-4">
+        {/* 12-hour full-PRO trial countdown */}
+        <ProTrialTimer />
+
         {/* Express-First Hero Card — funnel-4 */}
         {isFunnel4 && (
           <div
