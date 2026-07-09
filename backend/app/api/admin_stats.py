@@ -3244,6 +3244,66 @@ async def get_postback_logs(
 # ── Banner Click Analytics ──────────────────────────────────────────
 
 
+@router.get("/deposits")
+async def get_deposits(
+    limit: int = Query(200, ge=1, le=500),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real deposits with banner attribution — who deposited, how much, from which
+    in-app banner (last click before the deposit) and when."""
+    rows = (await db.execute(text("""
+        SELECT p.id, p.user_id, p.amount, p.currency, p.country, p.event, p.source,
+               p.created_at, p.click_id, p.transaction_id,
+               u.phone,
+               (SELECT bc.banner FROM banner_clicks bc
+                WHERE bc.user_id = p.user_id AND bc.created_at <= p.created_at
+                ORDER BY bc.created_at DESC LIMIT 1) AS banner
+        FROM postback_logs p
+        LEFT JOIN users u ON u.public_id = p.user_id
+        WHERE (LOWER(p.event) IN ('sale','deposit','first_deposit','ftd','confirmed','qualified')
+               OR p.amount > 0)
+        ORDER BY p.created_at DESC
+        LIMIT :limit
+    """), {"limit": limit})).mappings().all()
+
+    deposits = [
+        {
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "phone": r["phone"],
+            "amount": float(r["amount"]) if r["amount"] is not None else None,
+            "currency": r["currency"],
+            "country": r["country"],
+            "event": r["event"],
+            "source": r["source"],
+            "banner": r["banner"],
+            "click_id": r["click_id"],
+            "transaction_id": r["transaction_id"],
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+        }
+        for r in rows
+    ]
+
+    day_ago = datetime.now() - timedelta(days=1)
+    qualify = ("(LOWER(event) IN ('sale','deposit','first_deposit','ftd','confirmed','qualified') "
+               "OR amount > 0)")
+    total = (await db.execute(text(f"SELECT COUNT(*) FROM postback_logs WHERE {qualify}"))).scalar() or 0
+    total_amount = (await db.execute(text("SELECT COALESCE(SUM(amount),0) FROM postback_logs WHERE amount > 0"))).scalar() or 0
+    last24 = (await db.execute(text(
+        f"SELECT COUNT(*) FROM postback_logs WHERE {qualify} AND created_at >= :d"
+    ), {"d": day_ago})).scalar() or 0
+
+    return {
+        "deposits": deposits,
+        "summary": {
+            "total": total,
+            "total_amount": round(float(total_amount), 2),
+            "last_24h": last24,
+        },
+    }
+
+
 @router.get("/banner-attribution")
 async def get_banner_attribution(
     admin: dict = Depends(get_current_admin),
