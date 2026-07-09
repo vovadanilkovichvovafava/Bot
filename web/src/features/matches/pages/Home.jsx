@@ -10,6 +10,8 @@ import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
 import WelcomeModal from '../components/WelcomeModal';
 import ProTrialTimer from '../components/ProTrialTimer';
+import ReviewsSlider from '../../../shared/components/social/ReviewsSlider';
+import WinProofs from '../../../shared/components/social/WinProofs';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
@@ -463,6 +465,12 @@ export default function Home() {
               <p className="text-xs font-medium text-gray-700">{t('home.bankroll')}</p>
             </div>
           </div>
+        </div>
+
+        {/* Social proof — win slips + reviews */}
+        <div className="space-y-4">
+          <WinProofs />
+          <ReviewsSlider />
         </div>
 
         {/* Today's Matches */}
