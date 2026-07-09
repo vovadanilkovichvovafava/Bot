@@ -940,7 +940,12 @@ function OverviewTab({ matchId, match, enriched, enrichedLoading, prediction, pr
                   return (
                     <button
                       key={idx}
-                      onClick={() => { trackClick(user?.id, 'match_bet_card'); navigate('/promo?banner=match_bet_card'); }}
+                      onClick={() => {
+                        trackClick(user?.id, 'match_bet_card');
+                        const link = getTrackingLink(user?.id, 'match_bet_card', user?.funnel);
+                        if (link) window.open(link, '_blank', 'noopener,noreferrer');
+                        else navigate('/promo?banner=match_bet_card');
+                      }}
                       className="w-full flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 text-left hover:border-emerald-300 active:scale-[0.99] transition-all"
                     >
                       <div className="flex items-center gap-2.5 flex-1 min-w-0">
