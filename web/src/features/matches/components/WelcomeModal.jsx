@@ -95,15 +95,15 @@ function Step1Welcome({ t }) {
         </svg>
       </div>
       <h2 className="text-xl font-bold text-gray-900 mb-2">
-        {t('onboarding.step1Title', { defaultValue: 'Benvenuto in AI Betting Bot!' })}
+        {t('onboarding.trialTitle', { defaultValue: 'PRO COMPLETO grátis por 12 horas 🎉' })}
       </h2>
       <p className="text-gray-500 text-sm leading-relaxed mb-5">
-        {t('onboarding.step1Desc', { defaultValue: 'Il tuo assistente AI personale per il calcio. Analizziamo oltre 900 campionati per darti i pronostici più precisi.' })}
+        {t('onboarding.trialDesc', { defaultValue: 'Desbloqueaste o acesso PRO total: previsões de IA ilimitadas, chat sem limites e todas as ferramentas PRO. Aproveita ao máximo durante 12 horas!' })}
       </p>
       <div className="space-y-2.5">
-        <FeatureChip icon="target" text={t('onboarding.feat1', { defaultValue: 'Pronostici AI — previsioni basate sui dati' })} />
-        <FeatureChip icon="chat" text={t('onboarding.feat2', { defaultValue: 'Chat AI — chiedi qualsiasi cosa sulle partite' })} />
-        <FeatureChip icon="chart" text={t('onboarding.feat3', { defaultValue: 'Statistiche — monitora i tuoi risultati' })} />
+        <FeatureChip icon="target" text={t('onboarding.trialFeat1', { defaultValue: 'Previsões de IA ILIMITADAS' })} />
+        <FeatureChip icon="chat" text={t('onboarding.trialFeat2', { defaultValue: 'Chat de IA sem limites' })} />
+        <FeatureChip icon="chart" text={t('onboarding.trialFeat3', { defaultValue: 'Todas as ferramentas PRO desbloqueadas' })} />
       </div>
     </div>
   );
@@ -254,13 +254,10 @@ function Step5Start({ t, onClose, onGoToPromo, hidePro, expressCTA }) {
         </svg>
       </div>
       <h2 className="text-xl font-bold text-gray-900 mb-2">
-        {t('onboarding.step5Title', { defaultValue: 'Tutto pronto! Inizia ora' })}
+        {t('onboarding.trialStartTitle', { defaultValue: 'O teu PRO de 12h começou! ⚡' })}
       </h2>
       <p className="text-gray-500 text-sm leading-relaxed mb-6">
-        {hidePro
-          ? t('onboarding.step5DescFree', { defaultValue: 'Scegli una partita e prova il tuo primo pronostico AI!' })
-          : t('onboarding.step5Desc', { defaultValue: 'Hai 3 richieste AI gratuite al giorno. Scegli una partita e prova il tuo primo pronostico AI!' })
-        }
+        {t('onboarding.trialStartDesc', { defaultValue: 'Tens PRO completo durante 12 horas — previsões e chat de IA ilimitados. Aproveita ao máximo! Depois, um simples depósito mantém o teu PRO (o dinheiro fica teu + bónus).' })}
       </p>
       <button
         onClick={onClose}
