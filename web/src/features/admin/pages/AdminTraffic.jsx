@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { adminApi } from '../api';
+import VisitorSessions from '../components/VisitorSessions';
 
 const SOURCE_COLORS = [
   '#3b82f6', '#a855f7', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16',
@@ -115,6 +116,8 @@ export default function AdminTraffic() {
       </div>
 
       <BannerAttribution />
+
+      <VisitorSessions />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

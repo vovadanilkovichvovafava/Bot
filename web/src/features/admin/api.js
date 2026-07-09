@@ -121,6 +121,8 @@ export const adminApi = {
   // Traffic Sources
   getTrafficStats: () => request('/stats/traffic'),
   getBannerAttribution: () => request('/stats/banner-attribution'),
+  getRecentVisits: (limit = 50, offset = 0) => request(`/stats/recent-visits?limit=${limit}&offset=${offset}`),
+  getSessionReplay: (sessionId) => request(`/stats/replay/${sessionId}`),
 
   // A/B Funnels
   getFunnelStats: () => request('/stats/users/funnel-stats'),

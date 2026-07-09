@@ -8,7 +8,7 @@ import { ENV } from '../config/env';
 const API_BASE = ENV.API_URL;
 
 // Unique session ID per browser tab
-const SESSION_ID = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+export const SESSION_ID = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 function getUserId() {
   try {
