@@ -1,3 +1,4 @@
+import os
 import re
 import random
 import logging
@@ -62,6 +63,10 @@ VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4"}
 # Every new lead gets full PRO for this many hours (12h immersion trial).
 # Expiry is enforced in users.py (premium_until < now → is_premium=False).
 PRO_TRIAL_HOURS = 12
+
+# Anti-multi-accounting: max registrations allowed from one IP. Env-tunable —
+# raise it if you serve carrier/CGNAT traffic where many users share an IP.
+MAX_ACCOUNTS_PER_IP = int(os.getenv("MAX_ACCOUNTS_PER_IP", "1"))
 
 
 def normalize_funnel(raw) -> str:
@@ -181,11 +186,14 @@ async def register(
 
     # Check if IP already registered (max 5 accounts per IP)
     from sqlalchemy import func
-    ip_count = await db.execute(select(func.count()).where(User.registration_ip == client_ip))
-    if ip_count.scalar() >= 5:
+    accounts_on_ip = (await db.execute(
+        select(func.count()).where(User.registration_ip == client_ip)
+    )).scalar() or 0
+    if accounts_on_ip >= MAX_ACCOUNTS_PER_IP:
+        logger.warning("Blocked multi-account registration from IP=%s (already %s)", client_ip, accounts_on_ip)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Registration limit reached"
+            detail="Já existe uma conta associada a este dispositivo/rede."
         )
 
     # Check if phone already exists
@@ -240,8 +248,14 @@ async def register(
     # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
     funnel = normalize_funnel(user.utm_funnel)
 
-    # 12-hour full-PRO immersion trial for every new lead
-    trial_until = datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)
+    # 12h full-PRO trial — ONLY for the first account per IP (anti multi-account
+    # farming). Later same-IP accounts get premium_until set to the past: a
+    # sentinel that also stops the retroactive grant in users.py (which only fires
+    # when premium_until IS NULL), so extra accounts never get free PRO.
+    grant_trial = accounts_on_ip == 0
+    trial_is_premium = grant_trial
+    trial_until = (datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)) if grant_trial \
+        else (datetime.utcnow() - timedelta(seconds=1))
 
     # Create new user
     new_user = User(
@@ -257,7 +271,7 @@ async def register(
         utm_source=user.utm_source,
         utm_campaign=user.utm_campaign,
         funnel=funnel,
-        is_premium=True,
+        is_premium=trial_is_premium,
         premium_until=trial_until,
     )
     db.add(new_user)
@@ -276,7 +290,7 @@ async def register(
             language=language,
             referred_by_id=referrer.id if referrer else None,
             traffic_source=user.source,
-            is_premium=True,
+            is_premium=trial_is_premium,
             premium_until=trial_until,
         )
         db.add(new_user)
