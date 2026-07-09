@@ -101,10 +101,27 @@ export default function Register() {
         )}
 
         <div className="relative">
+          {/* MAIN HOOK — 12h full PRO free on signup */}
+          {!keyboardOpen && (
+            <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
+              <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
+                🎁 {t('auth.trialHookTag', { defaultValue: 'Oferta de boas-vindas' })}
+              </span>
+              <p className="text-white font-black text-2xl leading-none">
+                {t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })}
+              </p>
+              <p className="text-white/90 text-xs mt-1.5">
+                {t('auth.trialHookSub', { defaultValue: 'Previsões e chat de IA ILIMITADOS assim que crias a conta' })}
+              </p>
+            </div>
+          )}
+
           {/* Title */}
           <div className="text-center">
-            <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-2xl mb-1'}`}>
-              {t('auth.registerHeadline')}
+            <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-xl mb-1'}`}>
+              {keyboardOpen
+                ? t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })
+                : t('auth.registerHeadline')}
             </h1>
             {!keyboardOpen && (
               <p className="text-gray-400 text-sm mb-4">{t('auth.registerSubheadline')}</p>
@@ -226,7 +243,7 @@ export default function Register() {
             {/* What you get on register */}
             {!keyboardOpen && (
               <p className="text-center text-xs text-gray-400 -mt-1">
-                {t('auth.registerCtaSub')}
+                {t('auth.trialHookCtaSub', { defaultValue: '12h de PRO completo grátis · sem cartão' })}
               </p>
             )}
           </form>
