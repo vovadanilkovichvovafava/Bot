@@ -3304,6 +3304,80 @@ async def get_deposits(
     }
 
 
+@router.get("/deposits/user/{user_id}")
+async def get_deposit_user_detail(
+    user_id: str,
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Behaviour detail for a depositor: time on app before deposit, sessions,
+    pages visited, the banner journey, AI usage, and a replayable session id."""
+    j = (await db.execute(text("""
+        SELECT MIN(created_at) AS first, MAX(created_at) AS last,
+               COUNT(*) AS events, COUNT(DISTINCT session_id) AS sessions,
+               COUNT(DISTINCT page) AS pages
+        FROM analytics_events WHERE user_id = :uid
+    """), {"uid": user_id})).mappings().first()
+    first = j["first"] if j else None
+    last = j["last"] if j else None
+    total_time = int((last - first).total_seconds()) if (first and last) else 0
+
+    pages = (await db.execute(text("""
+        SELECT page, COUNT(*) AS n FROM analytics_events
+        WHERE user_id = :uid AND page IS NOT NULL AND page <> ''
+        GROUP BY page ORDER BY n DESC LIMIT 15
+    """), {"uid": user_id})).mappings().all()
+
+    banners = (await db.execute(text("""
+        SELECT banner, MIN(created_at) AS first_click, COUNT(*) AS n
+        FROM banner_clicks WHERE user_id = :uid
+        GROUP BY banner ORDER BY first_click ASC LIMIT 20
+    """), {"uid": user_id})).mappings().all()
+
+    replay = (await db.execute(text("""
+        SELECT sr.session_id FROM session_replays sr
+        JOIN analytics_events ae ON ae.session_id = sr.session_id
+        WHERE ae.user_id = :uid
+        ORDER BY sr.updated_at DESC LIMIT 1
+    """), {"uid": user_id})).scalar()
+
+    ai_requests = 0
+    predictions = 0
+    try:
+        ai_requests = (await db.execute(text(
+            "SELECT COUNT(*) FROM ai_chat_messages WHERE user_id = "
+            "(SELECT id FROM users WHERE public_id = :uid) AND role = 'user'"
+        ), {"uid": user_id})).scalar() or 0
+    except Exception:
+        await db.rollback()
+    try:
+        predictions = (await db.execute(text(
+            "SELECT COUNT(*) FROM predictions WHERE user_id = "
+            "(SELECT id FROM users WHERE public_id = :uid)"
+        ), {"uid": user_id})).scalar() or 0
+    except Exception:
+        await db.rollback()
+
+    return {
+        "total_time_sec": total_time,
+        "sessions": (j["sessions"] if j else 0) or 0,
+        "events": (j["events"] if j else 0) or 0,
+        "page_views": (j["pages"] if j else 0) or 0,
+        "first_seen": first.isoformat() if first else None,
+        "last_seen": last.isoformat() if last else None,
+        "ai_requests": ai_requests,
+        "predictions": predictions,
+        "replay_session_id": replay,
+        "pages": [{"page": p["page"], "count": p["n"]} for p in pages],
+        "banners": [
+            {"banner": b["banner"],
+             "first_click": b["first_click"].isoformat() if b["first_click"] else None,
+             "count": b["n"]}
+            for b in banners
+        ],
+    }
+
+
 @router.get("/banner-attribution")
 async def get_banner_attribution(
     admin: dict = Depends(get_current_admin),

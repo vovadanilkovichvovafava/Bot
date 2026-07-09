@@ -79,7 +79,7 @@ function fmtDur(sec) {
 }
 
 // ── Session Replay modal (rrweb-player, lazy-loaded) ──
-function ReplayModal({ sessionId, onClose }) {
+export function ReplayModal({ sessionId, onClose }) {
   const [events, setEvents] = useState(null);
   const [error, setError] = useState(null);
   const playerRef = useRef(null);
