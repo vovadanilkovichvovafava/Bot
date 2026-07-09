@@ -59,6 +59,10 @@ def get_client_ip(request: Request) -> str:
 
 VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4"}
 
+# Every new lead gets full PRO for this many hours (12h immersion trial).
+# Expiry is enforced in users.py (premium_until < now → is_premium=False).
+PRO_TRIAL_HOURS = 12
+
 
 def normalize_funnel(raw) -> str:
     """Map an incoming utm_funnel value ('2', 'funnel-2', etc.) to a valid funnel."""
@@ -236,6 +240,9 @@ async def register(
     # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
     funnel = normalize_funnel(user.utm_funnel)
 
+    # 12-hour full-PRO immersion trial for every new lead
+    trial_until = datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)
+
     # Create new user
     new_user = User(
         email=email,
@@ -250,6 +257,8 @@ async def register(
         utm_source=user.utm_source,
         utm_campaign=user.utm_campaign,
         funnel=funnel,
+        is_premium=True,
+        premium_until=trial_until,
     )
     db.add(new_user)
     try:
@@ -267,6 +276,8 @@ async def register(
             language=language,
             referred_by_id=referrer.id if referrer else None,
             traffic_source=user.source,
+            is_premium=True,
+            premium_until=trial_until,
         )
         db.add(new_user)
         await db.commit()
