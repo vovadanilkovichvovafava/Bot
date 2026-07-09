@@ -83,6 +83,18 @@ async def get_current_user_info(
     # Check if premium has expired
     is_premium = user.is_premium
     premium_until = user.premium_until
+
+    # Retroactive 12h full-PRO trial for EXISTING users who never had premium.
+    # premium_until is NULL only for accounts that never received any premium, so
+    # this grants the trial exactly once (after it expires, premium_until is a past
+    # date — not NULL — so it is never re-granted).
+    if premium_until is None and not is_premium:
+        premium_until = datetime.utcnow() + timedelta(hours=12)
+        user.is_premium = True
+        user.premium_until = premium_until
+        is_premium = True
+        await db.commit()
+
     if is_premium and premium_until and premium_until < datetime.utcnow():
         is_premium = False
         user.is_premium = False
