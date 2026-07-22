@@ -17,9 +17,9 @@ const VARIANTS = ['a', 'b', 'c'];
 // What each variant turns ON. Base (funnel-1) behaviour is identical across all;
 // only these engagement adds differ. Tweak here — one place.
 const CONFIG = {
-  a: { missedWin: false, shareNudge: false }, // control — funnel-1 as-is
-  b: { missedWin: true, shareNudge: false }, // + "missed win" express nudge
-  c: { missedWin: true, shareNudge: true }, // + missed-win + share nudge
+  a: { missedWin: false, winsSlider: false }, // funnel 1 — control (base funnel-1)
+  b: { missedWin: true, winsSlider: false }, // funnel 2 — "missed win" express nudge
+  c: { missedWin: false, winsSlider: true }, // funnel 3 — real big-wins carousel
 };
 
 export function getVariant() {

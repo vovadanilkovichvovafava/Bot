@@ -298,6 +298,10 @@ class ApiService {
     return this.request('/predictions/missed-express');
   }
 
+  async getBigWins(minOdds = 5, limit = 8) {
+    return this.request(`/predictions/big-wins?min_odds=${minOdds}&limit=${limit}`);
+  }
+
   // AI Chat (uses Claude AI via predictions/chat endpoint)
   async aiChat(message, history = [], matchContext = null, locale = 'en') {
     const body = { message, history, locale };

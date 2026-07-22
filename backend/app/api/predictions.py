@@ -366,6 +366,50 @@ async def missed_winning_express(
     return {"found": False}
 
 
+@router.get("/big-wins")
+async def big_wins(
+    limit: int = Query(8, ge=1, le=20),
+    min_odds: float = Query(5.0, ge=1.0, le=100.0),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real recently-won single picks with odds >= min_odds (default 5), for the
+    big-wins social-proof carousel. Public. Never fabricates — only real
+    is_correct=TRUE picks; a notional stake turns odds into a shown return."""
+    rows = (await db.execute(text("""
+        SELECT home_team, away_team, bet_type,
+               COALESCE(predicted_odds, odds) AS odds,
+               COALESCE(match_date, match_time, verified_at, created_at) AS mdate
+        FROM predictions
+        WHERE is_correct = TRUE
+          AND COALESCE(predicted_odds, odds) >= :min_odds
+          AND bet_type <> ''
+        ORDER BY verified_at DESC NULLS LAST
+        LIMIT 60
+    """), {"min_odds": min_odds})).all()
+
+    STAKES = [20, 25, 30, 40, 50]
+    seen, wins = set(), []
+    for r in rows:
+        key = (r.home_team, r.away_team, r.bet_type)
+        if key in seen or not r.odds:
+            continue
+        seen.add(key)
+        odd = round(float(r.odds), 2)
+        stake = STAKES[len(wins) % len(STAKES)]
+        wins.append({
+            "match": f"{r.home_team} vs {r.away_team}",
+            "market": r.bet_type,
+            "odds": odd,
+            "stake": stake,
+            "win": round(stake * odd),
+            "date": r.mdate.isoformat() if r.mdate else None,
+        })
+        if len(wins) >= limit:
+            break
+
+    return {"wins": wins}
+
+
 @router.get("/chat/limit", response_model=ChatLimitResponse)
 async def get_chat_limit(
     current_user: dict = Depends(get_current_user),
