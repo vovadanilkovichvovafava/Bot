@@ -4,6 +4,7 @@
  */
 
 import { ENV } from '../config/env';
+import { getVariant } from './experiment';
 
 const API_BASE = ENV.API_URL;
 
@@ -44,7 +45,7 @@ export function track(event, meta = {}) {
       session_id: SESSION_ID,
       country: getCountry(),
       referrer: document.referrer || null,
-      metadata: meta,
+      metadata: { ...meta, funnel_variant: getVariant() },
     };
 
     // Fire-and-forget — don't await, don't catch

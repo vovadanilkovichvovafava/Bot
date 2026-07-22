@@ -4,6 +4,7 @@ import { useAuth } from './features/auth/context/AuthContext';
 import FootballSpinner from './shared/components/FootballSpinner';
 import { saveTrackingParams } from './features/betting/services/trackingService';
 import { track, SESSION_ID } from './shared/services/analytics';
+import { getVariant } from './shared/services/experiment';
 import replayRecorder from './shared/services/replayRecorder';
 import Layout from './shared/components/Layout';
 
@@ -197,6 +198,10 @@ export default function App() {
     replayRecorder.init(SESSION_ID);
     return () => replayRecorder.destroy();
   }, []);
+
+  // Lock in the A/B engagement variant on first load: reads ?fv= from a shared
+  // link (friend inherits sharer's funnel), otherwise assigns a random one.
+  useEffect(() => { getVariant(); }, []);
 
   // Сохранить fbclid/utm параметры из URL при первом заходе
   useEffect(() => {

@@ -1,6 +1,13 @@
 /**
  * Share prediction utilities
  */
+import { withVariant } from '../../../shared/services/experiment';
+
+// Referral link + engagement variant, so friends land in the sharer's A/B funnel.
+function refLinkFor(referralCode) {
+  const baseUrl = window.location.origin;
+  return withVariant(referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl);
+}
 
 /**
  * Generate a shareable text for a prediction
@@ -112,8 +119,7 @@ export function getShareLinks(text, url = window.location.href) {
  * Generate share text with referral link for viral growth
  */
 export function generateReferralShareText({ matchText, prediction, referralCode, bonus = '€100' }) {
-  const baseUrl = window.location.origin;
-  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+  const refLink = refLinkFor(referralCode);
 
   let text = '';
   if (matchText) {
@@ -132,8 +138,7 @@ export function generateReferralShareText({ matchText, prediction, referralCode,
  * Generate express share text with referral
  */
 export function generateExpressShareText({ express, referralCode, bonus = '€100' }) {
-  const baseUrl = window.location.origin;
-  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+  const refLink = refLinkFor(referralCode);
 
   let text = `AI Express x${express.total_odds} (${express.leg_count} legs)\n\n`;
   express.legs?.forEach((leg, i) => {
@@ -150,8 +155,7 @@ export function generateExpressShareText({ express, referralCode, bonus = '€10
  * Generate post-match "could have won" share text
  */
 export function generatePostMatchShareText({ homeTeam, awayTeam, score, bet, odds, potentialWin, currency, referralCode, bonus = '€100' }) {
-  const baseUrl = window.location.origin;
-  const refLink = referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
+  const refLink = refLinkFor(referralCode);
 
   let text = `${homeTeam} vs ${awayTeam} ${score}\n`;
   text += `AI predicted: ${bet} @ ${odds} ✅\n`;

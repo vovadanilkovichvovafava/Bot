@@ -6,6 +6,7 @@ import { formatAmount } from '../../../shared/config/advertisers';
 import api from '../../../shared/api';
 import { getTrackingLink } from '../../betting/services/trackingService';
 import { track } from '../../../shared/services/analytics';
+import { hasFeature } from '../../../shared/services/experiment';
 
 // Notional stake used to turn a winning express's odds into a "you could have
 // earned X" number, in the user's local currency.
@@ -25,7 +26,8 @@ export default function MissedWinModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) return; // shown to everyone incl. PRO (PRO gets a different pitch)
+    // Funnel A/B: only variants with the missed-win feature show it (A = control).
+    if (!user || !hasFeature('missedWin')) return;
     const key = `missed_win_${new Date().toDateString()}`;
     try { if (localStorage.getItem(key)) return; } catch { /* ignore */ }
 
