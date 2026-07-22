@@ -155,3 +155,7 @@ input, select, textarea {
 
 .dark .border-gray-100 { border-color: #232d3e !important; }
 .dark .border-gray-200 { border-color: #2b3648 !important; }
+
+/* App/page wrappers use the arbitrary light hex bg-[#F0F2F5] (19 places) —
+   this is the main "light background" behind everything. Darken it. */
+.dark .bg-\[\#F0F2F5\] { background-color: #0b1220 !important; }
