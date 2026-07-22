@@ -24,8 +24,8 @@ export function ThemeProvider({ children }) {
     if (saved !== null) {
       return saved === 'dark';
     }
-    // Check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Dark theme is the default for everyone (toggle still switches to light)
+    return true;
   });
 
   useEffect(() => {

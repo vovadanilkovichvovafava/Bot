@@ -294,6 +294,10 @@ class ApiService {
     return this.request('/predictions/recent-win');
   }
 
+  async getMissedExpress() {
+    return this.request('/predictions/missed-express');
+  }
+
   // AI Chat (uses Claude AI via predictions/chat endpoint)
   async aiChat(message, history = [], matchContext = null, locale = 'en') {
     const body = { message, history, locale };

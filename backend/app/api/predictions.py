@@ -297,6 +297,64 @@ async def recent_winning_pick(
     }
 
 
+@router.get("/missed-express")
+async def missed_winning_express(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """A 'missed winning express': a 2-4 leg accumulator built from REAL
+    recently-verified winning picks (distinct matches) combined until total
+    odds >= 5. Powers the loss-aversion nudge for non-PRO users. Every leg is a
+    pick that really won (is_correct=TRUE) — only the accumulator framing is
+    synthetic. Returns found=False when there aren't enough real winning picks
+    (never fabricate a result)."""
+    rows = (await db.execute(text("""
+        SELECT home_team, away_team, bet_type,
+               COALESCE(predicted_odds, odds) AS odds,
+               COALESCE(match_date, match_time, verified_at, created_at) AS mdate
+        FROM predictions
+        WHERE is_correct = TRUE
+          AND COALESCE(predicted_odds, odds) > 1.3
+          AND bet_type <> ''
+        ORDER BY verified_at DESC NULLS LAST
+        LIMIT 40
+    """))).all()
+
+    # Dedupe by match (keep most recent), greedily combine legs until the
+    # combined odds reach >= 5 (min 2 legs, cap 4).
+    seen = set()
+    legs = []
+    total = 1.0
+    latest = None
+    for r in rows:
+        key = (r.home_team, r.away_team)
+        if key in seen or not r.odds:
+            continue
+        seen.add(key)
+        odd = round(float(r.odds), 2)
+        legs.append({
+            "match": f"{r.home_team} vs {r.away_team}",
+            "market": r.bet_type,
+            "odds": odd,
+        })
+        total *= odd
+        if latest is None and r.mdate is not None:
+            latest = r.mdate
+        if (total >= 5 and len(legs) >= 2) or len(legs) >= 4:
+            break
+
+    if len(legs) < 2 or total < 3:
+        return {"found": False}
+
+    return {
+        "found": True,
+        "legs": legs,
+        "legCount": len(legs),
+        "totalOdds": round(total, 2),
+        "date": latest.isoformat() if latest else None,
+    }
+
+
 @router.get("/chat/limit", response_model=ChatLimitResponse)
 async def get_chat_limit(
     current_user: dict = Depends(get_current_user),
