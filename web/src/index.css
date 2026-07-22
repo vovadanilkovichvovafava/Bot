@@ -127,3 +127,31 @@ input, select, textarea {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ============================================================
+   Dark theme retrofit — active when <html class="dark"> (the default).
+   The app was built with light utilities (bg-white, text-gray-*, ...);
+   these remaps darken them app-wide without touching 190+ call sites.
+   Colored/gradient cards (bg-gradient-*, text-white) are untouched.
+   ============================================================ */
+.dark body { background-color: #0b1220; color: #e2e8f0; }
+
+.dark .card { background-color: #161e2e; border: 1px solid #263143; box-shadow: none; }
+.dark .input-field { background-color: #161e2e; border-color: #2b3648; color: #e2e8f0; }
+.dark .section-title { color: #f1f5f9; }
+.dark .bottom-nav-item { color: #64748b; }
+.dark .shimmer { background-color: #1e293b; }
+
+.dark .bg-white { background-color: #161e2e !important; }
+.dark .bg-gray-50 { background-color: #0f172a !important; }
+.dark .bg-gray-100 { background-color: #1c2536 !important; }
+.dark .bg-gray-200 { background-color: #263143 !important; }
+
+.dark .text-gray-900 { color: #f1f5f9 !important; }
+.dark .text-gray-800 { color: #e6ebf3 !important; }
+.dark .text-gray-700 { color: #cdd6e5 !important; }
+.dark .text-gray-600 { color: #aab6ca !important; }
+.dark .text-gray-500 { color: #8b97ad !important; }
+
+.dark .border-gray-100 { border-color: #232d3e !important; }
+.dark .border-gray-200 { border-color: #2b3648 !important; }

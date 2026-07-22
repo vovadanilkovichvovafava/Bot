@@ -25,7 +25,7 @@ export default function MissedWinModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!user || user.is_premium) return;
+    if (!user) return; // shown to everyone incl. PRO (PRO gets a different pitch)
     const key = `missed_win_${new Date().toDateString()}`;
     try { if (localStorage.getItem(key)) return; } catch { /* ignore */ }
 
@@ -55,6 +55,8 @@ export default function MissedWinModal() {
   const currency = advertiser?.currency || '€';
   const totalOdds = data.type === 'express' ? data.totalOdds : data.odds;
   const payout = totalOdds ? Math.round(NOTIONAL_STAKE * totalOdds) : null;
+  const personal = !!data.personal; // true = this bet was actually given to the user
+  const isPro = !!user?.is_premium;
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center px-6" onClick={() => setOpen(false)}>
@@ -66,11 +68,15 @@ export default function MissedWinModal() {
 
         <div className="px-5 pt-6 pb-5 text-center" style={{ background: 'linear-gradient(160deg,#7c2d12,#b91c1c 60%,#dc2626)' }}>
           <div className="text-3xl mb-1">⚡</div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-amber-200">{t('missedWin.tag', { defaultValue: 'The bot nailed it' })}</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-amber-200">
+            {personal
+              ? t('missedWin.tagGiven', { defaultValue: 'We told you 👀' })
+              : t('missedWin.tag', { defaultValue: 'The bot nailed it' })}
+          </p>
           <p className="text-white/80 text-sm mt-1">
-            {data.type === 'express'
-              ? t('missedWin.subExpress', { count: data.legCount, defaultValue: `A {{count}}-leg express — and without PRO you missed it` })
-              : t('missedWin.sub', { defaultValue: 'But without PRO you missed this pick' })}
+            {personal
+              ? t('missedWin.subGiven', { defaultValue: 'You missed OUR bet — we gave you this one' })
+              : t('missedWin.subGeneric', { defaultValue: "We had a winning express — you could've cashed too" })}
           </p>
         </div>
 
@@ -124,7 +130,9 @@ export default function MissedWinModal() {
           )}
 
           <p className="text-center text-gray-500 dark:text-gray-400 text-[13px] mt-4 leading-relaxed">
-            {t('missedWin.pitch', { defaultValue: 'With PRO active you never miss a pick. Deposit and PRO is back — the money stays yours + a bonus.' })}
+            {isPro
+              ? t('missedWin.pitchPro', { defaultValue: 'You have PRO — but the profit only lands if you actually place the bet. Put it on at the partner and cash the next one.' })
+              : t('missedWin.pitch', { defaultValue: 'With PRO active you never miss a pick. Deposit and PRO is back — the money stays yours + a bonus.' })}
           </p>
 
           <a
@@ -135,7 +143,9 @@ export default function MissedWinModal() {
             className="mt-4 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-[15px]"
             style={{ textDecoration: 'none' }}
           >
-            {t('missedWin.cta', { defaultValue: 'Deposit & activate PRO' })}
+            {isPro
+              ? t('missedWin.ctaPro', { defaultValue: 'Place my bet' })
+              : t('missedWin.cta', { defaultValue: 'Deposit & activate PRO' })}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
           </a>
           <button onClick={() => setOpen(false)} className="w-full text-gray-400 dark:text-gray-500 text-sm py-2.5 mt-1">

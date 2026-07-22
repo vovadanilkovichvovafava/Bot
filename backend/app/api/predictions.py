@@ -308,7 +308,38 @@ async def missed_winning_express(
     pick that really won (is_correct=TRUE) — only the accumulator framing is
     synthetic. Returns found=False when there aren't enough real winning picks
     (never fabricate a result)."""
-    rows = (await db.execute(text("""
+    user_id = current_user["user_id"]
+
+    def build(rows):
+        """Dedupe by match (keep most recent), greedily combine legs until the
+        combined odds reach >= 5 (min 2 legs, cap 4). Returns None if not enough."""
+        seen, legs, total, latest = set(), [], 1.0, None
+        for r in rows:
+            key = (r.home_team, r.away_team)
+            if key in seen or not r.odds:
+                continue
+            seen.add(key)
+            odd = round(float(r.odds), 2)
+            legs.append({
+                "match": f"{r.home_team} vs {r.away_team}",
+                "market": r.bet_type,
+                "odds": odd,
+            })
+            total *= odd
+            if latest is None and r.mdate is not None:
+                latest = r.mdate
+            if (total >= 5 and len(legs) >= 2) or len(legs) >= 4:
+                break
+        if len(legs) < 2 or total < 3:
+            return None
+        return {
+            "legs": legs,
+            "legCount": len(legs),
+            "totalOdds": round(total, 2),
+            "date": latest.isoformat() if latest else None,
+        }
+
+    cols = """
         SELECT home_team, away_team, bet_type,
                COALESCE(predicted_odds, odds) AS odds,
                COALESCE(match_date, match_time, verified_at, created_at) AS mdate
@@ -316,43 +347,23 @@ async def missed_winning_express(
         WHERE is_correct = TRUE
           AND COALESCE(predicted_odds, odds) > 1.3
           AND bet_type <> ''
-        ORDER BY verified_at DESC NULLS LAST
-        LIMIT 40
-    """))).all()
+    """
+    tail = "ORDER BY verified_at DESC NULLS LAST LIMIT 40"
 
-    # Dedupe by match (keep most recent), greedily combine legs until the
-    # combined odds reach >= 5 (min 2 legs, cap 4).
-    seen = set()
-    legs = []
-    total = 1.0
-    latest = None
-    for r in rows:
-        key = (r.home_team, r.away_team)
-        if key in seen or not r.odds:
-            continue
-        seen.add(key)
-        odd = round(float(r.odds), 2)
-        legs.append({
-            "match": f"{r.home_team} vs {r.away_team}",
-            "market": r.bet_type,
-            "odds": odd,
-        })
-        total *= odd
-        if latest is None and r.mdate is not None:
-            latest = r.mdate
-        if (total >= 5 and len(legs) >= 2) or len(legs) >= 4:
-            break
+    # 1) Personal — picks WE actually gave this user that won ("you missed OUR bet").
+    personal_rows = (await db.execute(
+        text(f"{cols} AND user_id = :uid {tail}"), {"uid": user_id}
+    )).all()
+    exp = build(personal_rows)
+    if exp:
+        return {"found": True, "personal": True, **exp}
 
-    if len(legs) < 2 or total < 3:
-        return {"found": False}
+    # 2) Generic — any recently-won picks ("we had a winning bet, you could've too").
+    exp = build((await db.execute(text(f"{cols} {tail}"))).all())
+    if exp:
+        return {"found": True, "personal": False, **exp}
 
-    return {
-        "found": True,
-        "legs": legs,
-        "legCount": len(legs),
-        "totalOdds": round(total, 2),
-        "date": latest.isoformat() if latest else None,
-    }
+    return {"found": False}
 
 
 @router.get("/chat/limit", response_model=ChatLimitResponse)
