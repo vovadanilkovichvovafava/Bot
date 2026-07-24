@@ -58,7 +58,12 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4"}
+VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4",
+                 "funnel-5", "funnel-6", "funnel-7"}
+# A/B engagement funnels — all clone funnel-1 monetization (backend gating
+# special-cases 2/3/4 and defaults everything else to funnel-1), differing only
+# in our engagement features: 5 = control, 6 = missed-win modal, 7 = wins slider.
+EXPERIMENT_FUNNELS = ["funnel-5", "funnel-6", "funnel-7"]
 
 # Every new lead gets full PRO for this many hours (12h immersion trial).
 # Expiry is enforced in users.py (premium_until < now → is_premium=False).
@@ -245,8 +250,16 @@ async def register(
     _lang_in = (user.language or "").strip().lower()[:2]
     language = _lang_in if _lang_in in _SUPPORTED_LANGS else _COUNTRY_LANG.get((country or "").upper(), "en")
 
-    # Assign the A/B funnel from the incoming utm_funnel (defaults to funnel-1)
-    funnel = normalize_funnel(user.utm_funnel)
+    # Funnel assignment:
+    #  - friend from a referral link -> inherits the referrer's funnel
+    #  - campaign link with utm_funnel -> that funnel (existing behaviour)
+    #  - fresh random lead -> split ~33/33/33 across the A/B experiment funnels
+    if referrer and referrer.funnel:
+        funnel = referrer.funnel
+    elif user.utm_funnel:
+        funnel = normalize_funnel(user.utm_funnel)
+    else:
+        funnel = random.choice(EXPERIMENT_FUNNELS)
 
     # 12h full-PRO trial — ONLY for the first account per IP (anti multi-account
     # farming). Later same-IP accounts get premium_until set to the past: a

@@ -6,6 +6,9 @@ const FUNNEL_COLORS = {
   'funnel-2': '#22c55e',  // green — all free
   'funnel-3': '#a855f7',  // purple — fixed 7/day
   'funnel-4': '#f97316',  // orange — express-first
+  'funnel-5': '#64748b',  // slate — A/B control
+  'funnel-6': '#ec4899',  // pink — A/B missed-win modal
+  'funnel-7': '#14b8a6',  // teal — A/B wins slider
 };
 
 const FUNNEL_LABELS = {
@@ -13,6 +16,9 @@ const FUNNEL_LABELS = {
   'funnel-2': 'All Free (No Pro)',
   'funnel-3': 'Fixed 7/day',
   'funnel-4': 'Express-First',
+  'funnel-5': 'A/B · Control',
+  'funnel-6': 'A/B · Missed-Win',
+  'funnel-7': 'A/B · Wins Slider',
 };
 
 const FUNNEL_DESCRIPTIONS = {
@@ -20,6 +26,9 @@ const FUNNEL_DESCRIPTIONS = {
   'funnel-2': 'Everything unlocked. No paywall. Bonus banners.',
   'funnel-3': 'Fixed 7 requests/day. No degradation.',
   'funnel-4': 'Express-first UX. All free. Leads with accumulators + bonus ads.',
+  'funnel-5': 'funnel-1 base, no extra engagement (A/B control).',
+  'funnel-6': 'funnel-1 base + "missed win" express modal on open.',
+  'funnel-7': 'funnel-1 base + real big-wins carousel (odds ≥5) on home.',
 };
 
 export default function AdminFunnels() {

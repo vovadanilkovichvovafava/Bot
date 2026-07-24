@@ -3,8 +3,8 @@
    the section is never empty. */
 import { useState, useEffect } from 'react';
 import { useAdvertiser } from '../../context/AdvertiserContext';
+import { useAuth } from '../../../features/auth/context/AuthContext';
 import { formatAmount } from '../../config/advertisers';
-import { hasFeature } from '../../services/experiment';
 import api from '../../api';
 
 // Fallback (only when the DB has no real >=5 wins yet). Odds are all >= 5.
@@ -17,8 +17,9 @@ const FALLBACK = [
 
 export default function WinProofs({ title = 'Ganhos reais dos utilizadores' }) {
   const { advertiser } = useAdvertiser();
+  const { user } = useAuth();
   const [wins, setWins] = useState(null);
-  const enabled = hasFeature('winsSlider'); // funnel C only
+  const enabled = user?.funnel === 'funnel-7'; // A/B funnel — wins-slider funnel only
 
   useEffect(() => {
     if (!enabled) return;

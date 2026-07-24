@@ -1,12 +1,12 @@
 /**
  * Share prediction utilities
  */
-import { withVariant } from '../../../shared/services/experiment';
 
-// Referral link + engagement variant, so friends land in the sharer's A/B funnel.
+// Referral link — friends registering through ?ref= inherit the sharer's funnel
+// server-side (see auth.py register).
 function refLinkFor(referralCode) {
   const baseUrl = window.location.origin;
-  return withVariant(referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl);
+  return referralCode ? `${baseUrl}/register?ref=${referralCode}` : baseUrl;
 }
 
 /**

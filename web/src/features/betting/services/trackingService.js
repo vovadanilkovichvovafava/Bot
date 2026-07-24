@@ -16,7 +16,6 @@
  */
 
 import { ENV } from '../../../shared/config/env';
-import { withVariant } from '../../../shared/services/experiment';
 
 const TRACKING_API = ENV.TRACKING_API;
 
@@ -226,7 +225,7 @@ export function getTrackingLink(userId, banner = '', funnel = '') {
     const utmTerm = getParam('utm_term');
     if (utmTerm) params.set('utm_term', utmTerm);
 
-    const link = withVariant(`${baseUrl}?${params.toString()}`);
+    const link = `${baseUrl}?${params.toString()}`;
     console.log('[Tracking] Link built:', link);
     return link;
   } catch (err) {

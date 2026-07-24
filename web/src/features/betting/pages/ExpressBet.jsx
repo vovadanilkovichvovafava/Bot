@@ -46,8 +46,8 @@ function canAccessFree(user) {
   if (!user) return false;
   // Funnel-2 — always free (treated as non-PRO); Premium (non funnel-2) — always free
   if (user.funnel === 'funnel-2' || (user.is_premium && user.funnel !== 'funnel-2')) return true;
-  // Funnel-1 — once per week
-  if (user.funnel === 'funnel-1' || !user.funnel) {
+  // Funnel-1 (and A/B funnels 5/6/7 which clone funnel-1) — once per week
+  if (!['funnel-2', 'funnel-3', 'funnel-4'].includes(user.funnel)) {
     const lastWeek = localStorage.getItem(EXPRESS_WEEKLY_KEY);
     const currentWeek = getCurrentWeek();
     return lastWeek !== currentWeek;
@@ -72,7 +72,9 @@ export default function ExpressBet() {
   const isPro = (user?.is_premium && !isFunnel2 && !isFunnel4) || isFunnel2 || isFunnel4;
   const isFonbetUser = user?.is_premium && !isFunnel2 && !isFunnel4;
   const isFunnel3 = user?.funnel === 'funnel-3';
-  const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPro && !isFunnel3);
+  const isFunnel1 = user?.funnel === 'funnel-1'
+    || ['funnel-5', 'funnel-6', 'funnel-7'].includes(user?.funnel)
+    || (!user?.funnel && !isPro && !isFunnel3);
 
   const [expresses, setExpresses] = useState([]);
   const [loading, setLoading] = useState(true);
