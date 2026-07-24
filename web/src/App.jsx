@@ -107,9 +107,11 @@ function ProtectedRoute({ children }) {
   const loc = useLocation();
   if (loading) return <SplashScreen />;
   if (!isAuthenticated) {
-    // Returning users → /login, новые с рекламы приходят на /register напрямую
-    // Дефолт /login чтобы returning users с потерянным hasAccount не попадали на /register
-    const target = "/login";
+    // Returning users (hasAccount flag) → /login; everyone else (new leads,
+    // and anyone who cleared storage) → /register. Sending new users to /login
+    // was the leak: they have no account, fail login and bounce. A returning
+    // user without the flag lands on /register and can still tap "Sign In".
+    const target = hasAccountFlag() ? "/login" : "/register";
     const search = loc.search || '';
     return <Navigate to={`${target}${search}`} replace />;
   }
