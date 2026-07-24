@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getReferredBy, clearReferralCode } from '../services/referralStore';
+import { getRegVariant } from '../services/regVariant';
 import { isValidPhone, fullPhoneNumber } from '../../../shared/utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
@@ -10,14 +11,20 @@ import { track } from '../../../shared/services/analytics';
 import useKeyboardScroll from '../../../shared/hooks/useKeyboardScroll';
 import { LiveStatsBar, JoinedTodayBadge, RecentWinsTicker } from '../components/SocialProof';
 
+// Detects backend "this phone already has an account" errors across locales, so we
+// can rescue the visitor with a Sign In button instead of a dead-end error.
+const EXISTS_RE = /already registered|already have an account|j[áa] existe|existe uma conta|ya (existe|tiene|hay)|d[ée]j[àa]|уже (существ|зарегистр)/i;
 
 export default function Register() {
   const { t } = useTranslation();
+  const [variant] = useState(getRegVariant); // 'control' | 'selling' — A/B, stable per visitor
+  const sell = variant === 'selling';
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [phoneExists, setPhoneExists] = useState(false);
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
   const [formTouched, setFormTouched] = useState(false);
@@ -25,6 +32,11 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const formRef = useKeyboardScroll();
+
+  // Which register screen this visitor saw — segments the whole funnel by variant
+  useEffect(() => {
+    track('register_view', { variant });
+  }, [variant]);
 
   // Detect keyboard open/close to collapse hero section
   useEffect(() => {
@@ -40,7 +52,7 @@ export default function Register() {
   const onFormTouch = () => {
     if (!formTouched) {
       setFormTouched(true);
-      track('register_form_started');
+      track('register_form_started', { variant });
     }
   };
 
@@ -71,18 +83,21 @@ export default function Register() {
       return;
     }
     setError('');
+    setPhoneExists(false);
     setLoading(true);
-    track('register_submit');
+    track('register_submit', { variant });
     try {
       const fullPhone = fullPhoneNumber(phone, phoneCountry);
       await register(fullPhone, password, referralCode);
-      track('register_success');
+      track('register_success', { variant });
       clearReferralCode();
       try { localStorage.setItem('show_welcome', 'true'); } catch {}
       navigate('/', { replace: true, state: { justRegistered: true } });
     } catch (err) {
-      track('register_error', { error: err.message });
-      setError(err.message || t('auth.errRegistration'));
+      const msg = err.message || '';
+      setPhoneExists(EXISTS_RE.test(msg));
+      track('register_error', { variant, error: msg });
+      setError(msg || t('auth.errRegistration'));
     } finally {
       setLoading(false);
     }
@@ -101,19 +116,35 @@ export default function Register() {
         )}
 
         <div className="relative">
-          {/* MAIN HOOK — 12h full PRO free on signup */}
+          {/* MAIN HOOK */}
           {!keyboardOpen && (
-            <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
-              <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
-                🎁 {t('auth.trialHookTag', { defaultValue: 'Oferta de boas-vindas' })}
-              </span>
-              <p className="text-white font-black text-2xl leading-none">
-                {t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })}
-              </p>
-              <p className="text-white/90 text-xs mt-1.5">
-                {t('auth.trialHookSub', { defaultValue: 'Previsões e chat de IA ILIMITADOS assim que crias a conta' })}
-              </p>
-            </div>
+            sell ? (
+              /* selling variant — outcome-led, concrete, low-friction */
+              <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
+                <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
+                  🎁 {t('auth.sellBadge', { defaultValue: 'Welcome offer' })}
+                </span>
+                <p className="text-white font-black text-[22px] leading-tight">
+                  {t('auth.sellTitle', { defaultValue: 'Get 3 winning AI picks — free' })}
+                </p>
+                <p className="text-white/90 text-xs mt-1.5">
+                  {t('auth.sellSub', { defaultValue: 'Plus 12h full PRO. No card. Takes 10 seconds.' })}
+                </p>
+              </div>
+            ) : (
+              /* control variant — unchanged baseline: 12h full PRO free on signup */
+              <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
+                <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
+                  🎁 {t('auth.trialHookTag', { defaultValue: 'Oferta de boas-vindas' })}
+                </span>
+                <p className="text-white font-black text-2xl leading-none">
+                  {t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })}
+                </p>
+                <p className="text-white/90 text-xs mt-1.5">
+                  {t('auth.trialHookSub', { defaultValue: 'Previsões e chat de IA ILIMITADOS assim que crias a conta' })}
+                </p>
+              </div>
+            )
           )}
 
           {/* Title */}
@@ -144,26 +175,47 @@ export default function Register() {
         <div className="max-w-sm mx-auto">
           {/* What you get — hidden when keyboard is open */}
           {!keyboardOpen && (
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
-                {t('auth.benefit1')}
+            sell ? (
+              /* selling variant — vertical benefit checklist (clearer value stack) */
+              <ul className="space-y-2 mb-5">
+                {[
+                  t('auth.sellBenefit1', { defaultValue: '3 free AI predictions today' }),
+                  t('auth.sellBenefit2', { defaultValue: '12h full PRO unlocked instantly' }),
+                  t('auth.sellBenefit3', { defaultValue: 'No card · cancel anytime' }),
+                ].map((b, i) => (
+                  <li key={i} className="flex items-center gap-2.5 text-sm text-gray-700">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    </span>
+                    <span className="font-medium">{b}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              /* control variant — unchanged horizontal benefit pills */
+              <div className="flex items-center justify-center gap-2 mb-5">
+                <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                  {t('auth.benefit1')}
+                </div>
+                <div className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                  </svg>
+                  {t('auth.benefit2')}
+                </div>
+                <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {t('auth.benefit3')}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 bg-purple-50 text-purple-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                </svg>
-                {t('auth.benefit2')}
-              </div>
-              <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {t('auth.benefit3')}
-              </div>
-            </div>
+            )
           )}
 
           {error && (
@@ -175,10 +227,32 @@ export default function Register() {
             </div>
           )}
 
+          {/* Returning-user rescue: this phone already has an account → send to Sign In */}
+          {phoneExists && (
+            <Link
+              to="/login"
+              className="flex items-center justify-center gap-2 w-full bg-primary-600 text-white font-bold py-3 rounded-xl mb-4 shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-colors"
+            >
+              {t('auth.signIn')}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+              </svg>
+            </Link>
+          )}
+
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.phoneLabel')}</label>
               <PhoneInput value={phone} onChange={setPhone} onCountryChange={setPhoneCountry} onFocus={onFormTouch} />
+              {/* selling variant — reassure that the phone won't be spammed (top friction) */}
+              {sell && (
+                <p className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1.5 px-1">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                  </svg>
+                  {t('auth.sellPhoneTrust', { defaultValue: 'Your phone is only for login — no calls, no spam.' })}
+                </p>
+              )}
             </div>
 
             <div>
@@ -232,7 +306,7 @@ export default function Register() {
                 <FootballSpinner size="xs" light />
               ) : (
                 <>
-                  {t('auth.registerCta')}
+                  {sell ? t('auth.sellCta', { defaultValue: 'Get my 3 free picks' }) : t('auth.registerCta')}
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                   </svg>
@@ -243,7 +317,9 @@ export default function Register() {
             {/* What you get on register */}
             {!keyboardOpen && (
               <p className="text-center text-xs text-gray-400 -mt-1">
-                {t('auth.trialHookCtaSub', { defaultValue: '12h de PRO completo grátis · sem cartão' })}
+                {sell
+                  ? t('auth.sellCtaSub', { defaultValue: 'Free · no card · 10 seconds' })
+                  : t('auth.trialHookCtaSub', { defaultValue: '12h de PRO completo grátis · sem cartão' })}
               </p>
             )}
           </form>

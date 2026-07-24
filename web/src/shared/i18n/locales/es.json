@@ -223,7 +223,16 @@
     "benefit3": "Inicio gratis",
     "toastFrom": "de",
     "toastAction": "se registró y recibió 3 pronósticos gratis",
-    "toastJustNow": "ahora"
+    "toastJustNow": "ahora",
+    "sellBadge": "Oferta de bienvenida",
+    "sellTitle": "Recibe 3 pronósticos IA ganadores — gratis",
+    "sellSub": "Además 12h de PRO completo. Sin tarjeta. Toma 10 segundos.",
+    "sellBenefit1": "3 pronósticos IA gratis hoy",
+    "sellBenefit2": "12h de PRO completo desbloqueado al instante",
+    "sellBenefit3": "Sin tarjeta · cancela cuando quieras",
+    "sellPhoneTrust": "Tu teléfono es solo para iniciar sesión — sin llamadas, sin spam.",
+    "sellCta": "Quiero mis 3 pronósticos gratis",
+    "sellCtaSub": "Gratis · sin tarjeta · 10 segundos"
   },
   "bonus": {
     "welcomeBonus": "Bono de Bienvenida",

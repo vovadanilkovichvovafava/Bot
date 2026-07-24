@@ -223,7 +223,16 @@
     "benefit3": "Início grátis",
     "toastFrom": "de",
     "toastAction": "acabou de se registar e recebeu 3 previsões grátis",
-    "toastJustNow": "agora"
+    "toastJustNow": "agora",
+    "sellBadge": "Oferta de boas-vindas",
+    "sellTitle": "Recebe 3 palpites IA vencedores — grátis",
+    "sellSub": "Mais 12h de PRO completo. Sem cartão. Leva 10 segundos.",
+    "sellBenefit1": "3 previsões IA grátis hoje",
+    "sellBenefit2": "12h de PRO completo desbloqueado já",
+    "sellBenefit3": "Sem cartão · cancela quando quiseres",
+    "sellPhoneTrust": "O teu telemóvel é só para login — sem chamadas, sem spam.",
+    "sellCta": "Quero os meus 3 palpites grátis",
+    "sellCtaSub": "Grátis · sem cartão · 10 segundos"
   },
   "bonus": {
     "welcomeBonus": "Bónus de Boas-vindas",
