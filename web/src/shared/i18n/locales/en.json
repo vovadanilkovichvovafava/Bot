@@ -224,15 +224,19 @@
     "toastFrom": "from",
     "toastAction": "just registered and got 3 free predictions",
     "toastJustNow": "now",
-    "sellBadge": "Welcome offer",
-    "sellTitle": "Get 3 winning AI picks — free",
-    "sellSub": "Plus 12h full PRO. No card. Takes 10 seconds.",
     "sellBenefit1": "3 free AI predictions today",
     "sellBenefit2": "12h full PRO unlocked instantly",
     "sellBenefit3": "No card · cancel anytime",
     "sellPhoneTrust": "Your phone is only for login — no calls, no spam.",
     "sellCta": "Get my 3 free picks",
-    "sellCtaSub": "Free · no card · 10 seconds"
+    "sellCtaSub": "Free · no card · 30 seconds",
+    "sellSlipTag": "AI pick · yesterday",
+    "sellSlipWon": "WON",
+    "sellCountdown": "Free picks expire in",
+    "sellHeroTitle": "Get 3 free picks like this",
+    "sellHeroSub": "12h full PRO unlocked. No card. 30 seconds.",
+    "sellTrustNoCard": "No card",
+    "sellTrust30s": "30 sec"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",

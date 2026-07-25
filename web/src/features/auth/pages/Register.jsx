@@ -10,6 +10,7 @@ import FootballSpinner from '../../../shared/components/FootballSpinner';
 import { track } from '../../../shared/services/analytics';
 import useKeyboardScroll from '../../../shared/hooks/useKeyboardScroll';
 import { LiveStatsBar, JoinedTodayBadge, RecentWinsTicker } from '../components/SocialProof';
+import RegisterSellingHero from '../components/RegisterSellingHero';
 
 // Detects backend "this phone already has an account" errors across locales, so we
 // can rescue the visitor with a Sign In button instead of a dead-end error.
@@ -116,56 +117,56 @@ export default function Register() {
         )}
 
         <div className="relative">
-          {/* MAIN HOOK */}
-          {!keyboardOpen && (
-            sell ? (
-              /* selling variant — outcome-led, concrete, low-friction */
-              <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
-                <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
-                  🎁 {t('auth.sellBadge', { defaultValue: 'Welcome offer' })}
-                </span>
-                <p className="text-white font-black text-[22px] leading-tight">
-                  {t('auth.sellTitle', { defaultValue: 'Get 3 winning AI picks — free' })}
-                </p>
-                <p className="text-white/90 text-xs mt-1.5">
-                  {t('auth.sellSub', { defaultValue: 'Plus 12h full PRO. No card. Takes 10 seconds.' })}
-                </p>
+          {sell ? (
+            /* selling variant — proof-first hero (winning slip + urgency + offer) */
+            keyboardOpen ? (
+              <div className="text-center">
+                <h1 className="font-bold text-white text-lg">
+                  {t('auth.sellHeroTitle', { defaultValue: 'Get 3 free picks like this' })}
+                </h1>
               </div>
             ) : (
-              /* control variant — unchanged baseline: 12h full PRO free on signup */
-              <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
-                <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
-                  🎁 {t('auth.trialHookTag', { defaultValue: 'Oferta de boas-vindas' })}
-                </span>
-                <p className="text-white font-black text-2xl leading-none">
-                  {t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })}
-                </p>
-                <p className="text-white/90 text-xs mt-1.5">
-                  {t('auth.trialHookSub', { defaultValue: 'Previsões e chat de IA ILIMITADOS assim que crias a conta' })}
-                </p>
-              </div>
+              <RegisterSellingHero />
             )
-          )}
+          ) : (
+            /* control variant — unchanged baseline: offer badge + title + social proof */
+            <>
+              {/* MAIN HOOK — 12h full PRO free on signup */}
+              {!keyboardOpen && (
+                <div className="mb-4 rounded-2xl p-4 text-center shadow-lg" style={{ background: 'linear-gradient(120deg,#15803d 0%,#16a34a 55%,#22c55e 100%)' }}>
+                  <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white mb-2">
+                    🎁 {t('auth.trialHookTag', { defaultValue: 'Oferta de boas-vindas' })}
+                  </span>
+                  <p className="text-white font-black text-2xl leading-none">
+                    {t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })}
+                  </p>
+                  <p className="text-white/90 text-xs mt-1.5">
+                    {t('auth.trialHookSub', { defaultValue: 'Previsões e chat de IA ILIMITADOS assim que crias a conta' })}
+                  </p>
+                </div>
+              )}
 
-          {/* Title */}
-          <div className="text-center">
-            <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-xl mb-1'}`}>
-              {keyboardOpen
-                ? t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })
-                : t('auth.registerHeadline')}
-            </h1>
-            {!keyboardOpen && (
-              <p className="text-gray-400 text-sm mb-4">{t('auth.registerSubheadline')}</p>
-            )}
-          </div>
+              {/* Title */}
+              <div className="text-center">
+                <h1 className={`font-bold text-white transition-all duration-200 ${keyboardOpen ? 'text-lg mb-0' : 'text-xl mb-1'}`}>
+                  {keyboardOpen
+                    ? t('auth.trialHookTitle', { defaultValue: '12 HORAS DE PRO GRÁTIS' })
+                    : t('auth.registerHeadline')}
+                </h1>
+                {!keyboardOpen && (
+                  <p className="text-gray-400 text-sm mb-4">{t('auth.registerSubheadline')}</p>
+                )}
+              </div>
 
-          {/* Live Stats Bar */}
-          {!keyboardOpen && (
-            <div className="space-y-3 mt-1">
-              <LiveStatsBar />
-              <JoinedTodayBadge />
-              <RecentWinsTicker />
-            </div>
+              {/* Live Stats Bar */}
+              {!keyboardOpen && (
+                <div className="space-y-3 mt-1">
+                  <LiveStatsBar />
+                  <JoinedTodayBadge />
+                  <RecentWinsTicker />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
