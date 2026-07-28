@@ -1802,6 +1802,21 @@ async def get_support_sessions(
         count_q = count_q.where(f)
     total = (await db.execute(count_q)).scalar() or 0
 
+    # Which funnel each chatting user belongs to — asked for on the 28.07 call
+    # ("how can I see which funnel he fell into?"). Support is where a lead is
+    # actually looked at, so the badge has to be here and not only in the user
+    # list. One extra query for the whole page, keyed by user id.
+    funnels: dict = {}
+    user_ids = {r[1] for r in rows if r[1]}
+    if user_ids:
+        try:
+            funnel_rows = (await db.execute(
+                select(User.id, User.funnel, User.country).where(User.id.in_(user_ids))
+            )).all()
+            funnels = {fr[0]: {"funnel": fr[1] or "funnel-1", "country": fr[2]} for fr in funnel_rows}
+        except Exception as e:
+            logger.warning("support sessions: failed to load funnels: %s", e)
+
     sessions = [
         {
             "session_id": r[0],
@@ -1814,6 +1829,8 @@ async def get_support_sessions(
             "total_messages": r[7],
             "user_messages": r[8],
             "preview": previews.get(r[0], ""),
+            "funnel": (funnels.get(r[1]) or {}).get("funnel"),
+            "country": (funnels.get(r[1]) or {}).get("country"),
         }
         for r in rows
     ]

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { adminApi } from '../api'
+import { funnelLabel, funnelColor } from '../funnels'
 
 const TABS = [
   { key: 'support', label: 'Support Chat' },
@@ -128,6 +129,22 @@ function TakeoverToggle({ sessionId, sourceType }) {
 
 
 /* ── Chat search bar ─────────────────────────────────────────────── */
+
+/** Which A/B funnel this chatting user is in — so support sees it without
+ *  digging through the user list (asked for on the 28.07 call). */
+function ChatFunnelBadge({ funnel }) {
+  if (!funnel) return null
+  const color = funnelColor(funnel)
+  return (
+    <span
+      className="text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap font-medium"
+      style={{ backgroundColor: `${color}1f`, color }}
+      title={funnel}
+    >
+      {funnelLabel(funnel)}
+    </span>
+  )
+}
 
 function ChatSearchBar({ query, setQuery, locale, setLocale, onSearch }) {
   return (
@@ -292,6 +309,7 @@ function SupportChatTab() {
                         <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded whitespace-nowrap">PRO</span>
                       )}
                       <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded uppercase font-mono">{s.locale}</span>
+                      <ChatFunnelBadge funnel={s.funnel} />
                       {s.agent_name && (
                         <span className="text-[10px] px-1.5 py-0.5 bg-cyan-500/15 text-cyan-400 rounded">{s.agent_name}</span>
                       )}
@@ -532,6 +550,7 @@ function AIChatTab() {
                           <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">PRO</span>
                         )}
                         <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded uppercase font-mono">{s.locale}</span>
+                      <ChatFunnelBadge funnel={s.funnel} />
                       </div>
                       {s.preview && (
                         <p className="text-xs text-slate-500 mt-0.5 truncate">{s.preview}</p>
