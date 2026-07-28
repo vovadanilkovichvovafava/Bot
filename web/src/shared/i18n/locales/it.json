@@ -97,7 +97,21 @@
     "freeBetUpTo": "Scommessa gratuita fino a {{bonus}}",
     "betOnMatch": "Scommetti su qualsiasi partita",
     "freeBetOnMatch": "Scommessa gratuita {{bonus}} su questa partita!",
-    "placeBet": "Piazza Scommessa"
+    "placeBet": "Piazza Scommessa",
+    "aiExpress": "Multipla IA",
+    "aiExpressDesc": "L'IA crea multiple con le migliori scommesse di valore. 3 opzioni: sicura, equilibrata e ad alte quote.",
+    "claimNow": "Richiedi ora",
+    "expressInfo": "Migliori campionati, migliori quote",
+    "expressLegs": "Partite",
+    "expressPowered": "IA",
+    "expressPresets": "Opzioni",
+    "expressTokenCost": "3 gettoni",
+    "freeBetOnExpress": "Scommessa gratis sulla multipla",
+    "freeWeekly": "1x / settimana gratis",
+    "openExpress": "Apri multipla",
+    "proGuide": "Guida PRO",
+    "proGuideDesc": "Come sfruttare al massimo il PRO",
+    "unlimitedLabel": "Illimitato"
   },
   "matches": {
     "today": "Oggi",

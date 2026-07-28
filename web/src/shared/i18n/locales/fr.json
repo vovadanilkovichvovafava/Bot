@@ -96,7 +96,21 @@
     "freeBetUpTo": "Pari gratuit jusqu'à {{bonus}}",
     "betOnMatch": "Pariez sur n'importe quel match",
     "freeBetOnMatch": "Pari gratuit {{bonus}} sur ce match !",
-    "placeBet": "Parier"
+    "placeBet": "Parier",
+    "aiExpress": "Combiné IA",
+    "aiExpressDesc": "L'IA compose des combinés avec les meilleurs paris de valeur. 3 options : sûr, équilibré, grosses cotes.",
+    "claimNow": "Réclamer",
+    "expressInfo": "Meilleurs championnats, meilleures cotes",
+    "expressLegs": "Matchs",
+    "expressPowered": "IA",
+    "expressPresets": "Options",
+    "expressTokenCost": "3 jetons",
+    "freeBetOnExpress": "Pari gratuit sur le combiné",
+    "freeWeekly": "1x / semaine gratuit",
+    "openExpress": "Ouvrir le combiné",
+    "proGuide": "Guide PRO",
+    "proGuideDesc": "Comment tirer le meilleur du PRO",
+    "unlimitedLabel": "Illimité"
   },
   "matches": {
     "today": "Aujourd'hui",

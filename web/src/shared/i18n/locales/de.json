@@ -96,7 +96,21 @@
     "freeBetUpTo": "Freiwette bis zu {{bonus}}",
     "betOnMatch": "Wette auf jedes Spiel",
     "freeBetOnMatch": "Freiwette {{bonus}} auf dieses Spiel!",
-    "placeBet": "Wette platzieren"
+    "placeBet": "Wette platzieren",
+    "aiExpress": "KI-Kombi",
+    "aiExpressDesc": "Die KI stellt Kombiwetten aus den besten Value-Wetten zusammen. 3 Varianten: sicher, ausgewogen, hohe Quoten.",
+    "claimNow": "Jetzt sichern",
+    "expressInfo": "Top-Ligen, beste Quoten",
+    "expressLegs": "Spiele",
+    "expressPowered": "KI",
+    "expressPresets": "Varianten",
+    "expressTokenCost": "3 Token",
+    "freeBetOnExpress": "Gratiswette auf die Kombi",
+    "freeWeekly": "1x / Woche gratis",
+    "openExpress": "Kombi öffnen",
+    "proGuide": "PRO-Guide",
+    "proGuideDesc": "So holst du das Maximum aus PRO",
+    "unlimitedLabel": "Unbegrenzt"
   },
   "matches": {
     "today": "Heute",

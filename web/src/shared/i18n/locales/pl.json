@@ -96,7 +96,21 @@
     "freeBetUpTo": "Freebet do {{bonus}}",
     "betOnMatch": "Obstawiaj dowolny mecz",
     "freeBetOnMatch": "Freebet {{bonus}} na ten mecz!",
-    "placeBet": "Postaw Zakład"
+    "placeBet": "Postaw Zakład",
+    "aiExpress": "AKO od AI",
+    "aiExpressDesc": "AI układa kupony AKO z najlepszych zakładów value. 3 warianty: bezpieczny, zrównoważony i wysokie kursy.",
+    "claimNow": "Odbierz teraz",
+    "expressInfo": "Najlepsze ligi, najlepsze kursy",
+    "expressLegs": "Mecze",
+    "expressPowered": "AI",
+    "expressPresets": "Warianty",
+    "expressTokenCost": "3 żetony",
+    "freeBetOnExpress": "Darmowy zakład na AKO",
+    "freeWeekly": "1x / tydzień za darmo",
+    "openExpress": "Otwórz AKO",
+    "proGuide": "Poradnik PRO",
+    "proGuideDesc": "Jak wycisnąć z PRO maksimum",
+    "unlimitedLabel": "Bez limitu"
   },
   "matches": {
     "today": "Dziś",

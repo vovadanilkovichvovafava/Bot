@@ -97,7 +97,21 @@
     "freeBetUpTo": "Free bet up to {{bonus}}",
     "betOnMatch": "Bet on any match",
     "freeBetOnMatch": "Free bet {{bonus}} on this match!",
-    "placeBet": "Place Bet"
+    "placeBet": "Place Bet",
+    "aiExpress": "AI Express",
+    "aiExpressDesc": "AI builds accumulators from the best value bets. 3 presets: safe, balanced, and high-odds.",
+    "claimNow": "Claim now",
+    "expressInfo": "Top leagues, best odds",
+    "expressLegs": "Legs",
+    "expressPowered": "Powered",
+    "expressPresets": "Presets",
+    "expressTokenCost": "3 tokens",
+    "freeBetOnExpress": "Free bet on express",
+    "freeWeekly": "1x / week free",
+    "openExpress": "Open Express",
+    "proGuide": "PRO Guide",
+    "proGuideDesc": "How to get the most out of PRO",
+    "unlimitedLabel": "Unlimited"
   },
   "matches": {
     "today": "Today",

@@ -97,7 +97,21 @@
     "freeBetUpTo": "Apuesta gratis hasta {{bonus}}",
     "betOnMatch": "Apuesta en cualquier partido",
     "freeBetOnMatch": "¡Apuesta gratis de {{bonus}} en este partido!",
-    "placeBet": "Apostar"
+    "placeBet": "Apostar",
+    "aiExpress": "Combinada IA",
+    "aiExpressDesc": "La IA arma combinadas con las mejores apuestas de valor. 3 opciones: segura, equilibrada y de cuotas altas.",
+    "claimNow": "Reclamar ahora",
+    "expressInfo": "Mejores ligas, mejores cuotas",
+    "expressLegs": "Partidos",
+    "expressPowered": "IA",
+    "expressPresets": "Opciones",
+    "expressTokenCost": "3 fichas",
+    "freeBetOnExpress": "Apuesta gratis en la combinada",
+    "freeWeekly": "1x / semana gratis",
+    "openExpress": "Abrir combinada",
+    "proGuide": "Guía PRO",
+    "proGuideDesc": "Cómo aprovechar al máximo el PRO",
+    "unlimitedLabel": "Ilimitado"
   },
   "matches": {
     "today": "Hoy",
