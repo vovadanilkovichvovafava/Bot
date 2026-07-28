@@ -166,16 +166,31 @@ export function LiveStatsBar() {
   );
 }
 
-// Locale → country flag for JoinedTodayBadge
+// Locale → country flag, used only as a fallback when GeoIP hasn't resolved yet.
 const FLAG_BY_LOCALE = {
-  it: '🇮🇹', de: '🇩🇪', pl: '🇵🇱', es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧',
+  it: '🇮🇹', de: '🇩🇪', pl: '🇵🇱', es: '🇪🇸', fr: '🇫🇷', pt: '🇵🇹', en: '🇬🇧',
 };
+
+/** Any ISO country code → flag emoji (regional indicator pair). */
+function flagFromCountry(code) {
+  if (!code || code.length !== 2) return null;
+  const cc = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return null;
+  return String.fromCodePoint(...[...cc].map(c => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
 
 // --- Joined Today Badge ---
 export function JoinedTodayBadge() {
   const { t, i18n } = useTranslation();
+  const { countryCode } = useAdvertiser();
   const count = useAnimatedNumber(BASE_JOINED, 2000);
-  const flag = FLAG_BY_LOCALE[i18n.language?.slice(0, 2)] || FLAG_BY_LOCALE.en;
+  // Flag follows the visitor's actual country (GeoIP) — Vlad asked for this on
+  // the 28.07 call: the flag is a trust trigger in his creatives, but here
+  // Portuguese users were seeing a UK flag because the map was keyed by locale
+  // and had no `pt` entry at all. Brazil now resolves on its own too.
+  const flag = flagFromCountry(countryCode)
+    || FLAG_BY_LOCALE[i18n.language?.slice(0, 2)]
+    || FLAG_BY_LOCALE.en;
 
   return (
     <div className="flex items-center justify-center gap-2 bg-green-500/15 border border-green-500/20 rounded-full px-4 py-1.5 mx-auto max-w-fit">
