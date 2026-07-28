@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -16,6 +16,7 @@ import MissedWinModal from '../components/MissedWinModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
+import { topLeaguesFor, leagueRank, GLOBAL_TOP_LEAGUES } from '../../../shared/config/leagues';
 
 
 
@@ -25,15 +26,15 @@ const SMART_BET_TTL = 45 * 60 * 1000; // 45 minutes
 const HOME_MATCHES_CACHE = 'home_matches_cache';
 const HOME_MATCHES_TTL = 3 * 60 * 1000; // 3 minutes — stale-while-revalidate
 
-// Top leagues to show on home
-const TOP_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3];
+// Top leagues are picked per visitor country — see shared/config/leagues.js.
+// A Brazilian must see the Brasileirão before the Bundesliga.
 
 export default function Home() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { advertiser, trackClick } = useAdvertiser();
+  const { advertiser, trackClick, countryCode } = useAdvertiser();
   const navigate = useNavigate();
-  const [matches, setMatches] = useState([]);
+  const [rawFixtures, setRawFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [localStats, setLocalStats] = useState({ total: 0, correct: 0, wrong: 0, pending: 0, accuracy: 0 });
   const [aiRemaining, setAiRemaining] = useState(null);
@@ -86,18 +87,22 @@ export default function Home() {
     } catch {}
   }, []);
 
-  const processFixtures = (fixtures) => {
-    return (fixtures || [])
-      .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
-      .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
+  // Final five, re-ranked whenever the visitor's country resolves. A Brazilian
+  // gets the Brasileirão on top, a Portuguese user the Primeira Liga; everyone
+  // else falls back to the big European set.
+  const matches = useMemo(() => {
+    const priority = topLeaguesFor(countryCode) || GLOBAL_TOP_LEAGUES;
+    return [...rawFixtures]
       .sort((a, b) => {
-        const aTop = TOP_LEAGUE_IDS.includes(a.league?.id) ? 0 : 1;
-        const bTop = TOP_LEAGUE_IDS.includes(b.league?.id) ? 0 : 1;
-        if (aTop !== bTop) return aTop - bTop;
+        // Rank, not a boolean: the visitor's own league outranks the Champions
+        // League, which in turn outranks anything unlisted.
+        const aRank = leagueRank(a.league?.id, priority);
+        const bRank = leagueRank(b.league?.id, priority);
+        if (aRank !== bRank) return aRank - bRank;
         return new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0);
       })
       .slice(0, 5);
-  };
+  }, [rawFixtures, countryCode]);
 
   const loadMatches = async () => {
     // Stale-while-revalidate: show cached data instantly, fetch fresh in background
@@ -105,8 +110,8 @@ export default function Home() {
       const raw = localStorage.getItem(HOME_MATCHES_CACHE);
       if (raw) {
         const cached = JSON.parse(raw);
-        if (Date.now() - cached.ts < HOME_MATCHES_TTL) {
-          setMatches(cached.data);
+        if (Date.now() - cached.ts < HOME_MATCHES_TTL && Array.isArray(cached.data)) {
+          setRawFixtures(cached.data);
           setLoading(false); // Instant — no spinner!
         }
       }
@@ -115,10 +120,16 @@ export default function Home() {
     // Fetch fresh data
     try {
       const fixtures = await footballApi.getTodayFixtures();
-      const upcoming = processFixtures(fixtures);
-      setMatches(upcoming);
+      // Keep a pool of upcoming fixtures rather than the final five: GeoIP may
+      // still be resolving, and once the country lands we re-rank from this pool
+      // instead of firing another request.
+      const pool = (fixtures || [])
+        .filter(f => f?.fixture?.status?.short && ['NS', '1H', '2H', 'HT'].includes(f.fixture.status.short))
+        .filter(f => f?.teams?.home && f?.teams?.away && f?.league)
+        .slice(0, 60);
+      setRawFixtures(pool);
       try {
-        localStorage.setItem(HOME_MATCHES_CACHE, JSON.stringify({ data: upcoming, ts: Date.now() }));
+        localStorage.setItem(HOME_MATCHES_CACHE, JSON.stringify({ data: pool, ts: Date.now() }));
       } catch {}
     } catch (e) {
       console.error('Failed to load matches', e);
