@@ -1,5 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../api'
+import { FUNNEL_LABELS, RETIRED_FUNNELS, funnelLabel, funnelColor } from '../funnels'
+
+/** Small colored pill showing which funnel a user was assigned to. */
+function FunnelBadge({ funnel, className = '' }) {
+  if (!funnel) return <span className="text-slate-600">—</span>
+  const color = funnelColor(funnel)
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium whitespace-nowrap ${className}`}
+      style={{ backgroundColor: `${color}1a`, color, border: `1px solid ${color}33` }}
+      title={funnel}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+      {funnelLabel(funnel)}
+      {RETIRED_FUNNELS.has(funnel) && <span className="text-slate-500">· off</span>}
+    </span>
+  )
+}
 
 function BarChart({ data, color = 'blue' }) {
   if (!data.length) return null
@@ -164,6 +182,13 @@ function UserProfileModal({ userId, onClose }) {
               ))}
             </div>
 
+            {/* Which A/B funnel this user landed in \u2014 asked for on the 28.07 call
+                ("how can I see which funnel he fell into?") */}
+            <div className="px-6 pb-3 flex items-center gap-2">
+              <span className="text-[10px] text-slate-500 uppercase">Funnel</span>
+              <FunnelBadge funnel={profile.user.funnel} />
+            </div>
+
             {/* User details */}
             <div className="px-6 pb-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
               {[
@@ -224,6 +249,7 @@ export default function AdminUsers() {
   const [sortBy, setSortBy] = useState('created_at')
   const [domainFilter, setDomainFilter] = useState('')
   const [domains, setDomains] = useState([])
+  const [funnelFilter, setFunnelFilter] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [page, setPage] = useState(1)
@@ -248,11 +274,11 @@ export default function AdminUsers() {
   const doSearch = useCallback((p = 1) => {
     setSearchLoading(true)
     setPage(p)
-    adminApi.searchUsers(query, statusFilter, countryFilter, sortBy, p, domainFilter)
+    adminApi.searchUsers(query, statusFilter, countryFilter, sortBy, p, domainFilter, funnelFilter)
       .then(setSearchResults)
       .catch(() => setSearchResults(null))
       .finally(() => setSearchLoading(false))
-  }, [query, statusFilter, countryFilter, sortBy, domainFilter])
+  }, [query, statusFilter, countryFilter, sortBy, domainFilter, funnelFilter])
 
   // Load initial search results when switching to search tab
   useEffect(() => {
@@ -435,6 +461,19 @@ export default function AdminUsers() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Funnel</label>
+                <select
+                  value={funnelFilter}
+                  onChange={e => setFunnelFilter(e.target.value)}
+                  className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none"
+                >
+                  <option value="">All</option>
+                  {Object.entries(FUNNEL_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
               <button
                 onClick={() => doSearch(1)}
                 className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -474,6 +513,7 @@ export default function AdminUsers() {
                   <thead>
                     <tr className="border-b border-slate-800 text-slate-500 text-xs">
                       <th className="text-left px-5 py-3 font-medium">User</th>
+                      <th className="text-left px-3 py-3 font-medium">Funnel</th>
                       <th className="text-left px-3 py-3 font-medium">Country</th>
                       <th className="text-left px-3 py-3 font-medium">Lang</th>
                       <th className="text-center px-3 py-3 font-medium">Status</th>
@@ -491,6 +531,9 @@ export default function AdminUsers() {
                         <td className="px-5 py-3">
                           <p className="font-mono text-xs text-slate-300">{u.public_id}</p>
                           <p className="text-[10px] text-slate-600 mt-0.5">{u.phone || u.email}</p>
+                        </td>
+                        <td className="px-3 py-3">
+                          <FunnelBadge funnel={u.funnel} />
                         </td>
                         <td className="px-3 py-3 text-xs text-slate-400">
                           {COUNTRY_FLAGS[u.country] || ''} {u.country || '\u2014'}

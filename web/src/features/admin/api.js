@@ -69,8 +69,8 @@ export const adminApi = {
   getOverview: () => request('/stats/overview'),
   getOnlineHistory: () => request('/stats/online-history'),
   getUsersStats: () => request('/stats/users'),
-  searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1, domain = '') =>
-    request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}&domain=${encodeURIComponent(domain)}`),
+  searchUsers: (q = '', status = '', country = '', sort = 'created_at', page = 1, domain = '', funnel = '') =>
+    request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}&domain=${encodeURIComponent(domain)}&funnel=${encodeURIComponent(funnel)}`),
   getEmailDomains: () => request('/stats/users/email-domains'),
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
   getDeeplinkSplit: () => request('/stats/users/deeplink-split'),
@@ -126,6 +126,13 @@ export const adminApi = {
   getRecentVisits: (limit = 50, offset = 0) => request(`/stats/recent-visits?limit=${limit}&offset=${offset}`),
   getSessionReplay: (sessionId) => request(`/stats/replay/${sessionId}`),
 
-  // A/B Funnels
-  getFunnelStats: () => request('/stats/users/funnel-stats'),
+  // A/B Funnels — optional signup-date window: {days} or {dateFrom, dateTo}
+  getFunnelStats: ({ days, dateFrom, dateTo } = {}) => {
+    const p = new URLSearchParams();
+    if (days) p.set('days', days);
+    if (dateFrom) p.set('date_from', dateFrom);
+    if (dateTo) p.set('date_to', dateTo);
+    const qs = p.toString();
+    return request(`/stats/users/funnel-stats${qs ? `?${qs}` : ''}`);
+  },
 }

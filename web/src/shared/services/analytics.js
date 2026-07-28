@@ -30,6 +30,39 @@ function getCountry() {
   }
 }
 
+// Ad-campaign params we want on EVERY event, including anonymous ones.
+// App.jsx persistTrackingParams() stashes the whole query string into
+// sessionStorage on first landing, but those params only ever reached the DB
+// after signup (trackingService.saveTrackingParams runs on user.id). So a
+// visitor who bounced before registering was untraceable — we could not tell
+// which creative sent him. Attaching them here closes that gap: every
+// page_view / register_* row now carries its source.
+const TRACKING_KEYS = [
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+  'external_id', 'fbclid', 'partner_click_id', 'offer', 'geo',
+];
+
+function getTrackingParams() {
+  const out = {};
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    // URL wins over sessionStorage — it's the fresher value.
+    const pick = (key) => urlParams.get(key) || sessionStorage.getItem(`tracking_${key}`) || null;
+
+    for (const key of TRACKING_KEYS) {
+      const val = pick(key);
+      if (val) out[key] = String(val).slice(0, 200);
+    }
+    for (let i = 1; i <= 15; i++) {
+      const val = pick(`sub_id_${i}`);
+      if (val) out[`sub_id_${i}`] = String(val).slice(0, 200);
+    }
+  } catch {
+    // sessionStorage can throw in private mode — tracking is best-effort
+  }
+  return out;
+}
+
 /**
  * Track an event — fire-and-forget, never blocks UI
  * @param {string} event - Event name (e.g., 'page_view_register')
@@ -44,7 +77,9 @@ export function track(event, meta = {}) {
       session_id: SESSION_ID,
       country: getCountry(),
       referrer: document.referrer || null,
-      metadata: meta,
+      // Caller metadata first, then campaign params — so an explicit meta key
+      // (e.g. an A/B variant) is never silently overwritten by a URL param.
+      metadata: { ...getTrackingParams(), ...meta },
     };
 
     // Fire-and-forget — don't await, don't catch

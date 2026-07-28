@@ -9,7 +9,7 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Any, Dict, List, Tuple
 
-from fastapi import APIRouter, Depends, Query, Body
+from fastapi import APIRouter, Depends, Query, Body, HTTPException
 from sqlalchemy import select, func, case, and_, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -816,18 +816,52 @@ async def search_users(
 
 @router.get("/users/funnel-stats")
 async def get_funnel_stats(
+    days: Optional[int] = Query(None, ge=1, le=365,
+                                description="Only count users registered in the last N days"),
+    date_from: Optional[str] = Query(None, description="Start date, YYYY-MM-DD (inclusive)"),
+    date_to: Optional[str] = Query(None, description="End date, YYYY-MM-DD (inclusive)"),
     admin: dict = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """A/B funnel comparison: user counts, engagement, and conversion per funnel."""
-    cached = _cache_get("funnel_stats")
+    """A/B funnel comparison: user counts, engagement, and conversion per funnel.
+
+    Supports a signup-date window so a campaign can be judged on its own days
+    instead of drowning in the whole historical pool (asked for on the 28.07 call:
+    "I need to compare how these funnels performed over the 3 days I ran traffic").
+    Pass either `days` (rolling window) or `date_from`/`date_to` (explicit range).
+    """
+    # Each window is cached separately — otherwise switching the filter would
+    # keep serving the previously cached period.
+    cache_key = f"funnel_stats:{days or ''}:{date_from or ''}:{date_to or ''}"
+    cached = _cache_get(cache_key)
     if cached is not None:
         return cached
 
     now = datetime.now()
 
+    where = ["funnel IN ('funnel-1', 'funnel-2', 'funnel-3', 'funnel-5', 'funnel-6', 'funnel-7')"]
+    params: dict = {"now": now}
+
+    if days:
+        where.append("created_at >= :period_start")
+        params["period_start"] = now - timedelta(days=days)
+    else:
+        if date_from:
+            try:
+                params["period_start"] = datetime.strptime(date_from, "%Y-%m-%d")
+                where.append("created_at >= :period_start")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="date_from must be YYYY-MM-DD")
+        if date_to:
+            try:
+                # inclusive end date → everything before the next midnight
+                params["period_end"] = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+                where.append("created_at < :period_end")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="date_to must be YYYY-MM-DD")
+
     # ── All funnels in 1 query instead of 15 ──
-    funnel_rows = (await db.execute(text("""
+    funnel_rows = (await db.execute(text(f"""
         SELECT
             funnel,
             COUNT(*) AS total,
@@ -836,10 +870,10 @@ async def get_funnel_stats(
             COUNT(*) FILTER (WHERE daily_chat_requests > 0) AS with_chat,
             COALESCE(AVG(total_predictions) FILTER (WHERE total_predictions > 0), 0) AS avg_preds
         FROM users
-        WHERE funnel IN ('funnel-1', 'funnel-2', 'funnel-3', 'funnel-5', 'funnel-6', 'funnel-7')
+        WHERE {' AND '.join(where)}
         GROUP BY funnel
         ORDER BY funnel
-    """), {"now": now})).all()
+    """), params)).all()
 
     stats = []
     for r in funnel_rows:
@@ -856,8 +890,15 @@ async def get_funnel_stats(
             "avg_predictions": round(float(r[5]), 1),
         })
 
-    result = {"funnels": stats}
-    _cache_set("funnel_stats", result)
+    result = {
+        "funnels": stats,
+        "period": {
+            "days": days,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+    }
+    _cache_set(cache_key, result)
     return result
 
 

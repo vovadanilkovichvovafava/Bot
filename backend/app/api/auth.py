@@ -63,7 +63,17 @@ VALID_FUNNELS = {"funnel-1", "funnel-2", "funnel-3", "funnel-4",
 # A/B engagement funnels — all clone funnel-1 monetization (backend gating
 # special-cases 2/3/4 and defaults everything else to funnel-1), differing only
 # in our engagement features: 5 = control, 6 = missed-win modal, 7 = wins slider.
-EXPERIMENT_FUNNELS = ["funnel-5", "funnel-6", "funnel-7"]
+#
+# Call of 28.07: keep exactly two funnels live — funnel-1 (main, untouched) and
+# funnel-6 (missed-win), which carries every experiment. funnel-5 (a duplicate of
+# funnel-1) and funnel-7 (wins slider, barely any requests) are switched off for
+# NEW signups but deliberately NOT deleted — Vlad asked to keep the option to
+# bring the slider back. Existing users keep whatever funnel they were assigned.
+EXPERIMENT_FUNNELS = ["funnel-6"]
+# Retired variants — kept for history/stats, never assigned to new users again.
+RETIRED_FUNNELS = ["funnel-2", "funnel-5", "funnel-7"]
+# What a fresh lead can land in: the untouched baseline vs the experiment funnel.
+LIVE_FUNNELS = ["funnel-1"] + EXPERIMENT_FUNNELS
 
 # Every new lead gets full PRO for this many hours (12h immersion trial).
 # Expiry is enforced in users.py (premium_until < now → is_premium=False).
@@ -253,13 +263,15 @@ async def register(
     # Funnel assignment:
     #  - friend from a referral link -> inherits the referrer's funnel
     #  - campaign link with utm_funnel -> that funnel (existing behaviour)
-    #  - fresh random lead -> split ~33/33/33 across the A/B experiment funnels
+    #  - fresh random lead -> 50/50 between the main funnel and the experiment one,
+    #    so Vlad can compare "untouched baseline" vs "everything we changed"
+    #    (call of 28.07: exactly two funnels in play).
     if referrer and referrer.funnel:
         funnel = referrer.funnel
     elif user.utm_funnel:
         funnel = normalize_funnel(user.utm_funnel)
     else:
-        funnel = random.choice(EXPERIMENT_FUNNELS)
+        funnel = random.choice(LIVE_FUNNELS)
 
     # 12h full-PRO trial — ONLY for the first account per IP (anti multi-account
     # farming). Later same-IP accounts get premium_until set to the past: a

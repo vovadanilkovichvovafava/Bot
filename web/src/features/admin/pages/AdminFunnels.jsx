@@ -1,49 +1,42 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../api';
+import {
+  FUNNEL_COLORS,
+  FUNNEL_LABELS,
+  FUNNEL_DESCRIPTIONS,
+  RETIRED_FUNNELS,
+} from '../funnels';
 
-const FUNNEL_COLORS = {
-  'funnel-1': '#3b82f6',  // blue — degressive + Pro
-  'funnel-2': '#22c55e',  // green — all free
-  'funnel-3': '#a855f7',  // purple — fixed 7/day
-  'funnel-4': '#f97316',  // orange — express-first
-  'funnel-5': '#64748b',  // slate — A/B control
-  'funnel-6': '#ec4899',  // pink — A/B missed-win modal
-  'funnel-7': '#14b8a6',  // teal — A/B wins slider
-};
-
-const FUNNEL_LABELS = {
-  'funnel-1': 'Degressive + Pro',
-  'funnel-2': 'All Free (No Pro)',
-  'funnel-3': 'Fixed 7/day',
-  'funnel-4': 'Express-First',
-  'funnel-5': 'A/B · Control',
-  'funnel-6': 'A/B · Missed-Win',
-  'funnel-7': 'A/B · Wins Slider',
-};
-
-const FUNNEL_DESCRIPTIONS = {
-  'funnel-1': 'Limits: 3→2→1/day. Upsell to Pro.',
-  'funnel-2': 'Everything unlocked. No paywall. Bonus banners.',
-  'funnel-3': 'Fixed 7 requests/day. No degradation.',
-  'funnel-4': 'Express-first UX. All free. Leads with accumulators + bonus ads.',
-  'funnel-5': 'funnel-1 base, no extra engagement (A/B control).',
-  'funnel-6': 'funnel-1 base + "missed win" express modal on open.',
-  'funnel-7': 'funnel-1 base + real big-wins carousel (odds ≥5) on home.',
-};
+const PERIOD_PRESETS = [
+  { key: 'all', label: 'All time', params: {} },
+  { key: '1', label: 'Today', params: { days: 1 } },
+  { key: '3', label: '3 days', params: { days: 3 } },
+  { key: '7', label: '7 days', params: { days: 7 } },
+  { key: '30', label: '30 days', params: { days: 30 } },
+];
 
 export default function AdminFunnels() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [period, setPeriod] = useState('3');       // default to the 3-day window Vlad asked for
+  const [custom, setCustom] = useState({ from: '', to: '' });
+  const [showRetired, setShowRetired] = useState(false);
 
   useEffect(() => {
-    adminApi.getFunnelStats()
+    setLoading(true);
+    setError(null);
+    const params = period === 'custom'
+      ? { dateFrom: custom.from || undefined, dateTo: custom.to || undefined }
+      : (PERIOD_PRESETS.find(p => p.key === period)?.params || {});
+
+    adminApi.getFunnelStats(params)
       .then(setData)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [period, custom.from, custom.to]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -61,18 +54,90 @@ export default function AdminFunnels() {
 
   if (!data?.funnels) return null;
 
-  const funnels = data.funnels;
+  // Retired funnels are hidden by default so the live A/B (main vs missed-win)
+  // reads clean; toggle brings the historical ones back.
+  const allFunnels = data.funnels;
+  const funnels = showRetired ? allFunnels : allFunnels.filter(f => !RETIRED_FUNNELS.has(f.funnel));
+  const retiredCount = allFunnels.length - allFunnels.filter(f => !RETIRED_FUNNELS.has(f.funnel)).length;
   const totalUsers = funnels.reduce((sum, f) => sum + f.total_users, 0);
-  const maxUsers = Math.max(...funnels.map(f => f.total_users), 1);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">A/B Funnels</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Compare engagement, conversion & retention across funnel variants
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">A/B Funnels</h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Compare engagement, conversion & retention across funnel variants
+          </p>
+        </div>
+        {retiredCount > 0 && (
+          <button
+            onClick={() => setShowRetired(v => !v)}
+            className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-colors"
+          >
+            {showRetired ? 'Hide' : 'Show'} retired ({retiredCount})
+          </button>
+        )}
       </div>
+
+      {/* Period filter — compare funnels over the days traffic actually ran */}
+      <div className="bg-slate-900 rounded-xl border border-slate-800 p-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-slate-500 mr-1">Signups in:</span>
+        {PERIOD_PRESETS.map(p => (
+          <button
+            key={p.key}
+            onClick={() => setPeriod(p.key)}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+              period === p.key
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                : 'text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+        <button
+          onClick={() => setPeriod('custom')}
+          className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+            period === 'custom'
+              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+              : 'text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-slate-200'
+          }`}
+        >
+          Custom
+        </button>
+
+        {period === 'custom' && (
+          <div className="flex items-center gap-2 ml-1">
+            <input
+              type="date"
+              value={custom.from}
+              onChange={e => setCustom(c => ({ ...c, from: e.target.value }))}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200"
+            />
+            <span className="text-slate-600 text-xs">→</span>
+            <input
+              type="date"
+              value={custom.to}
+              onChange={e => setCustom(c => ({ ...c, to: e.target.value }))}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200"
+            />
+          </div>
+        )}
+
+        {loading && (
+          <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin ml-1" />
+        )}
+        <span className="text-xs text-slate-600 ml-auto">
+          {totalUsers.toLocaleString()} users in range
+        </span>
+      </div>
+
+      {funnels.length === 0 && (
+        <div className="bg-slate-900 rounded-xl border border-slate-800 p-8 text-center">
+          <p className="text-sm text-slate-400">No signups in this period.</p>
+        </div>
+      )}
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -93,6 +158,11 @@ export default function AdminFunnels() {
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                 <span className="text-sm font-semibold text-slate-200">{label}</span>
+                {RETIRED_FUNNELS.has(f.funnel) && (
+                  <span className="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700">
+                    off
+                  </span>
+                )}
               </div>
 
               <p className="text-3xl font-bold mb-1">{f.total_users.toLocaleString()}</p>
