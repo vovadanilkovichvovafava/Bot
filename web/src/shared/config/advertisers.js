@@ -8,15 +8,23 @@ import { ENV } from './env';
 // Base partner link (tracker URL) — configurable via env for multi-domain deployments
 const PARTNER_LINK = ENV.OFFER_URL;
 
+// Currencies written before the number. Brazilians read "R$100", never "100 R$",
+// and getting this backwards immediately reads as a foreign site.
+const PREFIX_CURRENCIES = ['R$', '$', '£'];
+
 /**
  * Format amount with currency symbol
  * EUR regions: symbol after number (10 €)
  * PLN: symbol after number (10 zł)
+ * BRL: symbol before number (R$10)
  */
 export function formatAmount(amount, currency, { showPlus = false, decimals = 2 } = {}) {
   const num = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
   const formatted = num % 1 === 0 ? num.toString() : num.toFixed(decimals);
   const prefix = showPlus && num > 0 ? '+' : '';
+  if (PREFIX_CURRENCIES.includes(currency)) {
+    return `${prefix}${currency}${formatted}`;
+  }
   // Currency after number for EUR/PLN style
   return `${prefix}${formatted} ${currency}`;
 }
@@ -384,6 +392,69 @@ const ADVERTISERS_CONFIG = {
       betAndTakeIt: 'Use it right now!',
     },
   },
+  // Brazil — Brazilian real. Amounts are NOT a straight EUR conversion: they are
+  // the round numbers Brazilian betting sites actually use, so the offer reads
+  // native. PIX is the dominant payment method there.
+  BR: {
+    name: 'partner',
+    // Real brand behind the affiliate link for this geo (verified 28.07)
+    brandName: 'Browinner',
+    bonus: 'Bônus até R$600',
+    bonusShort: 'R$600',
+    bonusAmount: 'R$600',
+    currency: 'R$',
+    currencyCode: 'BRL',
+    minDeposit: 'R$10',
+    link: PARTNER_LINK,
+    locale: 'pt',
+    quickAmounts: [20, 50, 100, 250, 500],
+    depositAmounts: ['R$50', 'R$100', 'R$300', 'R$500'],
+    bonusAmounts: ['R$75', 'R$150', 'R$450', 'R$750'],
+    calcTiers: [
+      { dep: 'R$50',  bonus: 'R$75',  total: 'R$125',  months: 1 },
+      { dep: 'R$100', bonus: 'R$150', total: 'R$250',  months: 2 },
+      { dep: 'R$300', bonus: 'R$450', total: 'R$750',  months: 5 },
+      { dep: 'R$500', bonus: 'R$750', total: 'R$1.250', months: 8 },
+    ],
+    calcMaxBonus: 'R$750',
+    calcBonusPercent: '+150%',
+    exampleAmounts: {
+      ourOdds: 1.45,
+      bet365Odds: 1.38,
+      unibetOdds: 1.36,
+      williamHillOdds: 1.40,
+      ourProfit: '+R$435',
+      bet365Profit: '+R$414',
+      williamHillProfit: '+R$420',
+      monthlyExtra: '+R$280',
+      higherOdds: '0.05',
+      sixMonthExtra: '+R$1.690',
+      annualExtra: 'R$3.380',
+      monthlyBar: '+R$280',
+      sixMonthBar: '+R$1.690',
+      annualBar: '+R$3.380',
+      bonusDisplay: 'R$600',
+      minAmount: 'R$20',
+      profitDiff: '+R$21',
+    },
+    freeBetAmount: 600,
+    depositAmount: 50,
+    bonusBanner: { deposit: 'R$50', bonus: 'R$100', total: 'R$150' },
+    texts: {
+      freeBet: 'Aposta grátis de R$600',
+      betOnMatch: 'Aposta em qualquer jogo',
+      ctaButton: 'Aposta grátis de R$600',
+      promoTitle: 'Aposta grátis de R$600',
+      promoCta: 'Apostar',
+      promoCtaFree: 'Fazer aposta grátis',
+      bonusButton: 'Aposta grátis de R$600',
+      bestBets: 'Melhores apostas',
+      useFreeBet: 'Usa a tua aposta grátis e ganha',
+      potentialWin: 'Ganho',
+      freeBetLabel: 'Aposta grátis',
+      betAndTakeIt: 'Usa agora mesmo!',
+    },
+  },
 };
 
 // Map countries to their configs
@@ -402,7 +473,7 @@ export const ADVERTISERS = {
   KZ: ADVERTISERS_CONFIG.EUR,
   BY: ADVERTISERS_CONFIG.EUR,
   PT: ADVERTISERS_CONFIG.EUR,
-  BR: ADVERTISERS_CONFIG.EUR,
+  BR: ADVERTISERS_CONFIG.BR,   // Brazil — own config in BRL
   MX: ADVERTISERS_CONFIG.EUR,
   AR: ADVERTISERS_CONFIG.EUR,
   IN: ADVERTISERS_CONFIG.EUR,
