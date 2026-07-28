@@ -5,6 +5,8 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { getTrackingLink, addTrackingToUrl } from '../services/trackingService';
 import { track } from '../../../shared/services/analytics';
+import { isTestFunnel } from '../../../shared/config/funnels';
+import FootballSpinner from '../../../shared/components/FootballSpinner';
 
 const TOTAL = 6;
 
@@ -120,8 +122,48 @@ export default function BookmakerPromo() {
     }
   }, [user?.id, banner, fonbetDeeplink]);
 
+  // TEST FUNNEL ONLY — skip the whole questionnaire and go straight to the
+  // bookmaker (call of 28.07: "remove the survey, on click send them straight
+  // to the deposit"; people were asking Alex how to deposit and 2-3 were lost
+  // in these intermediate screens). Intercepting here covers every entry point
+  // at once instead of patching ~15 separate buttons. The main funnel keeps the
+  // questionnaire untouched so the A/B stays honest.
+  const [redirectFailed, setRedirectFailed] = useState(false);
+  const skipQuiz = isTestFunnel(user) && !redirectFailed;
+
+  useEffect(() => {
+    if (!isTestFunnel(user) || redirectFailed) return;
+    if (bookmakerLink) {
+      track('promo_quiz_skipped', { banner: banner || 'promo_page' });
+      trackClick?.(user.id, banner || 'promo_direct');
+      window.location.replace(bookmakerLink);
+      return;
+    }
+    // Safety net: if the tracking link never materialises (missing user id,
+    // unset offer URL), fall back to the normal questionnaire instead of
+    // leaving the user stuck on a spinner.
+    const timer = setTimeout(() => setRedirectFailed(true), 5000);
+    return () => clearTimeout(timer);
+  }, [user, bookmakerLink, redirectFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const next = () => { if (step < TOTAL) setStep(step + 1); };
   const prev = () => { if (step > 1) setStep(step - 1); else navigate(-1); };
+
+  // While the redirect is being prepared, show a short "taking you there" state
+  // rather than flashing the first quiz step.
+  if (skipQuiz) {
+    return (
+      <div className="q-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+        <style>{quizCSS}</style>
+        <div style={{ textAlign: 'center', padding: 24 }}>
+          <FootballSpinner size="md" />
+          <p style={{ marginTop: 16, fontSize: 14, color: 'var(--qtext2, #94a3b8)' }}>
+            {t('promo.redirecting', { defaultValue: 'Taking you to the bookmaker…' })}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="q-wrap">

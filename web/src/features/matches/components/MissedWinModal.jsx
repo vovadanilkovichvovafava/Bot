@@ -6,6 +6,7 @@ import { formatAmount } from '../../../shared/config/advertisers';
 import api from '../../../shared/api';
 import { getTrackingLink } from '../../betting/services/trackingService';
 import { track } from '../../../shared/services/analytics';
+import { isTestFunnel } from '../../../shared/config/funnels';
 
 // Notional stake used to turn a winning express's odds into a "you could have
 // earned X" number, in the user's local currency.
@@ -25,8 +26,8 @@ export default function MissedWinModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // A/B funnel: the missed-win modal is funnel-6's feature only.
-    if (!user || user.funnel !== 'funnel-6') return;
+    // Test funnel only — the baseline must stay untouched.
+    if (!isTestFunnel(user)) return;
     const key = `missed_win_${new Date().toDateString()}`;
     try { if (localStorage.getItem(key)) return; } catch { /* ignore */ }
 
