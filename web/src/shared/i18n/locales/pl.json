@@ -1514,5 +1514,13 @@
     "empty": "Brak wiadomości",
     "beFirst": "Bądź pierwszy, który skomentuje ten mecz!",
     "placeholder": "Napisz wiadomość..."
+  },
+  "slips": {
+    "title": "Wygrane kupony z wczoraj",
+    "realMatches": "Prawdziwe mecze",
+    "won": "WYGRANY",
+    "stake": "Stawka",
+    "odds": "Kurs",
+    "payout": "Wypłata"
   }
 }

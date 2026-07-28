@@ -1460,5 +1460,13 @@
     "empty": "Noch keine Nachrichten",
     "beFirst": "Sei der Erste, der dieses Spiel kommentiert!",
     "placeholder": "Nachricht schreiben..."
+  },
+  "slips": {
+    "title": "Gewinnscheine von gestern",
+    "realMatches": "Echte Spiele",
+    "won": "GEWONNEN",
+    "stake": "Einsatz",
+    "odds": "Quote",
+    "payout": "Auszahlung"
   }
 }

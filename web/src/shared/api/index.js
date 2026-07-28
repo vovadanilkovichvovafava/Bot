@@ -302,6 +302,11 @@ class ApiService {
     return this.request(`/predictions/big-wins?min_odds=${minOdds}&limit=${limit}`);
   }
 
+  /** Winning accumulator slips built from real finished fixtures. Public. */
+  async getWonSlips(slips = 4, legs = 4) {
+    return this.request(`/predictions/won-slips?slips=${slips}&legs=${legs}`);
+  }
+
   // AI Chat (uses Claude AI via predictions/chat endpoint)
   async aiChat(message, history = [], matchContext = null, locale = 'en') {
     const body = { message, history, locale };

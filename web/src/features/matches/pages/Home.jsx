@@ -13,7 +13,9 @@ import ProTrialTimer from '../components/ProTrialTimer';
 import ReviewsSlider from '../../../shared/components/social/ReviewsSlider';
 import WinProofs from '../../../shared/components/social/WinProofs';
 import MissedWinModal from '../components/MissedWinModal';
+import WonSlips from '../../../shared/components/social/WonSlips';
 import DepositReminderModal from '../components/DepositReminderModal';
+import { isTestFunnel } from '../../../shared/config/funnels';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
 import { getTrackingLink } from '../../betting/services/trackingService';
 
@@ -152,6 +154,53 @@ export default function Home() {
   const isFunnel3 = user?.funnel === 'funnel-3';
   const isFunnel1 = user?.funnel === 'funnel-1' || (!user?.funnel && !isPremium && !isFunnel2 && !isFunnel3 && !isFunnel4);
   const remaining = (isPremium || isFunnel2 || isFunnel4) ? 999 : (aiRemaining ?? FREE_AI_LIMIT);
+
+  // Payout receipt is a test-funnel experiment — the baseline funnel is left
+  // exactly as it was. Personal stats stay in place for everyone.
+  const showReceipt = isTestFunnel(user);
+
+  const statsBlock = (
+    <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-bold text-gray-900">{t('home.yourStats')}</h3>
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+        </svg>
+      </div>
+      <div className="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div className="w-8 h-8 mx-auto mb-1 text-primary-500 flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{localStats.total}</p>
+          <p className="text-xs text-gray-500">{t('home.predictions')}</p>
+        </div>
+        <div>
+          <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p className="text-2xl font-bold text-green-500">{localStats.correct}</p>
+          <p className="text-xs text-gray-500">{t('home.wins')}</p>
+        </div>
+        <div>
+          <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </svg>
+          </div>
+          <p className="text-2xl font-bold text-green-500">{localStats.accuracy}%</p>
+          <p className="text-xs text-gray-500">{t('home.accuracy')}</p>
+        </div>
+      </div>
+      {localStats.pending > 0 && (
+        <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
+      )}
+    </div>
+  );
 
   // Show full-screen splash while loading matches
   if (loading) {
@@ -393,47 +442,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900">{t('home.yourStats')}</h3>
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-            </svg>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-primary-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{localStats.total}</p>
-              <p className="text-xs text-gray-500">{t('home.predictions')}</p>
-            </div>
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-green-500">{localStats.correct}</p>
-              <p className="text-xs text-gray-500">{t('home.wins')}</p>
-            </div>
-            <div>
-              <div className="w-8 h-8 mx-auto mb-1 text-green-500 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-                </svg>
-              </div>
-              <p className="text-2xl font-bold text-green-500">{localStats.accuracy}%</p>
-              <p className="text-xs text-gray-500">{t('home.accuracy')}</p>
-            </div>
-          </div>
-          {localStats.pending > 0 && (
-            <p className="text-xs text-amber-600 text-center mt-2">{t('home.pendingVerification', { count: localStats.pending })}</p>
-          )}
-        </div>
+        {/* Winning slips ("чеки") — real fixtures, real scores, real markets,
+            straight under the AI Express block as agreed on the 28.07 call.
+            Test funnel only. */}
+        {showReceipt && <WonSlips />}
+
+        {statsBlock}
 
         {/* Pro Tools */}
         <div>
