@@ -1535,13 +1535,5 @@
     "proCustomAvailable": "Custom express available",
     "dailyFreeCustomPro": "Daily free · Custom with PRO",
     "openExpress": "Open"
-  },
-  "slips": {
-    "title": "Yesterday's winning slips",
-    "realMatches": "Real matches",
-    "won": "WON",
-    "stake": "Stake",
-    "odds": "Odds",
-    "payout": "Payout"
   }
 }

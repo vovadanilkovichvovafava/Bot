@@ -26,8 +26,6 @@ const ADVERTISERS_CONFIG = {
   // Italy - Euro
   IT: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Browinner',
     bonus: 'Bonus fino a 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
@@ -93,8 +91,6 @@ const ADVERTISERS_CONFIG = {
   // Spain - Euro
   ES: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Casinobossy',
     bonus: 'Bono hasta 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
@@ -154,8 +150,6 @@ const ADVERTISERS_CONFIG = {
   // France - Euro
   FR: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Browinner',
     bonus: 'Bonus jusqu\'à 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
@@ -215,8 +209,6 @@ const ADVERTISERS_CONFIG = {
   // Germany - Euro
   DE: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Browinner',
     bonus: 'Bonus bis zu 100 €',
     bonusShort: '100 €',
     bonusAmount: '100 €',
@@ -276,8 +268,6 @@ const ADVERTISERS_CONFIG = {
   // Poland - PLN (Zloty)
   PL: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Browinner',
     bonus: 'Bonus do 320 zł',
     bonusShort: '320 zł',
     bonusAmount: '320 zł',
@@ -338,8 +328,6 @@ const ADVERTISERS_CONFIG = {
   // Default for all other regions - English, Euro
   EUR: {
     name: 'partner',
-    // Real brand behind the affiliate link for this geo (verified 28.07)
-    brandName: 'Browinner',
     bonus: 'Bonus up to €100',
     bonusShort: '€100',
     bonusAmount: '€100',

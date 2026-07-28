@@ -1535,13 +1535,5 @@
     "proCustomAvailable": "Express personalizada disponível",
     "dailyFreeCustomPro": "Grátis diária · Personalizada com PRO",
     "openExpress": "Abrir"
-  },
-  "slips": {
-    "title": "Boletins vencedores de ontem",
-    "realMatches": "Jogos reais",
-    "won": "GANHOU",
-    "stake": "Aposta",
-    "odds": "Odd",
-    "payout": "Retorno"
   }
 }

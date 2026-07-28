@@ -1534,13 +1534,5 @@
     "proCustomAvailable": "Express personalizzato disponibile",
     "dailyFreeCustomPro": "Giornaliero gratis · Custom con PRO",
     "openExpress": "Apri"
-  },
-  "slips": {
-    "title": "Schedine vincenti di ieri",
-    "realMatches": "Partite reali",
-    "won": "VINTA",
-    "stake": "Puntata",
-    "odds": "Quota",
-    "payout": "Vincita"
   }
 }
