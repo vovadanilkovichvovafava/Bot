@@ -10,8 +10,9 @@ import it from './locales/it.json';
 import pl from './locales/pl.json';
 import de from './locales/de.json';
 import pt from './locales/pt.json';
+import ptBR from './locales/pt-BR.json';
 
-const SUPPORTED_LANGS = ['en', 'es', 'fr', 'it', 'pl', 'de', 'pt'];
+const SUPPORTED_LANGS = ['en', 'es', 'fr', 'it', 'pl', 'de', 'pt', 'pt-BR'];
 
 const resources = {
   en: { translation: en },
@@ -21,6 +22,10 @@ const resources = {
   pl: { translation: pl },
   de: { translation: de },
   pt: { translation: pt },
+  // Brazilian Portuguese is NOT interchangeable with the European one: "senha"
+  // vs "palavra-passe", "celular" vs "telemóvel", "você" vs "tu". Serving the
+  // European file in Brazil immediately reads as a foreign site.
+  'pt-BR': { translation: ptBR },
 };
 
 // GeoIP → language mapping
@@ -32,7 +37,8 @@ const COUNTRY_TO_LANG = {
   IT: 'it',
   PL: 'pl',
   DE: 'de', AT: 'de', CH: 'de',
-  PT: 'pt', BR: 'pt', AO: 'pt', MZ: 'pt',
+  PT: 'pt', AO: 'pt', MZ: 'pt',
+  BR: 'pt-BR',   // Brazil gets its own variant, not the European one
 };
 
 // Detect language from GeoIP (async, updates after init)
@@ -70,7 +76,16 @@ i18n
   .init({
     resources,
     supportedLngs: SUPPORTED_LANGS,
-    fallbackLng: 'en',
+    // A missing Brazilian key should fall back to European Portuguese before
+    // English — a stray "pt" string still reads fine in Brazil, an English one
+    // breaks the page.
+    fallbackLng: {
+      'pt-BR': ['pt', 'en'],
+      default: ['en'],
+    },
+    // Browsers report "pt-br" in any casing; keep it matching our resource key.
+    lowerCaseLng: false,
+    nonExplicitSupportedLngs: true,
 
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

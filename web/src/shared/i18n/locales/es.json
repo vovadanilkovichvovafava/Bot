@@ -1575,5 +1575,12 @@
     "proCustomAvailable": "Express personalizado disponible",
     "dailyFreeCustomPro": "Gratis a diario · Personalizado con PRO",
     "openExpress": "Abrir"
+  },
+  "social": {
+    "signedUpToday": "personas se registraron hoy"
+  },
+  "reviews": {
+    "title": "Lo que dicen los usuarios",
+    "verified": "verificado"
   }
 }

@@ -1460,5 +1460,12 @@
     "empty": "Noch keine Nachrichten",
     "beFirst": "Sei der Erste, der dieses Spiel kommentiert!",
     "placeholder": "Nachricht schreiben..."
+  },
+  "social": {
+    "signedUpToday": "Personen haben sich heute registriert"
+  },
+  "reviews": {
+    "title": "Was unsere Nutzer sagen",
+    "verified": "verifiziert"
   }
 }

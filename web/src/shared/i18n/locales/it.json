@@ -1534,5 +1534,12 @@
     "proCustomAvailable": "Express personalizzato disponibile",
     "dailyFreeCustomPro": "Giornaliero gratis · Custom con PRO",
     "openExpress": "Apri"
+  },
+  "social": {
+    "signedUpToday": "persone si sono registrate oggi"
+  },
+  "reviews": {
+    "title": "Cosa dicono gli utenti",
+    "verified": "verificato"
   }
 }

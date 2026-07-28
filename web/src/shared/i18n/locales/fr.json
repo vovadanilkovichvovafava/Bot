@@ -1475,5 +1475,12 @@
     "empty": "Pas encore de messages",
     "beFirst": "Soyez le premier à commenter ce match !",
     "placeholder": "Écrire un message..."
+  },
+  "social": {
+    "signedUpToday": "personnes se sont inscrites aujourd'hui"
+  },
+  "reviews": {
+    "title": "Ce que disent nos utilisateurs",
+    "verified": "vérifié"
   }
 }

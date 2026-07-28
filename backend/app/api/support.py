@@ -480,6 +480,23 @@ LANGUAGE_NAMES = {
     "ar": "Arabic", "hi": "Hindi", "tr": "Turkish", "ro": "Romanian", "zh": "Chinese",
 }
 
+# Regional variants that must not be collapsed into the base language. Telling
+# the model just "Portuguese" gets European Portuguese — "tu", "telemóvel",
+# "palavra-passe" — which a Brazilian spots instantly as a foreign site.
+LOCALE_VARIANTS = {
+    "pt-br": "Brazilian Portuguese (use 'você', 'celular', 'senha' — never European forms)",
+    "es-ar": "Argentinian Spanish (voseo: 'vos', 'tenés', 'querés')",
+    "es-mx": "Mexican Spanish",
+}
+
+
+def resolve_language(locale: Optional[str]) -> str:
+    """Human-readable language for the prompt, keeping regional variants intact."""
+    raw = (locale or "en").lower().replace("_", "-")
+    if raw in LOCALE_VARIANTS:
+        return LOCALE_VARIANTS[raw]
+    return LANGUAGE_NAMES.get(raw[:2], "English")
+
 PERSONA_NAMES = {
     "en": "Alex", "es": "Alex", "pt": "Alex", "it": "Marco",
     "de": "Max", "pl": "Kuba", "fr": "Alex", "ru": "Alex",
@@ -487,8 +504,10 @@ PERSONA_NAMES = {
 
 
 def build_system_prompt(lang: str, knowledge_context: str, is_pro: bool) -> str:
-    name = PERSONA_NAMES.get(lang, "Alex")
-    language = LANGUAGE_NAMES.get(lang, "English")
+    # `lang` may carry a region ("pt-br"); persona names are keyed by base
+    # language, while the prompt wants the full variant.
+    name = PERSONA_NAMES.get(lang.replace("_", "-").split("-")[0], "Alex")
+    language = resolve_language(lang)
 
     pro_context = ""
     if is_pro:
@@ -624,11 +643,12 @@ async def support_chat(
         )
 
     # Language
-    lang = (req.locale or "en").lower()[:2]
+    lang = (req.locale or "en").lower()
+    base_lang = lang.replace("_", "-").split("-")[0]
     if lang not in LANGUAGE_NAMES:
         lang = "en"
 
-    agent_name = PERSONA_NAMES.get(lang, "Alex")
+    agent_name = PERSONA_NAMES.get(base_lang, "Alex")
     session_id = req.session_id or str(uuid.uuid4())
 
     # Check if admin has taken over this session (manual mode)
@@ -651,7 +671,7 @@ async def support_chat(
             "pl": "Twoja wiadomość została odebrana. Nasz zespół wkrótce odpowie.",
             "tr": "Mesajınız alındı. Ekibimiz kısa sürede yanıt verecektir.",
         }
-        wait_msg = _TAKEOVER_RESPONSES.get(lang, _TAKEOVER_RESPONSES["en"])
+        wait_msg = _TAKEOVER_RESPONSES.get(base_lang, _TAKEOVER_RESPONSES["en"])
 
         await _save_messages(db, user_id, session_id, lang, agent_name, is_pro,
                              req.message, wait_msg)
@@ -663,7 +683,7 @@ async def support_chat(
 
     # Security: injection check
     if is_injection(req.message):
-        deflections = DEFLECTION_RESPONSES.get(lang, DEFLECTION_RESPONSES["en"])
+        deflections = DEFLECTION_RESPONSES.get(base_lang, DEFLECTION_RESPONSES["en"])
         response_text = random.choice(deflections)
 
         # Save to DB even for injections (for analytics)
@@ -781,16 +801,17 @@ async def guest_support_chat(
     """Support chat for non-authenticated users (login page). Limited to password reset and general help."""
     user_id = 0  # Guest user
 
-    lang = (req.locale or "en").lower()[:2]
+    lang = (req.locale or "en").lower()
+    base_lang = lang.replace("_", "-").split("-")[0]
     if lang not in LANGUAGE_NAMES:
         lang = "en"
 
-    agent_name = PERSONA_NAMES.get(lang, "Alex")
+    agent_name = PERSONA_NAMES.get(base_lang, "Alex")
     session_id = req.session_id or str(uuid.uuid4())
 
     # Security check
     if is_injection(req.message):
-        deflections = DEFLECTION_RESPONSES.get(lang, DEFLECTION_RESPONSES["en"])
+        deflections = DEFLECTION_RESPONSES.get(base_lang, DEFLECTION_RESPONSES["en"])
         return SupportChatResponse(
             response=random.choice(deflections), agent_name=agent_name,
             session_id=session_id, is_pro=False,
@@ -808,8 +829,8 @@ async def guest_support_chat(
     if any(kw in text_lower for kw in ["register", "sign up", "create account", "registr", "регистр"]):
         knowledge_context += "\n\n" + KNOWLEDGE_BASE["getting_started"]
 
-    language = LANGUAGE_NAMES.get(lang, "English")
-    name = PERSONA_NAMES.get(lang, "Alex")
+    language = resolve_language(lang)
+    name = PERSONA_NAMES.get(base_lang, "Alex")
 
     system_prompt = f"""You are {name}, a support manager at SportScoreAI.
 

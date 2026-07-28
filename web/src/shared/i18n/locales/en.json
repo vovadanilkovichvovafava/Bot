@@ -1535,5 +1535,12 @@
     "proCustomAvailable": "Custom express available",
     "dailyFreeCustomPro": "Daily free · Custom with PRO",
     "openExpress": "Open"
+  },
+  "social": {
+    "signedUpToday": "people signed up today"
+  },
+  "reviews": {
+    "title": "What our users say",
+    "verified": "verified"
   }
 }

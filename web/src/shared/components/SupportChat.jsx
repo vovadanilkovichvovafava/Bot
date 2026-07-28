@@ -111,7 +111,9 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
   const lastAdminMsgIdRef = useRef(0);
 
   // Get current locale and agent name
-  const locale = i18n.language?.slice(0, 2) || 'en';
+  // Send the FULL locale: slicing to 2 chars turned pt-BR into pt, so the bot
+  // answered Brazilians in European Portuguese.
+  const locale = i18n.language || 'en';
   const agentName = AGENT_NAMES[locale] || 'Alex';
 
   // Welcome message on first open (only if no saved history)

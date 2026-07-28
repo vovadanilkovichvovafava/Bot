@@ -296,7 +296,9 @@ export default function AIChat() {
       }
       setEnriching(false);
 
-      const locale = i18n.language?.slice(0, 2) || 'en';
+      // Send the FULL locale: slicing to 2 chars turned pt-BR into pt, so the bot
+      // answered Brazilians in European Portuguese.
+      const locale = i18n.language || 'en';
       const data = await api.aiChat(textWithPrefs, history, matchContext, locale);
 
       // Refresh remaining count from server after each request
