@@ -307,7 +307,8 @@
     "cantLogin": "No puedo iniciar sesión",
     "guestTitle": "Recuperación de cuenta",
     "resetPassword": "Restablecer contraseña",
-    "changePhone": "Cambié mi número de teléfono"
+    "changePhone": "Cambié mi número de teléfono",
+    "depositCta": "Depositar"
   },
   "errors": {
     "somethingWrong": "Algo salió mal",

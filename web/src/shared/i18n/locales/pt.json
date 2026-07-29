@@ -307,7 +307,8 @@
     "cantLogin": "Não consigo iniciar sessão",
     "guestTitle": "Recuperação de Conta",
     "resetPassword": "Repor a minha palavra-passe",
-    "changePhone": "Mudei o meu número de telemóvel"
+    "changePhone": "Mudei o meu número de telemóvel",
+    "depositCta": "Depositar"
   },
   "errors": {
     "somethingWrong": "Algo correu mal",

@@ -294,7 +294,8 @@
     "cantLogin": "Non riesco ad accedere",
     "guestTitle": "Recupero account",
     "resetPassword": "Reimposta la password",
-    "changePhone": "Ho cambiato numero di telefono"
+    "changePhone": "Ho cambiato numero di telefono",
+    "depositCta": "Deposita"
   },
   "errors": {
     "somethingWrong": "Qualcosa è andato storto",

@@ -5,7 +5,15 @@ import { useAdvertiser } from '../context/AdvertiserContext';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import api from '../api';
 import useKeyboardHeight from '../hooks/useKeyboardHeight';
+import { getTrackingLink } from '../../features/betting/services/trackingService';
+import { track } from '../services/analytics';
 import { useBottomNav } from '../context/BottomNavContext';
+
+// Alex emits this token when the user asks how to deposit or for a link; the app
+// swaps it for a real tracked button. Vlad 29.07: "он никакую ссылку мне не дал,
+// а просто говорил что делать" — explaining the steps without a link is the
+// exact thing that loses people at the moment they were ready to pay.
+const DEPOSIT_TOKEN = '[DEPOSIT_LINK]';
 
 // Agent names per locale (matches backend PERSONA_NAMES)
 const AGENT_NAMES = {
@@ -472,7 +480,32 @@ export default function SupportChat({ isOpen, onClose, onUnread, initialMessage 
                       ? 'bg-primary-600 text-white rounded-br-md'
                       : 'bg-gray-100 text-gray-900 rounded-bl-md'
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {msg.text.replace(DEPOSIT_TOKEN, '').trim()}
+                    </p>
+
+                    {/* Alex asked for the deposit link — hand over the very same
+                        tracked URL the "place a bet" buttons use, so the postback
+                        still ties back to this user. Vlad 29.07: he explained the
+                        steps but never gave a link. */}
+                    {msg.text.includes(DEPOSIT_TOKEN) && (
+                      <a
+                        href={getTrackingLink(user?.id, 'support_deposit', user?.funnel) || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => {
+                          track('support_deposit_click', {});
+                          trackClick?.(user?.id, 'support_deposit');
+                        }}
+                        className="mt-2 flex items-center justify-center gap-1.5 w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-sm py-2.5 rounded-xl"
+                      >
+                        {t('support.depositCta', { defaultValue: 'Deposit' })}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                        </svg>
+                      </a>
+                    )}
+
                     <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
                       {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>

@@ -278,7 +278,8 @@
     "cantLogin": "Ich kann mich nicht anmelden",
     "guestTitle": "Kontowiederherstellung",
     "resetPassword": "Passwort zurücksetzen",
-    "changePhone": "Ich habe meine Telefonnummer geändert"
+    "changePhone": "Ich habe meine Telefonnummer geändert",
+    "depositCta": "Einzahlen"
   },
   "errors": {
     "somethingWrong": "Etwas ist schiefgelaufen",

@@ -293,7 +293,8 @@
     "cantLogin": "Nie mogę się zalogować",
     "guestTitle": "Odzyskiwanie konta",
     "resetPassword": "Zresetuj hasło",
-    "changePhone": "Zmieniłem numer telefonu"
+    "changePhone": "Zmieniłem numer telefonu",
+    "depositCta": "Wpłać"
   },
   "errors": {
     "somethingWrong": "Coś poszło nie tak",

@@ -293,7 +293,8 @@
     "cantLogin": "Je ne peux pas me connecter",
     "guestTitle": "Récupération de compte",
     "resetPassword": "Réinitialiser le mot de passe",
-    "changePhone": "J'ai changé de numéro"
+    "changePhone": "J'ai changé de numéro",
+    "depositCta": "Déposer"
   },
   "errors": {
     "somethingWrong": "Une erreur s'est produite",

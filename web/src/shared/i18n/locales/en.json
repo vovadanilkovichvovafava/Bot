@@ -307,7 +307,8 @@
     "cantLogin": "I can't log in",
     "guestTitle": "Account Recovery",
     "resetPassword": "Reset my password",
-    "changePhone": "I changed my phone number"
+    "changePhone": "I changed my phone number",
+    "depositCta": "Deposit"
   },
   "errors": {
     "somethingWrong": "Something went wrong",
