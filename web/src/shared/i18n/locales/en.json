@@ -1556,12 +1556,5 @@
   "reviews": {
     "title": "What our users say",
     "verified": "verified"
-  },
-  "receipts": {
-    "settled": "Bet settled",
-    "football": "Football",
-    "finished": "Finished",
-    "stake": "Stake",
-    "paid": "Prize paid"
   }
 }

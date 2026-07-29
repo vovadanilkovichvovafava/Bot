@@ -1596,12 +1596,5 @@
   "reviews": {
     "title": "Lo que dicen los usuarios",
     "verified": "verificado"
-  },
-  "receipts": {
-    "settled": "Apuesta liquidada",
-    "football": "Fútbol",
-    "finished": "Finalizado",
-    "stake": "Apuesta",
-    "paid": "Premio pagado"
   }
 }
