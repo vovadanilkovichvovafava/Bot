@@ -88,6 +88,12 @@ PRO_TRIAL_HOURS = 12
 # raise it if you serve carrier/CGNAT traffic where many users share an IP.
 MAX_ACCOUNTS_PER_IP = int(os.getenv("MAX_ACCOUNTS_PER_IP", "1"))
 
+# Geos where the per-IP cap is NOT applied. Brazilian mobile carriers run
+# large-scale CGNAT — hundreds of real subscribers share one address, so the cap
+# rejects genuine users rather than farmers. Device fingerprinting is the defence
+# there instead. Other geos keep the cap unchanged.
+NO_IP_LIMIT_COUNTRIES = {"BR"}
+
 
 def normalize_funnel(raw) -> str:
     """Map an incoming utm_funnel value ('2', 'funnel-2', etc.) to a valid funnel."""
@@ -204,12 +210,19 @@ async def register(
 
     client_ip = get_client_ip(request)
 
-    # Check if IP already registered (max 5 accounts per IP)
+    # Country is needed here (not just later) to decide whether the per-IP cap
+    # applies to this signup at all.
+    signup_country = (detect_country_from_phone(user.phone) or "").upper()
+
+    # Per-IP registration cap. Skipped in geos where carrier CGNAT puts hundreds
+    # of real subscribers behind one address — there the cap blocks genuine leads
+    # instead of farmers (every Brazilian after the first was getting
+    # "já existe uma conta"). Elsewhere it stays as it was.
     from sqlalchemy import func
     accounts_on_ip = (await db.execute(
         select(func.count()).where(User.registration_ip == client_ip)
     )).scalar() or 0
-    if accounts_on_ip >= MAX_ACCOUNTS_PER_IP:
+    if signup_country not in NO_IP_LIMIT_COUNTRIES and accounts_on_ip >= MAX_ACCOUNTS_PER_IP:
         logger.warning("Blocked multi-account registration from IP=%s (already %s)", client_ip, accounts_on_ip)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -248,8 +261,8 @@ async def register(
         )
         referrer = ref_result.scalar_one_or_none()
 
-    # Detect country from phone prefix
-    country = detect_country_from_phone(user.phone)
+    # Country from phone prefix — already resolved above for the per-IP rule.
+    country = signup_country or None
 
     # Language: prefer the UI language the user actually registered in; fall back
     # to the country's primary language; then English. (Previously every user was
@@ -281,11 +294,14 @@ async def register(
     else:
         funnel = random.choice(LIVE_FUNNELS)
 
-    # 12h full-PRO trial — ONLY for the first account per IP (anti multi-account
-    # farming). Later same-IP accounts get premium_until set to the past: a
-    # sentinel that also stops the retroactive grant in users.py (which only fires
-    # when premium_until IS NULL), so extra accounts never get free PRO.
-    grant_trial = accounts_on_ip == 0
+    # 12h full-PRO trial — normally only for the first account per IP (anti
+    # multi-account farming). Later same-IP accounts get premium_until set to the
+    # past: a sentinel that also stops the retroactive grant in users.py (which
+    # only fires when premium_until IS NULL), so extra accounts never get free PRO.
+    #
+    # In CGNAT geos that rule would silently strip the trial from every real user
+    # after the first on the same carrier address, so there everyone gets it.
+    grant_trial = accounts_on_ip == 0 or signup_country in NO_IP_LIMIT_COUNTRIES
     trial_is_premium = grant_trial
     trial_until = (datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)) if grant_trial \
         else (datetime.utcnow() - timedelta(seconds=1))
