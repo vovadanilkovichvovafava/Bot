@@ -384,14 +384,17 @@ export default function Matches() {
                       t={t}
                     />
 
-                    {/* Other leagues — expanded outright. It used to open collapsed
-                        and people simply never found the toggle. */}
+                    {/* The rest of the matches. No "Other Leagues" bar any more:
+                        it used to sit there collapsed, and people who pressed
+                        "All" saw a count and a chevron instead of matches, so
+                        they reported the matches were missing. */}
                     {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
                       <LeagueSection
                         leagues={todayGrouped.other}
                         navigate={navigate}
                         isLive={false}
                         isPopular={false}
+                        hideHeader
                         fonbetMap={fonbetMap}
                         userId={user?.id}
                       />
@@ -478,13 +481,14 @@ export default function Matches() {
                       isLive
                     />
 
-                    {/* Other leagues — expanded outright, see Today tab */}
+                    {/* The rest of the matches, no "Other Leagues" bar — see Today tab */}
                     {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
                       <LeagueSection
                         leagues={liveGrouped.other}
                         navigate={navigate}
                         isLive={true}
                         isPopular={false}
+                        hideHeader
                       />
                     )}
                   </>
