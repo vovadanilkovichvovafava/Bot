@@ -54,20 +54,23 @@ export default function ReceiptSlider() {
 
   return (
     <div>
+      {/* The track must be width-constrained, otherwise each slide's `w-full`
+          resolves against the growing flex content instead of the viewport and
+          the screenshots blow far past the screen edge. */}
       <div
         ref={trackRef}
-        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none -mx-1"
+        className="flex w-full max-w-full overflow-x-auto snap-x snap-mandatory scrollbar-none"
         style={{ scrollbarWidth: 'none' }}
       >
         {items.map((file) => (
-          <div key={file} className="snap-center shrink-0 w-full px-1">
+          <div key={file} className="snap-center flex-none w-full min-w-full">
             <img
               src={`/receipts/${file}`}
               alt=""
               loading="lazy"
               onClick={openBookmaker}
               onError={() => setBroken((prev) => new Set(prev).add(file))}
-              className="w-full rounded-2xl cursor-pointer active:scale-[0.99] transition-transform"
+              className="w-full h-auto block rounded-2xl cursor-pointer active:scale-[0.99] transition-transform"
             />
           </div>
         ))}
