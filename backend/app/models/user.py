@@ -24,6 +24,11 @@ class User(Base):
     username = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     registration_ip = Column(String, index=True, nullable=True)
+    # Browser/device fingerprint captured at signup. Distinguishes one PERSON
+    # from one NETWORK: hundreds of real users share a carrier IP, but not a
+    # device profile. Used to withhold the free trial from repeat signups
+    # instead of blocking them outright — see auth.register.
+    device_fingerprint = Column(String, index=True, nullable=True)
     country = Column(String, nullable=True, index=True)  # ISO 3166-1 alpha-2 (IT, PL, DE, etc.)
     traffic_source = Column(String, nullable=True, index=True)  # e.g. "prescoreai_com", "sportscoreai_com"
     utm_source = Column(String, nullable=True, index=True)      # рекламный источник: google, facebook, tiktok

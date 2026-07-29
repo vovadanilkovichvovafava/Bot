@@ -118,6 +118,7 @@ class UserRegister(BaseModel):
     utm_campaign: Optional[str] = None  # Название рекламной кампании
     utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
     language: Optional[str] = None  # UI language the user registered in (e.g. "pt")
+    device_fingerprint: Optional[str] = None  # Browser/device hash — anti multi-account
 
     @field_validator("phone")
     @classmethod
@@ -294,14 +295,35 @@ async def register(
     else:
         funnel = random.choice(LIVE_FUNNELS)
 
-    # 12h full-PRO trial — normally only for the first account per IP (anti
-    # multi-account farming). Later same-IP accounts get premium_until set to the
-    # past: a sentinel that also stops the retroactive grant in users.py (which
-    # only fires when premium_until IS NULL), so extra accounts never get free PRO.
+    # Has this exact device signed up before? Unlike the IP, a device profile
+    # separates one PERSON from one NETWORK — which is what actually matters on
+    # carrier-grade NAT, where hundreds of genuine users share an address.
+    device_seen_before = False
+    fingerprint = (user.device_fingerprint or "").strip()[:128] or None
+    if fingerprint:
+        device_seen_before = bool((await db.execute(
+            select(User.id).where(User.device_fingerprint == fingerprint).limit(1)
+        )).first())
+
+    # 12h full-PRO trial. Withheld — never the registration itself — when this
+    # device already has an account: fingerprints do collide (same phone model,
+    # fresh OS, default settings), and refusing a real lead costs far more than a
+    # farmer getting three free predictions. Accounts denied the trial get
+    # premium_until in the past: a sentinel that also stops the retroactive grant
+    # in users.py, which only fires when premium_until IS NULL.
     #
-    # In CGNAT geos that rule would silently strip the trial from every real user
-    # after the first on the same carrier address, so there everyone gets it.
-    grant_trial = accounts_on_ip == 0 or signup_country in NO_IP_LIMIT_COUNTRIES
+    # Where the fingerprint is missing (old client, blocked APIs) we fall back to
+    # the previous IP rule, except in CGNAT geos where that rule punishes real users.
+    if device_seen_before:
+        grant_trial = False
+    elif fingerprint:
+        grant_trial = True
+    else:
+        grant_trial = accounts_on_ip == 0 or signup_country in NO_IP_LIMIT_COUNTRIES
+
+    if device_seen_before:
+        logger.info("Trial withheld: device %s already registered (ip=%s)", fingerprint, client_ip)
+
     trial_is_premium = grant_trial
     trial_until = (datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)) if grant_trial \
         else (datetime.utcnow() - timedelta(seconds=1))
@@ -313,6 +335,7 @@ async def register(
         username=username,
         password_hash=get_password_hash(user.password),
         registration_ip=client_ip,
+        device_fingerprint=fingerprint,
         country=country,
         language=language,
         referred_by_id=referrer.id if referrer else None,
@@ -335,6 +358,7 @@ async def register(
             username=username,
             password_hash=get_password_hash(user.password),
             registration_ip=client_ip,
+            device_fingerprint=fingerprint,
             country=country,
             language=language,
             referred_by_id=referrer.id if referrer else None,

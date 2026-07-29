@@ -242,6 +242,19 @@ function UserProfileModal({ userId, onClose }) {
 
             <PremiumControl user={profile.user} onChanged={load} />
 
+            {/* Multi-account signal: how many accounts came from this exact
+                device. A shared carrier IP means nothing, a shared device does. */}
+            {profile.user.accounts_on_device > 1 && (
+              <div className="px-6 py-2.5 border-b border-slate-800 flex items-center gap-2">
+                <span className="text-[10px] px-2 py-1 rounded bg-amber-500/15 text-amber-400 font-medium">
+                  {profile.user.accounts_on_device} accounts on this device
+                </span>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  {profile.user.device_fingerprint}
+                </span>
+              </div>
+            )}
+
             {/* Which A/B funnel this user landed in \u2014 asked for on the 28.07 call
                 ("how can I see which funnel he fell into?") */}
             <div className="px-6 py-3 flex items-center gap-2">

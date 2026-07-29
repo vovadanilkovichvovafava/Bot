@@ -69,6 +69,10 @@ async def init_db():
         # Add missing columns (migrations)
         migrations = [
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip VARCHAR",
+            # Device fingerprint — anti multi-account signal that survives a
+            # shared carrier IP (see users.device_fingerprint).
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS device_fingerprint VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_device_fingerprint ON users (device_fingerprint)",
             # Referral system columns
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_id INTEGER REFERENCES users(id)",

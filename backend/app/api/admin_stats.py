@@ -983,6 +983,13 @@ async def get_user_profile(
             "referral_code": user.referral_code,
             "referral_bonus_requests": user.referral_bonus_requests,
             "registration_ip": user.registration_ip,
+            "device_fingerprint": user.device_fingerprint,
+            # How many accounts share this exact device — the honest multi-account
+            # signal, unlike a shared carrier IP.
+            "accounts_on_device": (await db.execute(
+                select(func.count()).select_from(User)
+                .where(User.device_fingerprint == user.device_fingerprint)
+            )).scalar() if user.device_fingerprint else None,
             "funnel": user.funnel or "funnel-1",
             "risk_level": user.risk_level,
             "min_odds": user.min_odds,

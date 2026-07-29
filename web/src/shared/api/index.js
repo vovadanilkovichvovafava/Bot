@@ -193,6 +193,14 @@ class ApiService {
     if (utmSource) body.utm_source = utmSource;
     if (utmCampaign) body.utm_campaign = utmCampaign;
     if (utmFunnel) body.utm_funnel = utmFunnel;
+    // Device fingerprint — lets the backend spot a repeat signup from the same
+    // device even when the IP is shared by a whole carrier network. Best-effort:
+    // if anything throws, registration proceeds without it.
+    try {
+      const { getDeviceFingerprint } = await import('../utils/deviceFingerprint');
+      const fp = getDeviceFingerprint();
+      if (fp) body.device_fingerprint = fp;
+    } catch {}
     const data = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
