@@ -159,3 +159,74 @@ input, select, textarea {
 /* App/page wrappers use the arbitrary light hex bg-[#F0F2F5] (19 places) —
    this is the main "light background" behind everything. Darken it. */
 .dark .bg-\[\#F0F2F5\] { background-color: #0b1220 !important; }
+
+/* ── Dark theme: tinted surfaces ──────────────────────────────────────────
+   The overrides above darken neutral surfaces (bg-white, bg-gray-*) and
+   lighten neutral text. But the app also uses ~180 COLOURED light surfaces
+   (bg-green-50, bg-blue-50, bg-amber-50, light gradients). Those stayed light
+   while the text on them turned light too — that is why review cards and
+   badges read as blank strips in dark mode.
+
+   Each one becomes a low-alpha tint of the same hue, so the colour coding
+   survives (green = win, red = error, amber = warning) but on a dark surface. */
+
+.dark .bg-green-50   { background-color: rgba(34,197,94,.12)  !important; }
+.dark .bg-green-100  { background-color: rgba(34,197,94,.18)  !important; }
+.dark .bg-emerald-50 { background-color: rgba(16,185,129,.12) !important; }
+.dark .bg-blue-50    { background-color: rgba(59,130,246,.12) !important; }
+.dark .bg-blue-100   { background-color: rgba(59,130,246,.18) !important; }
+.dark .bg-indigo-50  { background-color: rgba(99,102,241,.12) !important; }
+.dark .bg-indigo-100 { background-color: rgba(99,102,241,.18) !important; }
+.dark .bg-red-50     { background-color: rgba(239,68,68,.12)  !important; }
+.dark .bg-red-100    { background-color: rgba(239,68,68,.18)  !important; }
+.dark .bg-amber-50   { background-color: rgba(245,158,11,.12) !important; }
+.dark .bg-amber-100  { background-color: rgba(245,158,11,.18) !important; }
+.dark .bg-yellow-50  { background-color: rgba(234,179,8,.12)  !important; }
+.dark .bg-orange-50  { background-color: rgba(249,115,22,.12) !important; }
+.dark .bg-purple-50  { background-color: rgba(168,85,247,.12) !important; }
+.dark .bg-purple-100 { background-color: rgba(168,85,247,.18) !important; }
+.dark .bg-cyan-50    { background-color: rgba(6,182,212,.12)  !important; }
+.dark .bg-rose-50    { background-color: rgba(244,63,94,.12)  !important; }
+.dark .bg-slate-50   { background-color: #161e2e !important; }
+.dark .bg-slate-100  { background-color: #1c2536 !important; }
+
+/* Coloured borders — same idea, keep the hue, drop the brightness. */
+.dark .border-green-100,  .dark .border-green-200  { border-color: rgba(34,197,94,.28)  !important; }
+.dark .border-emerald-100, .dark .border-emerald-200 { border-color: rgba(16,185,129,.28) !important; }
+.dark .border-blue-100,   .dark .border-blue-200   { border-color: rgba(59,130,246,.28) !important; }
+.dark .border-indigo-200  { border-color: rgba(99,102,241,.28) !important; }
+.dark .border-red-100,    .dark .border-red-200    { border-color: rgba(239,68,68,.28)  !important; }
+.dark .border-amber-100,  .dark .border-amber-200  { border-color: rgba(245,158,11,.28) !important; }
+.dark .border-purple-100, .dark .border-purple-200 { border-color: rgba(168,85,247,.28) !important; }
+.dark .border-slate-100,  .dark .border-slate-200  { border-color: #263143 !important; }
+
+/* Light gradients (review cards, promo strips). Tailwind stores the stops in
+   custom properties, so overriding those recolours the whole gradient. */
+.dark .from-slate-50   { --tw-gradient-from: #161e2e var(--tw-gradient-from-position) !important; }
+.dark .from-gray-50    { --tw-gradient-from: #0f172a var(--tw-gradient-from-position) !important; }
+.dark .from-blue-50    { --tw-gradient-from: rgba(59,130,246,.12) var(--tw-gradient-from-position) !important; }
+.dark .from-green-50   { --tw-gradient-from: rgba(34,197,94,.12) var(--tw-gradient-from-position) !important; }
+.dark .from-emerald-50 { --tw-gradient-from: rgba(16,185,129,.12) var(--tw-gradient-from-position) !important; }
+.dark .from-amber-50   { --tw-gradient-from: rgba(245,158,11,.12) var(--tw-gradient-from-position) !important; }
+.dark .from-purple-50  { --tw-gradient-from: rgba(168,85,247,.12) var(--tw-gradient-from-position) !important; }
+.dark .from-indigo-50  { --tw-gradient-from: rgba(99,102,241,.12) var(--tw-gradient-from-position) !important; }
+.dark .to-blue-50      { --tw-gradient-to: rgba(59,130,246,.10) var(--tw-gradient-to-position) !important; }
+.dark .to-green-50     { --tw-gradient-to: rgba(34,197,94,.10) var(--tw-gradient-to-position) !important; }
+.dark .to-emerald-50   { --tw-gradient-to: rgba(16,185,129,.10) var(--tw-gradient-to-position) !important; }
+.dark .to-purple-50    { --tw-gradient-to: rgba(168,85,247,.10) var(--tw-gradient-to-position) !important; }
+.dark .to-slate-50     { --tw-gradient-to: #161e2e var(--tw-gradient-to-position) !important; }
+.dark .to-gray-100     { --tw-gradient-to: #1c2536 var(--tw-gradient-to-position) !important; }
+
+/* Coloured text at -600/-700 is tuned for white backgrounds; on a dark surface
+   the same hue two steps lighter keeps contrast without looking neon. */
+.dark .text-green-600,  .dark .text-green-700   { color: #4ade80 !important; }
+.dark .text-emerald-600, .dark .text-emerald-700 { color: #34d399 !important; }
+.dark .text-blue-600,   .dark .text-blue-700    { color: #60a5fa !important; }
+.dark .text-indigo-600, .dark .text-indigo-700  { color: #818cf8 !important; }
+.dark .text-red-600,    .dark .text-red-700     { color: #f87171 !important; }
+.dark .text-amber-600,  .dark .text-amber-700   { color: #fbbf24 !important; }
+.dark .text-purple-600, .dark .text-purple-700  { color: #c084fc !important; }
+.dark .text-slate-900   { color: #f1f5f9 !important; }
+.dark .text-slate-800   { color: #e6ebf3 !important; }
+.dark .text-slate-700   { color: #cdd6e5 !important; }
+.dark .text-slate-600   { color: #aab6ca !important; }
