@@ -117,11 +117,67 @@ function DailyByCountry({ data }) {
   )
 }
 
+/** Grant PRO for a chosen period, or revoke it. The endpoint existed but had
+ *  no UI at all, so PRO could only be handed out by hitting the API by hand. */
+function PremiumControl({ user, onChanged }) {
+  const [busy, setBusy] = useState(false)
+  const [days, setDays] = useState(365)
+  const active = user.is_premium && user.premium_until && new Date(user.premium_until) > new Date()
+
+  const apply = async () => {
+    setBusy(true)
+    try {
+      const r = await adminApi.togglePremium(user.id, days)
+      onChanged?.(r)
+    } catch (e) {
+      alert(`Failed: ${e.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="px-6 py-3 border-b border-slate-800 flex flex-wrap items-center gap-2">
+      <span className="text-[10px] text-slate-500 uppercase mr-1">PRO</span>
+      {!active && (
+        <select
+          value={days}
+          onChange={e => setDays(Number(e.target.value))}
+          disabled={busy}
+          className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none"
+        >
+          <option value={15}>15 days</option>
+          <option value={30}>30 days</option>
+          <option value={90}>90 days</option>
+          <option value={365}>1 year</option>
+          <option value={3650}>10 years</option>
+        </select>
+      )}
+      <button
+        onClick={apply}
+        disabled={busy}
+        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+          active
+            ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600'
+            : 'bg-purple-600 hover:bg-purple-500 text-white'
+        }`}
+      >
+        {busy ? '...' : active ? 'Revoke PRO' : 'Grant PRO'}
+      </button>
+      {active && (
+        <span className="text-[11px] text-slate-500">
+          until {new Date(user.premium_until).toLocaleDateString()}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function UserProfileModal({ userId, onClose }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!userId) return
     setLoading(true)
     adminApi.getUserProfile(userId)
@@ -129,6 +185,8 @@ function UserProfileModal({ userId, onClose }) {
       .catch(() => setProfile(null))
       .finally(() => setLoading(false))
   }, [userId])
+
+  useEffect(() => { load() }, [load])
 
   if (!userId) return null
 
@@ -182,9 +240,11 @@ function UserProfileModal({ userId, onClose }) {
               ))}
             </div>
 
+            <PremiumControl user={profile.user} onChanged={load} />
+
             {/* Which A/B funnel this user landed in \u2014 asked for on the 28.07 call
                 ("how can I see which funnel he fell into?") */}
-            <div className="px-6 pb-3 flex items-center gap-2">
+            <div className="px-6 py-3 flex items-center gap-2">
               <span className="text-[10px] text-slate-500 uppercase">Funnel</span>
               <FunnelBadge funnel={profile.user.funnel} />
             </div>

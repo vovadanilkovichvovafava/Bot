@@ -73,6 +73,13 @@ export const adminApi = {
     request(`/stats/users/search?q=${encodeURIComponent(q)}&status=${status}&country=${country}&sort=${sort}&page=${page}&domain=${encodeURIComponent(domain)}&funnel=${encodeURIComponent(funnel)}`),
   getEmailDomains: () => request('/stats/users/email-domains'),
   getUserProfile: (userId) => request(`/stats/users/${userId}/profile`),
+  // Grant/revoke PRO. Backend toggles: if the user has active PRO it is revoked,
+  // otherwise granted for `days`.
+  togglePremium: (userId, days = 30) =>
+    request(`/stats/users/${userId}/toggle-premium`, {
+      method: 'POST',
+      body: JSON.stringify(days),
+    }),
   getDeeplinkSplit: () => request('/stats/users/deeplink-split'),
   getRecentRegistrations: () => request('/stats/users/recent-registrations'),
   getRetentionStats: () => request('/stats/retention'),
