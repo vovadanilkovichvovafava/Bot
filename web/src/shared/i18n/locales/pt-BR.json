@@ -1559,5 +1559,22 @@
   "reviews": {
     "title": "O que dizem os usuários",
     "verified": "verificado"
+  },
+  "tour": {
+    "promptTitle": "Quer um tour rápido?",
+    "promptText": "Leva 30 segundos — mostramos onde estão os jogos, como obter uma previsão da IA e onde ficam as melhores vantagens.",
+    "promptYes": "Sim, me mostra",
+    "promptNo": "Não, já conheço",
+    "skip": "Pular",
+    "next": "Próximo",
+    "done": "Entendi",
+    "matchesTitle": "Jogos de hoje",
+    "matchesText": "Todos os jogos do dia ficam aqui. Toque em qualquer um para abrir a análise completa — forma, confrontos diretos, escalações.",
+    "aiTitle": "Pergunte à IA",
+    "aiText": "Escreva dois times e receba uma previsão com a aposta recomendada e o nível de confiança da IA.",
+    "expressTitle": "Múltiplas prontas",
+    "expressText": "A IA monta múltiplas com as melhores apostas de valor — escolha segura, equilibrada ou de odds altas.",
+    "toolsTitle": "Ferramentas PRO",
+    "toolsText": "Detector de valor, gestão de banca e as demais vantagens estão reunidas aqui."
   }
 }

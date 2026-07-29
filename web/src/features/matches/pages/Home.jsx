@@ -8,7 +8,8 @@ import api from '../../../shared/api';
 import { getStats } from '../../predictions/services/predictionStore';
 import { getMatchColors } from '../../../shared/utils/teamColors';
 import FootballSpinner from '../../../shared/components/FootballSpinner';
-import WelcomeModal from '../components/WelcomeModal';
+import TourPrompt from '../components/TourPrompt';
+import GuidedTour from '../components/GuidedTour';
 import ProTrialTimer from '../components/ProTrialTimer';
 import ReviewsSlider from '../../../shared/components/social/ReviewsSlider';
 import WinProofs from '../../../shared/components/social/WinProofs';
@@ -30,6 +31,28 @@ const HOME_MATCHES_TTL = 3 * 60 * 1000; // 3 minutes — stale-while-revalidate
 // Top leagues are picked per visitor country — see shared/config/leagues.js.
 // A Brazilian must see the Brasileirão before the Bundesliga.
 
+// Tour route, in the order Vlad described on the call: where matches are, how to
+// get a prediction on any of them, the AI chat, ready-made accumulators, and the
+// PRO tools. Each id must match a data-tour attribute below.
+const TOUR_STEPS = [
+  { id: 'matches',
+    titleKey: 'tour.matchesTitle', title: "Today's matches",
+    textKey: 'tour.matchesText',
+    text: 'Every match of the day lives here. Tap any of them to open the full breakdown — form, head-to-head, lineups.' },
+  { id: 'aichat',
+    titleKey: 'tour.aiTitle', title: 'Ask the AI',
+    textKey: 'tour.aiText',
+    text: 'Type any two teams and get a prediction with the recommended bet and how confident the AI is.' },
+  { id: 'express',
+    titleKey: 'tour.expressTitle', title: 'Ready-made accumulators',
+    textKey: 'tour.expressText',
+    text: 'The AI builds accumulators out of the best value bets — pick safe, balanced or high-odds.' },
+  { id: 'tools',
+    titleKey: 'tour.toolsTitle', title: 'PRO tools',
+    textKey: 'tour.toolsText',
+    text: 'Value finder, bankroll tracker and the rest of the perks are gathered here.' },
+];
+
 export default function Home() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -42,6 +65,7 @@ export default function Home() {
   const [aiLimit, setAiLimit] = useState(FREE_AI_LIMIT);
   const [smartBet, setSmartBet] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [tourOn, setTourOn] = useState(false);
   const { modalVariant, dismissModal } = useBkReminderModal(user?.id);
 
   useEffect(() => {
@@ -265,6 +289,7 @@ export default function Home() {
 
         {/* AI Assistant Card */}
         <div
+          data-tour="aichat"
           onClick={() => navigate('/ai-chat')}
           className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400 rounded-2xl p-5 text-white cursor-pointer"
         >
@@ -343,7 +368,7 @@ export default function Home() {
         />
 
         {/* Today's Matches */}
-        <div>
+        <div data-tour="matches">
           <div className="flex items-center justify-between mb-3">
             <h3 className="section-title">{t('home.todaysMatches')}</h3>
             <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-medium flex items-center gap-1">
@@ -390,21 +415,18 @@ export default function Home() {
       {/* Loss-aversion nudge for non-PRO users (self-gated) */}
       <MissedWinModal />
 
-      {/* Welcome modal for new registrations */}
+      {/* Onboarding: ask first, then walk the user through the real screen.
+          The old 5-slide deck explained features in the abstract while people
+          stared at a modal — Vlad called it "очень плох" on 29.07. */}
       {showWelcome && (
-        <WelcomeModal
-          onClose={() => setShowWelcome(false)}
-          onGoToPromo={() => {
-            setShowWelcome(false);
-            navigate('/promo');
-          }}
-          onGoToExpress={() => {
-            setShowWelcome(false);
-            navigate('/express');
-          }}
-          hidePro={isFunnel2 || isFunnel4}
-          expressFirst={isFunnel4}
+        <TourPrompt
+          onAccept={() => { setShowWelcome(false); setTourOn(true); }}
+          onDecline={() => setShowWelcome(false)}
         />
+      )}
+
+      {tourOn && (
+        <GuidedTour steps={TOUR_STEPS} onFinish={() => setTourOn(false)} />
       )}
 
       {/* BK registration reminder modals */}
@@ -438,6 +460,7 @@ function HomeMatchCard({ fixture, navigate }) {
 
         {/* AI Express card — shown for all users */}
         <div
+          data-tour="express"
           onClick={() => navigate('/express')}
           className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow"
         >
@@ -547,7 +570,7 @@ function HomeMatchCard({ fixture, navigate }) {
         </div>
 
         {/* Pro Tools */}
-        <div>
+        <div data-tour="tools">
           <h3 className="section-title mb-3">{t('home.proTools')}</h3>
           <div className="grid grid-cols-3 gap-3">
             <div onClick={() => navigate('/matches')} className="card text-center cursor-pointer hover:shadow-md transition-shadow py-5">

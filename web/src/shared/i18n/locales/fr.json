@@ -1500,5 +1500,22 @@
   "reviews": {
     "title": "Ce que disent nos utilisateurs",
     "verified": "vérifié"
+  },
+  "tour": {
+    "promptTitle": "Want a quick tour?",
+    "promptText": "Takes 30 seconds — we show where the matches are, how to get an AI prediction and where the best perks live.",
+    "promptYes": "Yes, show me",
+    "promptNo": "No thanks, I know my way",
+    "skip": "Skip",
+    "next": "Next",
+    "done": "Got it",
+    "matchesTitle": "Today's matches",
+    "matchesText": "Every match of the day lives here. Tap any of them to open the full breakdown — form, head-to-head, lineups.",
+    "aiTitle": "Ask the AI",
+    "aiText": "Type any two teams and get a prediction with the recommended bet and how confident the AI is.",
+    "expressTitle": "Ready-made accumulators",
+    "expressText": "The AI builds accumulators out of the best value bets — pick safe, balanced or high-odds.",
+    "toolsTitle": "PRO tools",
+    "toolsText": "Value finder, bankroll tracker and the rest of the perks are gathered here."
   }
 }

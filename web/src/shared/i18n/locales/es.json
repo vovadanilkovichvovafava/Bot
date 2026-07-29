@@ -1599,5 +1599,22 @@
   "reviews": {
     "title": "Lo que dicen los usuarios",
     "verified": "verificado"
+  },
+  "tour": {
+    "promptTitle": "¿Quieres un tour rápido?",
+    "promptText": "Toma 30 segundos — te mostramos dónde están los partidos, cómo obtener un pronóstico de la IA y dónde están las mejores ventajas.",
+    "promptYes": "Sí, muéstrame",
+    "promptNo": "No, ya conozco",
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "done": "Entendido",
+    "matchesTitle": "Partidos de hoy",
+    "matchesText": "Todos los partidos del día están aquí. Toca cualquiera para abrir el análisis completo — forma, enfrentamientos, alineaciones.",
+    "aiTitle": "Pregunta a la IA",
+    "aiText": "Escribe dos equipos y recibe un pronóstico con la apuesta recomendada y la confianza de la IA.",
+    "expressTitle": "Combinadas listas",
+    "expressText": "La IA arma combinadas con las mejores apuestas de valor — elige segura, equilibrada o de cuotas altas.",
+    "toolsTitle": "Herramientas PRO",
+    "toolsText": "Detector de valor, gestión de banca y el resto de ventajas están aquí."
   }
 }
