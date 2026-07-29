@@ -38,19 +38,19 @@ const TOUR_STEPS = [
   { id: 'matches',
     titleKey: 'tour.matchesTitle', title: "Today's matches",
     textKey: 'tour.matchesText',
-    text: 'Every match of the day lives here. Tap any of them to open the full breakdown — form, head-to-head, lineups.' },
+    text: 'Every match of the day lives here. Tap any of them to open the full breakdown.' },
   { id: 'aichat',
     titleKey: 'tour.aiTitle', title: 'Ask the AI',
     textKey: 'tour.aiText',
-    text: 'Type any two teams and get a prediction with the recommended bet and how confident the AI is.' },
+    text: 'Type any two teams and get a prediction with the recommended bet.' },
   { id: 'express',
     titleKey: 'tour.expressTitle', title: 'Ready-made accumulators',
     textKey: 'tour.expressText',
-    text: 'The AI builds accumulators out of the best value bets — pick safe, balanced or high-odds.' },
+    text: 'The AI builds accumulators out of the best value bets.' },
   { id: 'tools',
     titleKey: 'tour.toolsTitle', title: 'PRO tools',
     textKey: 'tour.toolsText',
-    text: 'Value finder, bankroll tracker and the rest of the perks are gathered here.' },
+    text: 'Value finder, bankroll tracker and the rest of the perks are here.' },
 ];
 
 export default function Home() {
@@ -409,55 +409,6 @@ export default function Home() {
           )}
         </div>
 
-        <div className="h-4"/>
-      </div>
-
-      {/* Loss-aversion nudge for non-PRO users (self-gated) */}
-      <MissedWinModal />
-
-      {/* Onboarding: ask first, then walk the user through the real screen.
-          The old 5-slide deck explained features in the abstract while people
-          stared at a modal — Vlad called it "очень плох" on 29.07. */}
-      {showWelcome && (
-        <TourPrompt
-          onAccept={() => { setShowWelcome(false); setTourOn(true); }}
-          onDecline={() => setShowWelcome(false)}
-        />
-      )}
-
-      {tourOn && (
-        <GuidedTour steps={TOUR_STEPS} onFinish={() => setTourOn(false)} />
-      )}
-
-      {/* BK registration reminder modals */}
-      {!showWelcome && modalVariant && (
-        <DepositReminderModal
-          variant={modalVariant}
-          onClose={dismissModal}
-          onGoToPromo={() => {
-            dismissModal();
-            navigate('/promo');
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function HomeMatchCard({ fixture, navigate }) {
-  const f = fixture;
-  if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
-  let time = '';
-  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
-  const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
-
-  return (
-    <div
-      onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
-      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-    >
-      <div className="flex items-center py-3 px-4">
-
         {/* AI Express card — shown for all users */}
         <div
           data-tour="express"
@@ -608,6 +559,54 @@ function HomeMatchCard({ fixture, navigate }) {
           <ReviewsSlider />
         </div>
 
+        <div className="h-4"/>
+      </div>
+
+      {/* Loss-aversion nudge for non-PRO users (self-gated) */}
+      <MissedWinModal />
+
+      {/* Onboarding: ask first, then walk through the real screen. The old
+          5-slide deck explained features in the abstract — Vlad called it
+          "очень плох" on 29.07. */}
+      {showWelcome && (
+        <TourPrompt
+          onAccept={() => { setShowWelcome(false); setTourOn(true); }}
+          onDecline={() => setShowWelcome(false)}
+        />
+      )}
+
+      {tourOn && (
+        <GuidedTour steps={TOUR_STEPS} onFinish={() => setTourOn(false)} />
+      )}
+
+      {/* BK registration reminder modals */}
+      {!showWelcome && modalVariant && (
+        <DepositReminderModal
+          variant={modalVariant}
+          onClose={dismissModal}
+          onGoToPromo={() => {
+            dismissModal();
+            navigate('/promo');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function HomeMatchCard({ fixture, navigate }) {
+  const f = fixture;
+  if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
+  let time = '';
+  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
+  const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
+
+  return (
+    <div
+      onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+    >
+      <div className="flex items-center py-3 px-4">
         {/* Teams column */}
         <div className="flex-1 min-w-0">
           {/* Home team */}
