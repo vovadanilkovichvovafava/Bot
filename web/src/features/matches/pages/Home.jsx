@@ -12,6 +12,7 @@ import WelcomeModal from '../components/WelcomeModal';
 import ProTrialTimer from '../components/ProTrialTimer';
 import ReviewsSlider from '../../../shared/components/social/ReviewsSlider';
 import WinProofs from '../../../shared/components/social/WinProofs';
+import ReceiptSlider from '../../../shared/components/social/ReceiptSlider';
 import MissedWinModal from '../components/MissedWinModal';
 import DepositReminderModal from '../components/DepositReminderModal';
 import useBkReminderModal from '../../betting/hooks/useBkReminderModal';
@@ -403,6 +404,11 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Payout receipts ("чеки") — placed right under the AI Express block,
+            above the stats, exactly as agreed on the 28.07 call. Test funnel
+            only; the baseline funnel stays untouched. */}
+        <ReceiptSlider />
 
         {/* Stats */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/your-stats')}>

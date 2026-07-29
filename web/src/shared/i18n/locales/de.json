@@ -1481,5 +1481,12 @@
   "reviews": {
     "title": "Was unsere Nutzer sagen",
     "verified": "verifiziert"
+  },
+  "receipts": {
+    "settled": "Wette abgerechnet",
+    "football": "Fußball",
+    "finished": "Beendet",
+    "stake": "Einsatz",
+    "paid": "Ausgezahlt"
   }
 }

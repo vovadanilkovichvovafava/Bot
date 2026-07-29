@@ -1496,5 +1496,12 @@
   "reviews": {
     "title": "Ce que disent nos utilisateurs",
     "verified": "vérifié"
+  },
+  "receipts": {
+    "settled": "Pari réglé",
+    "football": "Football",
+    "finished": "Terminé",
+    "stake": "Mise",
+    "paid": "Gain payé"
   }
 }

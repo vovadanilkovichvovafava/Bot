@@ -1535,5 +1535,12 @@
   "reviews": {
     "title": "Co mówią użytkownicy",
     "verified": "zweryfikowany"
+  },
+  "receipts": {
+    "settled": "Zakład rozliczony",
+    "football": "Piłka nożna",
+    "finished": "Zakończony",
+    "stake": "Stawka",
+    "paid": "Wypłacono"
   }
 }
