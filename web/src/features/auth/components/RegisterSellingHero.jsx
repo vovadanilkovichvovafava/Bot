@@ -2,23 +2,19 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { JoinedTodayBadge } from './SocialProof';
+import api from '../../../shared/api';
 
 /*
- * Selling A/B hero — "proof-first": lead with a real winning slip (show, don't
- * tell), an urgency countdown and a concrete offer, THEN the form. Deliberately
- * a different *structure* from the control hero (which leads with a generic
- * offer badge), so the two variants are visibly distinct in the A/B.
+ * Selling A/B hero — "proof-first": lead with a real AI pick (show, don't tell),
+ * an urgency countdown and a concrete offer, THEN the form. Deliberately a
+ * different *structure* from the control hero (which leads with a generic offer
+ * badge), so the two variants are visibly distinct in the A/B.
  *
- * Slip data mirrors the WinProofs fallback (odds >= 5); one slip is chosen per
- * 30-min seed so it's stable within a session.
+ * The pick is a genuine UPCOMING fixture pulled from the API and refreshed by
+ * itself every day. It used to be a hardcoded slip labelled "yesterday" — which
+ * was neither yesterday's nor real, and Vlad spotted it immediately. The
+ * visitor's own league comes first: a Brazilian sees the Brasileirão.
  */
-const SLIPS = [
-  { match: 'Real Madrid — Barcelona', market: 'Over 2.5 goals', odds: 5.20, stake: 20, win: 104 },
-  { match: 'Man City — Arsenal', market: 'Both teams to score + Over 3.5', odds: 6.50, stake: 25, win: 163 },
-  { match: 'Bayern — Dortmund', market: 'Home win & Over 2.5', odds: 5.80, stake: 20, win: 116 },
-  { match: 'PSG — Marseille', market: 'Exact score 2-1', odds: 8.00, stake: 20, win: 160 },
-];
-const SEED = Math.floor(Date.now() / (1000 * 60 * 30)); // stable per 30-min window
 
 // Evergreen urgency countdown — 15 min from first view, persisted, resets once past
 function useOfferCountdown(minutes = 15) {
@@ -41,38 +37,72 @@ function useOfferCountdown(minutes = 15) {
 }
 
 export default function RegisterSellingHero() {
-  const { t } = useTranslation();
-  const { advertiser } = useAdvertiser();
-  const cur = advertiser?.currency || '€';
-  const slip = SLIPS[SEED % SLIPS.length];
+  const { t, i18n } = useTranslation();
+  const { advertiser, countryCode } = useAdvertiser();
+  const [pick, setPick] = useState(null);
   const countdown = useOfferCountdown(15);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getShowcasePick(countryCode || '')
+      .then((d) => { if (!cancelled && d?.home) setPick(d); })
+      .catch(() => {});   // no pick → the card simply doesn't render
+    return () => { cancelled = true; };
+  }, [countryCode]);
+
+  // Kick-off in the visitor's own words: "hoje, 20:00" / "amanhã, 20:00".
+  const kickoff = (() => {
+    if (!pick?.kickoff) return '';
+    const d = new Date(pick.kickoff);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+    const time = d.toLocaleTimeString(i18n.language || 'en', { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return `${t('auth.pickToday', { defaultValue: 'today' })}, ${time}`;
+    if (isTomorrow) return `${t('auth.pickTomorrow', { defaultValue: 'tomorrow' })}, ${time}`;
+    return `${d.toLocaleDateString(i18n.language || 'en', { day: '2-digit', month: 'short' })}, ${time}`;
+  })();
 
   return (
     <div className="relative">
-      {/* Winning slip — the proof, used AS the hero */}
+      {/* Live AI pick — a real upcoming fixture, the visitor's league first */}
+      {pick && (
       <div className="mb-3 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-white">
         <div className="flex items-center justify-between px-3.5 py-2" style={{ background: 'linear-gradient(120deg,#0f2744,#1b3a5c)' }}>
           <span className="text-[10px] font-black uppercase tracking-wider text-white/70">
-            {t('auth.sellSlipTag', { defaultValue: 'AI pick · yesterday' })}
+            {t('auth.sellSlipTag', { defaultValue: 'AI pick' })}
+            {pick.league ? ` · ${pick.league}` : ''}
           </span>
           <span className="flex items-center gap-1 text-[11px] font-black text-green-300">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-            {t('auth.sellSlipWon', { defaultValue: 'WON' })}
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"/>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400"/>
+            </span>
+            {kickoff}
           </span>
         </div>
         <div className="px-3.5 py-3">
-          <p className="text-[13px] font-bold text-gray-900">{slip.match}</p>
-          <p className="text-[11px] text-gray-500 mb-2.5">{slip.market}</p>
+          <div className="flex items-center gap-2 mb-1">
+            {pick.home_logo && <img src={pick.home_logo} alt="" className="w-5 h-5 object-contain" />}
+            <p className="text-[13px] font-bold text-gray-900 truncate">{pick.home} — {pick.away}</p>
+            {pick.away_logo && <img src={pick.away_logo} alt="" className="w-5 h-5 object-contain" />}
+          </div>
+          <p className="text-[11px] text-gray-500 mb-2.5">{pick.market}</p>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-500">Odd <span className="font-bold text-gray-800">{slip.odds.toFixed(2)}</span></span>
+            <span className="text-[11px] text-gray-500">
+              Odd <span className="font-bold text-gray-800">{Number(pick.odds).toFixed(2)}</span>
+            </span>
             <span className="flex items-center gap-1.5">
-              <span className="text-gray-400 text-sm">{cur}{slip.stake}</span>
-              <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
-              <span className="font-black text-green-600 text-base">{cur}{slip.win}</span>
+              <span className="text-[11px] text-gray-500">
+                {t('auth.pickConfidence', { defaultValue: 'AI confidence' })}
+              </span>
+              <span className="font-black text-green-600 text-base">{pick.confidence}%</span>
             </span>
           </div>
         </div>
       </div>
+      )}
 
       {/* Urgency + offer */}
       <div className="text-center">

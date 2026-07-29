@@ -220,7 +220,11 @@
     "hasAccount": "Bereits ein Konto?",
     "connecting": "Verbinden...",
     "creatingAccount": "Konto wird erstellt...",
-    "minChars": "Mindestens {{count}} Zeichen"
+    "minChars": "Mindestens {{count}} Zeichen",
+    "sellSlipTag": "KI-Tipp",
+    "pickToday": "heute",
+    "pickTomorrow": "morgen",
+    "pickConfidence": "KI-Sicherheit"
   },
   "bonus": {
     "welcomeBonus": "Willkommensbonus",

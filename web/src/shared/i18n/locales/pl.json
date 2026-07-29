@@ -235,7 +235,11 @@
     "benefit3": "Darmowy start",
     "toastFrom": "z",
     "toastAction": "zarejestrował się i otrzymał 3 darmowe prognozy",
-    "toastJustNow": "teraz"
+    "toastJustNow": "teraz",
+    "sellSlipTag": "Typ AI",
+    "pickToday": "dziś",
+    "pickTomorrow": "jutro",
+    "pickConfidence": "pewność AI"
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",

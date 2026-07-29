@@ -342,6 +342,100 @@ export default function Home() {
           smartBet={smartBet}
         />
 
+        {/* Today's Matches */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="section-title">{t('home.todaysMatches')}</h3>
+            <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-medium flex items-center gap-1">
+              {t('home.seeAll')}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </button>
+          </div>
+
+          {matches.length === 0 ? (
+            <div className="card text-center py-8">
+              <p className="text-gray-500">{t('home.noMatchesToday')}</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+              {matches.map((f, idx) => (
+                <React.Fragment key={f.fixture.id}>
+                  <HomeMatchCard fixture={f} navigate={navigate} />
+                  {/* Inline bonus banner after 3rd match for funnel-2 */}
+                  {isFunnel2 && idx === 2 && (
+                    <div
+                      onClick={() => { trackClick(user?.id, 'home_inline_bonus'); navigate('/promo'); }}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"
+                      style={{ background: 'linear-gradient(135deg, #FFFBF0, #FEF3C7)' }}
+                    >
+                      <span className="text-lg">🎁</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900">{t('advertiser.freeBetLabel')} {advertiser?.bonusBanner?.bonus}</p>
+                        <p className="text-[10px] text-gray-500">{t('home.claimNow', { defaultValue: 'Claim your free bet now' })}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="h-4"/>
+      </div>
+
+      {/* Loss-aversion nudge for non-PRO users (self-gated) */}
+      <MissedWinModal />
+
+      {/* Welcome modal for new registrations */}
+      {showWelcome && (
+        <WelcomeModal
+          onClose={() => setShowWelcome(false)}
+          onGoToPromo={() => {
+            setShowWelcome(false);
+            navigate('/promo');
+          }}
+          onGoToExpress={() => {
+            setShowWelcome(false);
+            navigate('/express');
+          }}
+          hidePro={isFunnel2 || isFunnel4}
+          expressFirst={isFunnel4}
+        />
+      )}
+
+      {/* BK registration reminder modals */}
+      {!showWelcome && modalVariant && (
+        <DepositReminderModal
+          variant={modalVariant}
+          onClose={dismissModal}
+          onGoToPromo={() => {
+            dismissModal();
+            navigate('/promo');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function HomeMatchCard({ fixture, navigate }) {
+  const f = fixture;
+  if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
+  let time = '';
+  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
+  const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
+
+  return (
+    <div
+      onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
+      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+    >
+      <div className="flex items-center py-3 px-4">
+
         {/* AI Express card — shown for all users */}
         <div
           onClick={() => navigate('/express')}
@@ -491,99 +585,6 @@ export default function Home() {
           <ReviewsSlider />
         </div>
 
-        {/* Today's Matches */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="section-title">{t('home.todaysMatches')}</h3>
-            <button onClick={() => navigate('/matches')} className="text-primary-600 text-sm font-medium flex items-center gap-1">
-              {t('home.seeAll')}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-              </svg>
-            </button>
-          </div>
-
-          {matches.length === 0 ? (
-            <div className="card text-center py-8">
-              <p className="text-gray-500">{t('home.noMatchesToday')}</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-              {matches.map((f, idx) => (
-                <React.Fragment key={f.fixture.id}>
-                  <HomeMatchCard fixture={f} navigate={navigate} />
-                  {/* Inline bonus banner after 3rd match for funnel-2 */}
-                  {isFunnel2 && idx === 2 && (
-                    <div
-                      onClick={() => { trackClick(user?.id, 'home_inline_bonus'); navigate('/promo'); }}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer border-t border-gray-100"
-                      style={{ background: 'linear-gradient(135deg, #FFFBF0, #FEF3C7)' }}
-                    >
-                      <span className="text-lg">🎁</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900">{t('advertiser.freeBetLabel')} {advertiser?.bonusBanner?.bonus}</p>
-                        <p className="text-[10px] text-gray-500">{t('home.claimNow', { defaultValue: 'Claim your free bet now' })}</p>
-                      </div>
-                      <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="h-4"/>
-      </div>
-
-      {/* Loss-aversion nudge for non-PRO users (self-gated) */}
-      <MissedWinModal />
-
-      {/* Welcome modal for new registrations */}
-      {showWelcome && (
-        <WelcomeModal
-          onClose={() => setShowWelcome(false)}
-          onGoToPromo={() => {
-            setShowWelcome(false);
-            navigate('/promo');
-          }}
-          onGoToExpress={() => {
-            setShowWelcome(false);
-            navigate('/express');
-          }}
-          hidePro={isFunnel2 || isFunnel4}
-          expressFirst={isFunnel4}
-        />
-      )}
-
-      {/* BK registration reminder modals */}
-      {!showWelcome && modalVariant && (
-        <DepositReminderModal
-          variant={modalVariant}
-          onClose={dismissModal}
-          onGoToPromo={() => {
-            dismissModal();
-            navigate('/promo');
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function HomeMatchCard({ fixture, navigate }) {
-  const f = fixture;
-  if (!f?.fixture || !f?.teams?.home || !f?.teams?.away) return null;
-  let time = '';
-  try { time = new Date(f.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { time = '--:--'; }
-  const isLive = ['1H', '2H', 'HT'].includes(f.fixture?.status?.short);
-
-  return (
-    <div
-      onClick={() => navigate(isLive ? `/live/${f.fixture.id}` : `/match/${f.fixture.id}`)}
-      className="bg-white cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-    >
-      <div className="flex items-center py-3 px-4">
         {/* Teams column */}
         <div className="flex-1 min-w-0">
           {/* Home team */}

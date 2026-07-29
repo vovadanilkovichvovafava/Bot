@@ -244,13 +244,16 @@
     "sellPhoneTrust": "Your phone is only for login — no calls, no spam.",
     "sellCta": "Get my 3 free picks",
     "sellCtaSub": "Free · no card · 30 seconds",
-    "sellSlipTag": "AI pick · yesterday",
+    "sellSlipTag": "AI pick",
     "sellSlipWon": "WON",
     "sellCountdown": "Free picks expire in",
     "sellHeroTitle": "Get 3 free picks like this",
     "sellHeroSub": "12h full PRO unlocked. No card. 30 seconds.",
     "sellTrustNoCard": "No card",
-    "sellTrust30s": "30 sec"
+    "sellTrust30s": "30 sec",
+    "pickToday": "today",
+    "pickTomorrow": "tomorrow",
+    "pickConfidence": "AI confidence"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",

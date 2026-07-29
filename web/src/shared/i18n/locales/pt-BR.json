@@ -244,13 +244,16 @@
     "sellPhoneTrust": "O seu celular é só para login — sem chamadas, sem spam.",
     "sellCta": "Quero os meus 3 palpites grátis",
     "sellCtaSub": "Grátis · sem cartão · 30 segundos",
-    "sellSlipTag": "Palpite IA · ontem",
+    "sellSlipTag": "Palpite IA",
     "sellSlipWon": "GANHOU",
     "sellCountdown": "Palpites grátis expiram em",
     "sellHeroTitle": "Recebe 3 palpites grátis como este",
     "sellHeroSub": "12h de PRO completo. Sem cartão. 30 segundos.",
     "sellTrustNoCard": "Sem cartão",
-    "sellTrust30s": "30 seg"
+    "sellTrust30s": "30 seg",
+    "pickToday": "hoje",
+    "pickTomorrow": "amanhã",
+    "pickConfidence": "confiança da IA"
   },
   "bonus": {
     "welcomeBonus": "Bônus de Boas-vindas",

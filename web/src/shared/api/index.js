@@ -306,6 +306,11 @@ class ApiService {
     return this.request('/predictions/missed-express');
   }
 
+  /** One upcoming fixture for the signup screen, visitor's own league first. Public. */
+  async getShowcasePick(country = '') {
+    return this.request(`/predictions/showcase-pick${country ? `?country=${country}` : ''}`);
+  }
+
   async getBigWins(minOdds = 5, limit = 8) {
     return this.request(`/predictions/big-wins?min_odds=${minOdds}&limit=${limit}`);
   }

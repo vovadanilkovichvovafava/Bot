@@ -236,7 +236,11 @@
     "benefit3": "Inizio gratis",
     "toastFrom": "da",
     "toastAction": "si è iscritto e ha ricevuto 3 pronostici gratis",
-    "toastJustNow": "ora"
+    "toastJustNow": "ora",
+    "sellSlipTag": "Pronostico IA",
+    "pickToday": "oggi",
+    "pickTomorrow": "domani",
+    "pickConfidence": "fiducia IA"
   },
   "bonus": {
     "welcomeBonus": "Bonus di Benvenuto",

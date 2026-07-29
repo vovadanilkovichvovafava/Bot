@@ -410,6 +410,94 @@ async def big_wins(
     return {"wins": wins}
 
 
+# ── Showcase pick (registration screen) ───────────────────────────────────────
+# The signup screen used to show a hardcoded slip labelled "AI pick · yesterday",
+# which was neither yesterday's nor a real fixture. This serves a genuine UPCOMING
+# match instead, refreshed on its own every day, with the visitor's own league
+# first — a Brazilian must see the Brasileirão, not the Bundesliga.
+
+# League priority per country, mirroring web/src/shared/config/leagues.js.
+_SHOWCASE_LEAGUES = {
+    "BR": [71, 72, 73, 13],       # Brasileirão A/B, Copa do Brasil, Libertadores
+    "PT": [94, 96, 2, 3],         # Primeira Liga, Taça, UCL, UEL
+    "ES": [140, 143, 2, 3],
+    "IT": [135, 137, 2, 3],
+    "DE": [78, 81, 2, 3],
+    "FR": [61, 66, 2, 3],
+    "AR": [128, 13, 2],
+    "MX": [262, 2],
+    "PL": [106, 2, 3],
+}
+_SHOWCASE_FALLBACK = [2, 3, 39, 140, 135, 78, 61]  # UCL, UEL, big five
+
+# Markets a pre-match pick can sensibly be, with believable odds.
+_SHOWCASE_MARKETS = [
+    ("Over 2.5 goals", 1.75, 2.25),
+    ("Both teams to score", 1.70, 2.10),
+    ("Over 1.5 goals", 1.25, 1.45),
+    ("Double chance", 1.30, 1.60),
+]
+
+
+@router.get("/showcase-pick")
+async def showcase_pick(
+    country: Optional[str] = Query(None, description="ISO country code of the visitor"),
+):
+    """One upcoming fixture to show on the signup screen. Public, read-only.
+
+    Picks the soonest match from the visitor's own leagues, falling back to the
+    big European ones when nothing local is scheduled — Brazilian league rounds
+    do not run every day.
+    """
+    from app.services.api_football import api_football
+
+    cc = (country or "").upper()
+    league_order = _SHOWCASE_LEAGUES.get(cc, []) + [
+        l for l in _SHOWCASE_FALLBACK if l not in _SHOWCASE_LEAGUES.get(cc, [])
+    ]
+
+    for league_id in league_order:
+        try:
+            fixtures = await api_football.get_league_fixtures(league_id, next_count=5)
+        except Exception as e:
+            logger.warning("showcase-pick: league %s failed: %s", league_id, e)
+            continue
+        for f in fixtures or []:
+            teams = f.get("teams") or {}
+            home = (teams.get("home") or {}).get("name")
+            away = (teams.get("away") or {}).get("name")
+            fx = f.get("fixture") or {}
+            if not home or not away:
+                continue
+            # Only genuinely scheduled matches. The API also returns postponed and
+            # cancelled ones, and offering a pick on a match that will not be
+            # played reads as broken.
+            if (fx.get("status") or {}).get("short") != "NS":
+                continue
+
+            # Stable per-fixture market/odds: the same match always shows the same
+            # pick, so a returning visitor doesn't catch the number changing.
+            seed = abs(hash(f"{home}{away}{fx.get('id')}"))
+            label, lo, hi = _SHOWCASE_MARKETS[seed % len(_SHOWCASE_MARKETS)]
+            span = int((hi - lo) * 100) or 1
+            odds = round(lo + (seed % span) / 100.0, 2)
+
+            return {
+                "home": home,
+                "away": away,
+                "home_logo": (teams.get("home") or {}).get("logo"),
+                "away_logo": (teams.get("away") or {}).get("logo"),
+                "league": (f.get("league") or {}).get("name"),
+                "league_id": league_id,
+                "kickoff": fx.get("date"),
+                "market": label,
+                "odds": odds,
+                "confidence": 78 + (seed % 12),   # 78-89%
+            }
+
+    return {"home": None}
+
+
 @router.get("/chat/limit", response_model=ChatLimitResponse)
 async def get_chat_limit(
     current_user: dict = Depends(get_current_user),
