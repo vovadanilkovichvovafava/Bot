@@ -35,7 +35,11 @@
     "finished": "Bitti",
     "noMatches": "Maç bulunamadı",
     "kickoff": "Başlangıç",
-    "odds": "Oranlar"
+    "odds": "Oranlar",
+    "searchPlaceholder": "Takım veya lig ara",
+    "searchClear": "Temizle",
+    "searchNoResults": "Maç bulunamadı",
+    "searchFound": "{{count}} maç bulundu"
   },
   "betting": {
     "placeBet": "Bahis Yap",

@@ -35,7 +35,11 @@
     "finished": "Terminat",
     "noMatches": "Niciun meci disponibil",
     "kickoff": "Start",
-    "odds": "Cote"
+    "odds": "Cote",
+    "searchPlaceholder": "Caută echipă sau ligă",
+    "searchClear": "Șterge",
+    "searchNoResults": "Niciun meci găsit",
+    "searchFound": "{{count}} meciuri găsite"
   },
   "betting": {
     "placeBet": "Plasează Pariu",

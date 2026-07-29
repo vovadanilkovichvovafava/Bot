@@ -145,7 +145,11 @@
     "topLeagues": "Top Leagues",
     "otherLeagues": "Other Leagues",
     "all": "All",
-    "matchesCount": "matches"
+    "matchesCount": "matches",
+    "searchPlaceholder": "Search team or league",
+    "searchClear": "Clear search",
+    "searchNoResults": "No matches found",
+    "searchFound": "{{count}} matches found"
   },
   "betting": {
     "placeBet": "Place Bet",

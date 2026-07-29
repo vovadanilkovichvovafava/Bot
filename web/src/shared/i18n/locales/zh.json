@@ -35,7 +35,11 @@
     "finished": "已结束",
     "noMatches": "暂无比赛",
     "kickoff": "开球时间",
-    "odds": "赔率"
+    "odds": "赔率",
+    "searchPlaceholder": "搜索球队或联赛",
+    "searchClear": "清除",
+    "searchNoResults": "未找到比赛",
+    "searchFound": "找到 {{count}} 场比赛"
   },
   "betting": {
     "placeBet": "下注",

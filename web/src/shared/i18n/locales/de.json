@@ -143,7 +143,11 @@
     "topLeagues": "Top-Ligen",
     "otherLeagues": "Andere Ligen",
     "all": "Alle",
-    "matchesCount": "Spiele"
+    "matchesCount": "Spiele",
+    "searchPlaceholder": "Team oder Liga suchen",
+    "searchClear": "Löschen",
+    "searchNoResults": "Keine Spiele gefunden",
+    "searchFound": "{{count}} Spiele gefunden"
   },
   "betting": {
     "placeBet": "Wette platzieren",

@@ -145,7 +145,11 @@
     "topLeagues": "Principais Ligas",
     "otherLeagues": "Outras Ligas",
     "all": "Todos",
-    "matchesCount": "jogos"
+    "matchesCount": "jogos",
+    "searchPlaceholder": "Procurar equipa ou liga",
+    "searchClear": "Limpar",
+    "searchNoResults": "Nenhum jogo encontrado",
+    "searchFound": "{{count}} jogos encontrados"
   },
   "betting": {
     "placeBet": "Apostar",

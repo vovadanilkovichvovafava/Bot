@@ -144,7 +144,11 @@
     "topLeagues": "Top campionati",
     "otherLeagues": "Altri campionati",
     "all": "Tutti",
-    "matchesCount": "partite"
+    "matchesCount": "partite",
+    "searchPlaceholder": "Cerca squadra o campionato",
+    "searchClear": "Cancella",
+    "searchNoResults": "Nessuna partita trovata",
+    "searchFound": "{{count}} partite trovate"
   },
   "betting": {
     "placeBet": "Piazza Scommessa",

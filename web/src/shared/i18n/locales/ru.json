@@ -131,7 +131,11 @@
     "topLeagues": "Топ-лиги",
     "otherLeagues": "Другие лиги",
     "all": "Все",
-    "matchesCount": "матчей"
+    "matchesCount": "матчей",
+    "searchPlaceholder": "Поиск команды или лиги",
+    "searchClear": "Очистить",
+    "searchNoResults": "Ничего не найдено",
+    "searchFound": "Найдено матчей: {{count}}"
   },
   "betting": {
     "placeBet": "Сделать ставку",

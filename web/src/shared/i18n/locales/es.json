@@ -145,7 +145,11 @@
     "otherLeagues": "Otras Ligas",
     "all": "Todos",
     "matchesCount": "partidos",
-    "nationalTeams": "Selecciones Nacionales"
+    "nationalTeams": "Selecciones Nacionales",
+    "searchPlaceholder": "Buscar equipo o liga",
+    "searchClear": "Borrar",
+    "searchNoResults": "No se encontraron partidos",
+    "searchFound": "{{count}} partidos encontrados"
   },
   "betting": {
     "placeBet": "Apostar",

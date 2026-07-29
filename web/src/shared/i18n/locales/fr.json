@@ -143,7 +143,11 @@
     "topLeagues": "Ligues Majeures",
     "otherLeagues": "Autres Ligues",
     "all": "Tous",
-    "matchesCount": "matchs"
+    "matchesCount": "matchs",
+    "searchPlaceholder": "Rechercher une équipe ou une ligue",
+    "searchClear": "Effacer",
+    "searchNoResults": "Aucun match trouvé",
+    "searchFound": "{{count}} matchs trouvés"
   },
   "betting": {
     "placeBet": "Parier",

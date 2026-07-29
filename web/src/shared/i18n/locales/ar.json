@@ -35,7 +35,11 @@
     "finished": "انتهت",
     "noMatches": "لا توجد مباريات",
     "kickoff": "وقت البداية",
-    "odds": "الاحتمالات"
+    "odds": "الاحتمالات",
+    "searchPlaceholder": "ابحث عن فريق أو دوري",
+    "searchClear": "مسح",
+    "searchNoResults": "لم يتم العثور على مباريات",
+    "searchFound": "تم العثور على {{count}} مباراة"
   },
   "betting": {
     "placeBet": "ضع رهان",

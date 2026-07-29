@@ -143,7 +143,11 @@
     "topLeagues": "Top ligi",
     "otherLeagues": "Inne ligi",
     "all": "Wszystkie",
-    "matchesCount": "meczów"
+    "matchesCount": "meczów",
+    "searchPlaceholder": "Szukaj drużyny lub ligi",
+    "searchClear": "Wyczyść",
+    "searchNoResults": "Nie znaleziono meczów",
+    "searchFound": "Znaleziono meczów: {{count}}"
   },
   "betting": {
     "placeBet": "Postaw Zakład",

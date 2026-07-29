@@ -57,6 +57,39 @@ const LEAGUES_INFO = {
   ],
 };
 
+// Combining diacritical marks (U+0300..U+036F), built from char codes so the
+// source file stays plain ASCII and no editor or encoding can mangle it.
+const COMBINING_MARKS = new RegExp(
+  `[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`,
+  'g'
+);
+
+/**
+ * Lowercase and strip accents, so "sao paulo" finds "Sao Paulo" spelled with
+ * the accent — nobody types diacritics on a phone keyboard.
+ */
+function normalise(str) {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(COMBINING_MARKS, '')
+    .trim();
+}
+
+/** Match against both team names and the league, so "premier" works too. */
+function matchesSearch(fixture, search) {
+  const haystack = normalise(
+    [
+      fixture.teams?.home?.name,
+      fixture.teams?.away?.name,
+      fixture.league?.name,
+      fixture.league?.country,
+    ].join(' ')
+  );
+  // Every word must appear somewhere — "real madrid" and "madrid real" both hit.
+  return search.split(/\s+/).every(word => haystack.includes(word));
+}
+
 export default function Matches() {
   const [tab, setTab] = useState('today');
   const [todayFixtures, setTodayFixtures] = useState([]);
@@ -65,6 +98,7 @@ export default function Matches() {
   const [liveLoading, setLiveLoading] = useState(true);
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
+  const [query, setQuery] = useState('');
   const [fonbetMap, setFonbetMap] = useState({}); // team1_team2 → fonbet event
   const [favouriteTeamIds, setFavouriteTeamIds] = useState([]);
   const [favouriteLeagueIds, setFavouriteLeagueIds] = useState([]);
@@ -154,10 +188,13 @@ export default function Matches() {
   };
 
   // Group fixtures by popular/other
-  const groupFixtures = (fixtures, filterFavourites = false) => {
+  const groupFixtures = (fixtures, filterFavourites = false, search = '') => {
     let filtered = fixtures;
     if (filterFavourites) {
       filtered = fixtures.filter(isFavouriteMatch);
+    }
+    if (search) {
+      filtered = filtered.filter(f => matchesSearch(f, search));
     }
 
     const popular = [];
@@ -184,14 +221,18 @@ export default function Matches() {
     return {
       popular: groupByLeague(popular),
       other: groupByLeague(other),
+      // Search ignores the top/other split — people look for one specific match,
+      // not for the league it happens to sit in.
+      all: groupByLeague(filtered),
       popularCount: popular.length,
       otherCount: other.length,
       totalFiltered: filtered.length,
     };
   };
 
-  const todayGrouped = groupFixtures(todayFixtures, showFavouritesOnly);
-  const liveGrouped = groupFixtures(liveFixtures, showFavouritesOnly);
+  const search = normalise(query);
+  const todayGrouped = groupFixtures(todayFixtures, showFavouritesOnly, search);
+  const liveGrouped = groupFixtures(liveFixtures, showFavouritesOnly, search);
   const hasFavourites = favouriteTeamIds.length > 0 || favouriteLeagueIds.length > 0;
 
   const tabs = [
@@ -280,20 +321,25 @@ export default function Matches() {
               <EmptyState title={t('matches.noMatchesToday')} subtitle={t('matches.checkBackLater')}/>
             ) : (
               <>
-                {/* Filter toggle */}
-                <FilterToggle
-                  showAll={showAllLeagues}
-                  setShowAll={setShowAllLeagues}
-                  popularCount={todayGrouped.popularCount}
-                  otherCount={todayGrouped.otherCount}
-                  showFavouritesOnly={showFavouritesOnly}
-                  setShowFavouritesOnly={setShowFavouritesOnly}
-                  hasFavourites={hasFavourites}
-                  navigate={navigate}
-                />
+                {/* Search by team or league */}
+                <SearchBar query={query} setQuery={setQuery} />
+
+                {/* Filter toggle — irrelevant while searching */}
+                {!search && (
+                  <FilterToggle
+                    showAll={showAllLeagues}
+                    setShowAll={setShowAllLeagues}
+                    popularCount={todayGrouped.popularCount}
+                    otherCount={todayGrouped.otherCount}
+                    showFavouritesOnly={showFavouritesOnly}
+                    setShowFavouritesOnly={setShowFavouritesOnly}
+                    hasFavourites={hasFavourites}
+                    navigate={navigate}
+                  />
+                )}
 
                 {/* Empty state for favourites filter */}
-                {showFavouritesOnly && todayGrouped.totalFiltered === 0 && (
+                {!search && showFavouritesOnly && todayGrouped.totalFiltered === 0 && (
                   <div className="text-center py-8 bg-amber-50 rounded-xl border border-amber-100">
                     <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
@@ -305,38 +351,52 @@ export default function Matches() {
                   </div>
                 )}
 
-                {/* Popular leagues */}
-                {Object.keys(todayGrouped.popular).length > 0 && (
-                  <LeagueSection
-                    leagues={todayGrouped.popular}
+                {/* Search results — one flat list, no top/other split */}
+                {search ? (
+                  <SearchResults
+                    grouped={todayGrouped}
                     navigate={navigate}
                     isLive={false}
-                    isPopular={true}
                     fonbetMap={fonbetMap}
                     userId={user?.id}
+                    onClear={() => setQuery('')}
                   />
-                )}
+                ) : (
+                  <>
+                    {/* Popular leagues */}
+                    {Object.keys(todayGrouped.popular).length > 0 && (
+                      <LeagueSection
+                        leagues={todayGrouped.popular}
+                        navigate={navigate}
+                        isLive={false}
+                        isPopular={true}
+                        fonbetMap={fonbetMap}
+                        userId={user?.id}
+                      />
+                    )}
 
-                {/* Inline ad banner between league sections */}
-                <MatchesAdBanner
-                  advertiser={advertiser}
-                  trackClick={trackClick}
-                  userId={user?.id}
-                  navigate={navigate}
-                  t={t}
-                />
+                    {/* Inline ad banner between league sections */}
+                    <MatchesAdBanner
+                      advertiser={advertiser}
+                      trackClick={trackClick}
+                      userId={user?.id}
+                      navigate={navigate}
+                      t={t}
+                    />
 
-                {/* Other leagues */}
-                {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
-                  <LeagueSection
-                    leagues={todayGrouped.other}
-                    navigate={navigate}
-                    isLive={false}
-                    isPopular={false}
-                    collapsed
-                    fonbetMap={fonbetMap}
-                    userId={user?.id}
-                  />
+                    {/* Other leagues — expanded outright. It used to open collapsed
+                        and people simply never found the toggle. */}
+                    {showAllLeagues && Object.keys(todayGrouped.other).length > 0 && (
+                      <LeagueSection
+                        leagues={todayGrouped.other}
+                        navigate={navigate}
+                        isLive={false}
+                        isPopular={false}
+                        fonbetMap={fonbetMap}
+                        userId={user?.id}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -358,20 +418,25 @@ export default function Matches() {
                   {t('matches.updatesEvery60')}
                 </div>
 
-                {/* Filter toggle */}
-                <FilterToggle
-                  showAll={showAllLeagues}
-                  setShowAll={setShowAllLeagues}
-                  popularCount={liveGrouped.popularCount}
-                  otherCount={liveGrouped.otherCount}
-                  showFavouritesOnly={showFavouritesOnly}
-                  setShowFavouritesOnly={setShowFavouritesOnly}
-                  hasFavourites={hasFavourites}
-                  navigate={navigate}
-                />
+                {/* Search by team or league */}
+                <SearchBar query={query} setQuery={setQuery} />
+
+                {/* Filter toggle — irrelevant while searching */}
+                {!search && (
+                  <FilterToggle
+                    showAll={showAllLeagues}
+                    setShowAll={setShowAllLeagues}
+                    popularCount={liveGrouped.popularCount}
+                    otherCount={liveGrouped.otherCount}
+                    showFavouritesOnly={showFavouritesOnly}
+                    setShowFavouritesOnly={setShowFavouritesOnly}
+                    hasFavourites={hasFavourites}
+                    navigate={navigate}
+                  />
+                )}
 
                 {/* Empty state for favourites filter */}
-                {showFavouritesOnly && liveGrouped.totalFiltered === 0 && (
+                {!search && showFavouritesOnly && liveGrouped.totalFiltered === 0 && (
                   <div className="text-center py-8 bg-amber-50 rounded-xl border border-amber-100">
                     <svg className="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
@@ -383,39 +448,50 @@ export default function Matches() {
                   </div>
                 )}
 
-                {/* Popular leagues */}
-                {Object.keys(liveGrouped.popular).length > 0 && (
-                  <LeagueSection
-                    leagues={liveGrouped.popular}
+                {/* Search results — one flat list, no top/other split */}
+                {search ? (
+                  <SearchResults
+                    grouped={liveGrouped}
                     navigate={navigate}
                     isLive={true}
-                    isPopular={true}
+                    onClear={() => setQuery('')}
                   />
-                )}
+                ) : (
+                  <>
+                    {/* Popular leagues */}
+                    {Object.keys(liveGrouped.popular).length > 0 && (
+                      <LeagueSection
+                        leagues={liveGrouped.popular}
+                        navigate={navigate}
+                        isLive={true}
+                        isPopular={true}
+                      />
+                    )}
 
-                {/* Inline ad banner between league sections */}
-                <MatchesAdBanner
-                  advertiser={advertiser}
-                  trackClick={trackClick}
-                  userId={user?.id}
-                  navigate={navigate}
-                  t={t}
-                  isLive
-                />
+                    {/* Inline ad banner between league sections */}
+                    <MatchesAdBanner
+                      advertiser={advertiser}
+                      trackClick={trackClick}
+                      userId={user?.id}
+                      navigate={navigate}
+                      t={t}
+                      isLive
+                    />
 
-                {/* Other leagues */}
-                {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
-                  <LeagueSection
-                    leagues={liveGrouped.other}
-                    navigate={navigate}
-                    isLive={true}
-                    isPopular={false}
-                    collapsed
-                  />
+                    {/* Other leagues — expanded outright, see Today tab */}
+                    {showAllLeagues && Object.keys(liveGrouped.other).length > 0 && (
+                      <LeagueSection
+                        leagues={liveGrouped.other}
+                        navigate={navigate}
+                        isLive={true}
+                        isPopular={false}
+                      />
+                    )}
+                  </>
                 )}
 
                 {/* No popular leagues live */}
-                {Object.keys(liveGrouped.popular).length === 0 && !showAllLeagues && (
+                {!search && Object.keys(liveGrouped.popular).length === 0 && !showAllLeagues && (
                   <div className="text-center py-8">
                     <p className="text-gray-500 text-sm mb-3">{t('matches.noTopLeagueMatches')}</p>
                     <button
@@ -485,6 +561,81 @@ export default function Matches() {
         )}
       </div>
     </div>
+  );
+}
+
+function SearchBar({ query, setQuery }) {
+  const { t } = useTranslation();
+  return (
+    <div className="relative mb-3">
+      <svg
+        className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+        fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+      {/* type=text + inputMode=search: same search keyboard on mobile, but no
+          native WebKit clear button doubling up with ours */}
+      <input
+        type="text"
+        inputMode="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        spellCheck={false}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('matches.searchPlaceholder', { defaultValue: 'Search team or league' })}
+        className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-9 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400"
+      />
+      {query && (
+        <button
+          onClick={() => setQuery('')}
+          aria-label={t('matches.searchClear', { defaultValue: 'Clear search' })}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SearchResults({ grouped, navigate, isLive, fonbetMap, userId, onClear }) {
+  const { t } = useTranslation();
+
+  if (grouped.totalFiltered === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500 text-sm">
+          {t('matches.searchNoResults', { defaultValue: 'No matches found' })}
+        </p>
+        <button onClick={onClear} className="text-primary-600 text-sm font-medium mt-2 underline">
+          {t('matches.searchClear', { defaultValue: 'Clear search' })}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <p className="text-xs text-gray-400 mb-2">
+        {t('matches.searchFound', {
+          count: grouped.totalFiltered,
+          defaultValue: '{{count}} matches found',
+        })}
+      </p>
+      <LeagueSection
+        leagues={grouped.all}
+        navigate={navigate}
+        isLive={isLive}
+        isPopular={false}
+        hideHeader
+        fonbetMap={fonbetMap}
+        userId={userId}
+      />
+    </>
   );
 }
 
@@ -590,9 +741,10 @@ function MatchesAdBanner({ advertiser, trackClick, userId, navigate, t, isLive }
   );
 }
 
-function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular, fonbetMap, userId }) {
+function LeagueSection({ title, leagues, navigate, isLive, isPopular, hideHeader, fonbetMap, userId }) {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(!collapsed);
+  // Always starts open — the header stays clickable if someone wants it shut.
+  const [isExpanded, setIsExpanded] = useState(true);
   const leagueList = Object.values(leagues);
 
   if (leagueList.length === 0) return null;
@@ -602,28 +754,30 @@ function LeagueSection({ title, leagues, navigate, isLive, collapsed, isPopular,
   return (
     <div className={`mb-6 rounded-2xl overflow-hidden ${isPopular ? 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200' : 'bg-gray-50 border border-gray-200'}`}>
       {/* Section Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex items-center justify-between w-full px-4 py-3 ${isPopular ? 'bg-gradient-to-r from-amber-100 to-orange-100' : 'bg-gray-100'}`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
-          <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
-            {isPopular ? t('matches.topLeagues') : t('matches.otherLeagues')}
-          </h3>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
-            {matchCount} {t('matches.matchesCount')}
-          </span>
-        </div>
-        <svg
-          className={`w-5 h-5 transition-transform ${isPopular ? 'text-amber-600' : 'text-gray-500'} ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+      {!hideHeader && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={`flex items-center justify-between w-full px-4 py-3 ${isPopular ? 'bg-gradient-to-r from-amber-100 to-orange-100' : 'bg-gray-100'}`}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
-        </svg>
-      </button>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{isPopular ? '⭐' : '🌍'}</span>
+            <h3 className={`font-bold ${isPopular ? 'text-amber-800' : 'text-gray-700'}`}>
+              {isPopular ? t('matches.topLeagues') : t('matches.otherLeagues')}
+            </h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${isPopular ? 'bg-amber-200 text-amber-700' : 'bg-gray-200 text-gray-600'}`}>
+              {matchCount} {t('matches.matchesCount')}
+            </span>
+          </div>
+          <svg
+            className={`w-5 h-5 transition-transform ${isPopular ? 'text-amber-600' : 'text-gray-500'} ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+      )}
 
-      {isExpanded && (
+      {(isExpanded || hideHeader) && (
         <div className="p-4 space-y-4">
           {leagueList.map(({ league, fixtures }) => (
             <div key={league.id}>
