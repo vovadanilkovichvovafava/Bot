@@ -5,12 +5,16 @@
  * its filename to RECEIPTS below. Nothing else to change.
  *
  * Placement follows the 28.07 call: directly under the AI Express block, above
- * the stats. Test funnel only — the baseline funnel is untouched.
+ * the stats.
+ *
+ * Who sees them: the test funnel everywhere, plus everyone in a launch geo that
+ * runs without an A/B split (Brazil) — see showsReceipts(). Portugal's baseline
+ * funnel stays untouched so its A/B keeps measuring what it should.
  */
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../features/auth/context/AuthContext';
 import { useAdvertiser } from '../../context/AdvertiserContext';
-import { isTestFunnel } from '../../config/funnels';
+import { showsReceipts } from '../../config/funnels';
 import { getTrackingLink } from '../../../features/betting/services/trackingService';
 import { track } from '../../services/analytics';
 
@@ -23,12 +27,14 @@ const RECEIPTS = [
 
 export default function ReceiptSlider() {
   const { user } = useAuth();
-  const { trackClick } = useAdvertiser();
+  const { trackClick, countryCode } = useAdvertiser();
   const [slide, setSlide] = useState(0);
   const [broken, setBroken] = useState(() => new Set());
   const trackRef = useRef(null);
 
-  const enabled = isTestFunnel(user);
+  // Test funnel everywhere, plus every visitor in a launch geo without an
+  // A/B split (Brazil) — otherwise the receipts would never show there.
+  const enabled = showsReceipts(user, countryCode);
   // A missing file must not leave a blank gap on the home screen.
   const items = RECEIPTS.filter((f) => !broken.has(f));
 

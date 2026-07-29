@@ -19,3 +19,20 @@ export function isTestFunnel(user) {
 export function isMainFunnel(user) {
   return !user?.funnel || user.funnel === MAIN_FUNNEL;
 }
+
+/**
+ * Geos where the receipts are shown to EVERYONE, regardless of funnel.
+ *
+ * Brazil launches without an A/B split, so every Brazilian lands in the main
+ * funnel — and the receipts, gated on the test funnel, would never appear there.
+ * On a brand-new market with zero trust that proof matters most, so Brazil gets
+ * them across the board. Portugal keeps them inside the test funnel only, so its
+ * A/B stays clean.
+ */
+export const RECEIPTS_FOR_ALL_COUNTRIES = ['BR'];
+
+/** Should this visitor see the payout receipts? */
+export function showsReceipts(user, countryCode) {
+  if (isTestFunnel(user)) return true;
+  return RECEIPTS_FOR_ALL_COUNTRIES.includes((countryCode || '').toUpperCase());
+}
