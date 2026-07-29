@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LimitReachedModal from '../../../shared/components/LimitReachedModal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -70,6 +71,7 @@ export default function MatchDetail() {
   // Everyone else must first register through the offer
   const canUseDeeplink = user?.use_deeplink === true || (user?.is_premium && user?.funnel !== 'funnel-2');
   const [match, setMatch] = useState(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [enriched, setEnriched] = useState(null);
   const [prediction, setPrediction] = useState(null); // { apiPrediction, claudeAnalysis }
   const [loading, setLoading] = useState(true);
@@ -446,7 +448,9 @@ export default function MatchDetail() {
     const isPremium = user?.is_premium && user?.funnel !== 'funnel-2';
     const hasFreeAccess = user?.funnel === 'funnel-2';
     if (!isPremium && !hasFreeAccess && aiRemaining !== null && aiRemaining <= 0) {
-      navigate('/pro-access?reason=limit&feature=match-analysis');
+      // Short path to a deposit instead of bouncing to the long explainer page —
+      // hitting a limit is a bad moment to start reading.
+      setShowLimitModal(true);
       return;
     }
 
@@ -1770,6 +1774,11 @@ function MatchBonusCard({ match, advertiser, user, trackClick, recommendedBet, p
           </span>
         </div>
       </div>
+      <LimitReachedModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        feature="match-analysis"
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import LimitReachedModal from '../../../shared/components/LimitReachedModal';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import SupportChatModal from '../../../shared/components/SupportChat';
 
 export default function ProTools() {
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitFeature, setLimitFeature] = useState('pro');
   const { user } = useAuth();
   const { advertiser, trackClick } = useAdvertiser();
   const navigate = useNavigate();
@@ -28,7 +31,8 @@ export default function ProTools() {
       if (isPremium || isFunnel2 || !valueBetUsed) {
         return navigate('/value-finder');
       }
-      return navigate('/pro-access?reason=limit&feature=value-finder');
+      setLimitFeature('value-finder');
+      return setShowLimitModal(true);
     }
 
     // PRO tools - need deposit (funnel-2 has full access)
@@ -40,7 +44,8 @@ export default function ProTools() {
       if (toolName === 'oddsConverter') return navigate('/odds-converter');
       return;
     }
-    return navigate('/pro-access?reason=limit&feature=' + toolName);
+    setLimitFeature(toolName);
+    return setShowLimitModal(true);
   };
 
   return (
@@ -305,6 +310,11 @@ function ToolCard({ icon, title, subtitle, pro, locked, onClick }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
         </svg>
       )}
+      <LimitReachedModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        feature={limitFeature}
+      />
     </div>
   );
 }

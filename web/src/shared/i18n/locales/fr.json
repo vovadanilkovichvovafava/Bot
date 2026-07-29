@@ -1517,5 +1517,11 @@
     "expressText": "The AI builds accumulators out of the best value bets — pick safe, balanced or high-odds.",
     "toolsTitle": "PRO tools",
     "toolsText": "Value finder, bankroll tracker and the rest of the perks are gathered here."
+  },
+  "limitModal": {
+    "title": "Tu n'as plus de pronostics",
+    "text": "Fais un dépôt sur {{name}} et obtiens des pronostics IA illimités — sans limite quotidienne.",
+    "cta": "Déposer et débloquer",
+    "later": "Plus tard"
   }
 }

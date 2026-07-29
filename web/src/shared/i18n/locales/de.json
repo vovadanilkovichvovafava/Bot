@@ -1502,5 +1502,11 @@
     "expressText": "The AI builds accumulators out of the best value bets — pick safe, balanced or high-odds.",
     "toolsTitle": "PRO tools",
     "toolsText": "Value finder, bankroll tracker and the rest of the perks are gathered here."
+  },
+  "limitModal": {
+    "title": "Keine Tipps mehr übrig",
+    "text": "Zahle bei {{name}} ein und erhalte unbegrenzte KI-Tipps — ohne Tageslimit.",
+    "cta": "Einzahlen und freischalten",
+    "later": "Später"
   }
 }

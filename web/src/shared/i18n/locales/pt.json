@@ -1576,5 +1576,11 @@
     "expressText": "A IA monta múltiplas com as melhores apostas de valor — escolhe segura, equilibrada ou de odds altas.",
     "toolsTitle": "Ferramentas PRO",
     "toolsText": "Detetor de valor, gestão de banca e as restantes vantagens estão reunidas aqui."
+  },
+  "limitModal": {
+    "title": "Ficaste sem previsões",
+    "text": "Faz um depósito na {{name}} e recebe previsões da IA ilimitadas — sem limite diário.",
+    "cta": "Depositar e desbloquear",
+    "later": "Mais tarde"
   }
 }

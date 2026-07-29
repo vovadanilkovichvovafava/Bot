@@ -1616,5 +1616,11 @@
     "expressText": "La IA arma combinadas con las mejores apuestas de valor — elige segura, equilibrada o de cuotas altas.",
     "toolsTitle": "Herramientas PRO",
     "toolsText": "Detector de valor, gestión de banca y el resto de ventajas están aquí."
+  },
+  "limitModal": {
+    "title": "Te quedaste sin pronósticos",
+    "text": "Haz un depósito en {{name}} y recibe pronósticos de IA ilimitados — sin límite diario.",
+    "cta": "Depositar y desbloquear",
+    "later": "Más tarde"
   }
 }
