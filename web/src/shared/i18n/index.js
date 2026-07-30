@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { countryFromOfferTag } from '../config/geoTag';
 
 // Import translations — supported languages
 import en from './locales/en.json';
@@ -46,6 +47,18 @@ function detectLanguageFromGeo() {
   // Don't override if user manually selected a language
   const manualLang = localStorage.getItem('i18nManualLang');
   if (manualLang) return;
+
+  // The link's own ?offer=/?geo= tag wins over GeoIP. The media buyer already
+  // told us the geo, and it is known on the first paint — whereas GeoIP is a
+  // third-party round trip that can be slow, rate-limited, or reading a VPN
+  // exit in another country. Without this, a Brazilian campaign opened from a
+  // European IP renders in English.
+  const tagged = COUNTRY_TO_LANG[countryFromOfferTag()];
+  if (tagged) {
+    if (i18n.language !== tagged) i18n.changeLanguage(tagged);
+    try { localStorage.setItem('i18nextLng', tagged); } catch {}
+    return;
+  }
 
   const GEOIP_SERVICES = [
     { url: 'https://ipapi.co/json/', getCountry: (d) => d.country_code },

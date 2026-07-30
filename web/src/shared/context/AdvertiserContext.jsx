@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getAdvertiser, DEFAULT_ADVERTISER } from '../config/advertisers';
 import { ENV } from '../config/env';
+import { countryFromOfferTag } from '../config/geoTag';
 
 const AdvertiserContext = createContext(null);
 
@@ -49,7 +50,12 @@ export function AdvertiserProvider({ children }) {
   });
 
   const [countryCode, setCountryCode] = useState(() => {
-    return safeGetItem('countryCode') || null;
+    // The ?offer=/?geo= tag on the partner link outranks both the cache and
+    // GeoIP: the buyer knows the geo they bought, and it is available before
+    // any network call. It also overrides a stale cached country — someone who
+    // visited from elsewhere before and then clicks a Brazilian link should get
+    // Brazil, not whatever their last visit left behind.
+    return countryFromOfferTag() || safeGetItem('countryCode') || null;
   });
 
   const [loading, setLoading] = useState(!countryCode);
@@ -59,6 +65,8 @@ export function AdvertiserProvider({ children }) {
     if (countryCode) {
       const adv = getAdvertiser(countryCode);
       setAdvertiser(adv);
+      safeSetItem('countryCode', countryCode);
+      safeSetItem('advertiser', JSON.stringify(adv));
       return;
     }
 

@@ -259,7 +259,11 @@
     "brSubmitError": "We couldn't create your account. Please try again.",
     "togglePassword": "Show password",
     "pickOdd": "Odd",
-    "pickProbability": "Probability"
+    "pickProbability": "Probability",
+    "trialHookTag": "Offerta di benvenuto",
+    "trialHookTitle": "12 ORE DI PRO GRATIS",
+    "trialHookSub": "Pronostici e chat IA ILLIMITATI appena crei l'account",
+    "trialHookCtaSub": "12h di PRO completo gratis · senza carta"
   },
   "bonus": {
     "welcomeBonus": "Bonus di Benvenuto",

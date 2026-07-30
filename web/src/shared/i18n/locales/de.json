@@ -243,7 +243,11 @@
     "brSubmitError": "We couldn't create your account. Please try again.",
     "togglePassword": "Show password",
     "pickOdd": "Odd",
-    "pickProbability": "Probability"
+    "pickProbability": "Probability",
+    "trialHookTag": "Willkommensangebot",
+    "trialHookTitle": "12 STUNDEN PRO GRATIS",
+    "trialHookSub": "UNBEGRENZTE KI-Tipps und Chat, sobald Sie sich registrieren",
+    "trialHookCtaSub": "12 Std. volles PRO gratis · ohne Karte"
   },
   "bonus": {
     "welcomeBonus": "Willkommensbonus",

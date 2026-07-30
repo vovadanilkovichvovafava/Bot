@@ -258,7 +258,11 @@
     "brSubmitError": "We couldn't create your account. Please try again.",
     "togglePassword": "Show password",
     "pickOdd": "Odd",
-    "pickProbability": "Probability"
+    "pickProbability": "Probability",
+    "trialHookTag": "Oferta powitalna",
+    "trialHookTitle": "12 GODZIN PRO ZA DARMO",
+    "trialHookSub": "NIELIMITOWANE typy i czat AI zaraz po założeniu konta",
+    "trialHookCtaSub": "12h pełnego PRO za darmo · bez karty"
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",
