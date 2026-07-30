@@ -26,13 +26,16 @@ export default function BrazilPickCard() {
 
   if (!pick) return null;
 
-  // "30 jul., 19:00" — the format the brief asks for, produced by the locale
-  // rather than assembled by hand.
+  // "30 jul., 19:00". Month names and 24h clock come from the locale; the only
+  // hand edit is dropping Portuguese's "de" ("30 de jul."), which the brief's
+  // format doesn't carry.
   const kickoff = (() => {
     if (!pick.kickoff) return '';
     const d = new Date(pick.kickoff);
     const locale = i18n.language || 'pt-BR';
-    const day = d.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+    const day = d
+      .toLocaleDateString(locale, { day: '2-digit', month: 'short' })
+      .replace(/\s+de\s+/i, ' ');
     const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${day}, ${time}`;
   })();
