@@ -15,6 +15,9 @@ export const ENV = {
   OFFER_URL_PT:       rc.OFFER_URL_PT       || import.meta.env.VITE_OFFER_URL_PT       || '',
   OFFER_URL_ES:       rc.OFFER_URL_ES       || import.meta.env.VITE_OFFER_URL_ES       || '',
   OFFER_URL_AR:       rc.OFFER_URL_AR       || import.meta.env.VITE_OFFER_URL_AR       || '',
+  // Brazil rides the Portuguese offer until a separate BR campaign exists —
+  // set this and ?offer=br splits off on its own, no code change needed.
+  OFFER_URL_BR:       rc.OFFER_URL_BR       || import.meta.env.VITE_OFFER_URL_BR       || '',
   BKPROXY_URL:        rc.BKPROXY_URL        || import.meta.env.VITE_BKPROXY_URL        || 'https://bkproxy-production.up.railway.app',
   VAPID_PUBLIC_KEY:   rc.VAPID_PUBLIC_KEY   || import.meta.env.VITE_VAPID_PUBLIC_KEY   || '',
   BOOKMAKER_NAME:     rc.BOOKMAKER_NAME     || import.meta.env.VITE_BOOKMAKER_NAME     || 'Partner',

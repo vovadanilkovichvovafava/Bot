@@ -151,7 +151,8 @@ const OFFER_BASE_URL_F2 = ENV.OFFER_URL_F2 || OFFER_BASE_URL;
 const OFFER_BASE_URL_GOOGLE = ENV.OFFER_URL_GOOGLE || '';
 
 // Гео-сплит оферов по тегу ?offer= (или ?geo=) во входящей партнёрской ссылке.
-// pt/br → OFFER_URL_PT, es → OFFER_URL_ES, ar → OFFER_URL_AR.
+// pt → OFFER_URL_PT, br → OFFER_URL_BR (пока не задан — тот же PT),
+// es → OFFER_URL_ES, ar → OFFER_URL_AR.
 // Тег сохраняется в sessionStorage (App.jsx persistTrackingParams) → переживает регистрацию.
 // Если нужный гео-офер не задан в env — откат на дефолтный OFFER_URL.
 function getGeoOfferUrl() {
@@ -159,7 +160,12 @@ function getGeoOfferUrl() {
     const p = new URLSearchParams(window.location.search);
     const region = (p.get('offer') || p.get('geo')
       || sessionStorage.getItem('tracking_offer') || sessionStorage.getItem('tracking_geo') || '').toLowerCase();
-    const map = { pt: ENV.OFFER_URL_PT, br: ENV.OFFER_URL_PT, es: ENV.OFFER_URL_ES, ar: ENV.OFFER_URL_AR };
+    const map = {
+      pt: ENV.OFFER_URL_PT,
+      br: ENV.OFFER_URL_BR || ENV.OFFER_URL_PT,   // отдельная BR-кампания, если задана
+      es: ENV.OFFER_URL_ES,
+      ar: ENV.OFFER_URL_AR,
+    };
     return (region && map[region]) ? map[region] : '';
   } catch { return ''; }
 }
