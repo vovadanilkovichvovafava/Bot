@@ -13,7 +13,7 @@ import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
  *   disappears and the dial code is fixed. Used on the Brazilian signup screen,
  *   where offering a country list is pure friction — everyone there is +55.
  */
-export default function PhoneInput({ value, onChange, onCountryChange, onFocus, lockedCountry, className = '' }) {
+export default function PhoneInput({ value, onChange, onCountryChange, onFocus, lockedCountry, flagNode, className = '' }) {
   const { countryCode: geoCountryCode } = useAdvertiser();
   const [country, setCountry] = useState(() => {
     const initial = getCountryByCode(lockedCountry || detectCountry());
@@ -70,7 +70,9 @@ export default function PhoneInput({ value, onChange, onCountryChange, onFocus, 
         {/* Country: a picker normally, a fixed prefix when locked to one geo */}
         {lockedCountry ? (
           <span className="flex items-center gap-1.5 pl-3 pr-2 py-3.5 border-r border-gray-200 flex-shrink-0">
-            <span className="text-lg leading-none">{country.flag}</span>
+            {/* Drawn flag when the caller supplies one — the emoji renders as
+                bare letters on Windows, which reads as a bug on the screen. */}
+            {flagNode || <span className="text-lg leading-none">{country.flag}</span>}
             <span className="text-gray-600 text-sm font-semibold">{country.dial}</span>
           </span>
         ) : (

@@ -6,7 +6,7 @@ import { getReferredBy, clearReferralCode } from '../services/referralStore';
 import { isValidPhone, fullPhoneNumber } from '../../../shared/utils/phoneUtils';
 import PhoneInput from '../components/PhoneInput';
 import BrazilPickCard from '../components/BrazilPickCard';
-import { BrazilTopRule, BrazilPattern, BR } from '../components/BrazilAccents';
+import { BrazilTopRule, BrazilPattern, BrazilFlag, BR } from '../components/BrazilAccents';
 import { track } from '../../../shared/services/analytics';
 import useKeyboardScroll from '../../../shared/hooks/useKeyboardScroll';
 
@@ -139,7 +139,7 @@ export default function RegisterBR() {
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold mb-2.5"
                 style={{ backgroundColor: '#0b3d24', color: '#8ff0b5', border: `1px solid ${BR.green}55` }}
               >
-                <span aria-hidden="true">🇧🇷</span>
+                <BrazilFlag size={14} />
                 {t('auth.brBadge', { defaultValue: 'Palpites selecionados para você' })}
               </span>
             )}
@@ -199,6 +199,7 @@ export default function RegisterBR() {
                 onCountryChange={setPhoneCountry}
                 onFocus={onFormTouch}
                 lockedCountry="BR"
+                flagNode={<BrazilFlag size={18} />}
               />
               {phoneError ? (
                 <p className="text-[12px] text-red-600 mt-1.5 px-1">{phoneError}</p>

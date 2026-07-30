@@ -14,6 +14,30 @@ export const BR = {
   blue: '#002776',
 };
 
+/**
+ * Brazilian flag as an inline SVG.
+ *
+ * The 🇧🇷 emoji is not an option: Windows ships no glyphs for regional
+ * indicator pairs, so desktop browsers there render it as the bare letters
+ * "BR". Drawing it ourselves looks identical everywhere.
+ */
+export function BrazilFlag({ size = 18, className = '' }) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size * 0.7}
+      viewBox="0 0 28 20"
+      role="img"
+      aria-label="Brasil"
+    >
+      <rect width="28" height="20" rx="2" fill={BR.green} />
+      <polygon points="14,2.4 25.4,10 14,17.6 2.6,10" fill={BR.yellow} />
+      <circle cx="14" cy="10" r="4.3" fill={BR.blue} />
+    </svg>
+  );
+}
+
 /** Thin green→yellow rule pinned to the top of the page. */
 export function BrazilTopRule() {
   return (
