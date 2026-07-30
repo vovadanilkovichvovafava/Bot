@@ -436,10 +436,12 @@ _SHOWCASE_FALLBACK = [2, 3, 39, 140, 135, 78, 61]  # UCL, UEL, big five
 # Shortest price first. The probability we print is the one implied by the odd,
 # so a market priced at 1.30 honestly shows ~77% where 2.40 honestly shows 42% —
 # same truthfulness, far better first impression on a signup screen.
+# (key, english label, bet id, value name). The key lets the client print the
+# market in the visitor's own language; the label is the fallback if it can't.
 _SHOWCASE_MARKETS = [
-    ("Over 1.5 goals", 5, "Over 1.5"),
-    ("Both teams to score", 8, "Yes"),
-    ("Over 2.5 goals", 5, "Over 2.5"),
+    ("over_1_5", "Over 1.5 goals", 5, "Over 1.5"),
+    ("btts", "Both teams to score", 8, "Yes"),
+    ("over_2_5", "Over 2.5 goals", 5, "Over 2.5"),
 ]
 
 # League country → ISO code, for the "BR • Campeonato Brasileiro Série A" label.
@@ -458,7 +460,7 @@ def _real_market_from_odds(odds_payload) -> Optional[dict]:
     for item in odds_payload or []:
         for bookmaker in item.get("bookmakers") or []:
             bets = {b.get("id"): b for b in (bookmaker.get("bets") or []) if b.get("id")}
-            for label, bet_id, value_name in _SHOWCASE_MARKETS:
+            for key, label, bet_id, value_name in _SHOWCASE_MARKETS:
                 bet = bets.get(bet_id)
                 if not bet:
                     continue
@@ -472,6 +474,7 @@ def _real_market_from_odds(odds_payload) -> Optional[dict]:
                     if odd <= 1.0:
                         continue
                     return {
+                        "market_key": key,
                         "market": label,
                         "odds": round(odd, 2),
                         # Implied probability of the price itself — derived from the
@@ -537,6 +540,7 @@ async def showcase_pick(
                 "league_country_code": _LEAGUE_COUNTRY_CODE.get(league.get("country")),
                 "league_id": league_id,
                 "kickoff": fx.get("date"),
+                "market_key": (priced or {}).get("market_key"),
                 "market": (priced or {}).get("market"),
                 "odds": (priced or {}).get("odds"),
                 "confidence": (priced or {}).get("confidence"),

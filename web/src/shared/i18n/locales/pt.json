@@ -1606,5 +1606,10 @@
     "text": "Faz um depósito na {{name}} e recebe previsões da IA ilimitadas — sem limite diário.",
     "cta": "Depositar e desbloquear",
     "later": "Mais tarde"
+  },
+  "markets": {
+    "over_1_5": "Mais de 1.5 golos",
+    "over_2_5": "Mais de 2.5 golos",
+    "btts": "Ambas as equipas marcam"
   }
 }

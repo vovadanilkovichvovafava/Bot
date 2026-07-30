@@ -1547,5 +1547,10 @@
     "text": "Fais un dépôt sur {{name}} et obtiens des pronostics IA illimités — sans limite quotidienne.",
     "cta": "Déposer et débloquer",
     "later": "Plus tard"
+  },
+  "markets": {
+    "over_1_5": "Plus de 1.5 but",
+    "over_2_5": "Plus de 2.5 buts",
+    "btts": "Les deux équipes marquent"
   }
 }

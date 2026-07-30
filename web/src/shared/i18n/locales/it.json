@@ -1606,5 +1606,10 @@
     "text": "Fai un deposito su {{name}} e ottieni pronostici IA illimitati — senza limite giornaliero.",
     "cta": "Deposita e sblocca",
     "later": "Più tardi"
+  },
+  "markets": {
+    "over_1_5": "Over 1.5 gol",
+    "over_2_5": "Over 2.5 gol",
+    "btts": "Entrambe le squadre segnano"
   }
 }

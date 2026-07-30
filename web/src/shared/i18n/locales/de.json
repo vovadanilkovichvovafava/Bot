@@ -1532,5 +1532,10 @@
     "text": "Zahle bei {{name}} ein und erhalte unbegrenzte KI-Tipps — ohne Tageslimit.",
     "cta": "Einzahlen und freischalten",
     "later": "Später"
+  },
+  "markets": {
+    "over_1_5": "Über 1.5 Tore",
+    "over_2_5": "Über 2.5 Tore",
+    "btts": "Beide Teams treffen"
   }
 }

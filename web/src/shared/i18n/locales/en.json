@@ -1606,5 +1606,10 @@
     "text": "Make a deposit at {{name}} and get unlimited AI predictions — no daily cap.",
     "cta": "Deposit and unlock",
     "later": "Later"
+  },
+  "markets": {
+    "over_1_5": "Over 1.5 goals",
+    "over_2_5": "Over 2.5 goals",
+    "btts": "Both teams to score"
   }
 }

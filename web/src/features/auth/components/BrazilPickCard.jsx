@@ -64,8 +64,14 @@ export default function BrazilPickCard() {
           {pick.away_logo && <img src={pick.away_logo} alt="" className="w-5 h-5 object-contain" />}
         </div>
 
+        {/* Market name in the visitor's language; the API's English label is
+            only the fallback for a market we don't have a translation for. */}
         {pick.market && (
-          <p className="text-[11px] text-gray-500 mb-2.5">{pick.market}</p>
+          <p className="text-[11px] text-gray-500 mb-2.5">
+            {pick.market_key
+              ? t(`markets.${pick.market_key}`, { defaultValue: pick.market })
+              : pick.market}
+          </p>
         )}
 
         {(pick.odds || pick.confidence) && (

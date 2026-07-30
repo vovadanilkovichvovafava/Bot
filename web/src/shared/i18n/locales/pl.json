@@ -1586,5 +1586,10 @@
     "text": "Wpłać na {{name}} i odbierz nielimitowane typy AI — bez dziennego limitu.",
     "cta": "Wpłać i odblokuj",
     "later": "Później"
+  },
+  "markets": {
+    "over_1_5": "Powyżej 1.5 gola",
+    "over_2_5": "Powyżej 2.5 gola",
+    "btts": "Obie drużyny strzelą"
   }
 }
