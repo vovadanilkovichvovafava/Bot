@@ -433,10 +433,13 @@ _SHOWCASE_FALLBACK = [2, 3, 39, 140, 135, 78, 61]  # UCL, UEL, big five
 # Markets we are willing to show, in the order we prefer them, each described by
 # how to find it in an API-Football odds payload: (label, bet id, value name).
 # The price comes from the bookmaker — nothing here is invented.
+# Shortest price first. The probability we print is the one implied by the odd,
+# so a market priced at 1.30 honestly shows ~77% where 2.40 honestly shows 42% —
+# same truthfulness, far better first impression on a signup screen.
 _SHOWCASE_MARKETS = [
-    ("Over 2.5 goals", 5, "Over 2.5"),
-    ("Both teams to score", 8, "Yes"),
     ("Over 1.5 goals", 5, "Over 1.5"),
+    ("Both teams to score", 8, "Yes"),
+    ("Over 2.5 goals", 5, "Over 2.5"),
 ]
 
 # League country → ISO code, for the "BR • Campeonato Brasileiro Série A" label.
