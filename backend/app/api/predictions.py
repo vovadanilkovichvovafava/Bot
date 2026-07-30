@@ -418,7 +418,10 @@ async def big_wins(
 
 # League priority per country, mirroring web/src/shared/config/leagues.js.
 _SHOWCASE_LEAGUES = {
-    "BR": [71, 72, 73, 13],       # Brasileirão A/B, Copa do Brasil, Libertadores
+    # Brasileirão, Copa do Brasil, then the continental cups where Brazilian
+    # clubs play (Libertadores, Sudamericana). Série B sits last: still local,
+    # but it is not what the brief asks us to lead with.
+    "BR": [71, 73, 13, 11, 72],
     "PT": [94, 96, 2, 3],         # Primeira Liga, Taça, UCL, UEL
     "ES": [140, 143, 2, 3],
     "IT": [135, 137, 2, 3],
