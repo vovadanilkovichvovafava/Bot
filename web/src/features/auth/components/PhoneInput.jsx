@@ -8,10 +8,15 @@ import {
 } from '../../../shared/utils/phoneUtils';
 import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
 
-export default function PhoneInput({ value, onChange, onCountryChange, className = '' }) {
+/**
+ * @param lockedCountry ISO code that pins the field to one country: the picker
+ *   disappears and the dial code is fixed. Used on the Brazilian signup screen,
+ *   where offering a country list is pure friction — everyone there is +55.
+ */
+export default function PhoneInput({ value, onChange, onCountryChange, onFocus, lockedCountry, className = '' }) {
   const { countryCode: geoCountryCode } = useAdvertiser();
   const [country, setCountry] = useState(() => {
-    const initial = getCountryByCode(detectCountry());
+    const initial = getCountryByCode(lockedCountry || detectCountry());
     if (onCountryChange) setTimeout(() => onCountryChange(initial), 0);
     return initial;
   });
@@ -21,7 +26,7 @@ export default function PhoneInput({ value, onChange, onCountryChange, className
 
   // Use country from AdvertiserContext GeoIP (ipapi.co, ip-api.com, ipwho.is)
   useEffect(() => {
-    if (manuallySelected || !geoCountryCode) return;
+    if (lockedCountry || manuallySelected || !geoCountryCode) return;
     const found = COUNTRIES.find((c) => c.code === geoCountryCode);
     if (found) {
       setCountry(found);
@@ -62,32 +67,41 @@ export default function PhoneInput({ value, onChange, onCountryChange, className
   return (
     <div className="relative" ref={dropdownRef}>
       <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent transition-all ${className}`}>
-        {/* Country selector */}
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="flex items-center gap-1 pl-3 pr-2 py-3.5 border-r border-gray-200 flex-shrink-0 hover:bg-gray-100 rounded-l-xl transition-colors"
-        >
-          <span className="text-lg leading-none">{country.flag}</span>
-          <span className="text-gray-500 text-sm font-medium">{country.dial}</span>
-          <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
+        {/* Country: a picker normally, a fixed prefix when locked to one geo */}
+        {lockedCountry ? (
+          <span className="flex items-center gap-1.5 pl-3 pr-2 py-3.5 border-r border-gray-200 flex-shrink-0">
+            <span className="text-lg leading-none">{country.flag}</span>
+            <span className="text-gray-600 text-sm font-semibold">{country.dial}</span>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="flex items-center gap-1 pl-3 pr-2 py-3.5 border-r border-gray-200 flex-shrink-0 hover:bg-gray-100 rounded-l-xl transition-colors"
+          >
+            <span className="text-lg leading-none">{country.flag}</span>
+            <span className="text-gray-500 text-sm font-medium">{country.dial}</span>
+            <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+        )}
 
         {/* Phone input */}
         <input
           type="tel"
           inputMode="numeric"
+          autoComplete="tel-national"
           value={formatted}
           onChange={handleInput}
+          onFocus={onFocus}
           placeholder={country.mask.replace(/_/g, '0')}
           className="flex-1 bg-transparent py-3.5 pl-3 pr-4 text-gray-900 placeholder-gray-400 focus:outline-none"
         />
       </div>
 
       {/* Dropdown */}
-      {open && (
+      {open && !lockedCountry && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto">
           {COUNTRIES.map((c) => (
             <button

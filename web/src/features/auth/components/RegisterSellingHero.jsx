@@ -88,18 +88,26 @@ export default function RegisterSellingHero() {
             <p className="text-[13px] font-bold text-gray-900 truncate">{pick.home} — {pick.away}</p>
             {pick.away_logo && <img src={pick.away_logo} alt="" className="w-5 h-5 object-contain" />}
           </div>
-          <p className="text-[11px] text-gray-500 mb-2.5">{pick.market}</p>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-500">
-              Odd <span className="font-bold text-gray-800">{Number(pick.odds).toFixed(2)}</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-[11px] text-gray-500">
-                {t('auth.pickConfidence', { defaultValue: 'AI confidence' })}
-              </span>
-              <span className="font-black text-green-600 text-base">{pick.confidence}%</span>
-            </span>
-          </div>
+          {pick.market && <p className="text-[11px] text-gray-500 mb-2.5">{pick.market}</p>}
+          {/* Market and price come from a bookmaker feed that doesn't always have
+              them up yet. Missing → show nothing rather than NaN or a bare "%". */}
+          {(pick.odds || pick.confidence) && (
+            <div className="flex items-center justify-between">
+              {pick.odds ? (
+                <span className="text-[11px] text-gray-500">
+                  Odd <span className="font-bold text-gray-800">{Number(pick.odds).toFixed(2)}</span>
+                </span>
+              ) : <span />}
+              {pick.confidence ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-500">
+                    {t('auth.pickProbability', { defaultValue: 'Probability' })}
+                  </span>
+                  <span className="font-black text-green-600 text-base">{pick.confidence}%</span>
+                </span>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
       )}

@@ -430,13 +430,52 @@ _SHOWCASE_LEAGUES = {
 }
 _SHOWCASE_FALLBACK = [2, 3, 39, 140, 135, 78, 61]  # UCL, UEL, big five
 
-# Markets a pre-match pick can sensibly be, with believable odds.
+# Markets we are willing to show, in the order we prefer them, each described by
+# how to find it in an API-Football odds payload: (label, bet id, value name).
+# The price comes from the bookmaker — nothing here is invented.
 _SHOWCASE_MARKETS = [
-    ("Over 2.5 goals", 1.75, 2.25),
-    ("Both teams to score", 1.70, 2.10),
-    ("Over 1.5 goals", 1.25, 1.45),
-    ("Double chance", 1.30, 1.60),
+    ("Over 2.5 goals", 5, "Over 2.5"),
+    ("Both teams to score", 8, "Yes"),
+    ("Over 1.5 goals", 5, "Over 1.5"),
 ]
+
+# League country → ISO code, for the "BR • Campeonato Brasileiro Série A" label.
+_LEAGUE_COUNTRY_CODE = {
+    "Brazil": "BR", "Portugal": "PT", "Spain": "ES", "Argentina": "AR",
+    "England": "EN", "Italy": "IT", "Germany": "DE", "France": "FR",
+}
+
+
+def _real_market_from_odds(odds_payload) -> Optional[dict]:
+    """Pick a market we can price from real bookmaker odds.
+
+    Returns None when the bookmaker has not published the markets we show —
+    better an honest gap on the screen than a number we made up.
+    """
+    for item in odds_payload or []:
+        for bookmaker in item.get("bookmakers") or []:
+            bets = {b.get("id"): b for b in (bookmaker.get("bets") or []) if b.get("id")}
+            for label, bet_id, value_name in _SHOWCASE_MARKETS:
+                bet = bets.get(bet_id)
+                if not bet:
+                    continue
+                for v in bet.get("values") or []:
+                    if str(v.get("value")).strip().lower() != value_name.lower():
+                        continue
+                    try:
+                        odd = float(v.get("odd"))
+                    except (TypeError, ValueError):
+                        continue
+                    if odd <= 1.0:
+                        continue
+                    return {
+                        "market": label,
+                        "odds": round(odd, 2),
+                        # Implied probability of the price itself — derived from the
+                        # bookmaker's number, not an accuracy claim of our own.
+                        "confidence": round(100 / odd),
+                    }
+    return None
 
 
 @router.get("/showcase-pick")
@@ -475,24 +514,29 @@ async def showcase_pick(
             if (fx.get("status") or {}).get("short") != "NS":
                 continue
 
-            # Stable per-fixture market/odds: the same match always shows the same
-            # pick, so a returning visitor doesn't catch the number changing.
-            seed = abs(hash(f"{home}{away}{fx.get('id')}"))
-            label, lo, hi = _SHOWCASE_MARKETS[seed % len(_SHOWCASE_MARKETS)]
-            span = int((hi - lo) * 100) or 1
-            odds = round(lo + (seed % span) / 100.0, 2)
+            # Real bookmaker price for a market we show. If the book hasn't put
+            # one up yet, the card renders without the odds row rather than with
+            # a plausible-looking number nobody can stand behind.
+            priced = None
+            try:
+                priced = _real_market_from_odds(await api_football.get_odds(fx.get("id")))
+            except Exception as e:
+                logger.warning("showcase-pick: odds for fixture %s failed: %s", fx.get("id"), e)
 
+            league = f.get("league") or {}
             return {
                 "home": home,
                 "away": away,
                 "home_logo": (teams.get("home") or {}).get("logo"),
                 "away_logo": (teams.get("away") or {}).get("logo"),
-                "league": (f.get("league") or {}).get("name"),
+                "league": league.get("name"),
+                "league_country": league.get("country"),
+                "league_country_code": _LEAGUE_COUNTRY_CODE.get(league.get("country")),
                 "league_id": league_id,
                 "kickoff": fx.get("date"),
-                "market": label,
-                "odds": odds,
-                "confidence": 78 + (seed % 12),   # 78-89%
+                "market": (priced or {}).get("market"),
+                "odds": (priced or {}).get("odds"),
+                "confidence": (priced or {}).get("confidence"),
             }
 
     return {"home": None}

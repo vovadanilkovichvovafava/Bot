@@ -257,7 +257,22 @@
     "sellTrust30s": "30 seg",
     "pickToday": "hoje",
     "pickTomorrow": "amanhã",
-    "pickConfidence": "confiança da IA"
+    "pickConfidence": "confiança da IA",
+    "brBadge": "Picks selected for you",
+    "brTitle": "Get 3 free picks",
+    "brSubtitle": "12 hours of full access • No card • Sign up in 30 seconds",
+    "brBenefit1": "3 AI picks available today",
+    "brBenefit2": "Full access for 12 hours",
+    "brBenefit3": "No commitment, no automatic charges",
+    "brPhoneHint": "You will only receive information about your picks.",
+    "brPasswordPlaceholder": "At least 6 characters",
+    "brCta": "Get 3 free picks →",
+    "brCtaLoading": "Creating your account...",
+    "brCtaSub": "Free • No card • Quick sign-up",
+    "brSubmitError": "We couldn't create your account. Please try again.",
+    "togglePassword": "Show password",
+    "pickOdd": "Odd",
+    "pickProbability": "Probability"
   },
   "bonus": {
     "welcomeBonus": "Bónus de Boas-vindas",

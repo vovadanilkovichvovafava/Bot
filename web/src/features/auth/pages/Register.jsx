@@ -11,12 +11,28 @@ import { track } from '../../../shared/services/analytics';
 import useKeyboardScroll from '../../../shared/hooks/useKeyboardScroll';
 import { LiveStatsBar, JoinedTodayBadge, RecentWinsTicker } from '../components/SocialProof';
 import RegisterSellingHero from '../components/RegisterSellingHero';
+import RegisterBR from './RegisterBR';
+import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
+import { countryFromOfferTag } from '../../../shared/config/geoTag';
 
 // Detects backend "this phone already has an account" errors across locales, so we
 // can rescue the visitor with a Sign In button instead of a dead-end error.
 const EXISTS_RE = /already registered|already have an account|j[áa] existe|existe uma conta|ya (existe|tiene|hay)|d[ée]j[àa]|уже (существ|зарегистр)/i;
 
+/**
+ * Brazil gets its own screen (RegisterBR); every other geo keeps the A/B'd one
+ * below. The decision lives in a wrapper rather than an early return inside the
+ * component, because the country arrives asynchronously and swapping branches
+ * mid-component would change how many hooks run between renders.
+ */
 export default function Register() {
+  const { countryCode } = useAdvertiser();
+  // The link's own tag wins: it is known on first paint, while GeoIP is not.
+  const isBrazil = countryFromOfferTag() === 'BR' || countryCode === 'BR';
+  return isBrazil ? <RegisterBR /> : <RegisterDefault />;
+}
+
+function RegisterDefault() {
   const { t } = useTranslation();
   const [variant] = useState(getRegVariant); // 'control' | 'selling' — A/B, stable per visitor
   const sell = variant === 'selling';
