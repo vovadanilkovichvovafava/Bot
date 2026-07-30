@@ -1,18 +1,20 @@
-// Country phone data: code, dial code, flag emoji, format pattern, max digits, min digits (without code)
+// Country phone data: code, dial code, name, format pattern, max digits, min digits (without code).
+// `flag` is kept for any older caller still reading it, but the UI draws flags
+// as SVG (see CountryFlag) — the emoji shows up as bare letters on Windows.
 const COUNTRIES = [
-  { code: 'US', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}', mask: '(___) ___-____', digits: 10, minDigits: 10 },
-  { code: 'GB', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}', mask: '(____) ______', digits: 10, minDigits: 7 },
-  { code: 'DE', dial: '+49', flag: '\u{1F1E9}\u{1F1EA}', mask: '(___) ________', digits: 11, minDigits: 7 },
-  { code: 'TR', dial: '+90', flag: '\u{1F1F9}\u{1F1F7}', mask: '(___) ___-__-__', digits: 10, minDigits: 10 },
-  { code: 'PL', dial: '+48', flag: '\u{1F1F5}\u{1F1F1}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'IT', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}', mask: '(___) ___-____', digits: 10, minDigits: 9 },
-  { code: 'ES', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'FR', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}', mask: '(_ __) __-__-__', digits: 9, minDigits: 9 },
-  { code: 'PT', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'BR', dial: '+55', flag: '\u{1F1E7}\u{1F1F7}', mask: '(__) _____-____', digits: 11, minDigits: 10 },
-  { code: 'CZ', dial: '+420', flag: '\u{1F1E8}\u{1F1FF}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
-  { code: 'IL', dial: '+972', flag: '\u{1F1EE}\u{1F1F1}', mask: '(__) ___-__-__', digits: 9, minDigits: 7 },
-  { code: 'AE', dial: '+971', flag: '\u{1F1E6}\u{1F1EA}', mask: '(__) ___-____', digits: 9, minDigits: 7 },
+  { code: 'US', dial: '+1', name: 'Estados Unidos', flag: '\u{1F1FA}\u{1F1F8}', mask: '(___) ___-____', digits: 10, minDigits: 10 },
+  { code: 'GB', dial: '+44', name: 'Reino Unido', flag: '\u{1F1EC}\u{1F1E7}', mask: '(____) ______', digits: 10, minDigits: 7 },
+  { code: 'DE', dial: '+49', name: 'Alemanha', flag: '\u{1F1E9}\u{1F1EA}', mask: '(___) ________', digits: 11, minDigits: 7 },
+  { code: 'TR', dial: '+90', name: 'Turquia', flag: '\u{1F1F9}\u{1F1F7}', mask: '(___) ___-__-__', digits: 10, minDigits: 10 },
+  { code: 'PL', dial: '+48', name: 'Polônia', flag: '\u{1F1F5}\u{1F1F1}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
+  { code: 'IT', dial: '+39', name: 'Itália', flag: '\u{1F1EE}\u{1F1F9}', mask: '(___) ___-____', digits: 10, minDigits: 9 },
+  { code: 'ES', dial: '+34', name: 'Espanha', flag: '\u{1F1EA}\u{1F1F8}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
+  { code: 'FR', dial: '+33', name: 'França', flag: '\u{1F1EB}\u{1F1F7}', mask: '(_ __) __-__-__', digits: 9, minDigits: 9 },
+  { code: 'PT', dial: '+351', name: 'Portugal', flag: '\u{1F1F5}\u{1F1F9}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
+  { code: 'BR', dial: '+55', name: 'Brasil', flag: '\u{1F1E7}\u{1F1F7}', mask: '(__) _____-____', digits: 11, minDigits: 10 },
+  { code: 'CZ', dial: '+420', name: 'Tchéquia', flag: '\u{1F1E8}\u{1F1FF}', mask: '(___) ___-___', digits: 9, minDigits: 9 },
+  { code: 'IL', dial: '+972', name: 'Israel', flag: '\u{1F1EE}\u{1F1F1}', mask: '(__) ___-__-__', digits: 9, minDigits: 7 },
+  { code: 'AE', dial: '+971', name: 'Emirados Árabes', flag: '\u{1F1E6}\u{1F1EA}', mask: '(__) ___-____', digits: 9, minDigits: 7 },
 ];
 
 // Get only digits from string
