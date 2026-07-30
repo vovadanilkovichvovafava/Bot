@@ -1,3 +1,5 @@
+// build 2026-07-30b — новое имя бандла: Cloudflare закешировал 404 на прошлый
+// файл в момент раскатки, и страница висела белой, пока URL не сменился.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
