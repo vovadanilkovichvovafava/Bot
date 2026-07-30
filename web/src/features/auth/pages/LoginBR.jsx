@@ -128,8 +128,7 @@ export default function LoginBR() {
                 value={phone}
                 onChange={(v) => { setPhone(v); if (phoneError) setPhoneError(''); }}
                 onCountryChange={setPhoneCountry}
-                lockedCountry="BR"
-                flagNode={<BrazilFlag size={18} />}
+                defaultCountry="BR"
                 placeholder="(11) 99999-9999"
               />
               {phoneError && <p className="text-[12px] text-red-600 mt-1.5 px-1">{phoneError}</p>}

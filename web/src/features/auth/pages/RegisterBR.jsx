@@ -198,8 +198,7 @@ export default function RegisterBR() {
                 onChange={(v) => { setPhone(v); if (phoneError) setPhoneError(''); }}
                 onCountryChange={setPhoneCountry}
                 onFocus={onFormTouch}
-                lockedCountry="BR"
-                flagNode={<BrazilFlag size={18} />}
+                defaultCountry="BR"
                 // The mask spelled exactly as the brief states it — the generic
                 // zero-filled hint reads as a different spec at a glance.
                 placeholder="(11) 99999-9999"
