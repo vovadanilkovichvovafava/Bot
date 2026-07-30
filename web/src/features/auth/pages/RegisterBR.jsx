@@ -200,6 +200,9 @@ export default function RegisterBR() {
                 onFocus={onFormTouch}
                 lockedCountry="BR"
                 flagNode={<BrazilFlag size={18} />}
+                // The mask spelled exactly as the brief states it — the generic
+                // zero-filled hint reads as a different spec at a glance.
+                placeholder="(11) 99999-9999"
               />
               {phoneError ? (
                 <p className="text-[12px] text-red-600 mt-1.5 px-1">{phoneError}</p>

@@ -276,7 +276,15 @@
     "trialHookTag": "Oferta de boas-vindas",
     "trialHookTitle": "12 HORAS DE PRO GRÁTIS",
     "trialHookSub": "Previsões e chat de IA ILIMITADOS assim que criares a conta",
-    "trialHookCtaSub": "12h de PRO completo grátis · sem cartão"
+    "trialHookCtaSub": "12h de PRO completo grátis · sem cartão",
+    "brLoginBadge": "Your picks are waiting",
+    "brLoginTitle": "Sign in to your account",
+    "brLoginSubtitle": "Use the phone and password from your sign-up",
+    "brLoginPasswordPlaceholder": "Your password",
+    "brLoginCta": "Sign in →",
+    "brLoginLoading": "Signing in...",
+    "brLoginError": "We couldn't sign you in. Check your details and try again.",
+    "brLoginNoPassword": "Introduza a sua palavra-passe"
   },
   "bonus": {
     "welcomeBonus": "Bónus de Boas-vindas",

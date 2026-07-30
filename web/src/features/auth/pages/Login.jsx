@@ -9,9 +9,22 @@ import SupportChat from '../../../shared/components/SupportChat';
 import { track } from '../../../shared/services/analytics';
 import useKeyboardScroll from '../../../shared/hooks/useKeyboardScroll';
 import { LiveStatsBar } from '../components/SocialProof';
+import LoginBR from './LoginBR';
+import { useAdvertiser } from '../../../shared/context/AdvertiserContext';
+import { countryFromOfferTag } from '../../../shared/config/geoTag';
 
-
+/**
+ * Brazil gets its own sign-in screen; every other geo keeps the one below.
+ * Same wrapper trick as Register: deciding here rather than with an early
+ * return keeps the hook count stable while the country resolves.
+ */
 export default function Login() {
+  const { countryCode } = useAdvertiser();
+  const isBrazil = countryFromOfferTag() === 'BR' || countryCode === 'BR';
+  return isBrazil ? <LoginBR /> : <LoginDefault />;
+}
+
+function LoginDefault() {
   const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState(null);

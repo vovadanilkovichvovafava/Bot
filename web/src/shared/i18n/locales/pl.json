@@ -262,7 +262,15 @@
     "trialHookTag": "Oferta powitalna",
     "trialHookTitle": "12 GODZIN PRO ZA DARMO",
     "trialHookSub": "NIELIMITOWANE typy i czat AI zaraz po założeniu konta",
-    "trialHookCtaSub": "12h pełnego PRO za darmo · bez karty"
+    "trialHookCtaSub": "12h pełnego PRO za darmo · bez karty",
+    "brLoginBadge": "Your picks are waiting",
+    "brLoginTitle": "Sign in to your account",
+    "brLoginSubtitle": "Use the phone and password from your sign-up",
+    "brLoginPasswordPlaceholder": "Your password",
+    "brLoginCta": "Sign in →",
+    "brLoginLoading": "Signing in...",
+    "brLoginError": "We couldn't sign you in. Check your details and try again.",
+    "brLoginNoPassword": "Podaj swoje hasło"
   },
   "bonus": {
     "welcomeBonus": "Bonus Powitalny",

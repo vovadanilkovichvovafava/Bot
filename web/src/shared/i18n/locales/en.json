@@ -276,7 +276,15 @@
     "trialHookTag": "Welcome offer",
     "trialHookTitle": "12 HOURS OF PRO FREE",
     "trialHookSub": "UNLIMITED AI predictions and chat as soon as you sign up",
-    "trialHookCtaSub": "12h of full PRO free · no card"
+    "trialHookCtaSub": "12h of full PRO free · no card",
+    "brLoginBadge": "Your picks are waiting",
+    "brLoginTitle": "Sign in to your account",
+    "brLoginSubtitle": "Use the phone and password from your sign-up",
+    "brLoginPasswordPlaceholder": "Your password",
+    "brLoginCta": "Sign in →",
+    "brLoginLoading": "Signing in...",
+    "brLoginError": "We couldn't sign you in. Check your details and try again.",
+    "brLoginNoPassword": "Enter your password"
   },
   "bonus": {
     "welcomeBonus": "Welcome Bonus",

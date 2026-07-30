@@ -247,7 +247,15 @@
     "trialHookTag": "Willkommensangebot",
     "trialHookTitle": "12 STUNDEN PRO GRATIS",
     "trialHookSub": "UNBEGRENZTE KI-Tipps und Chat, sobald Sie sich registrieren",
-    "trialHookCtaSub": "12 Std. volles PRO gratis · ohne Karte"
+    "trialHookCtaSub": "12 Std. volles PRO gratis · ohne Karte",
+    "brLoginBadge": "Your picks are waiting",
+    "brLoginTitle": "Sign in to your account",
+    "brLoginSubtitle": "Use the phone and password from your sign-up",
+    "brLoginPasswordPlaceholder": "Your password",
+    "brLoginCta": "Sign in →",
+    "brLoginLoading": "Signing in...",
+    "brLoginError": "We couldn't sign you in. Check your details and try again.",
+    "brLoginNoPassword": "Geben Sie Ihr Passwort ein"
   },
   "bonus": {
     "welcomeBonus": "Willkommensbonus",
