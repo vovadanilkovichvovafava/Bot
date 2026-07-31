@@ -6,6 +6,7 @@ import { saveTrackingParams } from './features/betting/services/trackingService'
 import { track, SESSION_ID } from './shared/services/analytics';
 import replayRecorder from './shared/services/replayRecorder';
 import Layout from './shared/components/Layout';
+import OfferRedirect from './shared/components/OfferRedirect';
 
 // ErrorBoundary — catches React render crashes, shows fallback instead of white screen
 class ErrorBoundary extends Component {
@@ -87,8 +88,9 @@ const PredictionHistory = lazy(() => import('./features/predictions/pages/Predic
 const OddsConverter = lazy(() => import('./features/tools/pages/OddsConverter'));
 const YourStats = lazy(() => import('./features/predictions/pages/YourStats'));
 const LiveMatchDetail = lazy(() => import('./features/matches/pages/LiveMatchDetail'));
-const BookmakerPromo = lazy(() => import('./features/betting/pages/BookmakerPromo'));
-const ProAccess = lazy(() => import('./features/betting/pages/ProAccess'));
+// BookmakerPromo и ProAccess больше не роутятся — /promo и /pro-access ведут
+// прямо к букмекеру через OfferRedirect. Файлы страниц оставлены на случай,
+// если решат вернуть их под какое-то гео.
 const BeginnerGuide = lazy(() => import('./features/tools/pages/BeginnerGuide'));
 const ProGuide = lazy(() => import('./features/tools/pages/ProGuide'));
 const BankrollTracker = lazy(() => import('./features/tools/pages/BankrollTracker'));
@@ -257,11 +259,14 @@ export default function App() {
         <Route path="/favourites" element={
           <ProtectedRoute><Favourites /></ProtectedRoute>
         } />
+        {/* Промо и PRO-пейволл больше не показываются: обе ссылки уводят
+            сразу к букмекеру. Перехват на роутере, а не по кнопкам — их около
+            сорока, и в прошлый раз часть осталась. */}
         <Route path="/promo" element={
-          <ProtectedRoute><BookmakerPromo /></ProtectedRoute>
+          <ProtectedRoute><OfferRedirect reason="promo_page" /></ProtectedRoute>
         } />
         <Route path="/pro-access" element={
-          <ProtectedRoute><ProAccess /></ProtectedRoute>
+          <ProtectedRoute><OfferRedirect reason="pro_access_page" /></ProtectedRoute>
         } />
         <Route path="/guide" element={
           <ProtectedRoute><BeginnerGuide /></ProtectedRoute>
