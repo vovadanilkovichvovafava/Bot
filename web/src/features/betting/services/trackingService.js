@@ -110,25 +110,27 @@ export async function saveTrackingParams(userId) {
   // НЕ чистим sessionStorage здесь! Данные нужны getTrackingLink() позже.
   // sessionStorage сам очистится когда вкладка закроется.
 
+  // Пишем метки себе в базу. Раньше они уходили в PostbackAPI на Railway —
+  // тот сервис умер 11 июля, и с тех пор запрос отвечал 404: метки не
+  // сохранялись нигде, в админке было пусто, откуда пришёл человек — неизвестно.
   try {
-    const body = {
-      user_id: userId,
-      ...params,
-    };
-
-    const res = await fetch(`${TRACKING_API}/api/tracking/save`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      console.log('[Tracking] Params saved for', userId, params);
-    } else {
-      console.warn('[Tracking] Save failed:', res.status);
-    }
+    const api = (await import('../../../shared/api')).default;
+    const res = await api.saveTrackingParams(params);
+    if (res?.saved) console.log('[Tracking] Params saved for', userId, params);
   } catch (err) {
     console.warn('[Tracking] Failed to save params:', err.message);
+  }
+
+  // Дублируем в PostbackAPI, если он настроен на отдельный хост: там своя
+  // логика разблокировки премиума по депозиту, ломать её не нужно.
+  if (TRACKING_API && !TRACKING_API.startsWith('/')) {
+    try {
+      await fetch(`${TRACKING_API}/api/tracking/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, ...params }),
+      });
+    } catch { /* внешний сервис недоступен — на нашу запись это не влияет */ }
   }
 }
 

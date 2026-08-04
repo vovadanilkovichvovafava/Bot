@@ -165,6 +165,17 @@ class ApiService {
     return data;
   }
 
+  /**
+   * Сохранить метки рекламной ссылки текущему юзеру.
+   * Пишет только при первом касании — атрибуция не должна перезаписываться.
+   */
+  async saveTrackingParams(params) {
+    return this.request('/users/me/tracking', {
+      method: 'POST',
+      body: JSON.stringify({ params }),
+    });
+  }
+
   async register(phone, password, referralCode = null) {
     const { ENV } = await import('../config/env');
     const body = { phone, password };

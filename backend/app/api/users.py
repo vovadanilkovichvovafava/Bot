@@ -154,6 +154,53 @@ async def update_user(
     return {"message": "User updated successfully"}
 
 
+class TrackingParams(BaseModel):
+    """Метки из рекламной ссылки: sub_id_1..15, external_id, fbclid, offer."""
+    params: dict
+
+
+@router.post("/me/tracking")
+async def save_tracking(
+    body: TrackingParams,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Сохранить метки рекламной ссылки текущему юзеру.
+
+    Раньше фронт слал их в PostbackAPI на Railway. Тот сервис умер 11 июля
+    вместе с постбэками, и с тех пор запросы уходили в 404 — метки не
+    сохранялись нигде, поэтому в админке и было пусто.
+
+    Пишем только если у юзера ещё пусто: атрибуция должна остаться за первым
+    касанием, иначе повторный заход по другому баннеру перепишет источник.
+    """
+    user = (await db.execute(
+        select(User).where(User.id == current_user.get("user_id"))
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if getattr(user, "click_params", None):
+        return {"saved": False, "reason": "already_attributed"}
+
+    clean = {
+        str(k)[:40]: str(v)[:300]
+        for k, v in (body.params or {}).items()
+        if v not in (None, "", "null", "undefined")
+    }
+    if not clean:
+        return {"saved": False, "reason": "empty"}
+
+    user.click_params = json.dumps(clean, ensure_ascii=False)[:4000]
+    user.ad_campaign = user.ad_campaign or clean.get("sub_id_6")
+    user.ad_set = user.ad_set or clean.get("sub_id_4")
+    user.ad_placement = user.ad_placement or clean.get("sub_id_7")
+    user.ad_source = user.ad_source or clean.get("sub_id_8")
+    await db.commit()
+    logger.info("[Tracking] Saved %s params for user %s", len(clean), user.id)
+    return {"saved": True, "count": len(clean)}
+
+
 class PredictionsSync(BaseModel):
     predictions: List[dict]
 
