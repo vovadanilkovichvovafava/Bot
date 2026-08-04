@@ -234,6 +234,19 @@ async def init_db():
             # ── analytics_events indexes ──
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_created ON analytics_events(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS ix_analytics_events_user_created ON analytics_events(user_id, created_at DESC)",
+            # ── Откуда пришёл юзер ──
+            # Кампании отдают данные в sub_id_*, а не в utm_*, поэтому utm-поля
+            # у большинства пустые и в админке смотреть было нечего. Здесь
+            # лежит всё, что пришло в ссылке (sub_id_1..15, external_id, fbclid,
+            # offer) одним JSON — раскладка sub_id по смыслу у каждой кампании
+            # своя, так что ничего не выбрасываем.
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS click_params TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS ad_campaign VARCHAR",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS ad_set VARCHAR",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS ad_placement VARCHAR",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS ad_source VARCHAR",
+            "CREATE INDEX IF NOT EXISTS ix_users_ad_campaign ON users(ad_campaign)",
+            "CREATE INDEX IF NOT EXISTS ix_users_ad_source ON users(ad_source)",
             # ── Fantasy / rewards (points → PRO now, $ freebet later) ──
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points INTEGER DEFAULT 0",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS fantasy_points_lifetime INTEGER DEFAULT 0",

@@ -34,6 +34,15 @@ class User(Base):
     utm_source = Column(String, nullable=True, index=True)      # рекламный источник: google, facebook, tiktok
     utm_campaign = Column(String, nullable=True, index=True)    # название кампании
 
+    # Откуда пришёл: кампании передают данные в sub_id_*, а не в utm_*.
+    # click_params — весь набор из ссылки как есть (JSON-строка), остальные
+    # поля вынесены отдельно, чтобы по ним можно было группировать и искать.
+    click_params = Column(Text, nullable=True)
+    ad_campaign = Column(String, nullable=True, index=True)     # sub_id_6: "BR/bot_leads_3"
+    ad_set = Column(String, nullable=True)                      # sub_id_4: "New_Leads_Ad_Set"
+    ad_placement = Column(String, nullable=True)                # sub_id_7: "Instagram_Stories"
+    ad_source = Column(String, nullable=True, index=True)       # sub_id_8: "ig"
+
     # A/B funnel: "funnel-1" (degressive+Pro), "funnel-2" (all free, no paywall), "funnel-3" (fixed 7/day), "funnel-4" (express-first)
     funnel = Column(String, nullable=True, index=True, default="funnel-1")
 

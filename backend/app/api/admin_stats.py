@@ -27,6 +27,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _safe_json(raw):
+    """click_params хранится строкой. Битую запись не роняем — отдаём как есть."""
+    if not raw:
+        return None
+    try:
+        import json as _json
+        return _json.loads(raw)
+    except Exception:
+        return {"raw": str(raw)[:500]}
+
 # ── Simple TTL cache for heavy admin queries ────────────────────────────
 # Avoids re-running 15+ expensive SQL queries every time the dashboard refreshes.
 _admin_cache: Dict[str, Tuple[float, Any]] = {}
@@ -991,6 +1002,16 @@ async def get_user_profile(
                 .where(User.device_fingerprint == user.device_fingerprint)
             )).scalar() if user.device_fingerprint else None,
             "funnel": user.funnel or "funnel-1",
+            # Откуда пришёл. utm_* кампании обычно не передают, поэтому основное
+            # лежит в click_params — отдаём и разобранные поля, и сырой набор.
+            "traffic_source": user.traffic_source,
+            "utm_source": user.utm_source,
+            "utm_campaign": user.utm_campaign,
+            "ad_source": getattr(user, "ad_source", None),
+            "ad_campaign": getattr(user, "ad_campaign", None),
+            "ad_set": getattr(user, "ad_set", None),
+            "ad_placement": getattr(user, "ad_placement", None),
+            "click_params": _safe_json(getattr(user, "click_params", None)),
             "risk_level": user.risk_level,
             "min_odds": user.min_odds,
             "max_odds": user.max_odds,

@@ -2,6 +2,72 @@ import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../api'
 import { FUNNEL_LABELS, RETIRED_FUNNELS, funnelLabel, funnelColor } from '../funnels'
 
+/**
+ * Where this user came from.
+ *
+ * Asked for on 04.08 ("а именно смотреть у юзера откуда он"). The campaigns
+ * send nothing in utm_* — everything sits in sub_id_1..15, and which number
+ * means what is decided per campaign in Keitaro. So the named fields are shown
+ * when present, and the full raw set is one click away underneath.
+ */
+function TrafficOrigin({ user }) {
+  const [open, setOpen] = useState(false)
+  const named = [
+    ['Source', user.ad_source || user.utm_source],
+    ['Campaign', user.ad_campaign || user.utm_campaign],
+    ['Ad set', user.ad_set],
+    ['Placement', user.ad_placement],
+    ['Site', user.traffic_source],
+  ].filter(([, v]) => v)
+  const raw = user.click_params && Object.keys(user.click_params).length ? user.click_params : null
+
+  if (!named.length && !raw) {
+    return (
+      <div className="px-6 py-3 border-t border-slate-800">
+        <span className="text-[10px] text-slate-500 uppercase">Origin</span>
+        <p className="text-xs text-slate-600 mt-1">
+          Нет меток — человек пришёл по прямой ссылке либо зарегистрировался до 4 августа,
+          когда мы начали их сохранять.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-6 py-3 border-t border-slate-800">
+      <span className="text-[10px] text-slate-500 uppercase">Origin</span>
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-1.5">
+        {named.map(([k, v]) => (
+          <div key={k}>
+            <p className="text-[10px] text-slate-500">{k}</p>
+            <p className="text-xs text-slate-200 font-medium break-all">{v}</p>
+          </div>
+        ))}
+      </div>
+      {raw && (
+        <>
+          <button
+            onClick={() => setOpen(!open)}
+            className="text-[11px] text-blue-400 hover:text-blue-300 mt-2"
+          >
+            {open ? 'Скрыть метки' : `Все метки (${Object.keys(raw).length})`}
+          </button>
+          {open && (
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 bg-slate-800/50 rounded-lg p-3">
+              {Object.entries(raw).map(([k, v]) => (
+                <div key={k} className="flex gap-2 text-[11px]">
+                  <span className="text-slate-500 shrink-0">{k}</span>
+                  <span className="text-slate-300 font-mono break-all">{String(v)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 /** Small colored pill showing which funnel a user was assigned to. */
 function FunnelBadge({ funnel, className = '' }) {
   if (!funnel) return <span className="text-slate-600">—</span>
@@ -261,6 +327,8 @@ function UserProfileModal({ userId, onClose }) {
               <span className="text-[10px] text-slate-500 uppercase">Funnel</span>
               <FunnelBadge funnel={profile.user.funnel} />
             </div>
+
+            <TrafficOrigin user={profile.user} />
 
             {/* User details */}
             <div className="px-6 pb-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">

@@ -5,7 +5,8 @@ import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+import json
+from typing import Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -119,6 +120,9 @@ class UserRegister(BaseModel):
     utm_funnel: Optional[str] = None  # Воронка: "1","2","3","4" или "funnel-1","funnel-2" etc.
     language: Optional[str] = None  # UI language the user registered in (e.g. "pt")
     device_fingerprint: Optional[str] = None  # Browser/device hash — anti multi-account
+    # Всё, что пришло в рекламной ссылке: sub_id_1..15, external_id, fbclid, offer.
+    # Кампании кладут кампанию и креатив именно сюда, а не в utm_*.
+    click_params: Optional[Dict[str, str]] = None
 
     @field_validator("phone")
     @classmethod
@@ -328,6 +332,20 @@ async def register(
     trial_until = (datetime.utcnow() + timedelta(hours=PRO_TRIAL_HOURS)) if grant_trial \
         else (datetime.utcnow() - timedelta(seconds=1))
 
+    # Откуда пришёл. Кампании раскладывают данные по sub_id, причём номера у
+    # каждой свои, поэтому сырой набор сохраняем целиком, а в отдельные поля
+    # выносим ту раскладку, что используется сейчас — по ней удобно
+    # группировать в админке.
+    click_params_json, ad_campaign, ad_set, ad_placement, ad_source = None, None, None, None, None
+    if user.click_params:
+        clean = {k: str(v)[:300] for k, v in user.click_params.items() if v}
+        if clean:
+            click_params_json = json.dumps(clean, ensure_ascii=False)[:4000]
+            ad_campaign = clean.get("sub_id_6")
+            ad_set = clean.get("sub_id_4")
+            ad_placement = clean.get("sub_id_7")
+            ad_source = clean.get("sub_id_8")
+
     # Create new user
     new_user = User(
         email=email,
@@ -342,6 +360,11 @@ async def register(
         traffic_source=user.source,
         utm_source=user.utm_source,
         utm_campaign=user.utm_campaign,
+        click_params=click_params_json,
+        ad_campaign=ad_campaign,
+        ad_set=ad_set,
+        ad_placement=ad_placement,
+        ad_source=ad_source,
         funnel=funnel,
         is_premium=trial_is_premium,
         premium_until=trial_until,

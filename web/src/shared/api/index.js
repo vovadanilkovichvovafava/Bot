@@ -193,6 +193,20 @@ class ApiService {
     if (utmSource) body.utm_source = utmSource;
     if (utmCampaign) body.utm_campaign = utmCampaign;
     if (utmFunnel) body.utm_funnel = utmFunnel;
+    // Всё остальное из рекламной ссылки — sub_id_1..15, external_id, fbclid,
+    // offer. Кампании кладут кампанию, адсет и плейсмент именно сюда, а utm_*
+    // не передают вовсе, поэтому без этого в админке не видно, откуда человек.
+    try {
+      const clickParams = {};
+      const fromUrl = new URLSearchParams(window.location.search);
+      const keys = ['offer', 'geo', 'external_id', 'fbclid', 'partner_click_id',
+        ...Array.from({ length: 15 }, (_, i) => `sub_id_${i + 1}`)];
+      for (const k of keys) {
+        const v = fromUrl.get(k) || sessionStorage.getItem(`tracking_${k}`);
+        if (v) clickParams[k] = String(v).slice(0, 300);
+      }
+      if (Object.keys(clickParams).length) body.click_params = clickParams;
+    } catch {}
     // Device fingerprint — lets the backend spot a repeat signup from the same
     // device even when the IP is shared by a whole carrier network. Best-effort:
     // if anything throws, registration proceeds without it.
