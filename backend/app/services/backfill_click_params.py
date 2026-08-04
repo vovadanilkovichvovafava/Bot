@@ -121,19 +121,29 @@ async def backfill_click_params(db: AsyncSession) -> dict:
         "по сессии %(by_session)s; обновлено %(updated)s", stats
     )
 
-    # Какие кампании реально восстановились — по этому видно, попала ли
-    # Бразилия, и не пришлось ли лезть в базу руками, чтобы это проверить.
-    if stats["updated"]:
-        campaigns = {}
-        for clean in resolved.values():
-            key = clean.get("sub_id_6") or clean.get("offer") or "без кампании"
-            campaigns[key] = campaigns.get(key, 0) + 1
-        top = sorted(campaigns.items(), key=lambda kv: -kv[1])[:10]
-        logger.info("[Backfill] По кампаниям: %s", ", ".join(f"{k}={v}" for k, v in top))
+    # Итог по всей базе, а не только по этому проходу: без него проверить,
+    # попала ли Бразилия, можно только руками в базе — а доступа к ней нет.
+    summary = (await db.execute(text("""
+        SELECT COALESCE(country, '??') AS c,
+               COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE click_params IS NOT NULL) AS with_params
+        FROM users
+        GROUP BY COALESCE(country, '??')
+        ORDER BY COUNT(*) DESC
+        LIMIT 12
+    """))).all()
+    logger.info(
+        "[Backfill] Метки по странам: %s",
+        ", ".join(f"{c}: {w}/{t}" for c, t, w in summary),
+    )
 
-    # Сколько осталось непокрытых — честная цифра для отчёта.
-    left = (await db.execute(
-        select(User.id).where(User.click_params.is_(None), User.public_id.isnot(None))
-    )).all()
-    logger.info("[Backfill] Осталось без меток: %s", len(left))
+    campaigns = (await db.execute(text("""
+        SELECT ad_campaign, COUNT(*) FROM users
+        WHERE ad_campaign IS NOT NULL
+        GROUP BY ad_campaign ORDER BY COUNT(*) DESC LIMIT 10
+    """))).all()
+    logger.info(
+        "[Backfill] Кампании: %s",
+        ", ".join(f"{c}={n}" for c, n in campaigns) or "нет",
+    )
     return stats
