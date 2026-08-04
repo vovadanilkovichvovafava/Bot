@@ -27,7 +27,8 @@ TRACKED_KEYS = {"offer", "geo", "external_id", "fbclid", "partner_click_id"} | {
     f"sub_id_{i}" for i in range(1, 16)
 }
 
-MAX_ROWS = 20000  # потолок выборки событий, чтобы не выгрести всю таблицу
+MAX_ROWS = 300000  # потолок выборки. Событий много: на одного человека их
+                   # десятки, и при 20k окно не доставало до июльского залива.
 
 
 def _clean(meta) -> dict:
@@ -119,4 +120,20 @@ async def backfill_click_params(db: AsyncSession) -> dict:
         "[Backfill] Без меток было %(users_pending)s; нашли по юзеру %(by_user)s, "
         "по сессии %(by_session)s; обновлено %(updated)s", stats
     )
+
+    # Какие кампании реально восстановились — по этому видно, попала ли
+    # Бразилия, и не пришлось ли лезть в базу руками, чтобы это проверить.
+    if stats["updated"]:
+        campaigns = {}
+        for clean in resolved.values():
+            key = clean.get("sub_id_6") or clean.get("offer") or "без кампании"
+            campaigns[key] = campaigns.get(key, 0) + 1
+        top = sorted(campaigns.items(), key=lambda kv: -kv[1])[:10]
+        logger.info("[Backfill] По кампаниям: %s", ", ".join(f"{k}={v}" for k, v in top))
+
+    # Сколько осталось непокрытых — честная цифра для отчёта.
+    left = (await db.execute(
+        select(User.id).where(User.click_params.is_(None), User.public_id.isnot(None))
+    )).all()
+    logger.info("[Backfill] Осталось без меток: %s", len(left))
     return stats
