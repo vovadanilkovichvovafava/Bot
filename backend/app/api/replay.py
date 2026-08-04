@@ -75,6 +75,12 @@ async def store_replay_chunk(
         ))
 
         if replay:
+            # Сессия начинается анонимной — на странице регистрации токена ещё
+            # нет. Как только он появился, привязываем запись к юзеру, иначе
+            # визит, в котором человек и зарегистрировался, навсегда остаётся
+            # ничьим.
+            if not replay.user_id:
+                replay.user_id = _extract_user_id(request)
             replay.chunks_count = (replay.chunks_count or 0) + 1
             replay.total_events = (replay.total_events or 0) + chunk_events
             replay.total_size = (replay.total_size or 0) + chunk_size
