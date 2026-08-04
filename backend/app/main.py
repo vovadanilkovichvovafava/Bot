@@ -117,6 +117,19 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Background task '{name}' crashed: {type(e).__name__}: {e}")
 
+    # Вернуть рекламные метки тем, кто зарегистрировался, пока saveTrackingParams
+    # писал их в мёртвый PostbackAPI. Источник — записи сессий: там сохранён
+    # исходный адрес со всеми sub_id. Проход идемпотентный, трогает только тех,
+    # у кого меток нет, поэтому лишний запуск безвреден. В фоне, чтобы не
+    # задерживать старт.
+    async def _run_backfill():
+        from app.core.database import async_session_maker
+        from app.services.backfill_click_params import backfill_click_params
+        async with async_session_maker() as session:
+            await backfill_click_params(session)
+
+    background_tasks.append(asyncio.create_task(safe_task("click_params_backfill", _run_backfill())))
+
     # Start prediction verification worker (runs every 2 hours)
     verifier_task = asyncio.create_task(safe_task("verifier", verification_loop()))
     background_tasks.append(verifier_task)
