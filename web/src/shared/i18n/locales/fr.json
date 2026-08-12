@@ -1560,5 +1560,19 @@
     "over_1_5": "Plus de 1.5 but",
     "over_2_5": "Plus de 2.5 buts",
     "btts": "Les deux équipes marquent"
+  },
+  "missedWin": {
+    "tagGiven": "On vous avait prévenu 👀",
+    "tag": "L'IA a vu juste",
+    "subGiven": "Vous avez raté NOTRE pari — celui-ci, on vous le donne",
+    "subGeneric": "On avait un combiné gagnant — vous pouviez encaisser aussi",
+    "total": "Cote totale",
+    "won": "Gagné",
+    "couldEarn": "Vous auriez pu gagner",
+    "pitchPro": "Vous avez le PRO — mais le gain ne tombe que si le pari est réellement placé",
+    "pitch": "Avec le PRO actif vous ne ratez aucun pronostic. Déposez et le PRO revient.",
+    "ctaPro": "Placer mon pari",
+    "cta": "Déposer et activer le PRO",
+    "later": "Pas maintenant"
   }
 }

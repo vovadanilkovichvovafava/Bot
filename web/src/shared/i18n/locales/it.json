@@ -1619,5 +1619,19 @@
     "over_1_5": "Over 1.5 gol",
     "over_2_5": "Over 2.5 gol",
     "btts": "Entrambe le squadre segnano"
+  },
+  "missedWin": {
+    "tagGiven": "Te lo avevamo detto 👀",
+    "tag": "L'IA ci ha preso in pieno",
+    "subGiven": "Ti sei perso la NOSTRA giocata — questa te la regaliamo",
+    "subGeneric": "Avevamo una multipla vincente — potevi incassare anche tu",
+    "total": "Quota totale",
+    "won": "Vinta",
+    "couldEarn": "Potevi guadagnare",
+    "pitchPro": "Hai il PRO — ma il profitto arriva solo se la giocata la fai davvero",
+    "pitch": "Con il PRO attivo non perdi nessun pronostico. Deposita e il PRO torna.",
+    "ctaPro": "Piazza la mia giocata",
+    "cta": "Deposita e attiva il PRO",
+    "later": "Non ora"
   }
 }

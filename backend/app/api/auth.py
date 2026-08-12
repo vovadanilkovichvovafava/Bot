@@ -76,10 +76,16 @@ RETIRED_FUNNELS = ["funnel-2", "funnel-5", "funnel-7"]
 # What a fresh lead can land in: the untouched baseline vs the experiment funnel.
 LIVE_FUNNELS = ["funnel-1"] + EXPERIMENT_FUNNELS
 
-# Geos launched WITHOUT an A/B split — everyone goes into the main funnel.
+# Geos launched WITHOUT an A/B split — everyone lands in one fixed funnel.
 # Vlad on the 28.07 call about Brazil: "I don't want to test there yet, the
-# branches would spread thin and burn more budget."
-NO_AB_COUNTRIES = {"BR"}
+# branches would spread thin and burn more budget." On 12.08 he moved Brazil
+# onto the Missed-Win funnel — still no split, just a different destination.
+#
+# Only NEW signups are affected. Whoever already registered keeps the funnel
+# they were given, so the numbers collected before today stay comparable.
+FIXED_FUNNEL_BY_COUNTRY = {
+    "BR": "funnel-6",
+}
 
 # Every new lead gets full PRO for this many hours (12h immersion trial).
 # Expiry is enforced in users.py (premium_until < now → is_premium=False).
@@ -294,8 +300,8 @@ async def register(
         funnel = referrer.funnel
     elif user.utm_funnel:
         funnel = normalize_funnel(user.utm_funnel)
-    elif (country or "").upper() in NO_AB_COUNTRIES:
-        funnel = "funnel-1"
+    elif (country or "").upper() in FIXED_FUNNEL_BY_COUNTRY:
+        funnel = FIXED_FUNNEL_BY_COUNTRY[(country or "").upper()]
     else:
         funnel = random.choice(LIVE_FUNNELS)
 

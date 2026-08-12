@@ -1619,5 +1619,19 @@
     "over_1_5": "Over 1.5 goals",
     "over_2_5": "Over 2.5 goals",
     "btts": "Both teams to score"
+  },
+  "missedWin": {
+    "tagGiven": "We told you 👀",
+    "tag": "The bot nailed it",
+    "subGiven": "You missed OUR bet — we gave you this one",
+    "subGeneric": "We had a winning express — you could've cashed too",
+    "total": "Total odds",
+    "won": "Won",
+    "couldEarn": "You could have earned",
+    "pitchPro": "You have PRO — but the profit only lands if you actually place the bet",
+    "pitch": "With PRO active you never miss a pick. Deposit and PRO is back.",
+    "ctaPro": "Place my bet",
+    "cta": "Deposit & activate PRO",
+    "later": "Not now"
   }
 }

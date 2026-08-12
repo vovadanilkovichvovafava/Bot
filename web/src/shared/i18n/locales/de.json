@@ -1545,5 +1545,19 @@
     "over_1_5": "Über 1.5 Tore",
     "over_2_5": "Über 2.5 Tore",
     "btts": "Beide Teams treffen"
+  },
+  "missedWin": {
+    "tagGiven": "Wir hatten es gesagt 👀",
+    "tag": "Die KI lag goldrichtig",
+    "subGiven": "Sie haben UNSERE Wette verpasst — diese schenken wir Ihnen",
+    "subGeneric": "Wir hatten eine gewonnene Kombi — Sie hätten mitverdienen können",
+    "total": "Gesamtquote",
+    "won": "Gewonnen",
+    "couldEarn": "Sie hätten verdienen können",
+    "pitchPro": "Sie haben PRO — der Gewinn kommt aber nur, wenn die Wette wirklich platziert wird",
+    "pitch": "Mit aktivem PRO verpassen Sie keinen Tipp. Einzahlen und PRO ist zurück.",
+    "ctaPro": "Wette platzieren",
+    "cta": "Einzahlen und PRO aktivieren",
+    "later": "Jetzt nicht"
   }
 }

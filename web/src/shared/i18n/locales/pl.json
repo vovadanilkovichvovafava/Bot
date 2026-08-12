@@ -1599,5 +1599,19 @@
     "over_1_5": "Powyżej 1.5 gola",
     "over_2_5": "Powyżej 2.5 gola",
     "btts": "Obie drużyny strzelą"
+  },
+  "missedWin": {
+    "tagGiven": "Mówiliśmy 👀",
+    "tag": "AI trafiła w punkt",
+    "subGiven": "Przegapiłeś NASZ zakład — ten dajemy ci my",
+    "subGeneric": "Mieliśmy wygrany kupon — ty też mogłeś zarobić",
+    "total": "Kurs łączny",
+    "won": "Wygrany",
+    "couldEarn": "Mogłeś zarobić",
+    "pitchPro": "Masz PRO — ale zysk przyjdzie tylko wtedy, gdy naprawdę postawisz",
+    "pitch": "Z aktywnym PRO nie przegapisz żadnego typu. Wpłać i PRO wraca.",
+    "ctaPro": "Postaw mój zakład",
+    "cta": "Wpłać i aktywuj PRO",
+    "later": "Nie teraz"
   }
 }
