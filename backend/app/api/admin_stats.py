@@ -618,24 +618,51 @@ async def export_users_csv(
 
     rows = (await db.execute(query)).scalars().all()
 
+    # Batch-fetch AI request counts (by user id) and last session (by public_id)
+    ai_by_user: Dict[int, int] = {}
+    last_session_by_pid: Dict[str, Any] = {}
+    if rows:
+        user_ids = [u.id for u in rows]
+        public_ids = [u.public_id for u in rows if u.public_id]
+        try:
+            ai_rows = (await db.execute(
+                text("SELECT user_id, COUNT(*) FROM ai_chat_messages WHERE role='user' AND user_id = ANY(:ids) GROUP BY user_id"),
+                {"ids": user_ids},
+            )).all()
+            ai_by_user = {r[0]: r[1] for r in ai_rows}
+        except Exception:
+            pass
+        try:
+            ls_rows = (await db.execute(
+                text("SELECT user_id, MAX(created_at) FROM analytics_events WHERE user_id = ANY(:ids) GROUP BY user_id"),
+                {"ids": public_ids},
+            )).all()
+            last_session_by_pid = {r[0]: r[1] for r in ls_rows}
+        except Exception:
+            pass
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
         "ID", "Public ID", "Email", "Phone", "Username", "Country", "Language",
-        "Traffic Source", "PRO", "Premium Until", "Banned",
-        "Predictions", "Correct", "Accuracy %",
-        "Referral Code", "Registered",
+        "Traffic Source", "Funnel", "PRO", "Premium Until", "Banned",
+        "AI Requests", "Predictions", "Correct", "Accuracy %",
+        "Last Session", "Referral Code", "Registered",
     ])
     for u in rows:
         is_pro = u.is_premium and u.premium_until and u.premium_until > now
         accuracy = round(u.correct_predictions / u.total_predictions * 100, 1) if u.total_predictions else 0
+        last_session = last_session_by_pid.get(u.public_id)
         writer.writerow([
             u.id, u.public_id, u.email, u.phone or "", u.username or "",
             u.country or "", u.language or "",
-            u.traffic_source or "", "Yes" if is_pro else "No",
+            u.traffic_source or "", u.funnel or "funnel-1",
+            "Yes" if is_pro else "No",
             u.premium_until.isoformat() if u.premium_until else "",
             "Yes" if u.is_banned else "No",
+            ai_by_user.get(u.id, 0),
             u.total_predictions, u.correct_predictions, accuracy,
+            last_session.isoformat() if last_session else "",
             u.referral_code or "",
             u.created_at.isoformat() if u.created_at else "",
         ])
@@ -646,6 +673,145 @@ async def export_users_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=users_export_{now.strftime('%Y%m%d_%H%M')}.csv"},
     )
+
+
+# ── Audience Insights ────────────────────────────────────────────────
+
+async def _audience_segment(db: AsyncSession, column: str, now: datetime, limit: int = 20) -> List[dict]:
+    """Aggregate users by a segment column (country/language/traffic_source/funnel)
+    with conversion & engagement metrics. Column is whitelisted by the caller."""
+    rows = (await db.execute(text(f"""
+        SELECT
+            COALESCE(u.{column}::text, 'Unknown') AS seg,
+            COUNT(*) AS users,
+            COUNT(*) FILTER (WHERE u.is_premium = true AND u.premium_until > :now) AS pro,
+            COUNT(*) FILTER (WHERE u.total_predictions > 0) AS activated,
+            COALESCE(AVG(u.total_predictions), 0) AS avg_predictions,
+            COALESCE(AVG(ai.cnt), 0) AS avg_ai_requests
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS cnt FROM ai_chat_messages WHERE role = 'user' GROUP BY user_id
+        ) ai ON ai.user_id = u.id
+        GROUP BY seg
+        ORDER BY users DESC
+        LIMIT :limit
+    """), {"now": now, "limit": limit})).all()
+
+    result = []
+    for r in rows:
+        users = r[1] or 1
+        result.append({
+            "segment": r[0],
+            "users": r[1],
+            "pro": r[2],
+            "pro_pct": round(r[2] / users * 100, 1),
+            "activated": r[3],
+            "activation_pct": round(r[3] / users * 100, 1),
+            "avg_predictions": round(float(r[4]), 1),
+            "avg_ai_requests": round(float(r[5]), 1),
+        })
+    return result
+
+
+@router.get("/audience")
+async def get_audience(
+    q: str = Query("", max_length=100),
+    country: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
+    sort: str = Query("last_session"),  # last_session, ai_requests, predictions, created_at
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    admin: dict = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Audience analytics — per-user table (phone, region, last session, requests)
+    plus segment rankings showing which audience converts & engages best."""
+    now = datetime.now()
+
+    # ── Segment rankings (cached, param-independent) ──
+    segments = _cache_get("audience_segments")
+    if segments is None:
+        segments = {
+            "by_country": await _audience_segment(db, "country", now),
+            "by_language": await _audience_segment(db, "language", now),
+            "by_source": await _audience_segment(db, "traffic_source", now),
+            "by_funnel": await _audience_segment(db, "funnel", now),
+        }
+        _cache_set("audience_segments", segments)
+
+    # ── Per-user table ──
+    where = ["1=1"]
+    params: Dict[str, Any] = {"per_page": per_page, "offset": (page - 1) * per_page}
+    if q.strip():
+        where.append("(u.phone ILIKE :q OR u.public_id ILIKE :q OR u.email ILIKE :q OR u.username ILIKE :q)")
+        params["q"] = f"%{q.strip()}%"
+    if country:
+        where.append("u.country = :country")
+        params["country"] = country
+    if source:
+        where.append("COALESCE(u.traffic_source, 'direct') = :source")
+        params["source"] = source
+    where_sql = " AND ".join(where)
+
+    sort_map = {
+        "last_session": "ae.last_session DESC NULLS LAST",
+        "ai_requests": "ai_requests DESC",
+        "predictions": "u.total_predictions DESC",
+        "created_at": "u.created_at DESC",
+    }
+    order_sql = sort_map.get(sort, sort_map["last_session"])
+
+    total = (await db.execute(
+        text(f"SELECT COUNT(*) FROM users u WHERE {where_sql}"),
+        {k: v for k, v in params.items() if k not in ("per_page", "offset")},
+    )).scalar() or 0
+
+    rows = (await db.execute(text(f"""
+        SELECT
+            u.id, u.public_id, u.phone, u.country, u.language,
+            COALESCE(u.traffic_source, 'direct') AS traffic_source,
+            u.funnel, u.is_premium, u.premium_until,
+            u.total_predictions, u.created_at,
+            COALESCE(ai.cnt, 0) AS ai_requests,
+            ae.last_session
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS cnt FROM ai_chat_messages WHERE role = 'user' GROUP BY user_id
+        ) ai ON ai.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, MAX(created_at) AS last_session
+            FROM analytics_events WHERE user_id IS NOT NULL GROUP BY user_id
+        ) ae ON ae.user_id = u.public_id
+        WHERE {where_sql}
+        ORDER BY {order_sql}
+        LIMIT :per_page OFFSET :offset
+    """), params)).all()
+
+    users = []
+    for r in rows:
+        is_pro = bool(r[7] and r[8] and r[8] > now)
+        users.append({
+            "id": r[0],
+            "public_id": r[1],
+            "phone": r[2],
+            "country": r[3],
+            "language": r[4],
+            "traffic_source": r[5],
+            "funnel": r[6] or "funnel-1",
+            "is_premium": is_pro,
+            "total_predictions": r[9],
+            "created_at": r[10].isoformat() if r[10] else None,
+            "ai_requests": r[11],
+            "last_session": r[12].isoformat() if r[12] else None,
+        })
+
+    return {
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "users": users,
+        "segments": segments,
+    }
 
 
 @router.get("/users/email-domains")

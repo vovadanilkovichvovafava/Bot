@@ -14,6 +14,7 @@ const AdminML = lazy(() => import('./pages/AdminML'))
 const AdminPro = lazy(() => import('./pages/AdminPro'))
 const AdminFunnels = lazy(() => import('./pages/AdminFunnels'))
 const AdminTraffic = lazy(() => import('./pages/AdminTraffic'))
+const AdminAudience = lazy(() => import('./pages/AdminAudience'))
 const AdminPostbacks = lazy(() => import('./pages/AdminPostbacks'))
 const AdminTeam = lazy(() => import('./pages/AdminTeam'))
 
@@ -55,6 +56,7 @@ export default function AdminRoutes() {
             <Route path="pro" element={<AdminPro />} />
             <Route path="funnels" element={<AdminFunnels />} />
             <Route path="traffic" element={<AdminTraffic />} />
+            <Route path="audience" element={<AdminAudience />} />
             <Route path="postbacks" element={<AdminPostbacks />} />
             <Route path="team" element={<AdminTeam />} />
           </Route>
